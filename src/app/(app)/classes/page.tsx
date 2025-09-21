@@ -1,10 +1,11 @@
+"use client"
+
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -14,11 +15,19 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
-import { classes } from '@/lib/data';
-import { Book, DollarSign, Edit, PlusCircle } from 'lucide-react';
+import { classes as initialClasses } from '@/lib/data';
+import { Book, Edit, PlusCircle } from 'lucide-react';
+import { useState } from 'react';
 import { EditSubjectsDialog } from './edit-subjects-dialog';
 
 export default function ClassesPage() {
+  const [classes, setClasses] = useState(initialClasses);
+
+  const handleSubjectsUpdate = () => {
+    // Force a re-render by creating a new array reference
+    setClasses([...initialClasses]);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -59,18 +68,27 @@ export default function ClassesPage() {
                             <Edit className="mr-2 h-4 w-4" /> Edit Subjects
                           </Button>
                         </DialogTrigger>
-                        <EditSubjectsDialog classData={c} />
+                        <EditSubjectsDialog
+                          classData={c}
+                          onSubjectsUpdate={handleSubjectsUpdate}
+                        />
                       </Dialog>
                     </div>
                     <div className="grid gap-3">
-                      {c.subjects.map((subject) => (
-                        <div
-                          key={subject.id}
-                          className="flex items-center justify-between rounded-md border p-3"
-                        >
-                          <span className="font-medium">{subject.name}</span>
-                        </div>
-                      ))}
+                      {c.subjects.length > 0 ? (
+                        c.subjects.map((subject) => (
+                          <div
+                            key={subject.id}
+                            className="flex items-center justify-between rounded-md border p-3"
+                          >
+                            <span className="font-medium">{subject.name}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground p-3">
+                          No subjects assigned to this class.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </AccordionContent>
