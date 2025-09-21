@@ -31,11 +31,17 @@ import { MoreHorizontal, Search } from 'lucide-react';
 import { AddTeacherForm } from './add-teacher-form';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 export default function TeachersPage() {
+  const [teacherList, setTeacherList] = useState(teachers);
   const [search, setSearch] = useState('');
 
-  const filteredTeachers = teachers.filter(teacher =>
+  const handleTeacherAdded = () => {
+    setTeacherList([...teachers]);
+  };
+
+  const filteredTeachers = teacherList.filter(teacher =>
     teacher.name.toLowerCase().includes(search.toLowerCase()) ||
     teacher.subject.toLowerCase().includes(search.toLowerCase())
   );
@@ -49,7 +55,7 @@ export default function TeachersPage() {
             Manage teacher profiles and assigned subjects.
           </p>
         </div>
-        <AddTeacherForm />
+        <AddTeacherForm onTeacherAdded={handleTeacherAdded} />
       </div>
       <Card>
         <CardHeader>
@@ -72,7 +78,7 @@ export default function TeachersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Subject</TableHead>
+                <TableHead>Subject(s)</TableHead>
                 <TableHead className="hidden lg:table-cell">Experience</TableHead>
                 <TableHead>Monthly Earnings</TableHead>
                 <TableHead>
@@ -93,7 +99,11 @@ export default function TeachersPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{teacher.subject}</Badge>
+                    <div className="flex flex-wrap gap-1">
+                      {teacher.subject.split(', ').map(sub => (
+                        <Badge key={sub} variant="outline" className={cn('font-normal')}>{sub}</Badge>
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">{teacher.experience}</TableCell>
                   <TableCell>
