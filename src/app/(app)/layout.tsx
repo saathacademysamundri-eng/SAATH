@@ -29,6 +29,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React from 'react';
+import { Badge } from '@/components/ui/badge';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -48,13 +49,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar side="left" variant="sidebar" collapsible="icon">
         <SidebarHeader>
           <div className="flex items-center justify-between p-2">
-            <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap font-headline text-lg font-bold text-primary transition-all group-data-[collapsible=icon]:w-0">
-              <Logo noText />
-              <span className="transition-opacity group-data-[collapsible=icon]:opacity-0">
-                {settings.name}
-              </span>
+            <div className="flex flex-col items-center gap-2 w-full">
+                <div className='p-2'>
+                    <Logo noText={true} />
+                </div>
+                <div className="transition-opacity group-data-[collapsible=icon]:opacity-0">
+                    <Badge variant="secondary" className="font-mono text-xs">{settings.academicSession}</Badge>
+                </div>
             </div>
-            <SidebarTrigger className="hidden md:flex" />
+            <SidebarTrigger className="hidden md:flex absolute top-2 right-2" />
           </div>
         </SidebarHeader>
         <SidebarContent>

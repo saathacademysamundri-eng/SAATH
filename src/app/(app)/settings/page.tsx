@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
 import { Upload } from 'lucide-react';
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, useMemo } from 'react';
 
 export default function SettingsPage() {
   const { settings, setSettings } = useSettings();
@@ -18,9 +19,21 @@ export default function SettingsPage() {
   const [address, setAddress] = useState(settings.address);
   const [phone, setPhone] = useState(settings.phone);
   const [logo, setLogo] = useState(settings.logo);
+  const [academicSession, setAcademicSession] = useState(settings.academicSession);
+
+  const academicSessions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = 0; i < 15; i++) {
+        const startYear = currentYear + i;
+        const endYear = startYear + 1;
+        years.push(`${startYear}-${endYear}`);
+    }
+    return years;
+  }, []);
 
   const handleSaveChanges = () => {
-    setSettings({ name, address, phone, logo });
+    setSettings({ name, address, phone, logo, academicSession });
     toast({
       title: 'Settings Saved',
       description: 'Your academy details have been updated.',
@@ -63,6 +76,19 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </div>
+                 <div className="space-y-2">
+                    <Label>Academic Session</Label>
+                     <Select value={academicSession} onValueChange={setAcademicSession}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select session" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {academicSessions.map(session => (
+                                <SelectItem key={session} value={session}>{session}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="logo">Academy Logo</Label>

@@ -7,6 +7,7 @@ interface Settings {
   address: string;
   phone: string;
   logo: string;
+  academicSession: string;
 }
 
 interface SettingsContextType {
@@ -20,6 +21,7 @@ const defaultSettings: Settings = {
   address: 'Housing Colony 2, Samundri Faisalabad',
   phone: '0333 9114333',
   logo: '/logo.png',
+  academicSession: '2024-2025',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
