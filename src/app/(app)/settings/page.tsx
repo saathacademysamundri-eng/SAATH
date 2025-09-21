@@ -101,8 +101,8 @@ export default function SettingsPage() {
                      <div className="space-y-2">
                         <Label htmlFor="logo">Academy Logo</Label>
                         <div className='flex items-center gap-4'>
-                            <div className='w-20 h-20 rounded-md border flex items-center justify-center bg-muted'>
-                                <img src={logo} alt="logo" className='object-contain p-2' />
+                            <div className='w-20 h-20 rounded-full border flex items-center justify-center bg-muted overflow-hidden'>
+                                <img src={logo} alt="logo" className='object-cover w-full h-full' />
                             </div>
                             <Button variant="outline" asChild>
                                <label htmlFor="logo-upload" className='cursor-pointer'>
