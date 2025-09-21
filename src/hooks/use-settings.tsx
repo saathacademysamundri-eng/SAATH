@@ -12,6 +12,7 @@ interface Settings {
 interface SettingsContextType {
   settings: Settings;
   setSettings: (settings: Settings) => void;
+  isSettingsLoading: boolean;
 }
 
 const defaultSettings: Settings = {
@@ -24,33 +25,39 @@ const defaultSettings: Settings = {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-  const [settings, setSettingsState] = useState<Settings>(() => {
-    if (typeof window === 'undefined') {
-        return defaultSettings;
-    }
-    try {
-        const item = window.localStorage.getItem('academySettings');
-        return item ? JSON.parse(item) : defaultSettings;
-    } catch (error) {
-        console.error(error);
-        return defaultSettings;
-    }
-  });
+  const [isSettingsLoading, setIsSettingsLoading] = useState(true);
+  const [settings, setSettingsState] = useState<Settings>(defaultSettings);
 
   useEffect(() => {
     try {
-        window.localStorage.setItem('academySettings', JSON.stringify(settings));
+      const item = window.localStorage.getItem('academySettings');
+      if (item) {
+        setSettingsState(JSON.parse(item));
+      }
     } catch (error) {
-        console.error(error);
+      console.error(error);
+      setSettingsState(defaultSettings);
+    } finally {
+      setIsSettingsLoading(false);
     }
-  }, [settings]);
+  }, []);
+
+  useEffect(() => {
+    if (!isSettingsLoading) {
+        try {
+            window.localStorage.setItem('academySettings', JSON.stringify(settings));
+        } catch (error) {
+            console.error(error);
+        }
+    }
+  }, [settings, isSettingsLoading]);
 
   const setSettings = (newSettings: Settings) => {
     setSettingsState(newSettings);
   };
 
   return (
-    <SettingsContext.Provider value={{ settings, setSettings }}>
+    <SettingsContext.Provider value={{ settings, setSettings, isSettingsLoading }}>
       {children}
     </SettingsContext.Provider>
   );
