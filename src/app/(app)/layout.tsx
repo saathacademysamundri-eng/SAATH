@@ -41,7 +41,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/classes', label: 'Classes', icon: School },
     { href: '/fee-collection', label: 'Fee Collection', icon: DollarSign },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
-    { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -50,9 +49,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center justify-between p-2">
             <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap font-headline text-lg font-bold text-primary transition-all group-data-[collapsible=icon]:w-0">
-              <GraduationCap className="h-6 w-6 shrink-0" />
+              <Logo noText />
               <span className="transition-opacity group-data-[collapsible=icon]:opacity-0">
-                AcademiaLite
+                The Spirit School
               </span>
             </div>
             <SidebarTrigger className="hidden md:flex" />
@@ -77,6 +76,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
+             <SidebarMenuItem>
+                <Link href="/settings">
+                  <SidebarMenuButton tooltip="Settings" isActive={pathname.startsWith('/settings')}>
+                    <Settings />
+                    <span>Settings</span>
+                  </SidebarMenuButton>
+                </Link>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <Link href="#">
                 <SidebarMenuButton tooltip="Support">
