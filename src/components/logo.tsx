@@ -2,11 +2,17 @@
 
 import { useSettings } from "@/hooks/use-settings";
 import { Skeleton } from "./ui/skeleton";
+import { useEffect, useState } from "react";
 
 export function Logo({ noText = false }: { noText?: boolean }) {
   const { settings, isSettingsLoading } = useSettings();
+  const [isClient, setIsClient] = useState(false);
 
-  if (isSettingsLoading) {
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (isSettingsLoading || !isClient) {
     return (
         <div className="flex items-center gap-2 font-headline text-2xl font-bold text-primary">
             <Skeleton className="h-10 w-10 rounded-full" />
