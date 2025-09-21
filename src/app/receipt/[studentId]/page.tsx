@@ -35,8 +35,8 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
   }
 
   return (
-    <main className="font-sans bg-white text-black">
-        <div className="w-[80mm] p-2 mx-auto">
+    <main className="font-sans bg-white text-black p-2">
+        <div className="w-[80mm] mx-auto">
             <div className="text-center space-y-1">
                 <div className="flex w-full justify-center">
                     <div className="h-16 w-16">
@@ -105,4 +105,3 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
     </main>
   );
 }
-
