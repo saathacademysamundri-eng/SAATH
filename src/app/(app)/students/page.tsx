@@ -28,6 +28,7 @@ import {
 import { students } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
+import { AddStudentForm } from './add-student-form';
 
 function getFeeStatusBadge(status: string) {
     switch (status.toLowerCase()) {
@@ -55,10 +56,7 @@ export default function StudentsPage() {
             Manage student profiles, fees, and results.
           </p>
         </div>
-        <Button>
-          <PlusCircle />
-          Add Student
-        </Button>
+        <AddStudentForm />
       </div>
       <Card>
         <CardHeader>

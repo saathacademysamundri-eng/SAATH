@@ -1,5 +1,6 @@
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserNav } from '@/components/user-nav';
+import { ThemeSwitcher } from './theme-switcher';
 
 export function Header() {
   return (
@@ -8,7 +9,10 @@ export function Header() {
         <SidebarTrigger className="md:hidden" />
         <h1 className="text-lg font-semibold md:text-xl">Dashboard</h1>
       </div>
-      <UserNav />
+      <div className='flex items-center gap-2'>
+        <ThemeSwitcher />
+        <UserNav />
+      </div>
     </header>
   );
 }

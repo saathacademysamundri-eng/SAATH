@@ -22,6 +22,7 @@ import {
   LifeBuoy,
   LogOut,
   Megaphone,
+  School,
   Settings,
   Users,
 } from 'lucide-react';
@@ -36,6 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/students', label: 'Students', icon: Users },
     { href: '/teachers', label: 'Teachers', icon: BookUser },
+    { href: '/classes', label: 'Classes', icon: School },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
@@ -60,7 +62,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href}>
                   <SidebarMenuButton
-                    isActive={pathname === item.href}
+                    isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
                     <item.icon />

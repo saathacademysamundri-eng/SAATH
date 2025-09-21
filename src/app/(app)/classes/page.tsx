@@ -1,0 +1,84 @@
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { classes } from '@/lib/data';
+import { Book, DollarSign, Edit, PlusCircle } from 'lucide-react';
+
+export default function ClassesPage() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Classes</h1>
+          <p className="text-muted-foreground">
+            Manage classes, subjects, and their fees.
+          </p>
+        </div>
+        <Button>
+          <PlusCircle />
+          Add Class
+        </Button>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Class List</CardTitle>
+          <CardDescription>
+            A list of all classes and their subjects offered in the academy.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
+            {classes.map((c) => (
+              <AccordionItem key={c.id} value={c.id}>
+                <AccordionTrigger className="text-lg font-medium">
+                  {c.name}
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="flex flex-col gap-4 p-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-md font-semibold flex items-center gap-2">
+                        <Book className="h-5 w-5" /> Subjects
+                      </h3>
+                      <Button variant="outline" size="sm">
+                        <Edit className="mr-2 h-4 w-4" /> Edit Subjects
+                      </Button>
+                    </div>
+                    <div className="grid gap-3">
+                      {c.subjects.map((subject) => (
+                        <div
+                          key={subject.id}
+                          className="flex items-center justify-between rounded-md border p-3"
+                        >
+                          <span className="font-medium">{subject.name}</span>
+                          <Badge
+                            variant="secondary"
+                            className="flex items-center gap-1"
+                          >
+                            <DollarSign className="h-3 w-3" />
+                            {subject.fee} PKR
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

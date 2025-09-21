@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table';
 import { teachers } from '@/lib/data';
 import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
+import { AddTeacherForm } from './add-teacher-form';
 
 export default function TeachersPage() {
   return (
@@ -37,10 +38,7 @@ export default function TeachersPage() {
             Manage teacher profiles and assigned subjects.
           </p>
         </div>
-        <Button>
-          <PlusCircle />
-          Add Teacher
-        </Button>
+        <AddTeacherForm />
       </div>
       <Card>
         <CardHeader>
