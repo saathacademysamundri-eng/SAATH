@@ -78,8 +78,9 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             name,
             class: currentClassDetails?.name || '',
             subjects: selectedSubjects.map(subjectId => currentClassDetails?.subjects.find(s => s.id === subjectId)?.name || '').join(', '),
-            feeStatus: 'Pending',
+            feeStatus: 'Pending' as const,
             avatar: `https://picsum.photos/seed/${avatarSeed}/40/40`,
+            totalFee: totalFee,
         };
 
         students.push(newStudent);

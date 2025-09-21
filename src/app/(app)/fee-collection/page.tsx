@@ -27,16 +27,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from "@/components/ui/select"
 import { students } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { MoreHorizontal, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 function getFeeStatusBadge(status: string) {
@@ -58,6 +52,7 @@ function getFeeStatusBadge(status: string) {
 export default function FeeCollectionPage() {
   const [studentList, setStudentList] = useState(students);
   const [search, setSearch] = useState('');
+  const router = useRouter();
 
   const handleStatusChange = (studentId: string, newStatus: string) => {
     const updatedStudents = studentList.map(student =>
@@ -70,6 +65,10 @@ export default function FeeCollectionPage() {
     student.name.toLowerCase().includes(search.toLowerCase()) ||
     student.id.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleRowClick = (studentId: string) => {
+    router.push(`/fee-collection/${studentId}`);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -110,7 +109,7 @@ export default function FeeCollectionPage() {
             </TableHeader>
             <TableBody>
               {filteredStudents.map((student) => (
-                <TableRow key={student.id}>
+                <TableRow key={student.id} onClick={() => handleRowClick(student.id)} className="cursor-pointer">
                   <TableCell className="font-medium">{student.id}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -127,7 +126,7 @@ export default function FeeCollectionPage() {
                         {student.feeStatus}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">

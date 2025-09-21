@@ -13,8 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { classes } from '@/lib/data';
 import { Book, DollarSign, Edit, PlusCircle } from 'lucide-react';
+import { EditSubjectsDialog } from './edit-subjects-dialog';
 
 export default function ClassesPage() {
   return (
@@ -51,9 +53,14 @@ export default function ClassesPage() {
                       <h3 className="text-md font-semibold flex items-center gap-2">
                         <Book className="h-5 w-5" /> Subjects
                       </h3>
-                      <Button variant="outline" size="sm">
-                        <Edit className="mr-2 h-4 w-4" /> Edit Subjects
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Edit className="mr-2 h-4 w-4" /> Edit Subjects
+                          </Button>
+                        </DialogTrigger>
+                        <EditSubjectsDialog classData={c} />
+                      </Dialog>
                     </div>
                     <div className="grid gap-3">
                       {c.subjects.map((subject) => (

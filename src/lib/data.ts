@@ -1,3 +1,24 @@
+export type Subject = {
+    id: string;
+    name: string;
+};
+
+export type Class = {
+    id: string;
+    name: string;
+    subjects: Subject[];
+};
+
+export type Student = {
+    id: string;
+    name: string;
+    class: string;
+    subjects: string;
+    feeStatus: 'Paid' | 'Pending' | 'Partial' | 'Overdue';
+    avatar: string;
+    totalFee: number;
+};
+
 export const dashboardStats = [
     { title: 'Total Students', value: '1,250', change: '+15.2%', icon: 'Users' },
     { title: 'New Admissions', value: '82', change: '+20.1%', icon: 'UserPlus' },
@@ -22,14 +43,14 @@ export const feeCollectionData = [
     { month: 'Jun', collected: 539000, pending: 38000 },
 ];
 
-export const students = [
-    { id: 'S001', name: 'Ahmed Hassan', class: '10th', subjects: 'Math, Physics', feeStatus: 'Paid', avatar: 'https://picsum.photos/seed/101/40/40' },
-    { id: 'S002', name: 'Zainab Ali', class: '9th', subjects: 'Chemistry, Biology', feeStatus: 'Pending', avatar: 'https://picsum.photos/seed/102/40/40' },
-    { id: 'S003', name: 'Bilal Khan', class: '10th', subjects: 'English, CS', feeStatus: 'Partial', avatar: 'https://picsum.photos/seed/103/40/40' },
-    { id: 'S004', name: 'Ayesha Malik', class: '11th', subjects: 'Physics, Chemistry', feeStatus: 'Paid', avatar: 'https://picsum.photos/seed/104/40/40' },
-    { id: 'S005', name: 'Fahad Iqbal', class: '12th', subjects: 'Math, F.Math', feeStatus: 'Overdue', avatar: 'https://picsum.photos/seed/105/40/40' },
-    { id: 'S006', name: 'Sana Javed', class: '9th', subjects: 'Biology, English', feeStatus: 'Paid', avatar: 'https://picsum.photos/seed/106/40/40' },
-    { id: 'S007', name: 'Imran Syed', class: '10th', subjects: 'CS, Physics', feeStatus: 'Pending', avatar: 'https://picsum.photos/seed/107/40/40' },
+export const students: Student[] = [
+    { id: 'S001', name: 'Ahmed Hassan', class: '10th', subjects: 'Math, Physics', feeStatus: 'Paid', avatar: 'https://picsum.photos/seed/101/40/40', totalFee: 3000 },
+    { id: 'S002', name: 'Zainab Ali', class: '9th', subjects: 'Chemistry, Biology', feeStatus: 'Pending', avatar: 'https://picsum.photos/seed/102/40/40', totalFee: 2500 },
+    { id: 'S003', name: 'Bilal Khan', class: '10th', subjects: 'English, CS', feeStatus: 'Partial', avatar: 'https://picsum.photos/seed/103/40/40', totalFee: 2000 },
+    { id: 'S004', name: 'Ayesha Malik', class: '11th', subjects: 'Physics, Chemistry', feeStatus: 'Paid', avatar: 'https://picsum.photos/seed/104/40/40', totalFee: 4000 },
+    { id: 'S005', name: 'Fahad Iqbal', class: '12th', subjects: 'Math, F.Math', feeStatus: 'Overdue', avatar: 'https://picsum.photos/seed/105/40/40', totalFee: 4500 },
+    { id: 'S006', name: 'Sana Javed', class: '9th', subjects: 'Biology, English', feeStatus: 'Paid', avatar: 'https://picsum.photos/seed/106/40/40', totalFee: 2500 },
+    { id: 'S007', name: 'Imran Syed', class: '10th', subjects: 'CS, Physics', feeStatus: 'Pending', avatar: 'https://picsum.photos/seed/107/40/40', totalFee: 3000 },
 ];
 
 export const teachers = [
@@ -40,7 +61,7 @@ export const teachers = [
     { id: 'T05', name: 'Dr. Nida', subject: 'Biology', experience: '7 Years', earnings: '88,000 PKR', avatar: 'https://picsum.photos/seed/205/40/40' },
 ];
 
-export const classes = [
+export const classes: Class[] = [
     { 
         id: 'C01', 
         name: '9th Grade', 
