@@ -45,46 +45,46 @@ export const classes = [
         id: 'C01', 
         name: '9th Grade', 
         subjects: [
-            { id: 'S01', name: 'Mathematics', fee: '1500' },
-            { id: 'S02', name: 'Physics', fee: '1500' },
-            { id: 'S03', name: 'Chemistry', fee: '1500' },
-            { id: 'S04', name: 'Biology', fee: '1200' },
-            { id: 'S05', name: 'Computer Science', fee: '1200' },
-            { id: 'S06', name: 'English', fee: '1000' },
+            { id: 'S01', name: 'Mathematics' },
+            { id: 'S02', name: 'Physics' },
+            { id: 'S03', name: 'Chemistry' },
+            { id: 'S04', name: 'Biology' },
+            { id: 'S05', name: 'Computer Science' },
+            { id: 'S06', name: 'English' },
         ] 
     },
     { 
         id: 'C02', 
         name: '10th Grade', 
         subjects: [
-            { id: 'S01', name: 'Mathematics', fee: '1500' },
-            { id: 'S02', name: 'Physics', fee: '1500' },
-            { id: 'S03', name: 'Chemistry', fee: '1500' },
-            { id: 'S04', name: 'Biology', fee: '1200' },
-            { id: 'S05', name: 'Computer Science', fee: '1200' },
-            { id: 'S06', name: 'English', fee: '1000' },
+            { id: 'S01', name: 'Mathematics' },
+            { id: 'S02', name: 'Physics' },
+            { id: 'S03', name: 'Chemistry' },
+            { id: 'S04', name: 'Biology' },
+            { id: 'S05', name: 'Computer Science' },
+            { id: 'S06', name: 'English' },
         ] 
     },
     { 
         id: 'C03', 
         name: '11th Grade', 
         subjects: [
-            { id: 'S07', name: 'Pre-Eng. Mathematics', fee: '2000' },
-            { id: 'S08', name: 'Pre-Med. Biology', fee: '1800' },
-            { id: 'S02', name: 'Physics', fee: '1800' },
-            { id: 'S03', name: 'Chemistry', fee: '1800' },
-            { id: 'S06', name: 'English', fee: '1200' },
+            { id: 'S07', name: 'Pre-Eng. Mathematics' },
+            { id: 'S08', name: 'Pre-Med. Biology' },
+            { id: 'S02', name: 'Physics' },
+            { id: 'S03', name: 'Chemistry' },
+            { id: 'S06', name: 'English' },
         ] 
     },
      { 
         id: 'C04', 
         name: '12th Grade', 
         subjects: [
-            { id: 'S07', name: 'Pre-Eng. Mathematics', fee: '2000' },
-            { id: 'S08', name: 'Pre-Med. Biology', fee: '1800' },
-            { id: 'S02', name: 'Physics', fee: '1800' },
-            { id: 'S03', name: 'Chemistry', fee: '1800' },
-            { id: 'S06', name: 'English', fee: '1200' },
+            { id: 'S07', name: 'Pre-Eng. Mathematics' },
+            { id: 'S08', name: 'Pre-Med. Biology' },
+            { id: 'S02', name: 'Physics' },
+            { id: 'S03', name: 'Chemistry' },
+            { id: 'S06', name: 'English' },
         ] 
     },
 ];

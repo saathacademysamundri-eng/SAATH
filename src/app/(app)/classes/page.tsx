@@ -23,7 +23,7 @@ export default function ClassesPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Classes</h1>
           <p className="text-muted-foreground">
-            Manage classes, subjects, and their fees.
+            Manage classes and their subjects.
           </p>
         </div>
         <Button>
@@ -62,13 +62,6 @@ export default function ClassesPage() {
                           className="flex items-center justify-between rounded-md border p-3"
                         >
                           <span className="font-medium">{subject.name}</span>
-                          <Badge
-                            variant="secondary"
-                            className="flex items-center gap-1"
-                          >
-                            <DollarSign className="h-3 w-3" />
-                            {subject.fee} PKR
-                          </Badge>
                         </div>
                       ))}
                     </div>
