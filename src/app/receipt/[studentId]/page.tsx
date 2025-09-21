@@ -3,7 +3,7 @@
 import { useSettings } from '@/hooks/use-settings';
 import { students } from '@/lib/data';
 import { notFound, useSearchParams } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 
 export default function FeeReceiptPage({ params }: { params: { studentId: string } }) {
@@ -18,7 +18,7 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
   
   const receiptDate = useMemo(() => format(new Date(), 'dd/MM/yyyy, hh:mm a'), []);
   const receiptId = useMemo(() => `RCPT-${Date.now()}`.substring(0, 15), []);
-
+  
   if (isSettingsLoading) {
       return <div className="flex items-center justify-center h-screen">Loading receipt...</div>;
   }
@@ -71,7 +71,7 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
             </table>
             
             <div className='flex justify-end mt-2'>
-                <table className="w-1/2 text-xs">
+                <table className="w-1/2 ml-auto text-xs">
                     <tbody>
                          <tr>
                             <td className="py-0.5">Total Due:</td>
