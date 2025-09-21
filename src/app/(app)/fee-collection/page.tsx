@@ -62,7 +62,7 @@ export default function FeeCollectionPage() {
       }
       
       const balance = searchedStudent.totalFee - paidAmount;
-      const url = `/fee-collection/${searchedStudent.id}/receipt?amount=${paidAmount}&balance=${balance}&total=${searchedStudent.totalFee}`;
+      const url = `/receipt/${searchedStudent.id}?amount=${paidAmount}&balance=${balance}&total=${searchedStudent.totalFee}`;
       window.open(url, '_blank');
     }
   };
