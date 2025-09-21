@@ -3,7 +3,7 @@
 import { useSettings } from '@/hooks/use-settings';
 import { students } from '@/lib/data';
 import { notFound, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { format } from 'date-fns';
 
 export default function FeeReceiptPage({ params }: { params: { studentId: string } }) {
@@ -13,18 +13,11 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
   const student = useMemo(() => students.find(s => s.id === studentId), [studentId]);
   
   const paidAmount = Number(searchParams.get('amount') || '0');
-  const balance = Number(searchParams.get('balance') || '0');
+  const balance = Number(search_params.get('balance') || '0');
   const totalFee = Number(searchParams.get('total') || '0');
   
   const receiptDate = useMemo(() => format(new Date(), 'dd/MM/yyyy, hh:mm a'), []);
   const receiptId = useMemo(() => `RCPT-${Date.now()}`.substring(0, 15), []);
-
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !isSettingsLoading) {
-      setTimeout(() => window.print(), 500);
-    }
-  }, [isSettingsLoading]);
 
   if (isSettingsLoading) {
       return <div className="flex items-center justify-center h-screen">Loading receipt...</div>;
