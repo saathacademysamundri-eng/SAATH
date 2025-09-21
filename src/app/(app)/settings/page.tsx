@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
@@ -56,60 +57,111 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">
-            Manage your academy's general settings.
+            Manage your academy's settings and preferences.
           </p>
         </div>
-        <Card className='max-w-2xl'>
-            <CardHeader>
-                <CardTitle>General Information</CardTitle>
-                <CardDescription>Update your academy's details here.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="name">Academy Name</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                </div>
-                 <div className="space-y-2">
-                    <Label>Academic Session</Label>
-                     <Select value={academicSession} onValueChange={setAcademicSession}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select session" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {academicSessions.map(session => (
-                                <SelectItem key={session} value={session}>{session}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="logo">Academy Logo</Label>
-                    <div className='flex items-center gap-4'>
-                        <div className='w-20 h-20 rounded-md border flex items-center justify-center bg-muted'>
-                            <img src={logo} alt="logo" className='object-contain p-2' />
-                        </div>
-                        <Button variant="outline" asChild>
-                           <label htmlFor="logo-upload" className='cursor-pointer'>
-                                <Upload className='mr-2'/>
-                                Upload Logo
-                                <input id="logo-upload" type="file" className='sr-only' accept="image/*" onChange={handleLogoUpload} />
-                           </label>
-                        </Button>
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="admin">Admin</TabsTrigger>
+            <TabsTrigger value="api">API Integration</TabsTrigger>
+          </TabsList>
+          <TabsContent value="general">
+            <Card className='max-w-2xl'>
+                <CardHeader>
+                    <CardTitle>General Information</CardTitle>
+                    <CardDescription>Update your academy's public details.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Academy Name</Label>
+                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
-                </div>
-            </CardContent>
-            <CardFooter>
-                <Button onClick={handleSaveChanges}>Save Changes</Button>
-            </CardFooter>
-        </Card>
+                     <div className="space-y-2">
+                        <Label htmlFor="address">Address</Label>
+                        <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Academic Session</Label>
+                         <Select value={academicSession} onValueChange={setAcademicSession}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select session" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {academicSessions.map(session => (
+                                    <SelectItem key={session} value={session}>{session}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="logo">Academy Logo</Label>
+                        <div className='flex items-center gap-4'>
+                            <div className='w-20 h-20 rounded-md border flex items-center justify-center bg-muted'>
+                                <img src={logo} alt="logo" className='object-contain p-2' />
+                            </div>
+                            <Button variant="outline" asChild>
+                               <label htmlFor="logo-upload" className='cursor-pointer'>
+                                    <Upload className='mr-2'/>
+                                    Upload Logo
+                                    <input id="logo-upload" type="file" className='sr-only' accept="image/*" onChange={handleLogoUpload} />
+                               </label>
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button onClick={handleSaveChanges}>Save Changes</Button>
+                </CardFooter>
+            </Card>
+          </TabsContent>
+          <TabsContent value="admin">
+              <Card className='max-w-2xl'>
+                <CardHeader>
+                    <CardTitle>Admin Settings</CardTitle>
+                    <CardDescription>Manage administrator credentials.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="current-password">Current Password</Label>
+                        <Input id="current-password" type="password" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="new-password">New Password</Label>
+                        <Input id="new-password" type="password" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                        <Input id="confirm-password" type="password" />
+                    </div>
+                </CardContent>
+                 <CardFooter>
+                    <Button>Update Password</Button>
+                </CardFooter>
+            </Card>
+          </TabsContent>
+          <TabsContent value="api">
+             <Card className='max-w-2xl'>
+                <CardHeader>
+                    <CardTitle>API Integration</CardTitle>
+                    <CardDescription>Manage API keys for integrations.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="api-key">Your API Key</Label>
+                        <Input id="api-key" defaultValue="******************" readOnly />
+                    </div>
+                </CardContent>
+                 <CardFooter>
+                    <Button>Generate New Key</Button>
+                </CardFooter>
+            </Card>
+          </TabsContent>
+        </Tabs>
     </div>
   )
 }

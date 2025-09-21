@@ -50,7 +50,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center justify-between p-2">
             <div className="flex flex-col items-center gap-2 w-full">
-                <div className='p-2'>
+                <div className='p-2 bg-muted rounded-full'>
                     <Logo noText={true} />
                 </div>
                 <div className="transition-opacity group-data-[collapsible=icon]:opacity-0">
