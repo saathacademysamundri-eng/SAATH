@@ -29,6 +29,7 @@ import { students } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 
 function getFeeStatusBadge(status: string) {
     switch (status.toLowerCase()) {
@@ -56,7 +57,15 @@ export default function StudentsPage() {
             Manage student profiles, fees, and results.
           </p>
         </div>
-        <AddStudentForm />
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle />
+              Add Student
+            </Button>
+          </DialogTrigger>
+          <AddStudentForm />
+        </Dialog>
       </div>
       <Card>
         <CardHeader>

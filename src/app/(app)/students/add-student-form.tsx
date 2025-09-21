@@ -2,17 +2,14 @@
 
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { PlusCircle } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -54,13 +51,6 @@ export function AddStudentForm() {
     const currentClass = classes.find(c => c.id === selectedClass);
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle />
-          Add Student
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add New Student</DialogTitle>
@@ -147,6 +137,5 @@ export function AddStudentForm() {
           <Button type="submit">Add Student</Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
   )
 }
