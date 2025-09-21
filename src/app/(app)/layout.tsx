@@ -88,7 +88,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
-                    <item.icon />
+                    <item.icon className="h-5 w-5" />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </Link>
@@ -101,7 +101,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
              <SidebarMenuItem>
                 <Link href="/settings">
                   <SidebarMenuButton tooltip="Settings" isActive={pathname.startsWith('/settings')}>
-                    <Settings />
+                    <Settings className="h-5 w-5" />
                     <span>Settings</span>
                   </SidebarMenuButton>
                 </Link>
@@ -109,7 +109,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <Link href="#">
                 <SidebarMenuButton tooltip="Support">
-                  <LifeBuoy />
+                  <LifeBuoy className="h-5 w-5" />
                   <span>Support</span>
                 </SidebarMenuButton>
               </Link>
@@ -117,7 +117,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <Link href="/">
                 <SidebarMenuButton tooltip="Log Out">
-                  <LogOut />
+                  <LogOut className="h-5 w-5" />
                   <span>Log Out</span>
                 </SidebarMenuButton>
               </Link>
