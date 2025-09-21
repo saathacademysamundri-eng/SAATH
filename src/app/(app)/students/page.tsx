@@ -1,7 +1,6 @@
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -33,22 +32,6 @@ import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { useState } from 'react';
-
-function getFeeStatusBadge(status: string) {
-    switch (status.toLowerCase()) {
-        case 'paid':
-            return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-700';
-        case 'pending':
-            return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 border-amber-200 dark:border-amber-700';
-        case 'partial':
-            return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-700';
-        case 'overdue':
-            return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 border-red-200 dark:border-red-700';
-        default:
-            return 'bg-secondary text-secondary-foreground';
-    }
-}
-
 
 export default function StudentsPage() {
   const [studentList, setStudentList] = useState(students);
@@ -105,7 +88,6 @@ export default function StudentsPage() {
                 <TableHead>Name</TableHead>
                 <TableHead className="hidden md:table-cell">Class</TableHead>
                 <TableHead className="hidden lg:table-cell">Subjects</TableHead>
-                <TableHead>Fee Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -126,11 +108,6 @@ export default function StudentsPage() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{student.class}</TableCell>
                   <TableCell className="hidden lg:table-cell">{student.subjects}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={cn('font-normal', getFeeStatusBadge(student.feeStatus))}>
-                        {student.feeStatus}
-                    </Badge>
-                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

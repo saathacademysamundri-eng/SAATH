@@ -23,6 +23,7 @@ import { useState, useMemo } from "react"
 import { classes, students } from "@/lib/data"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void }) {
     const [name, setName] = useState('');
@@ -30,6 +31,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
     const [phone, setPhone] = useState('');
     const [college, setCollege] = useState('');
     const [address, setAddress] = useState('');
+    const [gender, setGender] = useState('male');
     const [selectedClass, setSelectedClass] = useState<string | null>(null);
     const [totalFee, setTotalFee] = useState(0);
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
@@ -67,13 +69,17 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
 
         const newStudentId = `S${(students.length + 1).toString().padStart(3, '0')}`;
         const currentClassDetails = classes.find(c => c.id === selectedClass);
+        
+        // Use a different seed for male/female to get different images
+        const avatarSeed = gender === 'male' ? newStudentId : `F${newStudentId}`;
+
         const newStudent = {
             id: newStudentId,
             name,
             class: currentClassDetails?.name || '',
             subjects: selectedSubjects.map(subjectId => currentClassDetails?.subjects.find(s => s.id === subjectId)?.name || '').join(', '),
             feeStatus: 'Pending',
-            avatar: `https://picsum.photos/seed/${newStudentId}/40/40`,
+            avatar: `https://picsum.photos/seed/${avatarSeed}/40/40`,
         };
 
         students.push(newStudent);
@@ -113,13 +119,28 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                 <Input id="phone" type="tel" placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
              <div className="grid gap-2">
-                <Label htmlFor="college">College Name</Label>
-                <Input id="college" placeholder="Enter college name" value={college} onChange={(e) => setCollege(e.target.value)} />
+                <Label htmlFor="college">School / College Name</Label>
+                <Input id="college" placeholder="Enter school or college name" value={college} onChange={(e) => setCollege(e.target.value)} />
             </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="address">Address</Label>
             <Textarea id="address" placeholder="Enter student's address" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="grid gap-2">
+                <Label>Gender</Label>
+                 <RadioGroup defaultValue="male" onValueChange={setGender} value={gender} className="flex items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="male" id="male" />
+                        <Label htmlFor="male" className="font-normal">Male</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="female" id="female" />
+                        <Label htmlFor="female" className="font-normal">Female</Label>
+                    </div>
+                </RadioGroup>
+            </div>
           </div>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
