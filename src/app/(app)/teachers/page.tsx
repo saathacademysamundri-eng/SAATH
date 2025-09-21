@@ -1,3 +1,5 @@
+'use client';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,10 +27,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { teachers } from '@/lib/data';
-import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
+import { MoreHorizontal, Search } from 'lucide-react';
 import { AddTeacherForm } from './add-teacher-form';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 export default function TeachersPage() {
+  const [search, setSearch] = useState('');
+
+  const filteredTeachers = teachers.filter(teacher =>
+    teacher.name.toLowerCase().includes(search.toLowerCase()) ||
+    teacher.subject.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -48,7 +59,12 @@ export default function TeachersPage() {
           </CardDescription>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search teachers..." className="pl-8" />
+            <Input 
+              placeholder="Search teachers..." 
+              className="pl-8" 
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -56,7 +72,7 @@ export default function TeachersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead className="hidden md:table-cell">Subject</TableHead>
+                <TableHead>Subject</TableHead>
                 <TableHead className="hidden lg:table-cell">Experience</TableHead>
                 <TableHead>Monthly Earnings</TableHead>
                 <TableHead>
@@ -65,7 +81,7 @@ export default function TeachersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {teachers.map((teacher) => (
+              {filteredTeachers.map((teacher) => (
                 <TableRow key={teacher.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -76,7 +92,9 @@ export default function TeachersPage() {
                       <div className="font-medium">{teacher.name}</div>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">{teacher.subject}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{teacher.subject}</Badge>
+                  </TableCell>
                   <TableCell className="hidden lg:table-cell">{teacher.experience}</TableCell>
                   <TableCell>
                     {teacher.earnings}

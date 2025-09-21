@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import {
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -19,13 +20,20 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useState, useMemo } from "react"
-import { classes } from "@/lib/data"
+import { classes, students } from "@/lib/data"
 import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/hooks/use-toast"
 
-export function AddStudentForm() {
+export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void }) {
+    const [name, setName] = useState('');
+    const [fatherName, setFatherName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [college, setCollege] = useState('');
+    const [address, setAddress] = useState('');
     const [selectedClass, setSelectedClass] = useState<string | null>(null);
     const [totalFee, setTotalFee] = useState(0);
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+    const { toast } = useToast();
 
     const handleClassChange = (value: string) => {
         setSelectedClass(value);
@@ -47,6 +55,36 @@ export function AddStudentForm() {
         return totalFee / selectedSubjects.length;
     }, [totalFee, selectedSubjects.length]);
 
+    const handleSubmit = () => {
+        if (!name || !fatherName || !phone || !college || !address || !selectedClass || totalFee <= 0 || selectedSubjects.length === 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Please fill out all fields.',
+            });
+            return;
+        }
+
+        const newStudentId = `S${(students.length + 1).toString().padStart(3, '0')}`;
+        const currentClassDetails = classes.find(c => c.id === selectedClass);
+        const newStudent = {
+            id: newStudentId,
+            name,
+            class: currentClassDetails?.name || '',
+            subjects: selectedSubjects.map(subjectId => currentClassDetails?.subjects.find(s => s.id === subjectId)?.name || '').join(', '),
+            feeStatus: 'Pending',
+            avatar: `https://picsum.photos/seed/${newStudentId}/40/40`,
+        };
+
+        students.push(newStudent);
+        onStudentAdded();
+
+        toast({
+            title: 'Student Added',
+            description: `${name} has been successfully added.`,
+        });
+    };
+
 
     const currentClass = classes.find(c => c.id === selectedClass);
 
@@ -62,26 +100,26 @@ export function AddStudentForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Enter student's full name" />
+                <Input id="name" placeholder="Enter student's full name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
              <div className="grid gap-2">
                 <Label htmlFor="fatherName">Father's Name</Label>
-                <Input id="fatherName" placeholder="Enter father's name" />
+                <Input id="fatherName" placeholder="Enter father's name" value={fatherName} onChange={(e) => setFatherName(e.target.value)} />
             </div>
           </div>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" type="tel" placeholder="Enter phone number" />
+                <Input id="phone" type="tel" placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
              <div className="grid gap-2">
                 <Label htmlFor="college">College Name</Label>
-                <Input id="college" placeholder="Enter college name" />
+                <Input id="college" placeholder="Enter college name" value={college} onChange={(e) => setCollege(e.target.value)} />
             </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="address">Address</Label>
-            <Textarea id="address" placeholder="Enter student's address" />
+            <Textarea id="address" placeholder="Enter student's address" value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
@@ -103,6 +141,7 @@ export function AddStudentForm() {
                     id="totalFee" 
                     type="number" 
                     placeholder="Enter total monthly fee" 
+                    value={totalFee}
                     onChange={(e) => setTotalFee(Number(e.target.value))}
                 />
             </div>
@@ -134,7 +173,9 @@ export function AddStudentForm() {
           )}
         </div>
         <DialogFooter>
-          <Button type="submit">Add Student</Button>
+            <DialogClose asChild>
+                <Button type="button" onClick={handleSubmit}>Add Student</Button>
+            </DialogClose>
         </DialogFooter>
       </DialogContent>
   )

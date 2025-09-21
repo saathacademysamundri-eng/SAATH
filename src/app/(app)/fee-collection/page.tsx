@@ -27,11 +27,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select"
 import { students } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
-import { AddStudentForm } from './add-student-form';
-import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { MoreHorizontal, Search } from 'lucide-react';
 import { useState } from 'react';
 
 function getFeeStatusBadge(status: string) {
@@ -50,47 +55,40 @@ function getFeeStatusBadge(status: string) {
 }
 
 
-export default function StudentsPage() {
+export default function FeeCollectionPage() {
   const [studentList, setStudentList] = useState(students);
   const [search, setSearch] = useState('');
 
-  const handleStudentAdded = () => {
-    setStudentList([...students]);
+  const handleStatusChange = (studentId: string, newStatus: string) => {
+    const updatedStudents = studentList.map(student =>
+      student.id === studentId ? { ...student, feeStatus: newStatus } : student
+    );
+    setStudentList(updatedStudents);
   };
 
   const filteredStudents = studentList.filter(student =>
-    student.name.toLowerCase().includes(search.toLowerCase())
+    student.name.toLowerCase().includes(search.toLowerCase()) ||
+    student.id.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Students</h1>
-          <p className="text-muted-foreground">
-            Manage student profiles, fees, and results.
-          </p>
-        </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle />
-              Add Student
-            </Button>
-          </DialogTrigger>
-          <AddStudentForm onStudentAdded={handleStudentAdded} />
-        </Dialog>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Fee Collection</h1>
+        <p className="text-muted-foreground">
+          Track and manage student fee payments.
+        </p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Student List</CardTitle>
+          <CardTitle>Fee Status</CardTitle>
           <CardDescription>
-            A list of all students in the academy.
+            Update the fee status for each student.
           </CardDescription>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search students..." 
+              placeholder="Search by name or roll number..." 
               className="pl-8" 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -104,7 +102,6 @@ export default function StudentsPage() {
                 <TableHead>Roll #</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead className="hidden md:table-cell">Class</TableHead>
-                <TableHead className="hidden lg:table-cell">Subjects</TableHead>
                 <TableHead>Fee Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -125,7 +122,6 @@ export default function StudentsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{student.class}</TableCell>
-                  <TableCell className="hidden lg:table-cell">{student.subjects}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={cn('font-normal', getFeeStatusBadge(student.feeStatus))}>
                         {student.feeStatus}
@@ -140,13 +136,11 @@ export default function StudentsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
-                          Delete
-                        </DropdownMenuItem>
+                        <DropdownMenuLabel>Update Status</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleStatusChange(student.id, 'Paid')}>Paid</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(student.id, 'Pending')}>Pending</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(student.id, 'Partial')}>Partial</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(student.id, 'Overdue')}>Overdue</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

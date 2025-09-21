@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import {
   BookUser,
+  DollarSign,
   GraduationCap,
   LayoutDashboard,
   LifeBuoy,
@@ -38,6 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/students', label: 'Students', icon: Users },
     { href: '/teachers', label: 'Teachers', icon: BookUser },
     { href: '/classes', label: 'Classes', icon: School },
+    { href: '/fee-collection', label: 'Fee Collection', icon: DollarSign },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
