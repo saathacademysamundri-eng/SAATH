@@ -15,7 +15,7 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
   
   const paidAmount = Number(searchParams.get('amount') || '0');
   const balance = Number(searchParams.get('balance') || '0');
-  const totalFee = Number(search_params.get('total') || '0');
+  const totalFee = Number(searchParams.get('total') || '0');
   
   const receiptDate = useMemo(() => format(new Date(), 'dd/MM/yyyy'), []);
   const receiptId = useMemo(() => `INV-${Date.now()}`.substring(0, 15), []);
