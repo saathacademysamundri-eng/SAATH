@@ -2,7 +2,7 @@
 
 import { Header } from '@/components/header';
 import { Logo } from '@/components/logo';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useSettings } from '@/hooks/use-settings';
 import {
   Sidebar,
   SidebarContent,
@@ -18,7 +18,6 @@ import {
 import {
   BookUser,
   DollarSign,
-  GraduationCap,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
@@ -33,6 +32,7 @@ import React from 'react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { settings } = useSettings();
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -51,7 +51,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap font-headline text-lg font-bold text-primary transition-all group-data-[collapsible=icon]:w-0">
               <Logo noText />
               <span className="transition-opacity group-data-[collapsible=icon]:opacity-0">
-                The Spirit School
+                {settings.name}
               </span>
             </div>
             <SidebarTrigger className="hidden md:flex" />

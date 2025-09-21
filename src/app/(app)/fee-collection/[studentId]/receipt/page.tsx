@@ -1,21 +1,21 @@
 'use client';
 
-import { Logo } from '@/components/logo';
+import { useSettings } from '@/hooks/use-settings';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { students } from '@/lib/data';
 import { notFound, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Separator } from '@/components/ui/separator';
 
 export default function FeeReceiptPage({ params }: { params: { studentId: string } }) {
   const { studentId } = params;
   const searchParams = useSearchParams();
+  const { settings } = useSettings();
   const student = useMemo(() => students.find(s => s.id === studentId), [studentId]);
   
   const paidAmount = Number(searchParams.get('amount') || '0');
   const balance = Number(searchParams.get('balance') || '0');
-  const totalFee = Number(searchParams.get('total') || '0');
+  const totalFee = Number(search_params.get('total') || '0');
   
   const receiptDate = useMemo(() => format(new Date(), 'dd/MM/yyyy'), []);
   const receiptId = useMemo(() => `INV-${Date.now()}`.substring(0, 15), []);
@@ -43,13 +43,13 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
                 <CardHeader className="text-center space-y-2 border-b pb-4">
                     <div className="flex w-full justify-center">
                         <div className="h-16 w-16">
-                            <img src="/logo.png" alt="Academy Logo" className="h-full w-full object-contain" />
+                            <img src={settings.logo} alt="Academy Logo" className="h-full w-full object-contain" />
                         </div>
                     </div>
                     <div>
-                        <h1 className='text-2xl font-bold'>The Spirit School Samundri</h1>
-                        <p className='text-sm text-muted-foreground'>Housing Colony 2, Samundri Faisalabad</p>
-                        <p className='text-sm text-muted-foreground'>Phone: 0333 9114333</p>
+                        <h1 className='text-2xl font-bold'>{settings.name}</h1>
+                        <p className='text-sm text-muted-foreground'>{settings.address}</p>
+                        <p className='text-sm text-muted-foreground'>Phone: {settings.phone}</p>
                     </div>
                 </CardHeader>
                 <CardContent className="grid gap-6 text-sm pt-6">
@@ -105,7 +105,7 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
                 </CardContent>
                 <CardFooter className='flex-col items-center justify-center text-xs text-muted-foreground gap-1 pt-6 border-t'>
                     <p>Thank you for your payment!</p>
-                    <p>© {new Date().getFullYear()} The Spirit School Samundri. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} {settings.name}. All rights reserved.</p>
                 </CardFooter>
             </Card>
         </div>
