@@ -65,7 +65,7 @@ export default function FeeCollectionPage() {
       }
       
       const balance = searchedStudent.totalFee - paidAmount;
-      const receiptDate = format(new Date(), 'dd/MM/yyyy, hh:mm a');
+      const receiptDate = format(new Date(), 'dd/MM/yyyy');
       const receiptId = `RCPT-${Date.now()}`.substring(0, 15);
 
       const receiptWindow = window.open('', '_blank');
