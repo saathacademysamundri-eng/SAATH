@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from '@/components/header';
@@ -14,6 +15,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar
 } from '@/components/ui/sidebar';
 import {
   BookUser,
@@ -25,11 +27,28 @@ import {
   School,
   Settings,
   Users,
+  Pin,
+  PinOff,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+
+function SidebarPin() {
+    const { isPinned, setPinned } = useSidebar();
+    return (
+         <Button 
+            variant="ghost" 
+            size="icon" 
+            className="hidden md:flex h-8 w-8 absolute top-2 right-2 transition-opacity group-data-[collapsible=icon]:opacity-0" 
+            onClick={() => setPinned(!isPinned)}
+        >
+            {isPinned ? <PinOff /> : <Pin />}
+        </Button>
+    )
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -48,16 +67,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar side="left" variant="sidebar" collapsible="icon">
         <SidebarHeader>
-          <div className="flex items-center justify-between p-2">
+          <div className="flex items-center justify-between p-2 relative">
             <div className="flex flex-col items-center gap-2 w-full">
-                <div className='h-16 w-16 bg-muted rounded-full flex items-center justify-center overflow-hidden'>
+                <div className='h-16 w-16 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
                     <Logo noText={true} />
                 </div>
                 <div className="transition-opacity group-data-[collapsible=icon]:opacity-0">
                     <Badge variant="secondary" className="font-mono text-xs">{settings.academicSession}</Badge>
                 </div>
             </div>
-            <SidebarTrigger className="hidden md:flex absolute top-2 right-2" />
+            <SidebarPin />
           </div>
         </SidebarHeader>
         <SidebarContent>

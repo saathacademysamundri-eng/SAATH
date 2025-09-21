@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -20,10 +21,11 @@ import {
 } from "@/components/ui/tooltip"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
+const SIDEBAR_PIN_COOKIE_NAME = "sidebar_pin_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "3rem"
+const SIDEBAR_WIDTH_ICON = "3.5rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContext = {
@@ -34,6 +36,8 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  isPinned: boolean
+  setPinned: (pinned: boolean) => void;
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -53,6 +57,7 @@ const SidebarProvider = React.forwardRef<
     defaultOpen?: boolean
     open?: boolean
     onOpenChange?: (open: boolean) => void
+    defaultPinned?: boolean;
   }
 >(
   (
@@ -60,6 +65,7 @@ const SidebarProvider = React.forwardRef<
       defaultOpen = true,
       open: openProp,
       onOpenChange: setOpenProp,
+      defaultPinned = false,
       className,
       style,
       children,
@@ -88,6 +94,20 @@ const SidebarProvider = React.forwardRef<
       },
       [setOpenProp, open]
     )
+
+    const [isPinned, setPinnedState] = React.useState(defaultPinned);
+
+    const setPinned = React.useCallback((pinned: boolean) => {
+      setPinnedState(pinned);
+      document.cookie = `${SIDEBAR_PIN_COOKIE_NAME}=${pinned}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+    }, []);
+
+    React.useEffect(() => {
+        const pinCookie = document.cookie.split('; ').find(row => row.startsWith(`${SIDEBAR_PIN_COOKIE_NAME}=`));
+        if (pinCookie) {
+            setPinnedState(pinCookie.split('=')[1] === 'true');
+        }
+    }, []);
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
@@ -125,8 +145,10 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
+        isPinned,
+        setPinned
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, isPinned, setPinned]
     )
 
     return (
@@ -175,7 +197,19 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const { isMobile, state, openMobile, setOpenMobile, isPinned, setOpen } = useSidebar()
+
+    const handleMouseEnter = () => {
+        if (!isPinned) {
+            setOpen(true);
+        }
+    }
+
+    const handleMouseLeave = () => {
+        if (!isPinned) {
+            setOpen(false);
+        }
+    }
 
     if (collapsible === "none") {
       return (
@@ -220,6 +254,8 @@ const Sidebar = React.forwardRef<
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
         data-side={side}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {/* This is what handles the sidebar gap on desktop */}
         <div
