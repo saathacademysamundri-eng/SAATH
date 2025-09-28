@@ -387,3 +387,16 @@ export async function getReports(): Promise<Report[]> {
         } as Report;
     });
 }
+
+// Attendance Functions
+export async function saveAttendance(attendanceData: { classId: string; date: string; records: { [studentId: string]: 'Present' | 'Absent' } }) {
+    try {
+        const docId = `${attendanceData.date}_${attendanceData.classId}`;
+        const docRef = doc(db, 'attendance', docId);
+        await setDoc(docRef, attendanceData, { merge: true });
+        return { success: true, message: 'Attendance saved successfully.' };
+    } catch (error) {
+        console.error('Error saving attendance:', error);
+        return { success: false, message: (error as Error).message };
+    }
+}

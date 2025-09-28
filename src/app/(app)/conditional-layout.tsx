@@ -31,6 +31,8 @@ import {
   TrendingUp,
   TrendingDown,
   FileText,
+  ClipboardCheck,
+  LineChart,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -72,10 +74,12 @@ function MainSidebar() {
     { href: '/students', label: 'Students', icon: Users },
     { href: '/teachers', label: 'Teachers', icon: BookUser },
     { href: '/classes', label: 'Classes', icon: School },
+    { href: '/attendance', label: 'Attendance', icon: ClipboardCheck },
     { href: '/fee-collection', label: 'Fee Collection', icon: DollarSign },
     { href: '/income', label: 'Income', icon: TrendingUp },
     { href: '/expenses', label: 'Expenses', icon: TrendingDown },
-    { href: '/reports', label: 'Reports', icon: FileText },
+    { href: '/reports', label: 'General Reports', icon: LineChart },
+    { href: '/earnings-reports', label: 'Earnings Reports', icon: FileText },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
   ];
 
