@@ -200,7 +200,7 @@ export const classes: Class[] = [
             { id: 'S08', name: 'Pre-Med. Biology' },
             { id: 'S02', name: 'Physics' },
             { id: 'S03', name: 'Chemistry' },
-            { id_ 'S06', name: 'English' },
+            { id: 'S06', name: 'English' },
         ] 
     },
      { 
@@ -211,7 +211,7 @@ export const classes: Class[] = [
             { id: 'S08', name: 'Pre-Med. Biology' },
             { id: 'S02', name: 'Physics' },
             { id: 'S03', name: 'Chemistry' },
-            { id_ 'S06', name: 'English' },
+            { id: 'S06', name: 'English' },
         ] 
     },
 ];
