@@ -84,7 +84,7 @@ export let students: Student[] = [
         ], 
         feeStatus: 'Paid', 
         avatar: 'https://picsum.photos/seed/101/40/40', 
-        totalFee: 3000 
+        totalFee: 0 
     },
     { 
         id: 'S002', 
@@ -108,7 +108,7 @@ export let students: Student[] = [
         ], 
         feeStatus: 'Partial', 
         avatar: 'https://picsum.photos/seed/103/40/40', 
-        totalFee: 2000 
+        totalFee: 1000 
     },
     { 
         id: 'S004', 
@@ -120,7 +120,7 @@ export let students: Student[] = [
         ], 
         feeStatus: 'Paid', 
         avatar: 'https://picsum.photos/seed/104/40/40', 
-        totalFee: 4000 
+        totalFee: 0 
     },
     { 
         id: 'S005', 
@@ -143,7 +143,7 @@ export let students: Student[] = [
         ], 
         feeStatus: 'Paid', 
         avatar: 'https://picsum.photos/seed/106/40/40', 
-        totalFee: 2500 
+        totalFee: 0 
     },
     { 
         id: 'S007', 
@@ -200,7 +200,7 @@ export const classes: Class[] = [
             { id: 'S08', name: 'Pre-Med. Biology' },
             { id: 'S02', name: 'Physics' },
             { id: 'S03', name: 'Chemistry' },
-            { id: 'S06', name: 'English' },
+            { id_ 'S06', name: 'English' },
         ] 
     },
      { 
@@ -211,7 +211,7 @@ export const classes: Class[] = [
             { id: 'S08', name: 'Pre-Med. Biology' },
             { id: 'S02', name: 'Physics' },
             { id: 'S03', name: 'Chemistry' },
-            { id: 'S06', name: 'English' },
+            { id_ 'S06', name: 'English' },
         ] 
     },
 ];

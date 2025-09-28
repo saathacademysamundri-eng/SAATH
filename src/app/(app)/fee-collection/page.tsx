@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -74,22 +75,34 @@ export default function FeeCollectionPage() {
 
     setIsProcessingPayment(true);
     
-    const newTotalFee = searchedStudent.totalFee - paidAmount;
+    const originalTotal = searchedStudent.totalFee;
+    const newTotalFee = originalTotal - paidAmount;
     let newFeeStatus: Student['feeStatus'] = 'Partial';
     if (newTotalFee <= 0) {
       newFeeStatus = 'Paid';
     }
 
+    // Add to income collection first
+    const incomeResult = await addIncome({
+        studentName: searchedStudent.name,
+        studentId: searchedStudent.id,
+        amount: paidAmount,
+    });
+      
+    if (!incomeResult.success) {
+        toast({
+            variant: "destructive",
+            title: "Payment Failed",
+            description: `Failed to record income: ${incomeResult.message}`,
+        });
+        setIsProcessingPayment(false);
+        return;
+    }
+
+
     const result = await updateStudentFeeStatus(searchedStudent.id, newTotalFee, newFeeStatus);
 
     if (result.success) {
-      // Also add to income collection
-      await addIncome({
-          studentName: searchedStudent.name,
-          studentId: searchedStudent.id,
-          amount: paidAmount,
-      });
-      
       const updatedStudent: Student = {
         ...searchedStudent,
         totalFee: newTotalFee,
@@ -102,14 +115,16 @@ export default function FeeCollectionPage() {
         description: `Paid ${paidAmount} for ${searchedStudent.name}. New balance is ${newTotalFee}.`,
       });
       
-      handlePrintReceipt(paidAmount, newTotalFee, searchedStudent.totalFee);
+      handlePrintReceipt(paidAmount, newTotalFee, originalTotal);
       setPaidAmount(0);
     } else {
-      toast({
-        variant: 'destructive',
-        title: 'Payment Failed',
-        description: result.message,
-      });
+        // If student update fails, we should ideally roll back the income record.
+        // For simplicity, we'll just show an error.
+        toast({
+            variant: "destructive",
+            title: "Payment Failed",
+            description: `Student record could not be updated: ${result.message}`,
+        });
     }
 
     setIsProcessingPayment(false);

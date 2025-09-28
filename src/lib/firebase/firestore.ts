@@ -1,6 +1,6 @@
 
 
-import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense } from '@/lib/data';
 
@@ -226,11 +226,11 @@ export async function seedDatabase() {
 // Income Functions
 export async function addIncome(incomeData: Omit<Income, 'id' | 'date'>) {
     try {
-        await addDoc(collection(db, 'income'), {
+        const docRef = await addDoc(collection(db, 'income'), {
             ...incomeData,
             date: serverTimestamp()
         });
-        return { success: true, message: 'Income record added.' };
+        return { success: true, message: 'Income record added.', id: docRef.id };
     } catch (error) {
         return { success: false, message: (error as Error).message };
     }
@@ -249,6 +249,90 @@ export async function getIncome(): Promise<Income[]> {
         } as Income;
     });
 }
+
+export async function deleteIncomeRecord(incomeId: string) {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const incomeRef = doc(db, 'income', incomeId);
+            const incomeDoc = await transaction.get(incomeRef);
+
+            if (!incomeDoc.exists()) {
+                throw new Error("Income record not found.");
+            }
+
+            const incomeData = incomeDoc.data() as Income;
+            const studentRef = doc(db, 'students', incomeData.studentId);
+            const studentDoc = await transaction.get(studentRef);
+
+            if (!studentDoc.exists()) {
+                // If student doesn't exist, just delete the income record
+                transaction.delete(incomeRef);
+                return;
+            }
+
+            const studentData = studentDoc.data() as Student;
+            
+            // Add the income amount back to the student's totalFee (dues)
+            const newTotalFee = studentData.totalFee + incomeData.amount;
+            
+            // Update student's fee status
+            const newFeeStatus: Student['feeStatus'] = newTotalFee > 0 ? 'Partial' : 'Paid';
+
+            transaction.update(studentRef, {
+                totalFee: newTotalFee,
+                feeStatus: newFeeStatus
+            });
+            
+            transaction.delete(incomeRef);
+        });
+
+        return { success: true, message: 'Income record deleted and student balance updated.' };
+    } catch (error) {
+        console.error("Error deleting income record: ", error);
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+
+export async function updateIncomeRecord(incomeId: string, newAmount: number) {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const incomeRef = doc(db, 'income', incomeId);
+            const incomeDoc = await transaction.get(incomeRef);
+
+            if (!incomeDoc.exists()) {
+                throw new Error("Income record not found.");
+            }
+
+            const incomeData = incomeDoc.data() as Income;
+            const oldAmount = incomeData.amount;
+            const amountDifference = oldAmount - newAmount;
+
+            const studentRef = doc(db, 'students', incomeData.studentId);
+            const studentDoc = await transaction.get(studentRef);
+
+            if (studentDoc.exists()) {
+                const studentData = studentDoc.data() as Student;
+                const newTotalFee = studentData.totalFee + amountDifference;
+                const newFeeStatus: Student['feeStatus'] = newTotalFee > 0 ? (newTotalFee < studentData.totalFee ? 'Partial' : 'Pending') : 'Paid';
+
+                transaction.update(studentRef, {
+                    totalFee: newTotalFee,
+                    feeStatus: newFeeStatus
+                });
+            }
+
+            transaction.update(incomeRef, { amount: newAmount });
+        });
+
+        return { success: true, message: 'Income record updated and student balance adjusted.' };
+    } catch (error) {
+        console.error("Error updating income record: ", error);
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+
 
 // Expense Functions
 export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>) {
