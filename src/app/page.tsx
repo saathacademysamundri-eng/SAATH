@@ -9,7 +9,7 @@ export default function Home() {
         <Card className="shadow-2xl">
           <CardHeader>
             <div className="flex w-full justify-center">
-              <Logo />
+              <Logo onLogin={true} />
             </div>
           </CardHeader>
           <CardContent>
