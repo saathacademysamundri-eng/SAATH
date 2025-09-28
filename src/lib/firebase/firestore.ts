@@ -1,7 +1,7 @@
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { app } from './config';
-import { students as initialStudents, teachers, classes, Student, Teacher, Class, Subject, Income, Expense } from '@/lib/data';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense } from '@/lib/data';
 
 const db = getFirestore(app);
 
@@ -89,12 +89,14 @@ export async function getNextTeacherId(): Promise<string> {
     return `T${newNumber.toString().padStart(2, '0')}`;
 }
 
-export async function addTeacher(teacher: Omit<Teacher, 'id' | 'avatar'>) {
+export async function addTeacher(teacherData: Omit<Teacher, 'id' | 'avatar'>) {
     try {
         const newTeacherId = await getNextTeacherId();
         const newTeacher: Teacher = {
             id: newTeacherId,
-            name: teacher.name,
+            name: teacherData.name,
+            phone: teacherData.phone,
+            subjects: teacherData.subjects,
             avatar: `https://picsum.photos/seed/${newTeacherId}/40/40`,
         };
         await setDoc(doc(db, 'teachers', newTeacherId), newTeacher);
@@ -119,6 +121,20 @@ export async function getClasses(): Promise<Class[]> {
     }
     return classesData;
 }
+
+export async function getAllSubjects(): Promise<Subject[]> {
+    const classes = await getClasses();
+    const allSubjects = new Map<string, Subject>();
+    classes.forEach(c => {
+        c.subjects.forEach(s => {
+            if (!allSubjects.has(s.id)) {
+                allSubjects.set(s.id, s);
+            }
+        })
+    })
+    return Array.from(allSubjects.values());
+}
+
 
 export async function updateClassSubjects(classId: string, subjects: Subject[]) {
     try {
@@ -170,12 +186,12 @@ export async function seedDatabase() {
       batch.set(docRef, student);
     });
 
-    teachers.forEach(teacher => {
+    initialTeachers.forEach(teacher => {
       const docRef = doc(db, 'teachers', teacher.id);
       batch.set(docRef, teacher);
     });
 
-    classes.forEach(cls => {
+    initialClasses.forEach(cls => {
         const docRef = doc(db, 'classes', cls.id);
         const { subjects, ...classData } = cls;
         batch.set(docRef, { name: cls.name, id: cls.id });

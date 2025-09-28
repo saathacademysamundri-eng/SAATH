@@ -20,11 +20,11 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useState, useMemo, useEffect } from "react"
-import { teachers, subjectTeacherMap, type StudentSubject, type Subject, Class } from "@/lib/data"
+import { type StudentSubject, type Subject, Class, Teacher } from "@/lib/data"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { addStudent, getClasses, getNextStudentId } from "@/lib/firebase/firestore"
+import { addStudent, getClasses, getNextStudentId, getTeachers } from "@/lib/firebase/firestore"
 import { Loader2 } from "lucide-react"
 
 type SelectedSubjectInfo = {
@@ -44,13 +44,15 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
     const [selectedSubjects, setSelectedSubjects] = useState<SelectedSubjectInfo[]>([]);
     
     const [classes, setClasses] = useState<Class[]>([]);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            const classesData = await getClasses();
+            const [classesData, teachersData] = await Promise.all([getClasses(), getTeachers()]);
             setClasses(classesData);
+            setTeachers(teachersData);
         };
         fetchInitialData();
     }, []);
@@ -65,8 +67,9 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         if (isSelected) {
             setSelectedSubjects(prev => prev.filter(s => s.subject.id !== subject.id));
         } else {
-            const defaultTeacherId = subjectTeacherMap[subject.name] || teachers.find(t => t.id)?.id || null;
-            setSelectedSubjects(prev => [...prev, { subject, teacherId: defaultTeacherId }]);
+            // Find a teacher who teaches this subject
+            const defaultTeacher = teachers.find(t => t.subjects.includes(subject.name));
+            setSelectedSubjects(prev => [...prev, { subject, teacherId: defaultTeacher?.id || null }]);
         }
     }
     
@@ -218,6 +221,8 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                 <div className="grid gap-3 rounded-md border p-4">
                     {currentClass.subjects.map(subject => {
                         const selection = selectedSubjects.find(s => s.subject.id === subject.id);
+                        const availableTeachers = teachers.filter(t => t.subjects.includes(subject.name));
+                        
                         return (
                             <div key={subject.id} className="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-3">
                                 <Checkbox 
@@ -237,9 +242,13 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                                             <SelectValue placeholder="Select Teacher" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {teachers.map(teacher => (
-                                                <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
-                                            ))}
+                                            {availableTeachers.length > 0 ? (
+                                                availableTeachers.map(teacher => (
+                                                    <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
+                                                ))
+                                            ) : (
+                                                <div className="text-sm text-muted-foreground p-2">No teacher for this subject.</div>
+                                            )}
                                         </SelectContent>
                                     </Select>
                                     <div className="text-sm text-muted-foreground text-right">

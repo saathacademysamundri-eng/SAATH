@@ -34,6 +34,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { AddTeacherDialog } from './add-teacher-dialog';
+import { Badge } from '@/components/ui/badge';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
@@ -58,10 +59,10 @@ export default function TeachersPage() {
   }, []);
 
   const teacherStats = useMemo(() => {
-    const stats = new Map<string, { gross: number; net: number; subjects: Set<string> }>();
+    const stats = new Map<string, { gross: number; net: number }>();
     
     teachers.forEach(teacher => {
-        stats.set(teacher.id, { gross: 0, net: 0, subjects: new Set() });
+        stats.set(teacher.id, { gross: 0, net: 0 });
     });
 
     allStudents.forEach(student => {
@@ -71,7 +72,6 @@ export default function TeachersPage() {
           if (stats.has(subject.teacher_id)) {
               const currentStats = stats.get(subject.teacher_id)!;
               currentStats.gross += subject.fee_share;
-              currentStats.subjects.add(subject.subject_name);
           }
         });
       }
@@ -130,7 +130,6 @@ export default function TeachersPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Subject(s)</TableHead>
-                <TableHead>Gross Earnings</TableHead>
                 <TableHead>Net Earnings (70%)</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -149,13 +148,12 @@ export default function TeachersPage() {
                     </TableCell>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                   </TableRow>
                 ))
               ) : (
                 filteredTeachers.map((teacher) => {
-                  const stats = teacherStats.get(teacher.id) || { gross: 0, net: 0, subjects: new Set() };
+                  const stats = teacherStats.get(teacher.id) || { gross: 0, net: 0 };
                   return (
                   <TableRow key={teacher.id}>
                     <TableCell>
@@ -168,10 +166,9 @@ export default function TeachersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {stats.subjects.size > 0 ? Array.from(stats.subjects).join(', ') : 'N/A'}
-                    </TableCell>
-                    <TableCell>
-                      {stats.gross.toLocaleString()} PKR
+                      <div className="flex flex-wrap gap-1">
+                        {teacher.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
+                      </div>
                     </TableCell>
                     <TableCell className="font-semibold text-green-600">
                       {stats.net.toLocaleString()} PKR
@@ -187,7 +184,7 @@ export default function TeachersPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
-                            View Earnings
+                            View Profile
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
                               const printWindow = window.open(`/teachers/${teacher.id}?print=true`, '_blank');
