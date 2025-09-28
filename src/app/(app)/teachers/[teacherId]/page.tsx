@@ -15,8 +15,9 @@ type StudentEarning = {
   subjectName: string;
 };
 
-export default function TeacherEarningsPage({ params: { teacherId } }: { params: { teacherId: string } }) {
+export default function TeacherEarningsPage({ params }: { params: { teacherId: string } }) {
   const router = useRouter();
+  const { teacherId } = params;
   
   const teacher = useMemo(() => teachers.find(t => t.id === teacherId), [teacherId]);
 
