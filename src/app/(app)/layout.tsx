@@ -69,7 +69,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center justify-between p-2 relative">
             <div className="flex flex-col items-center gap-2 w-full">
-                <div className='h-16 w-16 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
+                <div className='h-12 w-12 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
                     <Logo noText={true} />
                 </div>
                 <div className="transition-opacity group-data-[collapsible=icon]:opacity-0">
@@ -88,7 +88,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <item.icon className="h-6 w-6" />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </Link>
@@ -101,7 +101,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
              <SidebarMenuItem>
                 <Link href="/settings">
                   <SidebarMenuButton tooltip="Settings" isActive={pathname.startsWith('/settings')}>
-                    <Settings className="h-5 w-5" />
+                    <Settings className="h-6 w-6" />
                     <span>Settings</span>
                   </SidebarMenuButton>
                 </Link>
@@ -109,7 +109,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <Link href="#">
                 <SidebarMenuButton tooltip="Support">
-                  <LifeBuoy className="h-5 w-5" />
+                  <LifeBuoy className="h-6 w-6" />
                   <span>Support</span>
                 </SidebarMenuButton>
               </Link>
@@ -117,7 +117,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <Link href="/">
                 <SidebarMenuButton tooltip="Log Out">
-                  <LogOut className="h-5 w-5" />
+                  <LogOut className="h-6 w-6" />
                   <span>Log Out</span>
                 </SidebarMenuButton>
               </Link>
