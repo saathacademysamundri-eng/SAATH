@@ -30,11 +30,7 @@ export default function StudentFeeDetailsPage({ params }: { params: { studentId:
           </p>
         </div>
         <Card className="max-w-2xl mx-auto w-full">
-            <CardHeader className="flex flex-row items-center gap-4">
-                 <Avatar className="h-16 w-16">
-                    <AvatarImage src={student.avatar} alt={student.name} data-ai-hint="person face" />
-                    <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                </Avatar>
+            <CardHeader>
                 <div className='grid gap-1'>
                     <CardTitle>{student.name}</CardTitle>
                     <CardDescription>

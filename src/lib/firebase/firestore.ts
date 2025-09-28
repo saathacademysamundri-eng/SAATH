@@ -29,9 +29,11 @@ export async function getStudent(id: string): Promise<Student | null> {
     return null;
 }
 
-export async function addStudent(student: Student) {
+export async function addStudent(student: Omit<Student, 'id'>) {
     try {
-        await setDoc(doc(db, 'students', student.id), student);
+        const newStudentId = await getNextStudentId();
+        const newStudentWithId = { ...student, id: newStudentId };
+        await setDoc(doc(db, 'students', newStudentId), newStudentWithId);
         return { success: true, message: "Student added successfully." };
     } catch (error) {
         console.error("Error adding student: ", error);
@@ -194,8 +196,9 @@ export async function seedDatabase() {
     const batch = writeBatch(db);
 
     initialStudents.forEach(student => {
+      const { ...studentData } = student;
       const docRef = doc(db, 'students', student.id);
-      batch.set(docRef, student);
+      batch.set(docRef, studentData);
     });
 
     initialTeachers.forEach(teacher => {

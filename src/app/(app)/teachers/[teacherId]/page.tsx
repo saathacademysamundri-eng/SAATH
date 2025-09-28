@@ -50,9 +50,8 @@ export default function TeacherProfilePage() {
       let currentTotalEarnings = 0;
 
       allStudentsData.forEach(student => {
-        if (student.feeStatus === 'Paid') {
-          student.subjects.forEach(subject => {
-            if (subject.teacher_id === teacherData.id) {
+        student.subjects.forEach(subject => {
+            if (subject.teacher_id === teacherData.id && student.feeStatus === 'Paid') {
               currentStudentEarnings.push({
                 student,
                 feeShare: subject.fee_share,
@@ -60,8 +59,7 @@ export default function TeacherProfilePage() {
               });
               currentTotalEarnings += subject.fee_share;
             }
-          });
-        }
+        });
       });
       
       setStudentEarnings(currentStudentEarnings);
@@ -194,11 +192,7 @@ export default function TeacherProfilePage() {
                                                 <TableRow key={`${student.id}-${index}`}>
                                                     <TableCell>
                                                         <div className="flex items-center gap-3">
-                                                            <Avatar className="h-8 w-8">
-                                                                <AvatarImage src={student.avatar} alt={student.name} data-ai-hint="person face" />
-                                                                <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                                                            </Avatar>
-                                                            <div>
+                                                           <div>
                                                                 <div className="font-medium">{student.name}</div>
                                                                 <div className="text-xs text-muted-foreground">{student.id}</div>
                                                             </div>

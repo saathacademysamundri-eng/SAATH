@@ -21,7 +21,6 @@ export type Student = {
     class: string;
     subjects: StudentSubject[];
     feeStatus: 'Paid' | 'Pending' | 'Partial' | 'Overdue';
-    avatar: string;
     totalFee: number;
 };
 
@@ -57,11 +56,11 @@ export const dashboardStats = [
 ];
 
 export const recentActivities = [
-    { name: 'Ali Khan', amount: '1000 PKR', status: 'Paid', date: '5 minutes ago', image: 'https://picsum.photos/seed/1/40/40' },
-    { name: 'New admission: Sara Ahmed', amount: '', status: 'Admission', date: '10 minutes ago', image: 'https://picsum.photos/seed/2/40/40' },
-    { name: 'Fatima Aslam', amount: '1000 PKR', status: 'Paid', date: '30 minutes ago', image: 'https://picsum.photos/seed/3/40/40' },
-    { name: 'Test created: Physics', amount: '', status: 'Exam', date: '1 hour ago', image: 'https://picsum.photos/seed/4/40/40' },
-    { name: 'Umar Farooq', amount: '500 PKR', status: 'Partial', date: '2 hours ago', image: 'https://picsum.photos/seed/5/40/40' },
+    { name: 'Ali Khan', amount: '1000 PKR', status: 'Paid', date: '5 minutes ago' },
+    { name: 'New admission: Sara Ahmed', amount: '', status: 'Admission', date: '10 minutes ago' },
+    { name: 'Fatima Aslam', amount: '1000 PKR', status: 'Paid', date: '30 minutes ago' },
+    { name: 'Test created: Physics', amount: '', status: 'Exam', date: '1 hour ago' },
+    { name: 'Umar Farooq', amount: '500 PKR', status: 'Partial', date: '2 hours ago' },
 ];
 
 export const feeCollectionData = [
@@ -83,7 +82,6 @@ export let students: Student[] = [
             { subject_name: 'Physics', teacher_id: 'T01', fee_share: 1500 }
         ], 
         feeStatus: 'Paid', 
-        avatar: 'https://picsum.photos/seed/101/40/40', 
         totalFee: 0 
     },
     { 
@@ -95,7 +93,6 @@ export let students: Student[] = [
             { subject_name: 'Biology', teacher_id: 'T05', fee_share: 1250 }
         ], 
         feeStatus: 'Pending', 
-        avatar: 'https://picsum.photos/seed/102/40/40', 
         totalFee: 2500 
     },
     { 
@@ -107,7 +104,6 @@ export let students: Student[] = [
              { subject_name: 'Computer Science', teacher_id: 'T03', fee_share: 1000 }
         ], 
         feeStatus: 'Partial', 
-        avatar: 'https://picsum.photos/seed/103/40/40', 
         totalFee: 1000 
     },
     { 
@@ -119,7 +115,6 @@ export let students: Student[] = [
              { subject_name: 'Chemistry', teacher_id: 'T02', fee_share: 2000 }
         ], 
         feeStatus: 'Paid', 
-        avatar: 'https://picsum.photos/seed/104/40/40', 
         totalFee: 0 
     },
     { 
@@ -130,7 +125,6 @@ export let students: Student[] = [
             { subject_name: 'Pre-Eng. Mathematics', teacher_id: 'T03', fee_share: 4500 }
         ], 
         feeStatus: 'Overdue', 
-        avatar: 'https://picsum.photos/seed/105/40/40', 
         totalFee: 4500 
     },
     { 
@@ -142,7 +136,6 @@ export let students: Student[] = [
             { subject_name: 'English', teacher_id: 'T04', fee_share: 1250 }
         ], 
         feeStatus: 'Paid', 
-        avatar: 'https://picsum.photos/seed/106/40/40', 
         totalFee: 0 
     },
     { 
@@ -154,7 +147,6 @@ export let students: Student[] = [
             { subject_name: 'Physics', teacher_id: 'T01', fee_share: 1500 }
         ], 
         feeStatus: 'Pending', 
-        avatar: 'https://picsum.photos/seed/107/40/40', 
         totalFee: 3000 
     },
 ];

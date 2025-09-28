@@ -102,7 +102,6 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         setIsSaving(true);
         const newStudentId = await getNextStudentId();
         const currentClassDetails = classes.find(c => c.id === selectedClassId);
-        const avatarSeed = gender === 'male' ? newStudentId : `F${newStudentId}`;
 
         const studentSubjects: StudentSubject[] = selectedSubjects.map(s => ({
             subject_name: s.subject.name,
@@ -116,7 +115,6 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             class: currentClassDetails?.name || '',
             subjects: studentSubjects,
             feeStatus: 'Pending' as const,
-            avatar: `https://picsum.photos/seed/${avatarSeed}/40/40`,
             totalFee: totalFee,
         };
 

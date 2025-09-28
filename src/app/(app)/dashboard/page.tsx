@@ -123,10 +123,6 @@ export default function DashboardPage() {
           <CardContent className="grid gap-6">
             {recentActivities.map((activity, index) => (
               <div key={index} className="flex items-center gap-4">
-                <Avatar className="hidden h-9 w-9 sm:flex">
-                  <AvatarImage src={activity.image} alt={activity.name} data-ai-hint="person face" />
-                  <AvatarFallback>{activity.name.charAt(0)}</AvatarFallback>
-                </Avatar>
                 <div className="grid gap-1">
                   <p className="text-sm font-medium leading-none">
                     {activity.name}

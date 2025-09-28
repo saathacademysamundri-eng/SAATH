@@ -115,7 +115,6 @@ export default function StudentsPage() {
                     <TableCell><Skeleton className="h-5 w-12" /></TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Skeleton className="h-10 w-10 rounded-full" />
                         <Skeleton className="h-5 w-32" />
                       </div>
                     </TableCell>
@@ -129,13 +128,7 @@ export default function StudentsPage() {
                   <TableRow key={student.id}>
                     <TableCell className="font-medium">{student.id}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={student.avatar} alt={student.name} data-ai-hint="person face" />
-                          <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="font-medium">{student.name}</div>
-                      </div>
+                      <div className="font-medium">{student.name}</div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{student.class}</TableCell>
                     <TableCell className="hidden lg:table-cell">
