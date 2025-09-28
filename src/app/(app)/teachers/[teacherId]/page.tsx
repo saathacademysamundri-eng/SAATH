@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { teachers, students as allStudents, Student } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { TeacherEarningsClient } from './teacher-earnings-client';
+import { useMemo } from 'react';
 
 type StudentEarning = {
   student: Student;
@@ -14,30 +15,39 @@ type StudentEarning = {
 export default function TeacherEarningsPage({ params }: { params: { teacherId: string } }) {
   const { teacherId } = params;
 
-  const teacher = teachers.find(t => t.id === teacherId);
+  const teacher = useMemo(() => teachers.find(t => t.id === teacherId), [teacherId]);
+
+  const { studentEarnings, totalEarnings, teacherShare, academyShare } = useMemo(() => {
+    const studentEarnings: StudentEarning[] = [];
+    let totalEarnings = 0;
+
+    if (teacher) {
+      allStudents.forEach(student => {
+        // Only include earnings from students who have paid
+        if (student.feeStatus === 'Paid') {
+          student.subjects.forEach(subject => {
+            if (subject.teacher_id === teacher.id) {
+              studentEarnings.push({
+                student,
+                feeShare: subject.fee_share,
+                subjectName: subject.subject_name
+              });
+              totalEarnings += subject.fee_share;
+            }
+          });
+        }
+      });
+    }
+    
+    const teacherShare = totalEarnings * 0.7;
+    const academyShare = totalEarnings * 0.3;
+
+    return { studentEarnings, totalEarnings, teacherShare, academyShare };
+  }, [teacherId, teacher]);
 
   if (!teacher) {
     return notFound();
   }
-
-  const studentEarnings: StudentEarning[] = [];
-  let totalEarnings = 0;
-
-  allStudents.forEach(student => {
-    student.subjects.forEach(subject => {
-      if (subject.teacher_id === teacher.id) {
-        studentEarnings.push({
-          student,
-          feeShare: subject.fee_share,
-          subjectName: subject.subject_name
-        });
-        totalEarnings += subject.fee_share;
-      }
-    });
-  });
-  
-  const teacherShare = totalEarnings * 0.7;
-  const academyShare = totalEarnings * 0.3;
 
   return (
     <div className="flex flex-col gap-6" id="print-area">
@@ -97,7 +107,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
         <div className="lg:col-span-2">
             <Card>
                 <CardHeader>
-                    <CardTitle>Student Breakdown</CardTitle>
+                    <CardTitle>Student Breakdown (Paid Fees Only)</CardTitle>
                     <CardDescription>List of students contributing to the earnings.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -134,7 +144,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center text-muted-foreground">
-                                        No students assigned to this teacher yet.
+                                        No paid fees from assigned students yet.
                                     </TableCell>
                                 </TableRow>
                             )}
