@@ -11,6 +11,7 @@ import { Phone } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useParams } from 'next/navigation';
 
 type StudentEarning = {
   student: Student;
@@ -18,8 +19,9 @@ type StudentEarning = {
   subjectName: string;
 };
 
-export default function TeacherProfilePage({ params }: { params: { teacherId: string } }) {
-  const { teacherId } = params;
+export default function TeacherProfilePage() {
+  const params = useParams();
+  const teacherId = params.teacherId as string;
   
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [studentEarnings, setStudentEarnings] = useState<StudentEarning[]>([]);
@@ -27,6 +29,8 @@ export default function TeacherProfilePage({ params }: { params: { teacherId: st
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!teacherId) return;
+    
     async function fetchData() {
       setLoading(true);
       const [teacherData, allStudentsData] = await Promise.all([
