@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Printer } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export function TeacherEarningsClient({ 
   teacherId, 
@@ -12,21 +12,13 @@ export function TeacherEarningsClient({
   teacherName: string,
 }) {
   const router = useRouter();
-  const pathname = usePathname();
 
   const handlePrint = () => {
-    const printUrl = `${pathname}?print=true`;
-    const printWindow = window.open(printUrl, '_blank');
-    printWindow?.addEventListener('load', () => {
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 500);
-    });
+    window.print();
   };
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4 print:hidden">
       <Button variant="outline" size="icon" onClick={() => router.back()}>
         <ArrowLeft />
       </Button>

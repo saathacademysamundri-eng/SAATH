@@ -75,7 +75,7 @@ export default function TeacherProfilePage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
-                <Skeleton className="h-12 w-12" />
+                <Skeleton className="h-20 w-20 rounded-lg" />
                 <div className="space-y-2">
                     <Skeleton className="h-6 w-48" />
                     <Skeleton className="h-4 w-32" />
@@ -137,7 +137,7 @@ export default function TeacherProfilePage() {
       </Card>
       
        <Tabs defaultValue="earnings">
-        <TabsList>
+        <TabsList className="print:hidden">
             <TabsTrigger value="earnings">Earnings</TabsTrigger>
             <TabsTrigger value="profile">Profile Details</TabsTrigger>
         </TabsList>

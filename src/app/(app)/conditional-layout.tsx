@@ -32,7 +32,7 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -78,7 +78,7 @@ function MainSidebar() {
   ];
 
   return (
-    <Sidebar side="left" variant="sidebar" collapsible="icon">
+    <Sidebar side="left" variant="sidebar" collapsible="icon" className="print:hidden">
       <SidebarHeader>
         <div className="flex items-center justify-center p-2 relative group-data-[collapsible=icon]:justify-center">
           <div className="flex flex-col items-center gap-2">
@@ -139,8 +139,6 @@ function MainSidebar() {
 
 
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
-  const searchParams = useSearchParams();
-  const isPrintView = searchParams.get('print') === 'true';
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
 
@@ -161,10 +159,6 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
 
   if (!user) {
       return null;
-  }
-
-  if (isPrintView) {
-    return <main className="p-4 sm:p-6">{children}</main>;
   }
 
   return (
