@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils"
 
 export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teacher, onTeacherUpdated: () => void }) {
     const [name, setName] = useState(teacher.name)
-    const [phone, setPhone] = useState(teacher.phone)
+    const [phone, setPhone] = useState(teacher.phone || '')
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>(teacher.subjects || [])
     const [allSubjects, setAllSubjects] = useState<Subject[]>([])
     const [isSaving, setIsSaving] = useState(false)
