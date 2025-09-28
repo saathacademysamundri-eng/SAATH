@@ -68,7 +68,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             setSelectedSubjects(prev => prev.filter(s => s.subject.id !== subject.id));
         } else {
             // Find a teacher who teaches this subject
-            const defaultTeacher = teachers.find(t => t.subjects.includes(subject.name));
+            const defaultTeacher = teachers.find(t => (t.subjects || []).includes(subject.name));
             setSelectedSubjects(prev => [...prev, { subject, teacherId: defaultTeacher?.id || null }]);
         }
     }
@@ -221,7 +221,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                 <div className="grid gap-3 rounded-md border p-4">
                     {currentClass.subjects.map(subject => {
                         const selection = selectedSubjects.find(s => s.subject.id === subject.id);
-                        const availableTeachers = teachers.filter(t => t.subjects.includes(subject.name));
+                        const availableTeachers = teachers.filter(t => (t.subjects || []).includes(subject.name));
                         
                         return (
                             <div key={subject.id} className="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-3">
