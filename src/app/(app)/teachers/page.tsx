@@ -28,10 +28,12 @@ import {
 } from '@/components/ui/table';
 import { type Teacher, type Student } from '@/lib/data';
 import { getTeachers, getStudents } from '@/lib/firebase/firestore';
-import { MoreHorizontal, Printer, Search } from 'lucide-react';
+import { MoreHorizontal, Printer, Search, PlusCircle } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { AddTeacherDialog } from './add-teacher-dialog';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
@@ -40,17 +42,18 @@ export default function TeachersPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const fetchData = async () => {
+    setLoading(true);
+    const [teachersData, studentsData] = await Promise.all([
+      getTeachers(),
+      getStudents(),
+    ]);
+    setTeachers(teachersData);
+    setAllStudents(studentsData);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const [teachersData, studentsData] = await Promise.all([
-        getTeachers(),
-        getStudents(),
-      ]);
-      setTeachers(teachersData);
-      setAllStudents(studentsData);
-      setLoading(false);
-    };
     fetchData();
   }, []);
 
@@ -95,6 +98,15 @@ export default function TeachersPage() {
             View teacher profiles and their earnings.
           </p>
         </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2"/>
+              Add Teacher
+            </Button>
+          </DialogTrigger>
+          <AddTeacherDialog onTeacherAdded={fetchData} />
+        </Dialog>
       </div>
       <Card>
         <CardHeader>
@@ -178,10 +190,11 @@ export default function TeachersPage() {
                             View Earnings
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
-                              const printWindow = window.open(`/teachers/${teacher.id}`, '_blank');
+                              const printWindow = window.open(`/teachers/${teacher.id}?print=true`, '_blank');
                               printWindow?.addEventListener('load', () => {
                                 setTimeout(() => {
                                   printWindow?.print();
+                                  printWindow.close();
                                 }, 500);
                               });
                             }}>

@@ -67,13 +67,42 @@ export async function updateStudentFeeStatus(studentId: string, newBalance: numb
 
 export async function getTeachers(): Promise<Teacher[]> {
     const teachersCollection = collection(db, 'teachers');
-    const teachersSnap = await getDocs(teachersCollection);
+    const q = query(teachersCollection, orderBy("id"));
+    const teachersSnap = await getDocs(q);
     return teachersSnap.docs.map(doc => doc.data() as Teacher);
 }
 
 export async function getTeacher(id: string): Promise<Teacher | null> {
     const teacherDoc = await getDoc(doc(db, 'teachers', id));
     return teacherDoc.exists() ? teacherDoc.data() as Teacher : null;
+}
+
+export async function getNextTeacherId(): Promise<string> {
+    const q = query(collection(db, "teachers"), orderBy("id", "desc"), limit(1));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return "T01";
+    }
+    const lastId = querySnapshot.docs[0].id;
+    const lastNumber = parseInt(lastId.substring(1));
+    const newNumber = lastNumber + 1;
+    return `T${newNumber.toString().padStart(2, '0')}`;
+}
+
+export async function addTeacher(teacher: Omit<Teacher, 'id' | 'avatar'>) {
+    try {
+        const newTeacherId = await getNextTeacherId();
+        const newTeacher: Teacher = {
+            id: newTeacherId,
+            name: teacher.name,
+            avatar: `https://picsum.photos/seed/${newTeacherId}/40/40`,
+        };
+        await setDoc(doc(db, 'teachers', newTeacherId), newTeacher);
+        return { success: true, message: "Teacher added successfully." };
+    } catch (error) {
+        console.error("Error adding teacher: ", error);
+        return { success: false, message: (error as Error).message };
+    }
 }
 
 export async function getClasses(): Promise<Class[]> {
