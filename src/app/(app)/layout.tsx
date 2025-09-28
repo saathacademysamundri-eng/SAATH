@@ -68,8 +68,8 @@ function MainSidebar() {
   return (
     <Sidebar side="left" variant="sidebar" collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center justify-between p-2 relative">
-          <div className="flex flex-col items-center gap-2 w-full">
+        <div className="flex items-center justify-center p-2 relative group-data-[collapsible=icon]:justify-center">
+          <div className="flex flex-col items-center gap-2">
               <div className='h-12 w-12 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
                   <Logo noText={true} />
               </div>
@@ -88,9 +88,10 @@ function MainSidebar() {
                 <SidebarMenuButton
                   isActive={pathname.startsWith(item.href)}
                   tooltip={item.label}
+                  className="group-data-[collapsible=icon]:justify-center"
                 >
                   <item.icon className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                  <span>{item.label}</span>
+                  <span className='group-data-[collapsible=icon]:hidden'>{item.label}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
@@ -101,25 +102,25 @@ function MainSidebar() {
         <SidebarMenu>
            <SidebarMenuItem>
               <Link href="/settings">
-                <SidebarMenuButton tooltip="Settings" isActive={pathname.startsWith('/settings')}>
+                <SidebarMenuButton tooltip="Settings" isActive={pathname.startsWith('/settings')} className="group-data-[collapsible=icon]:justify-center">
                   <Settings className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                  <span>Settings</span>
+                  <span className='group-data-[collapsible=icon]:hidden'>Settings</span>
                 </SidebarMenuButton>
               </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <Link href="#">
-              <SidebarMenuButton tooltip="Support">
+              <SidebarMenuButton tooltip="Support" className="group-data-[collapsible=icon]:justify-center">
                 <LifeBuoy className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                <span>Support</span>
+                <span className='group-data-[collapsible=icon]:hidden'>Support</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <Link href="/">
-              <SidebarMenuButton tooltip="Log Out">
+              <SidebarMenuButton tooltip="Log Out" className="group-data-[collapsible=icon]:justify-center">
                 <LogOut className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                <span>Log Out</span>
+                <span className='group-data-[collapsible=icon]:hidden'>Log Out</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
