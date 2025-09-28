@@ -51,7 +51,7 @@ function SidebarPin() {
     )
 }
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+function MainSidebar() {
   const pathname = usePathname();
   const { settings } = useSettings();
   const { isPinned } = useSidebar();
@@ -66,67 +66,74 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <SidebarProvider>
-      <Sidebar side="left" variant="sidebar" collapsible="icon">
-        <SidebarHeader>
-          <div className="flex items-center justify-between p-2 relative">
-            <div className="flex flex-col items-center gap-2 w-full">
-                <div className='h-12 w-12 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
-                    <Logo noText={true} />
-                </div>
-                <div className="transition-opacity group-data-[collapsible=icon]:opacity-0">
-                    <Badge variant="secondary" className="font-mono text-xs">{settings.academicSession}</Badge>
-                </div>
-            </div>
-            <SidebarPin />
+    <Sidebar side="left" variant="sidebar" collapsible="icon">
+      <SidebarHeader>
+        <div className="flex items-center justify-between p-2 relative">
+          <div className="flex flex-col items-center gap-2 w-full">
+              <div className='h-12 w-12 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
+                  <Logo noText={true} />
+              </div>
+              <div className="transition-opacity group-data-[collapsible=icon]:opacity-0">
+                  <Badge variant="secondary" className="font-mono text-xs">{settings.academicSession}</Badge>
+              </div>
           </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {menuItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                  <SidebarMenuButton
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={item.label}
-                  >
-                    <item.icon className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <SidebarMenu>
-             <SidebarMenuItem>
-                <Link href="/settings">
-                  <SidebarMenuButton tooltip="Settings" isActive={pathname.startsWith('/settings')}>
-                    <Settings className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                    <span>Settings</span>
-                  </SidebarMenuButton>
-                </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <Link href="#">
-                <SidebarMenuButton tooltip="Support">
-                  <LifeBuoy className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                  <span>Support</span>
+          <SidebarPin />
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarMenu>
+          {menuItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <Link href={item.href}>
+                <SidebarMenuButton
+                  isActive={pathname.startsWith(item.href)}
+                  tooltip={item.label}
+                >
+                  <item.icon className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
+                  <span>{item.label}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <Link href="/">
-                <SidebarMenuButton tooltip="Log Out">
-                  <LogOut className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                  <span>Log Out</span>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+           <SidebarMenuItem>
+              <Link href="/settings">
+                <SidebarMenuButton tooltip="Settings" isActive={pathname.startsWith('/settings')}>
+                  <Settings className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
+                  <span>Settings</span>
                 </SidebarMenuButton>
               </Link>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="#">
+              <SidebarMenuButton tooltip="Support">
+                <LifeBuoy className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
+                <span>Support</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/">
+              <SidebarMenuButton tooltip="Log Out">
+                <LogOut className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
+                <span>Log Out</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
+
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <MainSidebar />
       <SidebarInset>
         <Header />
         <main className="flex-1 p-4 sm:p-6">{children}</main>
