@@ -19,6 +19,12 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
   const receiptDate = useMemo(() => format(new Date(), 'dd/MM/yyyy, hh:mm a'), []);
   const receiptId = useMemo(() => `RCPT-${Date.now()}`.substring(0, 15), []);
   
+  useEffect(() => {
+    if (!isSettingsLoading) {
+      setTimeout(() => window.print(), 500);
+    }
+  }, [isSettingsLoading]);
+
   if (isSettingsLoading) {
       return <div className="flex items-center justify-center h-screen">Loading receipt...</div>;
   }

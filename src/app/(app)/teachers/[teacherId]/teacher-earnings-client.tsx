@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export function TeacherEarningsClient({ teacherName }: { teacherName: string }) {
+export function TeacherEarningsClient({ teacherId, teacherName }: { teacherId: string, teacherName: string }) {
   const router = useRouter();
 
   const handlePrint = () => {
-    window.print();
+    window.open(`/teachers/${teacherId}`, '_blank');
   };
 
   return (

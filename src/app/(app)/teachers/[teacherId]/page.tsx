@@ -1,5 +1,4 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { teachers, students as allStudents, Student } from '@/lib/data';
@@ -42,7 +41,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
 
   return (
     <div className="flex flex-col gap-6" id="print-area">
-      <TeacherEarningsClient teacherName={teacher.name} />
+      <TeacherEarningsClient teacherId={teacher.id} teacherName={teacher.name} />
       
       <div className="text-center hidden print:block mb-6">
         <h1 className="text-2xl font-bold">{teacher.name} - Earnings Report</h1>
