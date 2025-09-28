@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -167,7 +168,7 @@ export default function TeachersPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {teacher.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
+                        {(teacher.subjects || []).map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
                       </div>
                     </TableCell>
                     <TableCell className="font-semibold text-green-600">
