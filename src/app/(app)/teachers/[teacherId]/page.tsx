@@ -4,7 +4,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { teachers, students as allStudents, Student } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { TeacherEarningsClient } from './teacher-earnings-client';
-import { useSettings } from '@/hooks/use-settings';
 
 type StudentEarning = {
   student: Student;
@@ -42,16 +41,18 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
 
   return (
     <div className="flex flex-col gap-6" id="print-area">
-      <TeacherEarningsClient teacherId={teacher.id} teacherName={teacher.name} />
+      <TeacherEarningsClient 
+        teacherId={teacher.id} 
+        teacherName={teacher.name}
+        totalEarnings={totalEarnings}
+        teacherShare={teacherShare}
+        academyShare={academyShare}
+        studentEarnings={studentEarnings.map(se => ({ student: { id: se.student.id, name: se.student.name }, feeShare: se.feeShare, subjectName: se.subjectName }))}
+      />
       
-      <div className="text-center hidden print:block mb-6">
-        <h1 className="text-2xl font-bold">{teacher.name} - Earnings Report</h1>
-        <p className="text-muted-foreground">Date: {new Date().toLocaleDateString()}</p>
-      </div>
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1 space-y-6">
-            <Card className="print:shadow-none print:border-none">
+            <Card>
                 <CardHeader className='flex-row items-center gap-4 space-y-0'>
                      <Avatar className="h-16 w-16">
                         <AvatarImage src={teacher.avatar} alt={teacher.name} data-ai-hint="person face" />
@@ -63,7 +64,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
                     </div>
                 </CardHeader>
             </Card>
-            <Card className="print:shadow-none print:border">
+            <Card>
                 <CardHeader>
                     <CardTitle>Gross Earnings</CardTitle>
                     <CardDescription>This is the total amount collected from students.</CardDescription>
@@ -72,7 +73,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
                     <p className="text-3xl font-bold">{totalEarnings.toLocaleString()} PKR</p>
                 </CardContent>
             </Card>
-             <Card className="border-green-500/50 print:border-green-500/50">
+             <Card className="border-green-500/50">
                 <CardHeader>
                     <CardTitle>Teacher's Share (70%)</CardTitle>
                 </CardHeader>
@@ -80,7 +81,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
                     <p className="text-3xl font-bold text-green-600">{teacherShare.toLocaleString()} PKR</p>
                 </CardContent>
             </Card>
-             <Card className="border-blue-500/50 print:border-blue-500/50">
+             <Card className="border-blue-500/50">
                 <CardHeader>
                     <CardTitle>Academy's Share (30%)</CardTitle>
                 </CardHeader>
@@ -90,7 +91,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
             </Card>
         </div>
         <div className="lg:col-span-2">
-            <Card className="print:shadow-none print:border-none">
+            <Card>
                 <CardHeader>
                     <CardTitle>Student Breakdown</CardTitle>
                     <CardDescription>List of students contributing to the earnings.</CardDescription>
@@ -110,7 +111,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
                                     <TableRow key={`${student.id}-${index}`}>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
-                                                <Avatar className="h-8 w-8 print:hidden">
+                                                <Avatar className="h-8 w-8">
                                                     <AvatarImage src={student.avatar} alt={student.name} data-ai-hint="person face" />
                                                     <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                                                 </Avatar>

@@ -5,79 +5,205 @@ import { useSettings } from '@/hooks/use-settings';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export function TeacherEarningsClient({ teacherId, teacherName }: { teacherId: string, teacherName: string }) {
+export function TeacherEarningsClient({ 
+  teacherId, 
+  teacherName,
+  totalEarnings,
+  teacherShare,
+  academyShare,
+  studentEarnings
+}: { 
+  teacherId: string, 
+  teacherName: string,
+  totalEarnings: number,
+  teacherShare: number,
+  academyShare: number,
+  studentEarnings: { student: { id: string; name: string; }; feeShare: number; subjectName: string; }[]
+}) {
   const router = useRouter();
   const { settings } = useSettings();
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
-      const reportContent = document.getElementById('print-area')?.innerHTML;
-      printWindow.document.write(`
+      const reportHtml = `
         <html>
           <head>
             <title>Earnings Report - ${teacherName}</title>
-            <link rel="stylesheet" href="/globals.css" />
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-                body { 
-                    font-family: 'PT Sans', sans-serif;
-                    margin: 20px;
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                margin: 20px;
+                color: #333;
+              }
+              .report-container {
+                max-width: 800px;
+                margin: auto;
+              }
+              .header {
+                display: flex;
+                align-items: center;
+                border-bottom: 2px solid #eee;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+              }
+              .header img {
+                height: 60px;
+                width: 60px;
+                object-fit: contain;
+                margin-right: 15px;
+              }
+              .header .academy-info {
+                flex-grow: 1;
+              }
+              .header h1 {
+                margin: 0;
+                font-size: 1.5rem;
+                font-weight: 600;
+              }
+              .header p {
+                margin: 2px 0;
+                font-size: 0.9rem;
+                color: #555;
+              }
+              .report-title {
+                text-align: center;
+                margin-bottom: 25px;
+              }
+              .report-title h2 {
+                margin: 0;
+                font-size: 1.8rem;
+                font-weight: bold;
+              }
+              .report-title p {
+                margin: 5px 0 0;
+                color: #666;
+              }
+              .summary-cards {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 20px;
+                margin-bottom: 25px;
+              }
+              .summary-card {
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 15px;
+                text-align: center;
+              }
+              .summary-card h3 {
+                margin: 0 0 5px;
+                font-size: 1rem;
+                font-weight: normal;
+                color: #555;
+              }
+              .summary-card .amount {
+                font-size: 1.75rem;
+                font-weight: bold;
+              }
+              .summary-card.teacher-share .amount {
+                color: #28a745;
+              }
+              .summary-card.academy-share .amount {
+                color: #007bff;
+              }
+              .student-breakdown {
+                border-top: 2px solid #eee;
+                padding-top: 15px;
+              }
+              .student-breakdown h3 {
+                font-size: 1.4rem;
+                margin-bottom: 15px;
+              }
+              .student-table {
+                width: 100%;
+                border-collapse: collapse;
+              }
+              .student-table th, .student-table td {
+                padding: 12px 8px;
+                text-align: left;
+                border-bottom: 1px solid #eee;
+              }
+              .student-table th {
+                font-weight: 600;
+                color: #333;
+              }
+              .student-table td:last-child {
+                text-align: right;
+                font-weight: 500;
+              }
+              @media print {
+                body {
+                  margin: 0;
                 }
-                .print-header {
-                    text-align: center;
-                    margin-bottom: 2rem;
-                    border-bottom: 1px solid #ccc;
-                    padding-bottom: 1rem;
+                .report-container {
+                  box-shadow: none;
                 }
-                .print-header img {
-                    height: 80px;
-                    width: 80px;
-                    object-fit: contain;
-                }
-                .print-header h1 {
-                    font-size: 1.5rem;
-                    font-weight: bold;
-                    margin: 0;
-                }
-                .print-header p {
-                    font-size: 0.875rem;
-                    color: #666;
-                    margin: 2px 0;
-                }
-                .print-hidden { display: none !important; }
-                .print-block { display: block !important; }
-                .print-shadow-none { box-shadow: none !important; }
-                .print-border { border: 1px solid #ddd !important; }
-                .print-border-none { border: none !important; }
-                .card { 
-                    border: 1px solid #e5e7eb; 
-                    border-radius: 0.5rem;
-                    margin-bottom: 1.5rem;
-                }
-                .card-header { padding: 1.5rem; }
-                .card-title { font-size: 1.25rem; font-weight: 600; }
-                .card-description { font-size: 0.875rem; color: #6b7280; }
-                .card-content { padding: 1.5rem; }
-                .table { width: 100%; border-collapse: collapse; }
-                .table th, .table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
-                .table th { color: #6b7280; }
-                .text-right { text-align: right; }
+              }
             </style>
           </head>
           <body>
-            <div class="print-header">
+            <div class="report-container">
+              <div class="header">
                 <img src="${settings.logo}" alt="Academy Logo" />
-                <h1>${settings.name}</h1>
-                <p>${settings.address}</p>
-                <p>Phone: ${settings.phone}</p>
+                <div class="academy-info">
+                  <h1>${settings.name}</h1>
+                  <p>${settings.address}</p>
+                  <p>Phone: ${settings.phone}</p>
+                </div>
+              </div>
+
+              <div class="report-title">
+                <h2>Earnings Report</h2>
+                <p>For: <strong>${teacherName}</strong> | Date: ${new Date().toLocaleDateString()}</p>
+              </div>
+
+              <div class="summary-cards">
+                <div class="summary-card">
+                  <h3>Total Gross Earnings</h3>
+                  <p class="amount">${totalEarnings.toLocaleString()} PKR</p>
+                </div>
+                <div class="summary-card teacher-share">
+                  <h3>Teacher's Share (70%)</h3>
+                  <p class="amount">${teacherShare.toLocaleString()} PKR</p>
+                </div>
+                <div class="summary-card academy-share">
+                  <h3>Academy's Share (30%)</h3>
+                  <p class="amount">${academyShare.toLocaleString()} PKR</p>
+                </div>
+              </div>
+
+              <div class="student-breakdown">
+                <h3>Student Breakdown</h3>
+                <table class="student-table">
+                  <thead>
+                    <tr>
+                      <th>Student Name</th>
+                      <th>Student ID</th>
+                      <th>Subject</th>
+                      <th style="text-align: right;">Fee Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${studentEarnings.map(item => `
+                      <tr>
+                        <td>${item.student.name}</td>
+                        <td>${item.student.id}</td>
+                        <td>${item.subjectName}</td>
+                        <td>${item.feeShare.toLocaleString()} PKR</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            ${reportContent}
           </body>
         </html>
-      `);
+      `;
+
+      printWindow.document.write(reportHtml);
       printWindow.document.close();
-      // Wait for content to load before printing
+      
       setTimeout(() => {
         printWindow.print();
         printWindow.close();
@@ -86,7 +212,7 @@ export function TeacherEarningsClient({ teacherId, teacherName }: { teacherId: s
   };
 
   return (
-    <div className="flex items-center gap-4 print:hidden">
+    <div className="flex items-center gap-4">
       <Button variant="outline" size="icon" onClick={() => router.back()}>
         <ArrowLeft />
       </Button>
