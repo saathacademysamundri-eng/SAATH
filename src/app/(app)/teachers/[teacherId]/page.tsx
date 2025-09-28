@@ -18,7 +18,7 @@ type StudentEarning = {
 export default function TeacherEarningsPage({ params }: { params: { teacherId: string } }) {
   const router = useRouter();
   
-  const teacher = useMemo(() => teachers.find(t => t.id === params.teacherId), [params.teacherId]);
+  const teacher = teachers.find(t => t.id === params.teacherId);
 
   const earningsData = useMemo(() => {
     if (!teacher) return { studentEarnings: [], totalEarnings: 0 };
