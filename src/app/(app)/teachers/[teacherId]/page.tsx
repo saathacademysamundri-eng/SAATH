@@ -1,13 +1,10 @@
-'use client';
-
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { teachers, students as allStudents, Student } from '@/lib/data';
-import { ArrowLeft, Printer } from 'lucide-react';
-import { notFound, useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { notFound } from 'next/navigation';
+import { TeacherEarningsClient } from './teacher-earnings-client';
 
 type StudentEarning = {
   student: Student;
@@ -16,63 +13,36 @@ type StudentEarning = {
 };
 
 export default function TeacherEarningsPage({ params }: { params: { teacherId: string } }) {
-  const router = useRouter();
   const { teacherId } = params;
 
-  const teacher = useMemo(() => teachers.find(t => t.id === teacherId), [teacherId]);
-
-  const earningsData = useMemo(() => {
-    if (!teacher) return { studentEarnings: [], totalEarnings: 0, teacherShare: 0, academyShare: 0 };
-
-    const studentEarnings: StudentEarning[] = [];
-    let totalEarnings = 0;
-
-    allStudents.forEach(student => {
-      student.subjects.forEach(subject => {
-        if (subject.teacher_id === teacher.id) {
-          studentEarnings.push({
-            student,
-            feeShare: subject.fee_share,
-            subjectName: subject.subject_name
-          });
-          totalEarnings += subject.fee_share;
-        }
-      });
-    });
-    
-    const teacherShare = totalEarnings * 0.7;
-    const academyShare = totalEarnings * 0.3;
-
-    return { studentEarnings, totalEarnings, teacherShare, academyShare };
-  }, [teacher]);
+  const teacher = teachers.find(t => t.id === teacherId);
 
   if (!teacher) {
     return notFound();
   }
-  
-  const { studentEarnings, totalEarnings, teacherShare, academyShare } = earningsData;
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const studentEarnings: StudentEarning[] = [];
+  let totalEarnings = 0;
+
+  allStudents.forEach(student => {
+    student.subjects.forEach(subject => {
+      if (subject.teacher_id === teacher.id) {
+        studentEarnings.push({
+          student,
+          feeShare: subject.fee_share,
+          subjectName: subject.subject_name
+        });
+        totalEarnings += subject.fee_share;
+      }
+    });
+  });
+  
+  const teacherShare = totalEarnings * 0.7;
+  const academyShare = totalEarnings * 0.3;
 
   return (
     <div className="flex flex-col gap-6" id="print-area">
-      <div className="flex items-center gap-4 print:hidden">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
-            <ArrowLeft />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Teacher Earnings</h1>
-          <p className="text-muted-foreground">
-            Earnings details for {teacher.name}.
-          </p>
-        </div>
-        <Button variant="outline" className="ml-auto" onClick={handlePrint}>
-            <Printer className="mr-2"/>
-            Print Report
-        </Button>
-      </div>
+      <TeacherEarningsClient teacherName={teacher.name} />
       
       <div className="text-center hidden print:block mb-6">
         <h1 className="text-2xl font-bold">{teacher.name} - Earnings Report</h1>
