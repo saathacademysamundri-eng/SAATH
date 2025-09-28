@@ -1,13 +1,16 @@
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type Student } from '@/lib/data';
+import { type Student, type Teacher } from '@/lib/data';
 import { getTeacher, getStudents } from '@/lib/firebase/firestore';
 import { Phone } from 'lucide-react';
-import { notFound } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type StudentEarning = {
   student: Student;
@@ -15,37 +18,90 @@ type StudentEarning = {
   subjectName: string;
 };
 
-export default async function TeacherProfilePage({ params }: { params: { teacherId: string } }) {
+export default function TeacherProfilePage({ params }: { params: { teacherId: string } }) {
   const { teacherId } = params;
   
-  const [teacher, allStudents] = await Promise.all([
-    getTeacher(teacherId),
-    getStudents()
-  ]);
+  const [teacher, setTeacher] = useState<Teacher | null>(null);
+  const [studentEarnings, setStudentEarnings] = useState<StudentEarning[]>([]);
+  const [totalEarnings, setTotalEarnings] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  if (!teacher) {
-    return notFound();
-  }
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      const [teacherData, allStudentsData] = await Promise.all([
+        getTeacher(teacherId),
+        getStudents()
+      ]);
 
-  const studentEarnings: StudentEarning[] = [];
-  let totalEarnings = 0;
+      if (!teacherData) {
+        setLoading(false);
+        return;
+      }
+      
+      setTeacher(teacherData);
 
-  allStudents.forEach(student => {
-    // Only include earnings from students who have paid
-    if (student.feeStatus === 'Paid') {
-      student.subjects.forEach(subject => {
-        if (subject.teacher_id === teacher.id) {
-          studentEarnings.push({
-            student,
-            feeShare: subject.fee_share,
-            subjectName: subject.subject_name
+      const currentStudentEarnings: StudentEarning[] = [];
+      let currentTotalEarnings = 0;
+
+      allStudentsData.forEach(student => {
+        if (student.feeStatus === 'Paid') {
+          student.subjects.forEach(subject => {
+            if (subject.teacher_id === teacherData.id) {
+              currentStudentEarnings.push({
+                student,
+                feeShare: subject.fee_share,
+                subjectName: subject.subject_name
+              });
+              currentTotalEarnings += subject.fee_share;
+            }
           });
-          totalEarnings += subject.fee_share;
         }
       });
+      
+      setStudentEarnings(currentStudentEarnings);
+      setTotalEarnings(currentTotalEarnings);
+      setLoading(false);
     }
-  });
-  
+
+    fetchData();
+  }, [teacherId]);
+
+  if (loading) {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
+                <Skeleton className="h-12 w-12" />
+                <div className="space-y-2">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                </div>
+            </div>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
+
+  if (!teacher) {
+    return (
+      <div className="text-center py-10">
+        <h2 className="text-2xl font-bold">Teacher not found</h2>
+        <p className="text-muted-foreground">The teacher with ID "{teacherId}" could not be found.</p>
+      </div>
+    );
+  }
+
   const teacherShare = totalEarnings * 0.7;
   const academyShare = totalEarnings * 0.3;
 
