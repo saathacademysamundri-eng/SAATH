@@ -35,6 +35,7 @@ import { usePathname } from 'next/navigation';
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 function SidebarPin() {
     const { isPinned, setPinned } = useSidebar();
@@ -53,6 +54,7 @@ function SidebarPin() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { settings } = useSettings();
+  const { isPinned } = useSidebar();
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -88,7 +90,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
-                    <item.icon className="h-6 w-6" />
+                    <item.icon className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </Link>
@@ -101,7 +103,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
              <SidebarMenuItem>
                 <Link href="/settings">
                   <SidebarMenuButton tooltip="Settings" isActive={pathname.startsWith('/settings')}>
-                    <Settings className="h-6 w-6" />
+                    <Settings className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
                     <span>Settings</span>
                   </SidebarMenuButton>
                 </Link>
@@ -109,7 +111,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <Link href="#">
                 <SidebarMenuButton tooltip="Support">
-                  <LifeBuoy className="h-6 w-6" />
+                  <LifeBuoy className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
                   <span>Support</span>
                 </SidebarMenuButton>
               </Link>
@@ -117,7 +119,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <Link href="/">
                 <SidebarMenuButton tooltip="Log Out">
-                  <LogOut className="h-6 w-6" />
+                  <LogOut className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
                   <span>Log Out</span>
                 </SidebarMenuButton>
               </Link>
