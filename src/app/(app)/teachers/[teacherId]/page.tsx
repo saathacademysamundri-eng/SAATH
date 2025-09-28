@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type Student, type Teacher } from '@/lib/data';
 import { getTeacher, getStudents } from '@/lib/firebase/firestore';
 import { Phone } from 'lucide-react';
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useParams } from 'next/navigation';
@@ -19,8 +19,9 @@ type StudentEarning = {
   subjectName: string;
 };
 
-export default function TeacherProfilePage({ params }: { params: { teacherId: string } }) {
-  const { teacherId } = params;
+export default function TeacherProfilePage() {
+  const params = useParams();
+  const teacherId = params.teacherId as string;
   
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [studentEarnings, setStudentEarnings] = useState<StudentEarning[]>([]);
