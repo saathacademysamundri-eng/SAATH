@@ -1,15 +1,69 @@
 
-import { getFirestore, collection, writeBatch, getDocs, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy } from 'firebase/firestore';
 import { app } from './config';
-import { students, teachers, classes, Student, Teacher, Class } from '@/lib/data';
+import { students as initialStudents, teachers, classes, Student, Teacher, Class, Subject } from '@/lib/data';
 
 const db = getFirestore(app);
 
 export async function getStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');
-  const studentsSnap = await getDocs(studentsCollection);
+  const q = query(studentsCollection, orderBy("id"));
+  const studentsSnap = await getDocs(q);
   return studentsSnap.docs.map(doc => doc.data() as Student);
 }
+
+export async function getStudent(id: string): Promise<Student | null> {
+    const studentDocRef = doc(db, 'students', id);
+    const studentDoc = await getDoc(studentDocRef);
+    if (studentDoc.exists()) {
+        return studentDoc.data() as Student;
+    }
+    
+    // Fallback search by case-insensitive id
+    const q = query(collection(db, "students"), where("id", "==", id.toUpperCase()));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        return querySnapshot.docs[0].data() as Student;
+    }
+    return null;
+}
+
+export async function addStudent(student: Student) {
+    try {
+        await setDoc(doc(db, 'students', student.id), student);
+        return { success: true, message: "Student added successfully." };
+    } catch (error) {
+        console.error("Error adding student: ", error);
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+export async function getNextStudentId(): Promise<string> {
+    const q = query(collection(db, "students"), orderBy("id", "desc"), limit(1));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return "S001";
+    }
+    const lastId = querySnapshot.docs[0].id;
+    const lastNumber = parseInt(lastId.substring(1));
+    const newNumber = lastNumber + 1;
+    return `S${newNumber.toString().padStart(3, '0')}`;
+}
+
+export async function updateStudentFeeStatus(studentId: string, newBalance: number, newStatus: Student['feeStatus']) {
+    try {
+        const studentRef = doc(db, 'students', studentId);
+        await updateDoc(studentRef, {
+            totalFee: newBalance,
+            feeStatus: newStatus
+        });
+        return { success: true, message: "Student fee status updated." };
+    } catch (error) {
+         console.error("Error updating student fee status: ", error);
+        return { success: false, message: (error as Error).message };
+    }
+}
+
 
 export async function getTeachers(): Promise<Teacher[]> {
     const teachersCollection = collection(db, 'teachers');
@@ -31,10 +85,36 @@ export async function getClasses(): Promise<Class[]> {
         const classData = classDoc.data() as Omit<Class, 'subjects'>;
         const subjectsCollection = collection(db, `classes/${classDoc.id}/subjects`);
         const subjectsSnap = await getDocs(subjectsCollection);
-        const subjects = subjectsSnap.docs.map(subjectDoc => subjectDoc.data());
-        classesData.push({ ...classData, id: classDoc.id, subjects } as Class);
+        const subjects = subjectsSnap.docs.map(subjectDoc => subjectDoc.data() as Subject);
+        classesData.push({ ...classData, id: classDoc.id, name: classData.name, subjects });
     }
     return classesData;
+}
+
+export async function updateClassSubjects(classId: string, subjects: Subject[]) {
+    try {
+        const batch = writeBatch(db);
+        const subjectsCollectionRef = collection(db, `classes/${classId}/subjects`);
+        
+        // Delete old subjects
+        const oldSubjectsSnap = await getDocs(subjectsCollectionRef);
+        oldSubjectsSnap.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        // Add new subjects
+        subjects.forEach(subject => {
+            const subjectRef = doc(subjectsCollectionRef, subject.id);
+            batch.set(subjectRef, subject);
+        });
+
+        await batch.commit();
+        return { success: true, message: "Class subjects updated successfully." };
+
+    } catch (error) {
+        console.error("Error updating class subjects: ", error);
+        return { success: false, message: (error as Error).message };
+    }
 }
 
 
@@ -56,7 +136,7 @@ export async function seedDatabase() {
 
     const batch = writeBatch(db);
 
-    students.forEach(student => {
+    initialStudents.forEach(student => {
       const docRef = doc(db, 'students', student.id);
       batch.set(docRef, student);
     });
@@ -69,7 +149,7 @@ export async function seedDatabase() {
     classes.forEach(cls => {
         const docRef = doc(db, 'classes', cls.id);
         const { subjects, ...classData } = cls;
-        batch.set(docRef, classData);
+        batch.set(docRef, { name: cls.name, id: cls.id });
         subjects.forEach(subject => {
             const subjectRef = doc(db, `classes/${cls.id}/subjects`, subject.id);
             batch.set(subjectRef, subject);

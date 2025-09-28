@@ -12,7 +12,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { Class, Subject } from "@/lib/data"
-import { classes } from "@/lib/data"
+import { updateClassSubjects } from "@/lib/firebase/firestore"
+import { useToast } from "@/hooks/use-toast"
 import { PlusCircle, Trash2 } from "lucide-react"
 import { useState } from "react"
 
@@ -25,6 +26,8 @@ export function EditSubjectsDialog({
 }) {
   const [subjects, setSubjects] = useState<Subject[]>(classData.subjects)
   const [newSubjectName, setNewSubjectName] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+  const { toast } = useToast();
 
   const handleAddSubject = () => {
     if (newSubjectName.trim() === "") return
@@ -40,12 +43,23 @@ export function EditSubjectsDialog({
     setSubjects(subjects.filter((s) => s.id !== subjectId))
   }
 
-  const handleSaveChanges = () => {
-    const classIndex = classes.findIndex((c) => c.id === classData.id)
-    if (classIndex !== -1) {
-      classes[classIndex].subjects = subjects
+  const handleSaveChanges = async () => {
+    setIsSaving(true)
+    const result = await updateClassSubjects(classData.id, subjects);
+    if (result.success) {
+      toast({
+        title: "Subjects Updated",
+        description: `Subjects for ${classData.name} have been saved.`,
+      })
+      onSubjectsUpdate()
+    } else {
+       toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: result.message,
+      })
     }
-    onSubjectsUpdate()
+    setIsSaving(false)
   }
 
   return (
@@ -106,8 +120,8 @@ export function EditSubjectsDialog({
       </div>
       <DialogFooter>
         <DialogClose asChild>
-          <Button type="button" onClick={handleSaveChanges}>
-            Done
+          <Button type="button" onClick={handleSaveChanges} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Done'}
           </Button>
         </DialogClose>
       </DialogFooter>

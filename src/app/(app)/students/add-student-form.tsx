@@ -19,11 +19,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useState, useMemo } from "react"
-import { classes, students, teachers, subjectTeacherMap, type StudentSubject, type Subject } from "@/lib/data"
+import { useState, useMemo, useEffect } from "react"
+import { teachers, subjectTeacherMap, type StudentSubject, type Subject, Class } from "@/lib/data"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { addStudent, getClasses, getNextStudentId } from "@/lib/firebase/firestore"
+import { Loader2 } from "lucide-react"
 
 type SelectedSubjectInfo = {
     subject: Subject;
@@ -37,13 +39,24 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
     const [college, setCollege] = useState('');
     const [address, setAddress] = useState('');
     const [gender, setGender] = useState('male');
-    const [selectedClass, setSelectedClass] = useState<string | null>(null);
+    const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [totalFee, setTotalFee] = useState(0);
     const [selectedSubjects, setSelectedSubjects] = useState<SelectedSubjectInfo[]>([]);
+    
+    const [classes, setClasses] = useState<Class[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            const classesData = await getClasses();
+            setClasses(classesData);
+        };
+        fetchInitialData();
+    }, []);
+
     const handleClassChange = (value: string) => {
-        setSelectedClass(value);
+        setSelectedClassId(value);
         setSelectedSubjects([]);
     }
 
@@ -52,7 +65,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         if (isSelected) {
             setSelectedSubjects(prev => prev.filter(s => s.subject.id !== subject.id));
         } else {
-            const defaultTeacherId = subjectTeacherMap[subject.name] || null;
+            const defaultTeacherId = subjectTeacherMap[subject.name] || teachers.find(t => t.id)?.id || null;
             setSelectedSubjects(prev => [...prev, { subject, teacherId: defaultTeacherId }]);
         }
     }
@@ -70,8 +83,8 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         return totalFee / selectedSubjects.length;
     }, [totalFee, selectedSubjects.length]);
 
-    const handleSubmit = () => {
-        const hasMissingInfo = !name || !fatherName || !phone || !college || !address || !selectedClass || totalFee <= 0 || selectedSubjects.length === 0;
+    const handleSubmit = async () => {
+        const hasMissingInfo = !name || !fatherName || !phone || !college || !address || !selectedClassId || totalFee <= 0 || selectedSubjects.length === 0;
         const hasNullTeacher = selectedSubjects.some(s => s.teacherId === null);
 
         if (hasMissingInfo || hasNullTeacher) {
@@ -83,8 +96,9 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             return;
         }
 
-        const newStudentId = `S${(students.length + 1).toString().padStart(3, '0')}`;
-        const currentClassDetails = classes.find(c => c.id === selectedClass);
+        setIsSaving(true);
+        const newStudentId = await getNextStudentId();
+        const currentClassDetails = classes.find(c => c.id === selectedClassId);
         const avatarSeed = gender === 'male' ? newStudentId : `F${newStudentId}`;
 
         const studentSubjects: StudentSubject[] = selectedSubjects.map(s => ({
@@ -103,16 +117,25 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             totalFee: totalFee,
         };
 
-        students.push(newStudent);
-        onStudentAdded();
+        const result = await addStudent(newStudent);
 
-        toast({
-            title: 'Student Added',
-            description: `${name} has been successfully added.`,
-        });
+        if(result.success) {
+            onStudentAdded();
+            toast({
+                title: 'Student Added',
+                description: `${name} has been successfully added.`,
+            });
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: `Failed to add student: ${result.message}`,
+            });
+        }
+        setIsSaving(false);
     };
 
-    const currentClass = classes.find(c => c.id === selectedClass);
+    const currentClass = classes.find(c => c.id === selectedClassId);
 
   return (
       <DialogContent className="sm:max-w-3xl">
@@ -166,7 +189,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
                 <Label htmlFor="class">Class</Label>
-                <Select onValueChange={handleClassChange}>
+                <Select onValueChange={handleClassChange} value={selectedClassId || undefined}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a class" />
                     </SelectTrigger>
@@ -233,7 +256,10 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         </div>
         <DialogFooter>
             <DialogClose asChild>
-                <Button type="button" onClick={handleSubmit}>Add Student</Button>
+                <Button type="button" onClick={handleSubmit} disabled={isSaving}>
+                    {isSaving && <Loader2 className="animate-spin mr-2"/>}
+                    {isSaving ? 'Adding Student...' : 'Add Student'}
+                </Button>
             </DialogClose>
         </DialogFooter>
       </DialogContent>
