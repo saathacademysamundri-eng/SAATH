@@ -50,19 +50,57 @@ export default function FeeCollectionPage() {
     }
   };
 
+  const handlePayment = () => {
+    if (!searchedStudent) return;
+    if (paidAmount <= 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Amount',
+        description: 'Please enter a valid amount to collect.',
+      });
+      return;
+    }
+
+    const studentIndex = initialStudents.findIndex(s => s.id === searchedStudent.id);
+    if (studentIndex !== -1) {
+      const student = initialStudents[studentIndex];
+      const newTotalFee = student.totalFee - paidAmount;
+      
+      student.totalFee = newTotalFee;
+      
+      if (newTotalFee <= 0) {
+        student.feeStatus = 'Paid';
+      } else {
+        student.feeStatus = 'Partial';
+      }
+      
+      // Force a re-render of the component with updated data
+      setSearchedStudent({ ...student }); 
+
+      toast({
+        title: 'Payment Recorded',
+        description: `Paid ${paidAmount} for ${searchedStudent.name}. New balance is ${newTotalFee}.`,
+      });
+      
+      // Reset paid amount after successful payment
+      setPaidAmount(0);
+    }
+  };
+
   const handlePrintReceipt = () => {
     if (searchedStudent) {
       if (paidAmount <= 0) {
         toast({
           variant: 'destructive',
           title: 'Cannot Print Receipt',
-          description: 'No payment has been recorded.',
+          description: 'No payment has been recorded for the current transaction.',
         });
         return;
       }
       
       const balance = searchedStudent.totalFee - paidAmount;
-      const url = `/receipt/${searchedStudent.id}?amount=${paidAmount}&balance=${balance}&total=${searchedStudent.totalFee}`;
+      const originalTotal = searchedStudent.totalFee + paidAmount; // We need the original total for the receipt
+      const url = `/receipt/${searchedStudent.id}?amount=${paidAmount}&balance=${balance}&total=${originalTotal}`;
       window.open(url, '_blank');
     }
   };
@@ -113,12 +151,12 @@ export default function FeeCollectionPage() {
                 <CardContent className="grid gap-6">
                      <div className="grid grid-cols-2 gap-4 text-center">
                         <div className='p-4 bg-secondary rounded-lg'>
-                            <p className='text-sm text-muted-foreground'>Total Fee</p>
+                            <p className='text-sm text-muted-foreground'>Total Fee Dues</p>
                             <p className='text-2xl font-bold'>{searchedStudent.totalFee.toLocaleString()} PKR</p>
                         </div>
                          <div className='p-4 bg-secondary rounded-lg'>
-                            <p className='text-sm text-muted-foreground'>Balance</p>
-                            <p className='text-2xl font-bold'>{balance.toLocaleString()} PKR</p>
+                            <p className='text-sm text-muted-foreground'>Status</p>
+                            <p className='text-2xl font-bold'>{searchedStudent.feeStatus}</p>
                         </div>
                     </div>
                 </CardContent>
@@ -149,7 +187,7 @@ export default function FeeCollectionPage() {
                     </div>
                  </CardContent>
                  <CardContent className='flex gap-2'>
-                    <Button onClick={() => toast({ title: 'Payment Recorded', description: `Paid ${paidAmount} for ${searchedStudent.name}`})}>Collect Fee</Button>
+                    <Button onClick={handlePayment}>Collect Fee</Button>
                     <Button variant="outline" onClick={handlePrintReceipt}>
                         <Printer className="mr-2"/>
                         Print Receipt

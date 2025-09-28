@@ -80,7 +80,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle>Gross Earnings</CardTitle>
+                    <CardTitle>Gross Earnings (from Paid Fees)</CardTitle>
                     <CardDescription>This is the total amount collected from students.</CardDescription>
                 </CardHeader>
                 <CardContent>
