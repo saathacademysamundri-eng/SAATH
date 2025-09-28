@@ -85,16 +85,13 @@ function MainSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href}>
-                <SidebarMenuButton
-                  isActive={pathname.startsWith(item.href)}
-                  tooltip={item.label}
-                  className="group-data-[collapsible=icon]:justify-center"
-                >
-                  <item.icon className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                  <span className='group-data-[collapsible=icon]:hidden'>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
+              <Button asChild variant="ghost" className="w-full justify-start gap-2 h-12 group-data-[collapsible=icon]:size-12 group-data-[collapsible=icon]:justify-center" isActive={pathname.startsWith(item.href)}
+              >
+                  <Link href={item.href}>
+                    <item.icon className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
+                    <span className='group-data-[collapsible=icon]:hidden'>{item.label}</span>
+                  </Link>
+              </Button>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
