@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { teachers, students as allStudents, Student } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { TeacherEarningsClient } from './teacher-earnings-client';
+import { useSettings } from '@/hooks/use-settings';
 
 type StudentEarning = {
   student: Student;
