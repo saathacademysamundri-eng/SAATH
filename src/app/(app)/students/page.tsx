@@ -32,6 +32,7 @@ import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 export default function StudentsPage() {
   const [studentList, setStudentList] = useState(students);
@@ -107,7 +108,13 @@ export default function StudentsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{student.class}</TableCell>
-                  <TableCell className="hidden lg:table-cell">{student.subjects}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                     <div className="flex flex-wrap gap-1">
+                        {student.subjects.map(sub => (
+                            <Badge key={sub.subject_name} variant="outline" className={cn('font-normal')}>{sub.subject_name}</Badge>
+                        ))}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

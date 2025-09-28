@@ -1,0 +1,140 @@
+'use client';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { teachers, students as allStudents, Student } from '@/lib/data';
+import { ArrowLeft } from 'lucide-react';
+import { notFound, useRouter } from 'next/navigation';
+import { useMemo } from 'react';
+
+type StudentEarning = {
+  student: Student;
+  feeShare: number;
+  subjectName: string;
+};
+
+export default function TeacherEarningsPage({ params }: { params: { teacherId: string } }) {
+  const router = useRouter();
+  const { teacherId } = params;
+  
+  const teacher = useMemo(() => teachers.find(t => t.id === teacherId), [teacherId]);
+
+  const earningsData = useMemo(() => {
+    if (!teacher) return { studentEarnings: [], totalEarnings: 0 };
+
+    const studentEarnings: StudentEarning[] = [];
+    let totalEarnings = 0;
+
+    allStudents.forEach(student => {
+      student.subjects.forEach(subject => {
+        if (subject.teacher_id === teacher.id) {
+          studentEarnings.push({
+            student,
+            feeShare: subject.fee_share,
+            subjectName: subject.subject_name
+          });
+          totalEarnings += subject.fee_share;
+        }
+      });
+    });
+
+    return { studentEarnings, totalEarnings };
+  }, [teacher]);
+
+  if (!teacher) {
+    return notFound();
+  }
+  
+  const { studentEarnings, totalEarnings } = earningsData;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="icon" onClick={() => router.back()}>
+            <ArrowLeft />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Teacher Earnings</h1>
+          <p className="text-muted-foreground">
+            Earnings details for {teacher.name}.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1 space-y-6">
+            <Card>
+                <CardHeader className='flex-row items-center gap-4 space-y-0'>
+                     <Avatar className="h-16 w-16">
+                        <AvatarImage src={teacher.avatar} alt={teacher.name} data-ai-hint="person face" />
+                        <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                     <div className='grid gap-1'>
+                        <CardTitle>{teacher.name}</CardTitle>
+                        <CardDescription>Teacher ID: {teacher.id}</CardDescription>
+                    </div>
+                </CardHeader>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Total Earnings</CardTitle>
+                    <CardDescription>This is the total amount earned this month.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-4xl font-bold">{totalEarnings.toLocaleString()} PKR</p>
+                </CardContent>
+            </Card>
+        </div>
+        <div className="lg:col-span-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Student Breakdown</CardTitle>
+                    <CardDescription>List of students contributing to the earnings.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Student</TableHead>
+                                <TableHead>Subject</TableHead>
+                                <TableHead className="text-right">Fee Share</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {studentEarnings.length > 0 ? (
+                                studentEarnings.map(({ student, feeShare, subjectName }, index) => (
+                                    <TableRow key={`${student.id}-${index}`}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarImage src={student.avatar} alt={student.name} data-ai-hint="person face" />
+                                                    <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <div className="font-medium">{student.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{student.id}</div>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>{subjectName}</TableCell>
+                                        <TableCell className="text-right">{feeShare.toLocaleString()} PKR</TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                        No students assigned to this teacher yet.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

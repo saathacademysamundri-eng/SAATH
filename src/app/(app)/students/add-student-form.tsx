@@ -20,10 +20,15 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useState, useMemo } from "react"
-import { classes, students } from "@/lib/data"
+import { classes, students, teachers, subjectTeacherMap, type StudentSubject, type Subject } from "@/lib/data"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+
+type SelectedSubjectInfo = {
+    subject: Subject;
+    teacherId: string | null;
+}
 
 export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void }) {
     const [name, setName] = useState('');
@@ -34,7 +39,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
     const [gender, setGender] = useState('male');
     const [selectedClass, setSelectedClass] = useState<string | null>(null);
     const [totalFee, setTotalFee] = useState(0);
-    const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+    const [selectedSubjects, setSelectedSubjects] = useState<SelectedSubjectInfo[]>([]);
     const { toast } = useToast();
 
     const handleClassChange = (value: string) => {
@@ -42,15 +47,23 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         setSelectedSubjects([]);
     }
 
-    const handleSubjectChange = (subjectId: string) => {
-        setSelectedSubjects(prev => 
-            prev.includes(subjectId) 
-                ? prev.filter(id => id !== subjectId)
-                : [...prev, subjectId]
-        );
+    const handleSubjectCheckedChange = (subject: Subject) => {
+        const isSelected = selectedSubjects.some(s => s.subject.id === subject.id);
+        if (isSelected) {
+            setSelectedSubjects(prev => prev.filter(s => s.subject.id !== subject.id));
+        } else {
+            const defaultTeacherId = subjectTeacherMap[subject.name] || null;
+            setSelectedSubjects(prev => [...prev, { subject, teacherId: defaultTeacherId }]);
+        }
+    }
+    
+    const handleTeacherChange = (subjectId: string, teacherId: string) => {
+        setSelectedSubjects(prev => prev.map(s => 
+            s.subject.id === subjectId ? { ...s, teacherId } : s
+        ));
     }
 
-    const distributedFee = useMemo(() => {
+    const feeShare = useMemo(() => {
         if (selectedSubjects.length === 0 || totalFee === 0) {
             return 0;
         }
@@ -58,26 +71,33 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
     }, [totalFee, selectedSubjects.length]);
 
     const handleSubmit = () => {
-        if (!name || !fatherName || !phone || !college || !address || !selectedClass || totalFee <= 0 || selectedSubjects.length === 0) {
+        const hasMissingInfo = !name || !fatherName || !phone || !college || !address || !selectedClass || totalFee <= 0 || selectedSubjects.length === 0;
+        const hasNullTeacher = selectedSubjects.some(s => s.teacherId === null);
+
+        if (hasMissingInfo || hasNullTeacher) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Please fill out all fields.',
+                description: 'Please fill out all fields and assign a teacher to each subject.',
             });
             return;
         }
 
         const newStudentId = `S${(students.length + 1).toString().padStart(3, '0')}`;
         const currentClassDetails = classes.find(c => c.id === selectedClass);
-        
-        // Use a different seed for male/female to get different images
         const avatarSeed = gender === 'male' ? newStudentId : `F${newStudentId}`;
+
+        const studentSubjects: StudentSubject[] = selectedSubjects.map(s => ({
+            subject_name: s.subject.name,
+            teacher_id: s.teacherId!,
+            fee_share: feeShare,
+        }));
 
         const newStudent = {
             id: newStudentId,
             name,
             class: currentClassDetails?.name || '',
-            subjects: selectedSubjects.map(subjectId => currentClassDetails?.subjects.find(s => s.id === subjectId)?.name || '').join(', '),
+            subjects: studentSubjects,
             feeStatus: 'Pending' as const,
             avatar: `https://picsum.photos/seed/${avatarSeed}/40/40`,
             totalFee: totalFee,
@@ -92,11 +112,10 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         });
     };
 
-
     const currentClass = classes.find(c => c.id === selectedClass);
 
   return (
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Add New Student</DialogTitle>
           <DialogDescription>
@@ -104,31 +123,24 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
+          {/* Personal Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input id="name" placeholder="Enter student's full name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-             <div className="grid gap-2">
+            <div className="grid gap-2">
                 <Label htmlFor="fatherName">Father's Name</Label>
                 <Input id="fatherName" placeholder="Enter father's name" value={fatherName} onChange={(e) => setFatherName(e.target.value)} />
             </div>
-          </div>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input id="phone" type="tel" placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
-             <div className="grid gap-2">
+            <div className="grid gap-2">
                 <Label htmlFor="college">School / College Name</Label>
                 <Input id="college" placeholder="Enter school or college name" value={college} onChange={(e) => setCollege(e.target.value)} />
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="address">Address</Label>
-            <Textarea id="address" placeholder="Enter student's address" value={address} onChange={(e) => setAddress(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div className="grid gap-2">
                 <Label>Gender</Label>
                  <RadioGroup defaultValue="male" onValueChange={setGender} value={gender} className="flex items-center gap-4">
@@ -142,7 +154,15 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                     </div>
                 </RadioGroup>
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea id="address" placeholder="Enter student's address" value={address} onChange={(e) => setAddress(e.target.value)} />
+            </div>
           </div>
+          
+          <div className="border-t my-2"></div>
+
+          {/* Academic Info */}
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
                 <Label htmlFor="class">Class</Label>
@@ -163,7 +183,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                     id="totalFee" 
                     type="number" 
                     placeholder="Enter total monthly fee" 
-                    value={totalFee}
+                    value={totalFee || ''}
                     onChange={(e) => setTotalFee(Number(e.target.value))}
                 />
             </div>
@@ -171,25 +191,42 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
           
           {currentClass && (
             <div className="grid gap-4">
-                <Label>Subjects</Label>
-                <div className="grid gap-2 rounded-md border p-4">
-                    {currentClass.subjects.map(subject => (
-                        <div key={subject.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                <Label>Subjects &amp; Teachers</Label>
+                <div className="grid gap-3 rounded-md border p-4">
+                    {currentClass.subjects.map(subject => {
+                        const selection = selectedSubjects.find(s => s.subject.id === subject.id);
+                        return (
+                            <div key={subject.id} className="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-3">
                                 <Checkbox 
                                     id={`subject-${subject.id}`} 
-                                    onCheckedChange={() => handleSubjectChange(subject.id)}
-                                    checked={selectedSubjects.includes(subject.id)}
+                                    onCheckedChange={() => handleSubjectCheckedChange(subject)}
+                                    checked={!!selection}
                                 />
                                 <Label htmlFor={`subject-${subject.id}`} className="font-normal">{subject.name}</Label>
+                                
+                                {selection && (
+                                  <>
+                                    <Select 
+                                        onValueChange={(teacherId) => handleTeacherChange(subject.id, teacherId)} 
+                                        value={selection.teacherId || undefined}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select Teacher" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {teachers.map(teacher => (
+                                                <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <div className="text-sm text-muted-foreground text-right">
+                                        {feeShare > 0 ? `${feeShare.toFixed(0)} PKR` : ''}
+                                    </div>
+                                  </>
+                                )}
                             </div>
-                             {selectedSubjects.includes(subject.id) && (
-                                <div className="text-sm text-muted-foreground">
-                                    {distributedFee > 0 ? `${distributedFee.toFixed(0)} PKR` : ''}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                        )
+                    })}
                 </div>
             </div>
           )}
