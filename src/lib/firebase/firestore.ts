@@ -1,9 +1,42 @@
 
-import { getFirestore, collection, writeBatch, getDocs, doc } from 'firebase/firestore';
+import { getFirestore, collection, writeBatch, getDocs, doc, getDoc } from 'firebase/firestore';
 import { app } from './config';
-import { students, teachers, classes } from '@/lib/data';
+import { students, teachers, classes, Student, Teacher, Class } from '@/lib/data';
 
 const db = getFirestore(app);
+
+export async function getStudents(): Promise<Student[]> {
+  const studentsCollection = collection(db, 'students');
+  const studentsSnap = await getDocs(studentsCollection);
+  return studentsSnap.docs.map(doc => doc.data() as Student);
+}
+
+export async function getTeachers(): Promise<Teacher[]> {
+    const teachersCollection = collection(db, 'teachers');
+    const teachersSnap = await getDocs(teachersCollection);
+    return teachersSnap.docs.map(doc => doc.data() as Teacher);
+}
+
+export async function getTeacher(id: string): Promise<Teacher | null> {
+    const teacherDoc = await getDoc(doc(db, 'teachers', id));
+    return teacherDoc.exists() ? teacherDoc.data() as Teacher : null;
+}
+
+export async function getClasses(): Promise<Class[]> {
+    const classesCollection = collection(db, 'classes');
+    const classesSnap = await getDocs(classesCollection);
+    const classesData: Class[] = [];
+
+    for (const classDoc of classesSnap.docs) {
+        const classData = classDoc.data() as Omit<Class, 'subjects'>;
+        const subjectsCollection = collection(db, `classes/${classDoc.id}/subjects`);
+        const subjectsSnap = await getDocs(subjectsCollection);
+        const subjects = subjectsSnap.docs.map(subjectDoc => subjectDoc.data());
+        classesData.push({ ...classData, id: classDoc.id, subjects } as Class);
+    }
+    return classesData;
+}
+
 
 export async function seedDatabase() {
   try {

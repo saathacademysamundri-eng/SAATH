@@ -26,20 +26,34 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { students } from '@/lib/data';
+import { type Student } from '@/lib/data';
+import { getStudents } from '@/lib/firebase/firestore';
 import { cn } from '@/lib/utils';
 import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function StudentsPage() {
-  const [studentList, setStudentList] = useState(students);
+  const [studentList, setStudentList] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
+  const fetchStudents = async () => {
+    setLoading(true);
+    const students = await getStudents();
+    setStudentList(students);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
   const handleStudentAdded = () => {
-    setStudentList([...students]);
+    fetchStudents(); // Re-fetch students after a new one is added
   };
 
   const filteredStudents = studentList.filter(student =>
@@ -95,47 +109,64 @@ export default function StudentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredStudents.map((student) => (
-                <TableRow key={student.id}>
-                  <TableCell className="font-medium">{student.id}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={student.avatar} alt={student.name} data-ai-hint="person face" />
-                        <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="font-medium">{student.name}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">{student.class}</TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                     <div className="flex flex-wrap gap-1">
-                        {student.subjects.map(sub => (
-                            <Badge key={sub.subject_name} variant="outline" className={cn('font-normal')}>{sub.subject_name}</Badge>
-                        ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-12" /></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <Skeleton className="h-5 w-32" />
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                filteredStudents.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell className="font-medium">{student.id}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={student.avatar} alt={student.name} data-ai-hint="person face" />
+                          <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="font-medium">{student.name}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{student.class}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <div className="flex flex-wrap gap-1">
+                          {student.subjects.map(sub => (
+                              <Badge key={sub.subject_name} variant="outline" className={cn('font-normal')}>{sub.subject_name}</Badge>
+                          ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive">
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

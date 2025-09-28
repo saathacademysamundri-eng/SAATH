@@ -1,10 +1,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { teachers, students as allStudents, Student } from '@/lib/data';
+import { type Student } from '@/lib/data';
+import { getTeacher, getStudents } from '@/lib/firebase/firestore';
 import { notFound } from 'next/navigation';
 import { TeacherEarningsClient } from './teacher-earnings-client';
-import { useMemo } from 'react';
 
 type StudentEarning = {
   student: Student;
@@ -12,56 +12,45 @@ type StudentEarning = {
   subjectName: string;
 };
 
-export default function TeacherEarningsPage({ params }: { params: { teacherId: string } }) {
+export default async function TeacherEarningsPage({ params }: { params: { teacherId: string } }) {
   const { teacherId } = params;
-
-  const teacher = useMemo(() => teachers.find(t => t.id === teacherId), [teacherId]);
-
-  const { studentEarnings, totalEarnings, teacherShare, academyShare } = useMemo(() => {
-    const studentEarnings: StudentEarning[] = [];
-    let totalEarnings = 0;
-
-    if (teacher) {
-      allStudents.forEach(student => {
-        // Only include earnings from students who have paid
-        if (student.feeStatus === 'Paid') {
-          student.subjects.forEach(subject => {
-            if (subject.teacher_id === teacher.id) {
-              studentEarnings.push({
-                student,
-                feeShare: subject.fee_share,
-                subjectName: subject.subject_name
-              });
-              totalEarnings += subject.fee_share;
-            }
-          });
-        }
-      });
-    }
-    
-    const teacherShare = totalEarnings * 0.7;
-    const academyShare = totalEarnings * 0.3;
-
-    return { studentEarnings, totalEarnings, teacherShare, academyShare };
-  }, [teacherId, teacher]);
+  
+  const [teacher, allStudents] = await Promise.all([
+    getTeacher(teacherId),
+    getStudents()
+  ]);
 
   if (!teacher) {
     return notFound();
   }
+
+  const studentEarnings: StudentEarning[] = [];
+  let totalEarnings = 0;
+
+  allStudents.forEach(student => {
+    // Only include earnings from students who have paid
+    if (student.feeStatus === 'Paid') {
+      student.subjects.forEach(subject => {
+        if (subject.teacher_id === teacher.id) {
+          studentEarnings.push({
+            student,
+            feeShare: subject.fee_share,
+            subjectName: subject.subject_name
+          });
+          totalEarnings += subject.fee_share;
+        }
+      });
+    }
+  });
+  
+  const teacherShare = totalEarnings * 0.7;
+  const academyShare = totalEarnings * 0.3;
 
   return (
     <div className="flex flex-col gap-6" id="print-area">
       <TeacherEarningsClient 
         teacherId={teacher.id} 
         teacherName={teacher.name}
-        totalEarnings={totalEarnings}
-        teacherShare={teacherShare}
-        academyShare={academyShare}
-        studentEarnings={studentEarnings.map(se => ({ 
-          student: { id: se.student.id, name: se.student.name, class: se.student.class }, 
-          feeShare: se.feeShare, 
-          subjectName: se.subjectName 
-        }))}
       />
       
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
