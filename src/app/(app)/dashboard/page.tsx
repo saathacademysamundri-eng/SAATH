@@ -1,3 +1,6 @@
+
+'use client';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,10 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { dashboardStats, recentActivities } from '@/lib/data';
+import { dashboardStats, recentActivities, type Income, type Expense } from '@/lib/data';
+import { getIncome, getExpenses } from '@/lib/firebase/firestore';
 import { cn } from '@/lib/utils';
-import { ArrowDown, ArrowUp, BookUser, Hourglass, UserPlus, Users, Wallet } from 'lucide-react';
-import React from 'react';
+import { ArrowDown, ArrowUp, DollarSign, Hourglass, TrendingDown, TrendingUp, UserPlus, Users, Wallet } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { OverviewChart } from './overview-chart';
 
 const iconMap: { [key: string]: React.ElementType } = {
@@ -20,7 +24,9 @@ const iconMap: { [key: string]: React.ElementType } = {
   UserPlus,
   Wallet,
   Hourglass,
-  BookUser,
+  BookUser: Users,
+  TrendingUp,
+  TrendingDown
 };
 
 function getFeeStatusBadge(status: string) {
@@ -43,12 +49,37 @@ function getFeeStatusBadge(status: string) {
 }
 
 export default function DashboardPage() {
+    const [income, setIncome] = useState<Income[]>([]);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
+
+    useEffect(() => {
+        async function fetchData() {
+            const incomeData = await getIncome();
+            const expenseData = await getExpenses();
+            setIncome(incomeData);
+            setExpenses(expenseData);
+        }
+        fetchData();
+    }, []);
+
+    const totalIncome = income.reduce((sum, item) => sum + item.amount, 0);
+    const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
+    const netProfit = totalIncome - totalExpenses;
+
+    const summaryStats = [
+        { title: 'Total Income', value: `${totalIncome.toLocaleString()} PKR`, icon: 'TrendingUp', change: '' },
+        { title: 'Total Expenses', value: `${totalExpenses.toLocaleString()} PKR`, icon: 'TrendingDown', change: '' },
+        { title: 'Net Profit', value: `${netProfit.toLocaleString()} PKR`, icon: 'Wallet', change: '' },
+        ...dashboardStats.slice(0,1)
+    ];
+
+
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {dashboardStats.map((stat) => {
+        {summaryStats.map((stat) => {
           const Icon = iconMap[stat.icon];
-          const isPositive = stat.change.startsWith('+');
+          const isPositive = stat.change ? stat.change.startsWith('+') : true;
           return (
             <Card key={stat.title} className="shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -59,7 +90,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="flex items-center text-xs text-muted-foreground">
+                 {stat.change && <p className="flex items-center text-xs text-muted-foreground">
                   <span
                     className={cn(
                       'flex items-center',
@@ -70,7 +101,7 @@ export default function DashboardPage() {
                     {stat.change}
                   </span>
                   <span className="ml-1">from last month</span>
-                </p>
+                </p>}
               </CardContent>
             </Card>
           );

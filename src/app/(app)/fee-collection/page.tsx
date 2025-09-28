@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student } from '@/lib/data';
-import { getStudent, updateStudentFeeStatus } from '@/lib/firebase/firestore';
+import { getStudent, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
 import { Printer, Search, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -74,6 +75,13 @@ export default function FeeCollectionPage() {
     const result = await updateStudentFeeStatus(searchedStudent.id, newTotalFee, newFeeStatus);
 
     if (result.success) {
+      // Also add to income collection
+      await addIncome({
+          studentName: searchedStudent.name,
+          studentId: searchedStudent.id,
+          amount: paidAmount,
+      });
+      
       const updatedStudent: Student = {
         ...searchedStudent,
         totalFee: newTotalFee,

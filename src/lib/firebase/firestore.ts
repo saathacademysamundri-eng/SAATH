@@ -1,7 +1,7 @@
 
-import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { app } from './config';
-import { students as initialStudents, teachers, classes, Student, Teacher, Class, Subject } from '@/lib/data';
+import { students as initialStudents, teachers, classes, Student, Teacher, Class, Subject, Income, Expense } from '@/lib/data';
 
 const db = getFirestore(app);
 
@@ -164,4 +164,57 @@ export async function seedDatabase() {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { success: false, message: `Error seeding database: ${errorMessage}` };
   }
+}
+
+// Income Functions
+export async function addIncome(incomeData: Omit<Income, 'id' | 'date'>) {
+    try {
+        await addDoc(collection(db, 'income'), {
+            ...incomeData,
+            date: serverTimestamp()
+        });
+        return { success: true, message: 'Income record added.' };
+    } catch (error) {
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+export async function getIncome(): Promise<Income[]> {
+    const q = query(collection(db, "income"), orderBy("date", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            // Convert Firestore Timestamp to JS Date
+            date: data.date.toDate(),
+        } as Income;
+    });
+}
+
+// Expense Functions
+export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>) {
+    try {
+        await addDoc(collection(db, 'expenses'), {
+            ...expenseData,
+            date: serverTimestamp()
+        });
+        return { success: true, message: 'Expense record added.' };
+    } catch (error) {
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+export async function getExpenses(): Promise<Expense[]> {
+    const q = query(collection(db, "expenses"), orderBy("date", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            date: data.date.toDate(),
+        } as Expense;
+    });
 }

@@ -31,6 +31,21 @@ export type Teacher = {
   avatar: string;
 };
 
+export type Income = {
+    id: string;
+    studentName: string;
+    studentId: string;
+    amount: number;
+    date: Date;
+}
+
+export type Expense = {
+    id: string;
+    description: string;
+    amount: number;
+    date: Date;
+}
+
 
 export const dashboardStats = [
     { title: 'Total Students', value: '1,250', change: '+15.2%', icon: 'Users' },
