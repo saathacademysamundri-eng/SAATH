@@ -44,7 +44,8 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
         }
     }
 
-    const handleSubjectRemove = (subjectName: string) => {
+    const handleSubjectRemove = (e: React.MouseEvent, subjectName: string) => {
+        e.stopPropagation();
         setSelectedSubjects(selectedSubjects.filter(s => s !== subjectName));
     }
 
@@ -102,9 +103,9 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
                                         selectedSubjects.map(subject => (
                                             <Badge key={subject} variant="secondary" className="gap-1">
                                                 {subject}
-                                                <button onClick={(e) => { e.stopPropagation(); handleSubjectRemove(subject); }} className="rounded-full hover:bg-destructive/20 p-0.5">
+                                                <div role="button" aria-label={`Remove ${subject}`} onClick={(e) => handleSubjectRemove(e, subject)} className="rounded-full hover:bg-destructive/20 p-0.5 cursor-pointer">
                                                     <X className="h-3 w-3" />
-                                                </button>
+                                                </div>
                                             </Badge>
                                         ))
                                     ) : (
