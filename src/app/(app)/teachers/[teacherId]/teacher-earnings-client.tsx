@@ -8,7 +8,7 @@ export function TeacherEarningsClient({ teacherId, teacherName }: { teacherId: s
   const router = useRouter();
 
   const handlePrint = () => {
-    window.open(`/teachers/${teacherId}`, '_blank');
+    window.open(`/teachers/${teacherId}?print=true`, '_blank');
   };
 
   return (
