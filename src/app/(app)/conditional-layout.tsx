@@ -30,11 +30,14 @@ import {
   PinOff,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
-import React from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase/config';
+import { signOut } from 'firebase/auth';
 
 function SidebarPin() {
     const { isPinned, setPinned } = useSidebar();
@@ -52,8 +55,14 @@ function SidebarPin() {
 
 function MainSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { settings } = useSettings();
   const { isPinned } = useSidebar();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -113,11 +122,9 @@ function MainSidebar() {
              </Button>
           </SidebarMenuItem>
           <SidebarMenuItem>
-             <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center">
-                <Link href="/">
-                    <LogOut className={cn("h-6 w-6")} />
-                    <span className='group-data-[collapsible=icon]:hidden'>Log Out</span>
-                </Link>
+             <Button variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" onClick={handleLogout}>
+                <LogOut className={cn("h-6 w-6")} />
+                <span className='group-data-[collapsible=icon]:hidden'>Log Out</span>
             </Button>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -130,6 +137,27 @@ function MainSidebar() {
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const isPrintView = searchParams.get('print') === 'true';
+  const [user, loading] = useAuthState(auth);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
+
+
+  if (loading) {
+      return (
+        <div className="flex h-screen items-center justify-center">
+            <p>Loading...</p>
+        </div>
+      )
+  }
+
+  if (!user) {
+      return null;
+  }
 
   if (isPrintView) {
     return <main className="p-4 sm:p-6">{children}</main>;
