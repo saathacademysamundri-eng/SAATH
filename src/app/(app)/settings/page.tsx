@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Upload } from 'lucide-react';
+import { Upload, Database } from 'lucide-react';
 import { useState, ChangeEvent, useMemo } from 'react';
+import { seedDatabase } from '@/lib/firebase/firestore';
 
 export default function SettingsPage() {
   const { settings, setSettings } = useSettings();
@@ -21,6 +23,7 @@ export default function SettingsPage() {
   const [phone, setPhone] = useState(settings.phone);
   const [logo, setLogo] = useState(settings.logo);
   const [academicSession, setAcademicSession] = useState(settings.academicSession);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const academicSessions = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -51,6 +54,24 @@ export default function SettingsPage() {
       reader.readAsDataURL(file);
     }
   };
+  
+  const handleSeedDatabase = async () => {
+      setIsSeeding(true);
+      const result = await seedDatabase();
+      if (result.success) {
+          toast({
+              title: "Database Seeding",
+              description: result.message,
+          });
+      } else {
+          toast({
+              variant: "destructive",
+              title: "Database Seeding Failed",
+              description: result.message,
+          });
+      }
+      setIsSeeding(false);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -64,7 +85,7 @@ export default function SettingsPage() {
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
-            <TabsTrigger value="api">API Integration</TabsTrigger>
+            <TabsTrigger value="api">API & Database</TabsTrigger>
           </TabsList>
           <TabsContent value="general">
             <Card className='max-w-2xl'>
@@ -147,17 +168,27 @@ export default function SettingsPage() {
           <TabsContent value="api">
              <Card className='max-w-2xl'>
                 <CardHeader>
-                    <CardTitle>API Integration</CardTitle>
-                    <CardDescription>Manage API keys for integrations.</CardDescription>
+                    <CardTitle>API & Database</CardTitle>
+                    <CardDescription>Manage API keys and database settings.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="api-key">Your API Key</Label>
                         <Input id="api-key" defaultValue="******************" readOnly />
                     </div>
+                     <div className="space-y-2">
+                        <Label>Database</Label>
+                        <div className="flex items-center justify-between rounded-md border p-3">
+                           <p className="text-sm">Seed your Firestore database with the initial dummy data.</p>
+                            <Button variant="secondary" onClick={handleSeedDatabase} disabled={isSeeding}>
+                                <Database className='mr-2'/>
+                                {isSeeding ? 'Seeding...' : 'Seed Database'}
+                            </Button>
+                        </div>
+                    </div>
                 </CardContent>
                  <CardFooter>
-                    <Button>Generate New Key</Button>
+                    <Button>Generate New API Key</Button>
                 </CardFooter>
             </Card>
           </TabsContent>
