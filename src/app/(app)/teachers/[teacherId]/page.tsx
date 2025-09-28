@@ -1,4 +1,5 @@
-"use client";
+
+'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type Student, type Teacher } from '@/lib/data';
 import { getTeacher, getStudents } from '@/lib/firebase/firestore';
 import { Phone } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useParams } from 'next/navigation';
@@ -151,7 +152,7 @@ export default function TeacherProfilePage() {
                                 <CardDescription>This is the total amount collected from students taught by {teacher.name}.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-3xl font-bold">{totalEarnings.toLocaleString()} PKR</p>
+                                <p data-stat="gross-earnings" className="text-3xl font-bold">{totalEarnings.toLocaleString()} PKR</p>
                             </CardContent>
                         </Card>
                         <Card className="border-green-500/50">
@@ -159,7 +160,7 @@ export default function TeacherProfilePage() {
                                 <CardTitle>Teacher's Share (70%)</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-3xl font-bold text-green-600">{teacherShare.toLocaleString()} PKR</p>
+                                <p data-stat="teacher-share" className="text-3xl font-bold text-green-600">{teacherShare.toLocaleString()} PKR</p>
                             </CardContent>
                         </Card>
                         <Card className="border-blue-500/50">
@@ -167,7 +168,7 @@ export default function TeacherProfilePage() {
                                 <CardTitle>Academy's Share (30%)</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-3xl font-bold text-blue-600">{academyShare.toLocaleString()} PKR</p>
+                                <p data-stat="academy-share" className="text-3xl font-bold text-blue-600">{academyShare.toLocaleString()} PKR</p>
                             </CardContent>
                         </Card>
                     </div>
