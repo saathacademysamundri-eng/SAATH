@@ -47,7 +47,11 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
         totalEarnings={totalEarnings}
         teacherShare={teacherShare}
         academyShare={academyShare}
-        studentEarnings={studentEarnings.map(se => ({ student: { id: se.student.id, name: se.student.name }, feeShare: se.feeShare, subjectName: se.subjectName }))}
+        studentEarnings={studentEarnings.map(se => ({ 
+          student: { id: se.student.id, name: se.student.name, class: se.student.class }, 
+          feeShare: se.feeShare, 
+          subjectName: se.subjectName 
+        }))}
       />
       
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -101,6 +105,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Student</TableHead>
+                                <TableHead>Class</TableHead>
                                 <TableHead>Subject</TableHead>
                                 <TableHead className="text-right">Fee Share</TableHead>
                             </TableRow>
@@ -121,13 +126,14 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
                                                 </div>
                                             </div>
                                         </TableCell>
+                                        <TableCell>{student.class}</TableCell>
                                         <TableCell>{subjectName}</TableCell>
                                         <TableCell className="text-right">{feeShare.toLocaleString()} PKR</TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground">
                                         No students assigned to this teacher yet.
                                     </TableCell>
                                 </TableRow>

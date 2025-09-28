@@ -18,7 +18,7 @@ export function TeacherEarningsClient({
   totalEarnings: number,
   teacherShare: number,
   academyShare: number,
-  studentEarnings: { student: { id: string; name: string; }; feeShare: number; subjectName: string; }[]
+  studentEarnings: { student: { id: string; name: string; class: string }; feeShare: number; subjectName: string; }[]
 }) {
   const router = useRouter();
   const { settings } = useSettings();
@@ -179,7 +179,7 @@ export function TeacherEarningsClient({
                   <thead>
                     <tr>
                       <th>Student Name</th>
-                      <th>Student ID</th>
+                      <th>Class</th>
                       <th>Subject</th>
                       <th style="text-align: right;">Fee Share</th>
                     </tr>
@@ -187,8 +187,8 @@ export function TeacherEarningsClient({
                   <tbody>
                     ${studentEarnings.map(item => `
                       <tr>
-                        <td>${item.student.name}</td>
-                        <td>${item.student.id}</td>
+                        <td>${item.student.name} (${item.student.id})</td>
+                        <td>${item.student.class}</td>
                         <td>${item.subjectName}</td>
                         <td>${item.feeShare.toLocaleString()} PKR</td>
                       </tr>
