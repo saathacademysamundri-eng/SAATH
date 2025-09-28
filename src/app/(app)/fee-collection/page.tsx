@@ -63,6 +63,14 @@ export default function FeeCollectionPage() {
       });
       return;
     }
+     if (paidAmount > searchedStudent.totalFee) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Amount',
+        description: `Paid amount cannot be greater than the due amount of ${searchedStudent.totalFee.toLocaleString()} PKR.`,
+      });
+      return;
+    }
 
     setIsProcessingPayment(true);
     
@@ -209,7 +217,7 @@ export default function FeeCollectionPage() {
                       <tbody>
                           <tr class='border-b'>
                               <td class="py-1">Tuition Fee</td>
-                              <td class="py-1 text-right">${receiptContent.totalFee.toLocaleString()}</td>
+                              <td class="py-1 text-right">${originalTotal.toLocaleString()}</td>
                           </tr>
                       </tbody>
                   </table>
@@ -219,7 +227,7 @@ export default function FeeCollectionPage() {
                           <tbody>
                               <tr>
                                   <td class="py-0.5">Total Due:</td>
-                                  <td class="py-0.5 text-right font-medium">${receiptContent.totalFee.toLocaleString()}</td>
+                                  <td class="py-0.5 text-right font-medium">${originalTotal.toLocaleString()}</td>
                               </tr>
                               <tr>
                                   <td class="py-0.5">Amount Paid:</td>
@@ -250,7 +258,7 @@ export default function FeeCollectionPage() {
     }, 250);
 };
 
-  const balance = searchedStudent ? searchedStudent.totalFee - paidAmount : 0;
+  const balance = searchedStudent ? searchedStudent.totalFee : 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -326,16 +334,16 @@ export default function FeeCollectionPage() {
                             placeholder="Enter amount being paid" 
                             value={paidAmount || ''}
                             onChange={(e) => setPaidAmount(Number(e.target.value))}
-                            disabled={isProcessingPayment}
+                            disabled={isProcessingPayment || searchedStudent.totalFee === 0}
                         />
                     </div>
                     <div className="space-y-2">
                         <Label>Remaining Dues (PKR)</Label>
-                        <Input value={balance.toLocaleString()} readOnly disabled />
+                        <Input value={(balance - paidAmount).toLocaleString()} readOnly disabled />
                     </div>
                  </CardContent>
                  <CardContent className='flex gap-2'>
-                    <Button onClick={handlePayment} disabled={isProcessingPayment}>
+                    <Button onClick={handlePayment} disabled={isProcessingPayment || searchedStudent.totalFee === 0}>
                         {isProcessingPayment ? <Loader2 className="animate-spin" /> : null}
                         {isProcessingPayment ? 'Processing...' : 'Collect Fee & Print'}
                     </Button>
@@ -346,3 +354,5 @@ export default function FeeCollectionPage() {
     </div>
   );
 }
+
+    
