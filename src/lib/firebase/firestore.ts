@@ -1,4 +1,5 @@
 
+
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense } from '@/lib/data';
@@ -103,6 +104,17 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id' | 'avatar'>) {
         return { success: true, message: "Teacher added successfully." };
     } catch (error) {
         console.error("Error adding teacher: ", error);
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+export async function updateTeacher(teacherId: string, teacherData: Partial<Omit<Teacher, 'id' | 'avatar'>>) {
+    try {
+        const teacherRef = doc(db, 'teachers', teacherId);
+        await updateDoc(teacherRef, teacherData);
+        return { success: true, message: "Teacher updated successfully." };
+    } catch (error) {
+        console.error("Error updating teacher: ", error);
         return { success: false, message: (error as Error).message };
     }
 }

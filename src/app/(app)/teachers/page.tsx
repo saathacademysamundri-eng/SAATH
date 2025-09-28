@@ -36,6 +36,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { AddTeacherDialog } from './add-teacher-dialog';
 import { Badge } from '@/components/ui/badge';
+import { EditTeacherDialog } from './edit-teacher-dialog';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
@@ -175,37 +176,44 @@ export default function TeachersPage() {
                       {stats.net.toLocaleString()} PKR
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
-                            View Profile
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                              const printWindow = window.open(`/teachers/${teacher.id}?print=true`, '_blank');
-                              printWindow?.addEventListener('load', () => {
-                                setTimeout(() => {
-                                  printWindow?.print();
-                                  printWindow.close();
-                                }, 500);
-                              });
-                            }}>
-                              <Printer className="mr-2 h-4 w-4" />
-                              Print Report
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            Remove
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Dialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
+                              View Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                                const printWindow = window.open(`/teachers/${teacher.id}?print=true`, '_blank');
+                                printWindow?.addEventListener('load', () => {
+                                  setTimeout(() => {
+                                    printWindow?.print();
+                                    printWindow.close();
+                                  }, 500);
+                                });
+                              }}>
+                                <Printer className="mr-2 h-4 w-4" />
+                                Print Report
+                            </DropdownMenuItem>
+                            <DialogTrigger asChild>
+                                <DropdownMenuItem>
+                                  Edit
+                                </DropdownMenuItem>
+                            </DialogTrigger>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive">
+                              Remove
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                         <EditTeacherDialog teacher={teacher} onTeacherUpdated={fetchData} />
+                      </Dialog>
                     </TableCell>
                   </TableRow>
                 )})
