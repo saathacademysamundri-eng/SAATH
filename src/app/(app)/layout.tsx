@@ -12,7 +12,6 @@ import {
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
@@ -85,7 +84,7 @@ function MainSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Button asChild variant="ghost" className="w-full justify-start gap-2 h-12 group-data-[collapsible=icon]:size-12 group-data-[collapsible=icon]:justify-center" isActive={pathname.startsWith(item.href)}
+              <Button asChild variant="ghost" className="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center" isActive={pathname.startsWith(item.href)}
               >
                   <Link href={item.href}>
                     <item.icon className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
@@ -99,28 +98,28 @@ function MainSidebar() {
       <SidebarFooter>
         <SidebarMenu>
            <SidebarMenuItem>
-              <Link href="/settings">
-                <SidebarMenuButton tooltip="Settings" isActive={pathname.startsWith('/settings')} className="group-data-[collapsible=icon]:justify-center">
-                  <Settings className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                  <span className='group-data-[collapsible=icon]:hidden'>Settings</span>
-                </SidebarMenuButton>
-              </Link>
+                <Button asChild variant="ghost" className="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center" isActive={pathname.startsWith('/settings')}>
+                    <Link href="/settings">
+                        <Settings className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
+                        <span className='group-data-[collapsible=icon]:hidden'>Settings</span>
+                    </Link>
+                </Button>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Link href="#">
-              <SidebarMenuButton tooltip="Support" className="group-data-[collapsible=icon]:justify-center">
-                <LifeBuoy className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                <span className='group-data-[collapsible=icon]:hidden'>Support</span>
-              </SidebarMenuButton>
-            </Link>
+              <Button asChild variant="ghost" className="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center">
+                <Link href="#">
+                    <LifeBuoy className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
+                    <span className='group-data-[collapsible=icon]:hidden'>Support</span>
+                </Link>
+             </Button>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Link href="/">
-              <SidebarMenuButton tooltip="Log Out" className="group-data-[collapsible=icon]:justify-center">
-                <LogOut className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
-                <span className='group-data-[collapsible=icon]:hidden'>Log Out</span>
-              </SidebarMenuButton>
-            </Link>
+             <Button asChild variant="ghost" className="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center">
+                <Link href="/">
+                    <LogOut className={cn(!isPinned ? "h-8 w-8" : "h-6 w-6")} />
+                    <span className='group-data-[collapsible=icon]:hidden'>Log Out</span>
+                </Link>
+            </Button>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
