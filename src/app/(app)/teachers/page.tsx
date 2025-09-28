@@ -27,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { teachers, students as allStudents } from '@/lib/data';
-import { MoreHorizontal, Search } from 'lucide-react';
+import { MoreHorizontal, Printer, Search } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -35,28 +35,28 @@ export default function TeachersPage() {
   const [search, setSearch] = useState('');
   const router = useRouter();
 
-  const teacherEarnings = useMemo(() => {
-    const earningsMap = new Map<string, number>();
+  const teacherStats = useMemo(() => {
+    const stats = new Map<string, { gross: number; net: number; subjects: Set<string> }>();
+    
+    teachers.forEach(teacher => {
+        stats.set(teacher.id, { gross: 0, net: 0, subjects: new Set() });
+    });
+
     allStudents.forEach(student => {
       student.subjects.forEach(subject => {
-        const currentEarnings = earningsMap.get(subject.teacher_id) || 0;
-        earningsMap.set(subject.teacher_id, currentEarnings + subject.fee_share);
-      });
-    });
-    return earningsMap;
-  }, [allStudents]);
-
-  const teacherSubjects = useMemo(() => {
-    const subjectMap = new Map<string, Set<string>>();
-     allStudents.forEach(student => {
-      student.subjects.forEach(subject => {
-        if (!subjectMap.has(subject.teacher_id)) {
-            subjectMap.set(subject.teacher_id, new Set());
+        if (stats.has(subject.teacher_id)) {
+            const currentStats = stats.get(subject.teacher_id)!;
+            currentStats.gross += subject.fee_share;
+            currentStats.subjects.add(subject.subject_name);
         }
-        subjectMap.get(subject.teacher_id)!.add(subject.subject_name);
       });
     });
-    return subjectMap;
+
+    stats.forEach(stat => {
+        stat.net = stat.gross * 0.7;
+    });
+
+    return stats;
   }, [allStudents]);
 
 
@@ -96,14 +96,17 @@ export default function TeachersPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Subject(s)</TableHead>
-                <TableHead>Total Earnings</TableHead>
+                <TableHead>Gross Earnings</TableHead>
+                <TableHead>Net Earnings (70%)</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTeachers.map((teacher) => (
+              {filteredTeachers.map((teacher) => {
+                const stats = teacherStats.get(teacher.id) || { gross: 0, net: 0, subjects: new Set() };
+                return (
                 <TableRow key={teacher.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -115,10 +118,13 @@ export default function TeachersPage() {
                     </div>
                   </TableCell>
                    <TableCell>
-                    {teacherSubjects.has(teacher.id) ? Array.from(teacherSubjects.get(teacher.id)!).join(', ') : 'N/A'}
+                    {stats.subjects.size > 0 ? Array.from(stats.subjects).join(', ') : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    {(teacherEarnings.get(teacher.id) || 0).toLocaleString()} PKR
+                    {stats.gross.toLocaleString()} PKR
+                  </TableCell>
+                   <TableCell className="font-semibold text-green-600">
+                    {stats.net.toLocaleString()} PKR
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -133,6 +139,10 @@ export default function TeachersPage() {
                         <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
                           View Earnings
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
+                            <Printer className="mr-2 h-4 w-4" />
+                            Print Report
+                        </DropdownMenuItem>
                         <DropdownMenuItem>Edit</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">
@@ -142,7 +152,7 @@ export default function TeachersPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
         </CardContent>

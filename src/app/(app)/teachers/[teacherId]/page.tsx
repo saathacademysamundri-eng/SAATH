@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { teachers, students as allStudents, Student } from '@/lib/data';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { notFound, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
@@ -17,11 +17,12 @@ type StudentEarning = {
 
 export default function TeacherEarningsPage({ params }: { params: { teacherId: string } }) {
   const router = useRouter();
-  
-  const teacher = teachers.find(t => t.id === params.teacherId);
+  const { teacherId } = params;
+
+  const teacher = useMemo(() => teachers.find(t => t.id === teacherId), [teacherId]);
 
   const earningsData = useMemo(() => {
-    if (!teacher) return { studentEarnings: [], totalEarnings: 0 };
+    if (!teacher) return { studentEarnings: [], totalEarnings: 0, teacherShare: 0, academyShare: 0 };
 
     const studentEarnings: StudentEarning[] = [];
     let totalEarnings = 0;
@@ -38,19 +39,26 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
         }
       });
     });
+    
+    const teacherShare = totalEarnings * 0.7;
+    const academyShare = totalEarnings * 0.3;
 
-    return { studentEarnings, totalEarnings };
+    return { studentEarnings, totalEarnings, teacherShare, academyShare };
   }, [teacher]);
 
   if (!teacher) {
     return notFound();
   }
   
-  const { studentEarnings, totalEarnings } = earningsData;
+  const { studentEarnings, totalEarnings, teacherShare, academyShare } = earningsData;
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-6" id="print-area">
+      <div className="flex items-center gap-4 print:hidden">
         <Button variant="outline" size="icon" onClick={() => router.back()}>
             <ArrowLeft />
         </Button>
@@ -60,11 +68,20 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
             Earnings details for {teacher.name}.
           </p>
         </div>
+        <Button variant="outline" className="ml-auto" onClick={handlePrint}>
+            <Printer className="mr-2"/>
+            Print Report
+        </Button>
+      </div>
+      
+      <div className="text-center hidden print:block mb-6">
+        <h1 className="text-2xl font-bold">{teacher.name} - Earnings Report</h1>
+        <p className="text-muted-foreground">Date: {new Date().toLocaleDateString()}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1 space-y-6">
-            <Card>
+            <Card className="print:shadow-none print:border-none">
                 <CardHeader className='flex-row items-center gap-4 space-y-0'>
                      <Avatar className="h-16 w-16">
                         <AvatarImage src={teacher.avatar} alt={teacher.name} data-ai-hint="person face" />
@@ -76,18 +93,34 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
                     </div>
                 </CardHeader>
             </Card>
-            <Card>
+            <Card className="print:shadow-none print:border">
                 <CardHeader>
-                    <CardTitle>Total Earnings</CardTitle>
-                    <CardDescription>This is the total amount earned this month.</CardDescription>
+                    <CardTitle>Gross Earnings</CardTitle>
+                    <CardDescription>This is the total amount collected from students.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-4xl font-bold">{totalEarnings.toLocaleString()} PKR</p>
+                    <p className="text-3xl font-bold">{totalEarnings.toLocaleString()} PKR</p>
+                </CardContent>
+            </Card>
+             <Card className="border-green-500/50 print:border-green-500/50">
+                <CardHeader>
+                    <CardTitle>Teacher's Share (70%)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold text-green-600">{teacherShare.toLocaleString()} PKR</p>
+                </CardContent>
+            </Card>
+             <Card className="border-blue-500/50 print:border-blue-500/50">
+                <CardHeader>
+                    <CardTitle>Academy's Share (30%)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-3xl font-bold text-blue-600">{academyShare.toLocaleString()} PKR</p>
                 </CardContent>
             </Card>
         </div>
         <div className="lg:col-span-2">
-            <Card>
+            <Card className="print:shadow-none print:border-none">
                 <CardHeader>
                     <CardTitle>Student Breakdown</CardTitle>
                     <CardDescription>List of students contributing to the earnings.</CardDescription>
@@ -107,7 +140,7 @@ export default function TeacherEarningsPage({ params }: { params: { teacherId: s
                                     <TableRow key={`${student.id}-${index}`}>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
-                                                <Avatar className="h-8 w-8">
+                                                <Avatar className="h-8 w-8 print:hidden">
                                                     <AvatarImage src={student.avatar} alt={student.name} data-ai-hint="person face" />
                                                     <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                                                 </Avatar>

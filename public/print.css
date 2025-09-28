@@ -1,0 +1,56 @@
+@media print {
+  body {
+    background-color: white;
+    color: black;
+  }
+  
+  .print\:hidden {
+    display: none;
+  }
+
+  .print\:block {
+    display: block;
+  }
+  
+  main {
+    padding: 0;
+    margin: 0;
+  }
+  
+  .print\:shadow-none {
+    box-shadow: none;
+  }
+
+  .print\:border-none {
+    border: none;
+  }
+
+  .print\:border {
+    border-width: 1px;
+    border-color: #e5e7eb;
+  }
+  
+  .print\:border-green-500\/50 {
+    border-color: rgba(34, 197, 94, 0.5);
+  }
+
+  .print\:border-blue-500\/50 {
+     border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  /* Ensure the main content area for printing is visible and takes up the page */
+  #print-area {
+    visibility: visible;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 1rem;
+    padding: 1rem;
+  }
+
+  /* Hide everything else */
+  body > *:not(#print-area) {
+    display: none;
+  }
+}
