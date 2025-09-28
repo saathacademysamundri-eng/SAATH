@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type Student, type Teacher } from '@/lib/data';
 import { getTeacher, getStudents } from '@/lib/firebase/firestore';
 import { Phone } from 'lucide-react';
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useParams } from 'next/navigation';
@@ -70,6 +70,29 @@ export default function TeacherProfilePage() {
     fetchData();
   }, [teacherId]);
 
+  const teacherShare = totalEarnings * 0.7;
+  const academyShare = totalEarnings * 0.3;
+
+  const getReportData = useCallback(() => {
+    if (!teacher) return null;
+
+    const breakdown = studentEarnings.map(earning => ({
+      studentId: earning.student.id,
+      studentName: earning.student.name,
+      studentClass: earning.student.class,
+      subjectName: earning.subjectName,
+      feeShare: earning.feeShare,
+    }));
+
+    return {
+      grossEarnings: totalEarnings,
+      teacherShare: teacherShare,
+      academyShare: academyShare,
+      studentBreakdown: breakdown,
+    };
+  }, [teacher, studentEarnings, totalEarnings, teacherShare, academyShare]);
+
+
   if (loading) {
     return (
         <div className="space-y-6">
@@ -105,21 +128,18 @@ export default function TeacherProfilePage() {
     );
   }
 
-  const teacherShare = totalEarnings * 0.7;
-  const academyShare = totalEarnings * 0.3;
-
   return (
     <div className="flex flex-col gap-6">
       <TeacherEarningsClient 
         teacherId={teacher.id} 
         teacherName={teacher.name}
+        getReportData={getReportData}
       />
       
       <div id="print-area">
         <Card>
             <CardHeader className='flex-row items-center gap-4 space-y-0 pb-4'>
                 <Avatar className="h-20 w-20">
-                    <AvatarImage src={teacher.avatar} alt={teacher.name} data-ai-hint="person face" />
                     <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className='grid gap-1'>

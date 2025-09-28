@@ -2,7 +2,7 @@
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction } from 'firebase/firestore';
 import { app } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense } from '@/lib/data';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report } from '@/lib/data';
 
 const db = getFirestore(app);
 
@@ -100,7 +100,6 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id' | 'avatar'>) {
             name: teacherData.name,
             phone: teacherData.phone,
             subjects: teacherData.subjects,
-            avatar: `https://picsum.photos/seed/${newTeacherId}/40/40`,
         };
         await setDoc(doc(db, 'teachers', newTeacherId), newTeacher);
         return { success: true, message: "Teacher added successfully." };
@@ -360,5 +359,31 @@ export async function getExpenses(): Promise<Expense[]> {
             ...data,
             date: data.date.toDate(),
         } as Expense;
+    });
+}
+
+// Reports Functions
+export async function addReport(reportData: Omit<Report, 'id'>) {
+    try {
+        const docRef = await addDoc(collection(db, 'reports'), {
+            ...reportData,
+            reportDate: serverTimestamp()
+        });
+        return { success: true, message: 'Report saved.', id: docRef.id };
+    } catch (error) {
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+export async function getReports(): Promise<Report[]> {
+    const q = query(collection(db, "reports"), orderBy("reportDate", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            reportDate: data.reportDate.toDate(),
+        } as Report;
     });
 }

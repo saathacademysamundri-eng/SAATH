@@ -1,7 +1,6 @@
 
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -37,6 +36,7 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { AddTeacherDialog } from './add-teacher-dialog';
 import { Badge } from '@/components/ui/badge';
 import { EditTeacherDialog } from './edit-teacher-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
@@ -161,7 +161,6 @@ export default function TeachersPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage src={teacher.avatar} alt={teacher.name} data-ai-hint="person face" />
                           <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="font-medium">{teacher.name}</div>
@@ -189,20 +188,12 @@ export default function TeachersPage() {
                             <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
                               View Profile
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                                const printWindow = window.open(`/teachers/${teacher.id}?print=true`, '_blank');
-                                printWindow?.addEventListener('load', () => {
-                                  setTimeout(() => {
-                                    printWindow?.print();
-                                    printWindow.close();
-                                  }, 500);
-                                });
-                              }}>
+                            <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
                                 <Printer className="mr-2 h-4 w-4" />
                                 Print Report
                             </DropdownMenuItem>
                             <DialogTrigger asChild>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                   Edit
                                 </DropdownMenuItem>
                             </DialogTrigger>

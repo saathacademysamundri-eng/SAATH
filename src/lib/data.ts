@@ -27,7 +27,6 @@ export type Student = {
 export type Teacher = {
   id: string;
   name: string;
-  avatar: string;
   phone: string;
   subjects: string[]; // Names of subjects
 };
@@ -45,6 +44,23 @@ export type Expense = {
     description: string;
     amount: number;
     date: Date;
+}
+
+export type Report = {
+    id: string;
+    teacherId: string;
+    teacherName: string;
+    reportDate: Date;
+    grossEarnings: number;
+    teacherShare: number;
+    academyShare: number;
+    studentBreakdown: {
+        studentName: string;
+        studentId: string;
+        studentClass: string;
+        subjectName: string;
+        feeShare: number;
+    }[];
 }
 
 
@@ -152,11 +168,11 @@ export let students: Student[] = [
 ];
 
 export const teachers: Teacher[] = [
-    { id: 'T01', name: 'Dr. Arshad', avatar: 'https://picsum.photos/seed/201/40/40', phone: '03001234567', subjects: ['Physics'] },
-    { id: 'T02', name: 'Mrs. Samina', avatar: 'https://picsum.photos/seed/202/40/40', phone: '03011234567', subjects: ['Chemistry'] },
-    { id: 'T03', name: 'Mr. Qasim', avatar: 'https://picsum.photos/seed/203/40/40', phone: '03021234567', subjects: ['Mathematics', 'Computer Science', 'Pre-Eng. Mathematics'] },
-    { id: 'T04', name: 'Ms. Farhat', avatar: 'https://picsum.photos/seed/204/40/40', phone: '03031234567', subjects: ['English'] },
-    { id: 'T05', name: 'Dr. Nida', avatar: 'https://picsum.photos/seed/205/40/40', phone: '03041234567', subjects: ['Biology', 'Pre-Med. Biology'] },
+    { id: 'T01', name: 'Dr. Arshad', phone: '03001234567', subjects: ['Physics'] },
+    { id: 'T02', name: 'Mrs. Samina', phone: '03011234567', subjects: ['Chemistry'] },
+    { id: 'T03', name: 'Mr. Qasim', phone: '03021234567', subjects: ['Mathematics', 'Computer Science', 'Pre-Eng. Mathematics'] },
+    { id: 'T04', name: 'Ms. Farhat', phone: '03031234567', subjects: ['English'] },
+    { id: 'T05', name: 'Dr. Nida', phone: '03041234567', subjects: ['Biology', 'Pre-Med. Biology'] },
 ];
 
 export const classes: Class[] = [

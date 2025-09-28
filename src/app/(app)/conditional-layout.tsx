@@ -30,6 +30,7 @@ import {
   PinOff,
   TrendingUp,
   TrendingDown,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -74,6 +75,7 @@ function MainSidebar() {
     { href: '/fee-collection', label: 'Fee Collection', icon: DollarSign },
     { href: '/income', label: 'Income', icon: TrendingUp },
     { href: '/expenses', label: 'Expenses', icon: TrendingDown },
+    { href: '/reports', label: 'Reports', icon: FileText },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
   ];
 

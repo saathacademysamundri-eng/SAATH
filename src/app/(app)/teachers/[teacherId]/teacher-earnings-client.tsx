@@ -1,43 +1,98 @@
 
 'use client';
 
+import { addReport } from '@/lib/firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/hooks/use-settings';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export function TeacherEarningsClient({ 
   teacherId, 
   teacherName,
+  getReportData,
 }: { 
   teacherId: string, 
   teacherName: string,
+  getReportData: () => any;
 }) {
   const router = useRouter();
   const { settings, isSettingsLoading } = useSettings();
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const handlePrint = () => {
+  const handleGenerateAndPrint = async () => {
     if (isSettingsLoading) {
-      alert("Please wait for settings to load.");
+      toast({ title: "Please wait", description: "Settings are loading."});
+      return;
+    }
+    
+    setIsGenerating(true);
+
+    const reportData = getReportData();
+    if (!reportData) {
+      toast({ variant: 'destructive', title: 'Error', description: "Could not gather report data."})
+      setIsGenerating(false);
       return;
     }
 
-    const printContentEl = document.getElementById('print-area');
-    if (!printContentEl) return;
+    try {
+      // 1. Save the report to Firestore
+      const result = await addReport({
+        teacherId,
+        teacherName,
+        ...reportData
+      });
 
-    // Extracting data directly from the DOM to ensure it's current
-    const grossEarnings = printContentEl.querySelector('[data-stat="gross-earnings"]')?.textContent || '0 PKR';
-    const teacherShare = printContentEl.querySelector('[data-stat="teacher-share"]')?.textContent || '0 PKR';
-    const academyShare = printContentEl.querySelector('[data-stat="academy-share"]')?.textContent || '0 PKR';
-    const studentTable = printContentEl.querySelector('table')?.outerHTML || '<table></table>';
+      if (!result.success) {
+        throw new Error(result.message || "Failed to save the report.");
+      }
+      
+      toast({ title: 'Report Saved', description: 'The earnings report has been saved.' });
 
+      // 2. Open print dialog
+      const printHtml = generatePrintHtml(reportData, teacherName);
+      const printWindow = window.open('', '', 'height=800,width=800');
+      if (printWindow) {
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 500);
+      }
+
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Report Generation Failed',
+        description: (error as Error).message || 'An unknown error occurred.',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const generatePrintHtml = (reportData: any, teacherName: string) => {
+    const { grossEarnings, teacherShare, academyShare, studentBreakdown } = reportData;
     const academyLogo = settings.logo;
     const academyName = settings.name;
     const academyAddress = settings.address;
     const academyPhone = settings.phone;
     const reportDate = new Date().toLocaleDateString('en-GB');
 
-    const printHtml = `
+    const studentRows = studentBreakdown.map((item: any) => `
+      <tr>
+        <td>${item.studentName} (${item.studentId})</td>
+        <td>${item.studentClass}</td>
+        <td>${item.subjectName}</td>
+        <td>${item.feeShare.toLocaleString()} PKR</td>
+      </tr>
+    `).join('');
+
+    return `
       <html>
         <head>
           <title>Earnings Report - ${teacherName}</title>
@@ -73,7 +128,7 @@ export function TeacherEarningsClient({
             .academy-share { color: #3b82f6; }
             .breakdown-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem; }
             table { width: 100%; border-collapse: collapse; text-align: left; }
-            th, td { padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; }
+            th, td { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; }
             th { font-weight: bold; color: #6b7280; }
             td:last-child, th:last-child { text-align: right; }
             .footer { text-align: right; margin-top: 2rem; font-size: 0.8rem; color: #6b7280; }
@@ -101,20 +156,32 @@ export function TeacherEarningsClient({
             <div class="stats-grid">
               <div class="stat-card">
                 <p>Total Gross Earnings</p>
-                <p class="amount">${grossEarnings}</p>
+                <p class="amount">${grossEarnings.toLocaleString()} PKR</p>
               </div>
               <div class="stat-card">
                 <p>Teacher's Share (70%)</p>
-                <p class="amount teacher-share">${teacherShare}</p>
+                <p class="amount teacher-share">${teacherShare.toLocaleString()} PKR</p>
               </div>
               <div class="stat-card">
                 <p>Academy's Share (30%)</p>
-                <p class="amount academy-share">${academyShare}</p>
+                <p class="amount academy-share">${academyShare.toLocaleString()} PKR</p>
               </div>
             </div>
 
             <h3 class="breakdown-title">Student Breakdown</h3>
-            ${studentTable}
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Class</th>
+                  <th>Subject</th>
+                  <th style="text-align: right;">Fee Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${studentRows}
+              </tbody>
+            </table>
 
             <div class="footer">
               <p>1 / 1</p>
@@ -123,18 +190,7 @@ export function TeacherEarningsClient({
         </body>
       </html>
     `;
-
-    const printWindow = window.open('', '', 'height=800,width=800');
-    if (printWindow) {
-      printWindow.document.write(printHtml);
-      printWindow.document.close();
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 500); // Wait for content to render
-    }
   };
-
 
   return (
     <div className="flex items-center gap-4 print:hidden">
@@ -147,9 +203,9 @@ export function TeacherEarningsClient({
           Earnings details for {teacherName}.
         </p>
       </div>
-      <Button variant="outline" className="ml-auto" onClick={handlePrint}>
-        <Printer className="mr-2" />
-        Print Report
+      <Button variant="outline" className="ml-auto" onClick={handleGenerateAndPrint} disabled={isGenerating}>
+        {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Printer className="mr-2" />}
+        {isGenerating ? 'Generating...' : 'Generate & Print Report'}
       </Button>
     </div>
   );
