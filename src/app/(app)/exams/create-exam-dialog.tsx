@@ -31,6 +31,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [examType, setExamType] = useState<'Single Subject' | 'Full Test'>('Single Subject');
     const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+    const [totalMarks, setTotalMarks] = useState(100);
 
     const [classes, setClasses] = useState<Class[]>([]);
     const [isSaving, setIsSaving] = useState(false);
@@ -50,13 +51,13 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     }
 
     const handleSubmit = async () => {
-        const hasMissingInfo = !name || !selectedClassId || (examType === 'Single Subject' && !selectedSubject);
+        const hasMissingInfo = !name || !selectedClassId || (examType === 'Single Subject' && !selectedSubject) || totalMarks <= 0;
 
         if (hasMissingInfo) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Please fill out all required fields.',
+                description: 'Please fill out all required fields, including total marks.',
             });
             return;
         }
@@ -69,6 +70,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             className: currentClass!.name,
             examType,
             subjects: examType === 'Single Subject' ? [selectedSubject!] : currentClass!.subjects.map(s => s.name),
+            totalMarks,
             results: [],
         };
 
@@ -150,6 +152,12 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                     </Select>
                 </div>
             )}
+            
+            <div className="grid gap-2">
+                <Label htmlFor="totalMarks">Total Marks per Subject</Label>
+                <Input id="totalMarks" type="number" placeholder="e.g., 100" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} />
+            </div>
+
         </div>
         <DialogFooter>
             <DialogClose asChild>

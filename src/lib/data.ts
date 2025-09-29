@@ -1,4 +1,5 @@
 
+
 export type Subject = {
     id: string;
     name: string;
@@ -76,6 +77,7 @@ export type Exam = {
     className: string;
     examType: 'Single Subject' | 'Full Test';
     subjects: string[];
+    totalMarks: number;
     date: Date;
     results?: StudentResult[];
 }

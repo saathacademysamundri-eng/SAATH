@@ -31,6 +31,7 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [examType, setExamType] = useState<'Single Subject' | 'Full Test'>(exam.examType);
     const [selectedSubject, setSelectedSubject] = useState<string | null>(exam.examType === 'Single Subject' ? exam.subjects[0] : null);
+    const [totalMarks, setTotalMarks] = useState(exam.totalMarks || 100);
 
     const [classes, setClasses] = useState<Class[]>([]);
     const [isSaving, setIsSaving] = useState(false);
@@ -54,7 +55,7 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
     }
 
     const handleSubmit = async () => {
-        const hasMissingInfo = !name || !selectedClassId || (examType === 'Single Subject' && !selectedSubject);
+        const hasMissingInfo = !name || !selectedClassId || (examType === 'Single Subject' && !selectedSubject) || totalMarks <= 0;
 
         if (hasMissingInfo) {
             toast({
@@ -73,6 +74,7 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
             className: currentClass!.name,
             examType,
             subjects: examType === 'Single Subject' ? [selectedSubject!] : currentClass!.subjects.map(s => s.name),
+            totalMarks,
         };
 
         const result = await updateExam(exam.id, examData);
@@ -153,6 +155,11 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
                     </Select>
                 </div>
             )}
+
+            <div className="grid gap-2">
+                <Label htmlFor="totalMarks">Total Marks per Subject</Label>
+                <Input id="totalMarks" type="number" placeholder="e.g., 100" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} />
+            </div>
         </div>
         <DialogFooter>
             <DialogClose asChild>

@@ -100,25 +100,15 @@ export default function ExamResultsPage() {
     setIsSaving(false);
   }
 
-  const examSubjects = useMemo(() => {
-    if (!exam) return [];
-    if (exam.examType === 'Single Subject') {
-      return exam.subjects;
-    }
-    if (students.length > 0) {
-        // For full tests, get subjects from the class definition
-        return exam.subjects;
-    }
-    return [];
-  }, [exam, students]);
-
   const enhancedResults = useMemo((): EnhancedResult[] => {
-    const maxMarksPerSubject = 100;
-    const totalMaxMarks = examSubjects.length * maxMarksPerSubject;
+    if (!exam) return [];
+    
+    const maxMarksPerSubject = exam.totalMarks;
+    const totalMaxMarks = exam.subjects.length * maxMarksPerSubject;
 
     const studentTotals = students.map(student => {
       const studentResult = results[student.id];
-      const totalMarks = examSubjects.reduce((acc, subject) => {
+      const totalMarks = exam.subjects.reduce((acc, subject) => {
         const mark = studentResult?.marks[subject];
         return acc + (typeof mark === 'number' ? mark : 0);
       }, 0);
@@ -147,7 +137,7 @@ export default function ExamResultsPage() {
       return { ...student, position: rank };
     });
 
-  }, [results, students, examSubjects]);
+  }, [results, students, exam]);
 
 
   const getStudentEnhancedResult = (studentId: string) => {
@@ -166,9 +156,9 @@ export default function ExamResultsPage() {
         return;
     }
 
-    const maxMarksPerSubject = 100;
-    const totalMaxMarks = examSubjects.length * maxMarksPerSubject;
-    const tableHeader = examSubjects.map(s => `<th style="text-align: center;">${s}<br>(${maxMarksPerSubject})</th>`).join('');
+    const maxMarksPerSubject = exam.totalMarks;
+    const totalMaxMarks = exam.subjects.length * maxMarksPerSubject;
+    const tableHeader = exam.subjects.map(s => `<th style="text-align: center;">${s}<br>(${maxMarksPerSubject})</th>`).join('');
     
     const tableRows = students
       .sort((a, b) => {
@@ -180,7 +170,7 @@ export default function ExamResultsPage() {
         const studentResult = results[student.id];
         const enhanced = getStudentEnhancedResult(student.id);
 
-        const marksCells = examSubjects.map(subject => {
+        const marksCells = exam.subjects.map(subject => {
             const marks = studentResult?.marks[subject];
             return `<td style="text-align: center;">${marks ?? '-'}</td>`;
         }).join('');
@@ -293,7 +283,7 @@ export default function ExamResultsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{exam.name}</h1>
-        <p className="text-muted-foreground">Enter marks for students of {exam.className}. Max marks per subject is 100.</p>
+        <p className="text-muted-foreground">Enter marks for students of {exam.className}. Max marks per subject is {exam.totalMarks}.</p>
       </div>
       <Card>
         <CardHeader>
@@ -321,8 +311,8 @@ export default function ExamResultsPage() {
                 <TableRow>
                   <TableHead>Roll #</TableHead>
                   <TableHead>Student Name</TableHead>
-                  {examSubjects.map(subject => (
-                    <TableHead key={subject} className="text-center">{subject}</TableHead>
+                  {exam.subjects.map(subject => (
+                    <TableHead key={subject} className="text-center">{subject} ({exam.totalMarks})</TableHead>
                   ))}
                   <TableHead className="text-center font-bold">Total</TableHead>
                   <TableHead className="text-center font-bold">%</TableHead>
@@ -340,7 +330,7 @@ export default function ExamResultsPage() {
                     <TableRow key={student.id}>
                         <TableCell className="font-medium">{student.id}</TableCell>
                         <TableCell>{student.name}</TableCell>
-                        {examSubjects.map(subject => (
+                        {exam.subjects.map(subject => (
                         <TableCell key={subject}>
                             <Input
                             type="number"
@@ -365,4 +355,3 @@ export default function ExamResultsPage() {
     </div>
   );
 }
-
