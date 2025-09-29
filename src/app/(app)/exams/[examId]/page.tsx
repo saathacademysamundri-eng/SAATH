@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,14 @@ import { getExam, getStudentsByClass, saveExamResults } from '@/lib/firebase/fir
 import { Loader2, Printer } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
+
+type EnhancedResult = {
+    studentId: string;
+    studentName: string;
+    totalMarks: number;
+    percentage: number;
+    position: number;
+};
 
 export default function ExamResultsPage() {
   const params = useParams();
@@ -96,16 +105,54 @@ export default function ExamResultsPage() {
     if (exam.examType === 'Single Subject') {
       return exam.subjects;
     }
-    if (students.length > 0 && students[0].subjects) {
-        // For full tests, aggregate subjects from all students in the class
-        const allClassSubjects = new Set<string>();
-        students.forEach(student => {
-            student.subjects.forEach(s => allClassSubjects.add(s.subject_name));
-        });
-        return Array.from(allClassSubjects);
+    if (students.length > 0) {
+        // For full tests, get subjects from the class definition
+        return exam.subjects;
     }
     return [];
   }, [exam, students]);
+
+  const enhancedResults = useMemo((): EnhancedResult[] => {
+    const maxMarksPerSubject = 100;
+    const totalMaxMarks = examSubjects.length * maxMarksPerSubject;
+
+    const studentTotals = students.map(student => {
+      const studentResult = results[student.id];
+      const totalMarks = examSubjects.reduce((acc, subject) => {
+        const mark = studentResult?.marks[subject];
+        return acc + (typeof mark === 'number' ? mark : 0);
+      }, 0);
+      
+      const percentage = totalMaxMarks > 0 ? (totalMarks / totalMaxMarks) * 100 : 0;
+
+      return {
+        studentId: student.id,
+        studentName: student.name,
+        totalMarks,
+        percentage,
+      };
+    });
+
+    // Sort by total marks descending to calculate position
+    const sortedStudents = [...studentTotals].sort((a, b) => b.totalMarks - a.totalMarks);
+
+    // Assign positions, handling ties
+    let rank = 0;
+    let lastMark = -1;
+    return sortedStudents.map((student, index) => {
+      if (student.totalMarks !== lastMark) {
+        rank = index + 1;
+        lastMark = student.totalMarks;
+      }
+      return { ...student, position: rank };
+    });
+
+  }, [results, students, examSubjects]);
+
+
+  const getStudentEnhancedResult = (studentId: string) => {
+    return enhancedResults.find(r => r.studentId === studentId);
+  }
 
   const handlePrint = () => {
     if (isSettingsLoading || !exam || !students.length) {
@@ -119,20 +166,33 @@ export default function ExamResultsPage() {
         return;
     }
 
-    const tableHeader = examSubjects.map(s => `<th style="text-align: center;">${s}</th>`).join('');
+    const maxMarksPerSubject = 100;
+    const totalMaxMarks = examSubjects.length * maxMarksPerSubject;
+    const tableHeader = examSubjects.map(s => `<th style="text-align: center;">${s}<br>(${maxMarksPerSubject})</th>`).join('');
+    
     const tableRows = students
-      .sort((a, b) => a.id.localeCompare(b.id))
+      .sort((a, b) => {
+          const resA = getStudentEnhancedResult(a.id)?.position ?? Infinity;
+          const resB = getStudentEnhancedResult(b.id)?.position ?? Infinity;
+          return resA - resB;
+      })
       .map(student => {
         const studentResult = results[student.id];
+        const enhanced = getStudentEnhancedResult(student.id);
+
         const marksCells = examSubjects.map(subject => {
             const marks = studentResult?.marks[subject];
             return `<td style="text-align: center;">${marks ?? '-'}</td>`;
         }).join('');
+
         return `
             <tr>
                 <td>${student.id}</td>
                 <td>${student.name}</td>
                 ${marksCells}
+                <td style="text-align: center; font-weight: bold;">${enhanced?.totalMarks ?? 0}</td>
+                <td style="text-align: center;">${enhanced?.percentage.toFixed(2) ?? '0.00'}%</td>
+                <td style="text-align: center; font-weight: bold;">${enhanced?.position ?? '-'}</td>
             </tr>
         `;
     }).join('');
@@ -143,7 +203,7 @@ export default function ExamResultsPage() {
           <title>Exam Results - ${exam.name}</title>
           <style>
             @media print {
-              @page { size: A4; margin: 1in; }
+              @page { size: A4; margin: 0.75in; }
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
             body { 
@@ -154,24 +214,24 @@ export default function ExamResultsPage() {
               color: #000;
               font-size: 10pt;
             }
-            .report-container { max-width: 800px; margin: auto; padding: 20px; }
+            .report-container { max-width: 1000px; margin: auto; padding: 20px; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
-            .academy-details img { height: 80px; margin-bottom: 0.5rem; object-fit: contain; }
+            .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
             .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
             .report-title { text-align: center; margin: 2rem 0; }
             .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0 0 0.5rem 0; }
             .report-title p { font-size: 1.1rem; color: #555; margin: 0; }
             table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-            th, td { padding: 8px 12px; border: 1px solid #ddd; }
-            th { font-weight: bold; background-color: #f2f2f2; }
+            th, td { padding: 8px 10px; border: 1px solid #ddd; }
+            th { font-weight: bold; background-color: #f2f2f2; text-align: center; }
             tr:nth-child(even) { background-color: #f9f9f9; }
           </style>
         </head>
         <body>
           <div class="report-container">
             <div class="academy-details">
-              <img src="${settings.logo}" alt="Academy Logo" />
+              ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
               <h1>${settings.name}</h1>
               <p>${settings.address}</p>
               <p>Phone: ${settings.phone}</p>
@@ -179,6 +239,7 @@ export default function ExamResultsPage() {
             <div class="report-title">
               <h2>Exam Results</h2>
               <p>${exam.name} - ${exam.className}</p>
+              <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
             </div>
             <table>
               <thead>
@@ -186,6 +247,9 @@ export default function ExamResultsPage() {
                   <th>Roll #</th>
                   <th>Student Name</th>
                   ${tableHeader}
+                  <th>Total</th>
+                  <th>%age</th>
+                  <th>Pos.</th>
                 </tr>
               </thead>
               <tbody>
@@ -229,7 +293,7 @@ export default function ExamResultsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{exam.name}</h1>
-        <p className="text-muted-foreground">Enter marks for students of {exam.className}.</p>
+        <p className="text-muted-foreground">Enter marks for students of {exam.className}. Max marks per subject is 100.</p>
       </div>
       <Card>
         <CardHeader>
@@ -260,26 +324,39 @@ export default function ExamResultsPage() {
                   {examSubjects.map(subject => (
                     <TableHead key={subject} className="text-center">{subject}</TableHead>
                   ))}
+                  <TableHead className="text-center font-bold">Total</TableHead>
+                  <TableHead className="text-center font-bold">%</TableHead>
+                  <TableHead className="text-center font-bold">Pos.</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {students.map(student => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.id}</TableCell>
-                    <TableCell>{student.name}</TableCell>
-                    {examSubjects.map(subject => (
-                      <TableCell key={subject}>
-                        <Input
-                          type="number"
-                          placeholder="Marks"
-                          className="max-w-[100px] mx-auto text-center"
-                          value={results[student.id]?.marks[subject] ?? ''}
-                          onChange={e => handleMarksChange(student.id, subject, e.target.value)}
-                        />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                {students.sort((a,b) => {
+                    const resA = getStudentEnhancedResult(a.id)?.position ?? Infinity;
+                    const resB = getStudentEnhancedResult(b.id)?.position ?? Infinity;
+                    return resA - resB;
+                }).map(student => {
+                   const enhanced = getStudentEnhancedResult(student.id);
+                   return(
+                    <TableRow key={student.id}>
+                        <TableCell className="font-medium">{student.id}</TableCell>
+                        <TableCell>{student.name}</TableCell>
+                        {examSubjects.map(subject => (
+                        <TableCell key={subject}>
+                            <Input
+                            type="number"
+                            placeholder="-"
+                            className="max-w-[80px] mx-auto text-center"
+                            value={results[student.id]?.marks[subject] ?? ''}
+                            onChange={e => handleMarksChange(student.id, subject, e.target.value)}
+                            />
+                        </TableCell>
+                        ))}
+                        <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>
+                        <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
+                        <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>
+                    </TableRow>
+                   )
+                })}
               </TableBody>
             </Table>
           </div>
@@ -288,3 +365,4 @@ export default function ExamResultsPage() {
     </div>
   );
 }
+
