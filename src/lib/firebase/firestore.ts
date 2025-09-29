@@ -3,8 +3,25 @@
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report } from '@/lib/data';
+import type { Settings } from '@/hooks/use-settings';
 
 const db = getFirestore(app);
+
+// Settings Functions
+export async function getSettings(): Promise<Settings | null> {
+    const docRef = doc(db, 'settings', 'details');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return docSnap.data() as Settings;
+    }
+    return null;
+}
+
+export async function updateSettings(settings: Settings) {
+    const docRef = doc(db, 'settings', 'details');
+    await setDoc(docRef, settings, { merge: true });
+}
+
 
 export async function getStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');

@@ -10,25 +10,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Database } from 'lucide-react';
-import { useState, ChangeEvent, useMemo } from 'react';
+import { Database, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { seedDatabase } from '@/lib/firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SettingsPage() {
-  const { settings, setSettings } = useSettings();
+  const { settings, updateSettings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
 
-  const [name, setName] = useState(settings.name);
-  const [address, setAddress] = useState(settings.address);
-  const [phone, setPhone] = useState(settings.phone);
-  const [logo, setLogo] = useState(settings.logo);
-  const [academicSession, setAcademicSession] = useState(settings.academicSession);
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [logo, setLogo] = useState('');
+  const [academicSession, setAcademicSession] = useState('');
+  
+  const [isSaving, setIsSaving] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+
+  useEffect(() => {
+    if (!isSettingsLoading) {
+      setName(settings.name);
+      setAddress(settings.address);
+      setPhone(settings.phone);
+      setLogo(settings.logo);
+      setAcademicSession(settings.academicSession);
+    }
+  }, [isSettingsLoading, settings]);
 
   const academicSessions = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const years = [];
-    for (let i = 0; i < 15; i++) {
+    for (let i = -5; i < 10; i++) {
         const startYear = currentYear + i;
         const endYear = startYear + 1;
         years.push(`${startYear}-${endYear}`);
@@ -36,23 +49,14 @@ export default function SettingsPage() {
     return years;
   }, []);
 
-  const handleSaveChanges = () => {
-    setSettings({ name, address, phone, logo, academicSession });
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    await updateSettings({ name, address, phone, logo, academicSession });
+    setIsSaving(false);
     toast({
       title: 'Settings Saved',
       description: 'Your academy details have been updated.',
     });
-  };
-
-  const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogo(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
   };
   
   const handleSeedDatabase = async () => {
@@ -94,49 +98,69 @@ export default function SettingsPage() {
                     <CardDescription>Update your academy's public details.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Academy Name</Label>
-                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                  {isSettingsLoading ? (
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-20 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="address">Address</Label>
-                        <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label>Academic Session</Label>
-                         <Select value={academicSession} onValueChange={setAcademicSession}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select session" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {academicSessions.map(session => (
-                                    <SelectItem key={session} value={session}>{session}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="logo">Academy Logo</Label>
-                        <div className='flex items-center gap-4'>
-                            <div className='w-20 h-20 rounded-full border flex items-center justify-center bg-muted overflow-hidden'>
-                                <img src={logo} alt="logo" className='object-cover w-full h-full' />
-                            </div>
-                            <Button variant="outline" asChild>
-                               <label htmlFor="logo-upload" className='cursor-pointer'>
-                                    <Upload className='mr-2'/>
-                                    Upload Logo
-                                    <input id="logo-upload" type="file" className='sr-only' accept="image/*" onChange={handleLogoUpload} />
-                               </label>
-                            </Button>
-                        </div>
-                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                          <Label htmlFor="name">Academy Name</Label>
+                          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="address">Address</Label>
+                          <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="phone">Phone Number</Label>
+                          <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Academic Session</Label>
+                          <Select value={academicSession} onValueChange={setAcademicSession}>
+                              <SelectTrigger>
+                                  <SelectValue placeholder="Select session" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {academicSessions.map(session => (
+                                      <SelectItem key={session} value={session}>{session}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="logo-url">Academy Logo URL</Label>
+                           <div className='flex items-center gap-4'>
+                              <div className='w-20 h-20 rounded-full border flex items-center justify-center bg-muted overflow-hidden'>
+                                  {logo ? <img src={logo} alt="logo" className='object-cover w-full h-full' /> : <span className="text-xs text-muted-foreground">No Logo</span>}
+                              </div>
+                              <Input id="logo-url" placeholder="https://example.com/logo.png" value={logo} onChange={(e) => setLogo(e.target.value)} />
+                          </div>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
                 <CardFooter>
-                    <Button onClick={handleSaveChanges}>Save Changes</Button>
+                    <Button onClick={handleSaveChanges} disabled={isSaving || isSettingsLoading}>
+                      {isSaving && <Loader2 className="mr-2 animate-spin" />}
+                      {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
                 </CardFooter>
             </Card>
           </TabsContent>

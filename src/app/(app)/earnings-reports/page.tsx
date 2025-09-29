@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { type Report } from '@/lib/data';
 import { getReports } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Download, FileText, Loader2 } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
@@ -21,7 +21,7 @@ function generatePdf(report: Report, settings: any) {
         format: 'a4',
     });
 
-    const reportDate = format(report.reportDate, 'dd/MM/yyyy');
+    const reportDate = format(new Date(report.reportDate), 'dd/MM/yyyy');
     const studentRows = report.studentBreakdown.map((item: any) => `
       <tr>
         <td>${item.studentName} (${item.studentId})</td>
@@ -52,7 +52,7 @@ function generatePdf(report: Report, settings: any) {
                 .report-title h2 { font-size: 2em; font-weight: bold; margin: 0 0 0.5rem 0; }
                 .report-title p { font-size: 1em; color: #555; margin: 0; }
                 .stats-grid { display: flex; justify-content: space-between; gap: 1.5rem; margin-bottom: 2rem; }
-                .stat-card { border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1.5rem; text-align: center; width: 30%; }
+                .stat-card { border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1.5rem; text-align: center; width: 30%; box-sizing: border-box; }
                 .stat-card p { margin: 0; color: #6b7280; font-size: 0.9em; }
                 .stat-card .amount { font-size: 1.5em; font-weight: bold; margin-top: 0.5rem; }
                 .teacher-share { color: #16a34a; }
@@ -121,7 +121,7 @@ export default function EarningsReportsPage() {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState<string | null>(null);
-    const { settings } = useSettings();
+    const { settings, isSettingsLoading } = useSettings();
     const { toast } = useToast();
 
     const fetchReports = useCallback(async () => {
@@ -136,6 +136,10 @@ export default function EarningsReportsPage() {
     }, [fetchReports]);
 
     const handleDownload = (report: Report) => {
+        if (isSettingsLoading) {
+            toast({ variant: 'destructive', title: 'Please wait', description: 'Settings are still loading.'});
+            return;
+        }
         setDownloading(report.id);
         try {
             generatePdf(report, settings);
@@ -176,7 +180,7 @@ export default function EarningsReportsPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {loading ? (
+                    {loading || isSettingsLoading ? (
                         Array.from({ length: 5 }).map((_, i) => (
                         <TableRow key={i}>
                             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
@@ -188,7 +192,7 @@ export default function EarningsReportsPage() {
                     ) : (
                         reports.map((item) => (
                             <TableRow key={item.id}>
-                                <TableCell>{format(item.reportDate, 'PPP, p')}</TableCell>
+                                <TableCell>{format(new Date(item.reportDate), 'PPP, p')}</TableCell>
                                 <TableCell className="font-medium">{item.teacherName}</TableCell>
                                 <TableCell className="text-right font-medium">{item.grossEarnings.toLocaleString()}</TableCell>
                                 <TableCell className="text-right">
