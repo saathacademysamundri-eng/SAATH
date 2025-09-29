@@ -7,18 +7,41 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
-import { getExams } from '@/lib/firebase/firestore';
-import { ClipboardPenLine, PlusCircle } from 'lucide-react';
+import { deleteExam, getExams } from '@/lib/firebase/firestore';
+import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { CreateExamDialog } from './create-exam-dialog';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { EditExamDialog } from './edit-exam-dialog';
 
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
+  const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const fetchExams = async () => {
     setLoading(true);
@@ -32,8 +55,30 @@ export default function ExamsPage() {
   }, []);
 
   const handleExamCreated = (examId: string) => {
+    fetchExams();
     router.push(`/exams/${examId}`);
   };
+  
+  const handleExamUpdated = () => {
+    fetchExams();
+    setIsEditDialogOpen(false);
+  };
+
+  const handleOpenEditDialog = (exam: Exam) => {
+    setSelectedExam(exam);
+    setIsEditDialogOpen(true);
+  };
+
+
+  const handleDeleteExam = async (examId: string) => {
+    const result = await deleteExam(examId);
+    if (result.success) {
+        toast({ title: 'Exam Deleted', description: 'The exam has been successfully removed.' });
+        fetchExams();
+    } else {
+        toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,7 +124,7 @@ export default function ExamsPage() {
                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                   </TableRow>
                 ))
               ) : exams.length > 0 ? (
@@ -99,10 +144,47 @@ export default function ExamsPage() {
                         </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => router.push(`/exams/${exam.id}`)}>
-                        <ClipboardPenLine className="mr-2 h-4 w-4" />
-                        Enter Marks
-                      </Button>
+                       <AlertDialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => router.push(`/exams/${exam.id}`)}>
+                                <ClipboardPenLine className="mr-2 h-4 w-4" />
+                                Enter Marks
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive">
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                           <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the exam "{exam.name}" and all of its associated results. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))
@@ -117,6 +199,14 @@ export default function ExamsPage() {
           </Table>
         </CardContent>
       </Card>
+       {selectedExam && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <EditExamDialog
+            exam={selectedExam}
+            onExamUpdated={handleExamUpdated}
+          />
+        </Dialog>
+      )}
     </div>
   );
 }

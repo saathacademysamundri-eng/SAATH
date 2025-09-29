@@ -1,5 +1,6 @@
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -24,7 +25,7 @@ service cloud.firestore {
     // Allow admin full access to everything.
     // Replace "YOUR_ADMIN_UID" with the actual UID of your admin user.
     function isAdmin() {
-      return request.auth.uid == "YOUR_ADMIN_UID";
+      return request.auth.uid == "jpmL48E3sLZj3k9d5pSgP2d13w13";
     }
 
     // Default deny all reads and writes
@@ -514,6 +515,27 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
         return { success: false, message: (error as Error).message };
     }
 }
+
+export async function updateExam(examId: string, examData: Partial<Omit<Exam, 'id' | 'date' | 'results'>>) {
+    try {
+        const docRef = doc(db, 'exams', examId);
+        await updateDoc(docRef, examData);
+        return { success: true, message: 'Exam updated successfully.' };
+    } catch (error) {
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+export async function deleteExam(examId: string) {
+    try {
+        const docRef = doc(db, 'exams', examId);
+        await deleteDoc(docRef);
+        return { success: true, message: 'Exam deleted successfully.' };
+    } catch (error) {
+        return { success: false, message: (error as Error).message };
+    }
+}
+
 
 export async function getExams(): Promise<Exam[]> {
     const q = query(collection(db, "exams"), orderBy("date", "desc"));
