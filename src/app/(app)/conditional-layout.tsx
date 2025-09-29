@@ -33,6 +33,7 @@ import {
   FileText,
   ClipboardCheck,
   LineChart,
+  ClipboardPenLine,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -75,6 +76,7 @@ function MainSidebar() {
     { href: '/teachers', label: 'Teachers', icon: BookUser },
     { href: '/classes', label: 'Classes', icon: School },
     { href: '/attendance', label: 'Attendance', icon: ClipboardCheck },
+    { href: '/exams', label: 'Exams', icon: ClipboardPenLine },
     { href: '/fee-collection', label: 'Fee Collection', icon: DollarSign },
     { href: '/income', label: 'Income', icon: TrendingUp },
     { href: '/expenses', label: 'Expenses', icon: TrendingDown },

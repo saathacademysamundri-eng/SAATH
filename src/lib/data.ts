@@ -1,3 +1,4 @@
+
 export type Subject = {
     id: string;
     name: string;
@@ -61,6 +62,22 @@ export type Report = {
         subjectName: string;
         feeShare: number;
     }[];
+}
+
+export type StudentResult = {
+    studentId: string;
+    studentName: string;
+    marks: { [subjectName: string]: number | null };
+}
+
+export type Exam = {
+    id: string;
+    name: string;
+    className: string;
+    examType: 'Single Subject' | 'Full Test';
+    subjects: string[];
+    date: Date;
+    results?: StudentResult[];
 }
 
 

@@ -1,8 +1,9 @@
 
 
+
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction } from 'firebase/firestore';
 import { app } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report } from '@/lib/data';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 
 const db = getFirestore(app);
@@ -28,6 +29,12 @@ export async function getStudents(): Promise<Student[]> {
   const q = query(studentsCollection, orderBy("id"));
   const studentsSnap = await getDocs(q);
   return studentsSnap.docs.map(doc => doc.data() as Student);
+}
+
+export async function getStudentsByClass(className: string): Promise<Student[]> {
+    const q = query(collection(db, 'students'), where('class', '==', className));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => doc.data() as Student);
 }
 
 export async function getStudent(id: string): Promise<Student | null> {
@@ -414,6 +421,57 @@ export async function saveAttendance(attendanceData: { classId: string; date: st
         return { success: true, message: 'Attendance saved successfully.' };
     } catch (error) {
         console.error('Error saving attendance:', error);
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+// Exam Functions
+export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
+    try {
+        const docRef = await addDoc(collection(db, 'exams'), {
+            ...examData,
+            date: serverTimestamp()
+        });
+        return { success: true, message: 'Exam created successfully.', id: docRef.id };
+    } catch (error) {
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+export async function getExams(): Promise<Exam[]> {
+    const q = query(collection(db, "exams"), orderBy("date", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            date: data.date.toDate(),
+        } as Exam;
+    });
+}
+
+export async function getExam(examId: string): Promise<Exam | null> {
+    const docRef = doc(db, 'exams', examId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+            id: docSnap.id,
+            ...data,
+            date: data.date.toDate(),
+        } as Exam;
+    }
+    return null;
+}
+
+export async function saveExamResults(examId: string, results: StudentResult[]) {
+    try {
+        const docRef = doc(db, 'exams', examId);
+        await updateDoc(docRef, { results });
+        return { success: true, message: 'Exam results saved successfully.' };
+    } catch (error) {
+        console.error('Error saving exam results:', error);
         return { success: false, message: (error as Error).message };
     }
 }
