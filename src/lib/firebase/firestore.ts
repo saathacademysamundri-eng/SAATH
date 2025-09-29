@@ -1,5 +1,82 @@
 
 
+/*
+================================================================================
+IMPORTANT: FIREBASE SECURITY RULES
+================================================================================
+
+Please copy and paste the following security rules into your Firebase project's
+Firestore rules editor to ensure the application functions correctly.
+
+1. Go to your Firebase Console.
+2. Select your project.
+3. Go to "Firestore Database" from the left menu.
+4. Click on the "Rules" tab.
+5. Replace the entire content of the rules editor with the rules below.
+6. Click "Publish".
+
+--- START OF RULES TO COPY ---
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Allow admin full access to everything.
+    // Replace "YOUR_ADMIN_UID" with the actual UID of your admin user.
+    function isAdmin() {
+      return request.auth.uid == "YOUR_ADMIN_UID";
+    }
+
+    // Default deny all reads and writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Allow authenticated users to read most collections
+    match /students/{studentId} {
+      allow read, write: if isAdmin();
+      allow read: if request.auth != null;
+    }
+    match /teachers/{teacherId} {
+      allow read, write: if isAdmin();
+      allow read: if request.auth != null;
+    }
+     match /classes/{classId} {
+      allow read, write: if isAdmin();
+      allow read: if request.auth != null;
+    }
+    match /classes/{classId}/subjects/{subjectId} {
+       allow read, write: if isAdmin();
+       allow read: if request.auth != null;
+    }
+    match /income/{incomeId} {
+       allow read, write: if isAdmin();
+    }
+    match /expenses/{expenseId} {
+       allow read, write: if isAdmin();
+    }
+     match /reports/{reportId} {
+       allow read, write: if isAdmin();
+    }
+    match /settings/details {
+       allow read, write: if isAdmin();
+       allow read: if request.auth != null;
+    }
+
+    // Rules for new collections
+    match /attendance/{attendanceId} {
+      allow read, write: if isAdmin();
+    }
+    match /exams/{examId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
+
+--- END OF RULES TO COPY ---
+
+*/
+
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction } from 'firebase/firestore';
 import { app } from './config';
