@@ -90,8 +90,8 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Recent Activities</CardTitle>
           </CardHeader>
-          <CardContent className="flex-grow overflow-hidden relative">
-            <div className="absolute top-0 animate-scroll-up">
+          <CardContent className="flex-grow overflow-hidden">
+            <div className="animate-scroll-up-slow">
               {[...recentActivities, ...recentActivities].map((activity, index) => (
                 <div key={index} className="flex items-center gap-4 py-3">
                   <div className="grid gap-1">

@@ -88,7 +88,7 @@ export default {
             height: '0',
           },
         },
-         'scroll-up': {
+         'scroll-up-slow': {
           '0%': { transform: 'translateY(0)' },
           '100%': { transform: 'translateY(-50%)' },
         },
@@ -96,7 +96,7 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'scroll-up': 'scroll-up 30s linear infinite',
+        'scroll-up-slow': 'scroll-up-slow 30s linear infinite',
       },
     },
   },
