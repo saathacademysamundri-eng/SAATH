@@ -23,30 +23,35 @@ const reportCards = [
     title: 'All Students Report',
     description: 'Generate a report with a complete list of all students currently enrolled in the academy.',
     icon: Users,
+    isEnabled: true,
   },
   {
     id: 'student-financial',
     title: 'Student Financial Report',
     description: 'Detailed financial report for an individual student, including fee history and outstanding dues.',
     icon: FileText,
+    isEnabled: false,
   },
   {
     id: 'fee-collection',
     title: 'Fee Collection Report',
     description: 'Summary of all fees collected within a specific date range, categorized by class or student.',
     icon: DollarSign,
+    isEnabled: false,
   },
   {
     id: 'unpaid-dues',
     title: 'Unpaid Dues Report',
     description: 'A list of all students with pending or overdue fee payments, including balance amounts.',
     icon: BadgeAlert,
+    isEnabled: true,
   },
   {
     id: 'attendance',
     title: 'Attendance Report',
     description: 'Generate attendance reports for a class or student for a specified period.',
     icon: ClipboardCheck,
+    isEnabled: false,
   },
 ];
 
@@ -54,38 +59,12 @@ export default function ReportsPage() {
   const { students, loading: studentsLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
-
-  const handlePrint = (reportId: string) => {
-    if (reportId !== 'all-students') {
-      toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for printing.' });
-      return;
-    }
-    if (isSettingsLoading) {
-      toast({ variant: 'destructive', title: 'Please wait', description: 'Settings are still loading.' });
-      return;
-    }
-    
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please allow popups for this site.' });
-      return;
-    }
-
-    const tableRows = students
-      .map(student => `
-        <tr>
-          <td>${student.id}</td>
-          <td>${student.name}</td>
-          <td>${student.class}</td>
-          <td>${student.totalFee.toLocaleString()} PKR</td>
-          <td>${student.feeStatus}</td>
-        </tr>
-      `).join('');
-
-    const printHtml = `
+  
+  const generatePrintHtml = (title: string, headers: string[], rows: string) => {
+    return `
       <html>
         <head>
-          <title>All Students Report</title>
+          <title>${title}</title>
           <style>
             @media print {
               @page { size: A4 portrait; margin: 0.75in; }
@@ -114,46 +93,103 @@ export default function ReportsPage() {
               <p>Phone: ${settings.phone}</p>
             </div>
             <div class="report-title">
-              <h2>All Students Report</h2>
+              <h2>${title}</h2>
             </div>
             <table>
               <thead>
                 <tr>
-                  <th>Roll #</th>
-                  <th>Student Name</th>
-                  <th>Class</th>
-                  <th>Outstanding Fee</th>
-                  <th>Fee Status</th>
+                  ${headers.map(h => `<th>${h}</th>`).join('')}
                 </tr>
               </thead>
               <tbody>
-                ${tableRows}
+                ${rows}
               </tbody>
             </table>
           </div>
         </body>
       </html>
     `;
+  };
+  
+  const handlePrint = (reportId: string) => {
+    if (isSettingsLoading) {
+      toast({ variant: 'destructive', title: 'Please wait', description: 'Settings are still loading.' });
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please allow popups for this site.' });
+      return;
+    }
+
+    let reportTitle = '';
+    let tableHeaders: string[] = [];
+    let tableRows = '';
+
+    if (reportId === 'all-students') {
+        reportTitle = 'All Students Report';
+        tableHeaders = ["Roll #", "Student Name", "Class", "Outstanding Fee", "Fee Status"];
+        tableRows = students.map(student => `
+            <tr>
+              <td>${student.id}</td>
+              <td>${student.name}</td>
+              <td>${student.class}</td>
+              <td>${student.totalFee.toLocaleString()} PKR</td>
+              <td>${student.feeStatus}</td>
+            </tr>
+          `).join('');
+    } else if (reportId === 'unpaid-dues') {
+        reportTitle = 'Unpaid Dues Report';
+        tableHeaders = ["Roll #", "Student Name", "Class", "Outstanding Dues", "Fee Status"];
+        tableRows = students
+          .filter(s => s.feeStatus !== 'Paid')
+          .map(student => `
+            <tr>
+              <td>${student.id}</td>
+              <td>${student.name}</td>
+              <td>${student.class}</td>
+              <td>${student.totalFee.toLocaleString()} PKR</td>
+              <td>${student.feeStatus}</td>
+            </tr>
+          `).join('');
+    } else {
+        toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for printing.' });
+        return;
+    }
+    
+    const printHtml = generatePrintHtml(reportTitle, tableHeaders, tableRows);
     printWindow.document.write(printHtml);
     printWindow.document.close();
   };
 
   const handleExport = (reportId: string) => {
-     if (reportId !== 'all-students') {
+    let headers: string[] = [];
+    let data: Student[] = [];
+    let filename = '';
+
+    if (reportId === 'all-students') {
+      headers = ["ID", "Name", "Class", "Total Fee", "Fee Status", "Subjects"];
+      data = students;
+      filename = 'all-students-report.csv';
+    } else if (reportId === 'unpaid-dues') {
+      headers = ["ID", "Name", "Class", "Outstanding Dues", "Fee Status"];
+      data = students.filter(s => s.feeStatus !== 'Paid');
+      filename = 'unpaid-dues-report.csv';
+    } else {
       toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for export.' });
       return;
     }
 
-    const headers = ["ID", "Name", "Class", "Total Fee", "Fee Status", "Subjects"];
     const csvContent = [
       headers.join(','),
-      ...students.map((s: Student) => [
+      ...data.map((s: Student) => [
         s.id,
         s.name,
         s.class,
         s.totalFee,
         s.feeStatus,
-        `"${s.subjects.map(sub => sub.subject_name).join(', ')}"`
+        ...(reportId === 'all-students' ? [`"${s.subjects.map(sub => sub.subject_name).join(', ')}"`] : [])
       ].join(','))
     ].join('\n');
 
@@ -161,7 +197,7 @@ export default function ReportsPage() {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', 'all-students-report.csv');
+    link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -196,11 +232,11 @@ export default function ReportsPage() {
                 </div>
               </CardHeader>
               <CardContent className="mt-auto flex gap-2 pt-4">
-                <Button variant="outline" className="w-full" onClick={() => handlePrint(report.id)} disabled={report.id !== 'all-students' || studentsLoading || isSettingsLoading}>
+                <Button variant="outline" className="w-full" onClick={() => handlePrint(report.id)} disabled={!report.isEnabled || studentsLoading || isSettingsLoading}>
                   <Printer className="mr-2 h-4 w-4" />
                   Print
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => handleExport(report.id)} disabled={report.id !== 'all-students' || studentsLoading}>
+                <Button variant="outline" className="w-full" onClick={() => handleExport(report.id)} disabled={!report.isEnabled || studentsLoading}>
                   <FileDown className="mr-2 h-4 w-4" />
                   Export as CSV
                 </Button>
