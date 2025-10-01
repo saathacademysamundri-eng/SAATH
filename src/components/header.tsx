@@ -19,6 +19,7 @@ function getPageTitle(pathname: string) {
     if (pathname.startsWith('/fee-collection')) return { title: 'Fee Collection', description: 'Search for a student to collect fees.' };
     if (pathname.startsWith('/income')) return { title: 'Income', description: 'A record of all fee collections.' };
     if (pathname.startsWith('/expenses')) return { title: 'Expenses', description: 'A record of all operational expenses.' };
+    if (pathname.startsWith('/student-ledger')) return { title: 'Student Ledger', description: 'Generate detailed financial reports for students.' };
     if (pathname.startsWith('/reports')) return { title: 'Reports', description: 'Generate, view, and export reports.' };
     if (pathname.startsWith('/announcements')) return { title: 'Announcements', description: 'Use AI to summarize announcements.' };
     if (pathname.startsWith('/settings')) return { title: 'Settings', description: 'Manage your academy\'s settings.' };

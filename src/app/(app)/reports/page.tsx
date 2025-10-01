@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type Student } from '@/lib/data';
+import { useRouter } from 'next/navigation';
 
 const reportCards = [
   {
@@ -25,14 +26,7 @@ const reportCards = [
     icon: Users,
     isEnabled: true,
   },
-  {
-    id: 'student-financial',
-    title: 'Student Financial Report',
-    description: 'Detailed financial report for an individual student, including fee history and outstanding dues.',
-    icon: FileText,
-    isEnabled: false,
-  },
-  {
+   {
     id: 'fee-collection',
     title: 'Fee Collection Report',
     description: 'Summary of all fees collected within a specific date range, categorized by class or student.',
@@ -59,6 +53,7 @@ export default function ReportsPage() {
   const { students, loading: studentsLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
+  const router = useRouter();
   
   const generatePrintHtml = (title: string, headers: string[], rows: string) => {
     return `
