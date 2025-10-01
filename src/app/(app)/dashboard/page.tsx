@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -89,27 +90,28 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Recent Activities</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-6">
-            {recentActivities.slice(0,4).map((activity, index) => (
-              <div key={index} className="flex items-center gap-4">
-                <div className="grid gap-1">
-                  <p className="text-sm font-medium leading-none">
-                    {activity.name}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {activity.date}
-                  </p>
+          <CardContent className="h-[260px] overflow-hidden relative">
+            <div className="absolute top-0 animate-scroll-up">
+              {[...recentActivities, ...recentActivities].map((activity, index) => (
+                <div key={index} className="flex items-center gap-4 py-3">
+                  <div className="grid gap-1">
+                    <p className="text-sm font-medium leading-none">
+                      {activity.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {activity.date}
+                    </p>
+                  </div>
+                  <div className="ml-auto flex flex-col items-end gap-1">
+                      <Badge variant="outline" className={cn("text-xs font-normal", getFeeStatusBadge(activity.status))}>{activity.status}</Badge>
+                      {activity.amount && <p className="font-medium text-sm">{activity.amount}</p>}
+                  </div>
                 </div>
-                <div className="ml-auto flex flex-col items-end gap-1">
-                    <Badge variant="outline" className={cn("text-xs font-normal", getFeeStatusBadge(activity.status))}>{activity.status}</Badge>
-                    {activity.amount && <p className="font-medium text-sm">{activity.amount}</p>}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
-

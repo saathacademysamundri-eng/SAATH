@@ -47,6 +47,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase/config';
 import { signOut } from 'firebase/auth';
 import { AppProvider } from '@/hooks/use-app-context';
+import { WelcomeDialog } from '@/components/welcome-dialog';
 
 function SidebarPin() {
     const { isPinned, setPinned } = useSidebar();
@@ -173,6 +174,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <AppProvider>
+        <WelcomeDialog />
         <SidebarProvider>
             <MainSidebar />
             <SidebarInset>
