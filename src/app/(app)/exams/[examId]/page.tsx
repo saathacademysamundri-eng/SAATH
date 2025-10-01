@@ -139,6 +139,10 @@ export default function ExamResultsPage() {
 
   }, [results, students, exam]);
 
+  const totalMaxMarks = useMemo(() => {
+    if (!exam) return 0;
+    return exam.subjects.length * exam.totalMarks;
+  }, [exam]);
 
   const getStudentEnhancedResult = (studentId: string) => {
     return enhancedResults.find(r => r.studentId === studentId);
@@ -283,7 +287,7 @@ export default function ExamResultsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{exam.name}</h1>
-        <p className="text-muted-foreground">Enter marks for students of {exam.className}. Max marks per subject is {exam.totalMarks}.</p>
+        <p className="text-muted-foreground">Enter marks for students of {exam.className}.</p>
       </div>
       <Card>
         <CardHeader>
@@ -309,17 +313,31 @@ export default function ExamResultsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Roll #</TableHead>
-                  <TableHead>Student Name</TableHead>
+                  <TableHead className="min-w-[150px]">Student</TableHead>
                   {exam.subjects.map(subject => (
-                    <TableHead key={subject} className="text-center">{subject} ({exam.totalMarks})</TableHead>
+                    <TableHead key={subject} className="text-center">{subject}</TableHead>
                   ))}
+                  <TableHead className="text-center font-bold">Obtained</TableHead>
                   <TableHead className="text-center font-bold">Total</TableHead>
                   <TableHead className="text-center font-bold">%</TableHead>
                   <TableHead className="text-center font-bold">Pos.</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                    <TableCell className="font-semibold">Total Marks</TableCell>
+                    {exam.subjects.map(subject => (
+                        <TableCell key={subject} className="text-center font-semibold">
+                           <div className="flex justify-center">
+                                <div className="w-20 rounded-md bg-background py-1 px-2">{exam.totalMarks}</div>
+                           </div>
+                        </TableCell>
+                    ))}
+                    <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                </TableRow>
                 {students.sort((a,b) => {
                     const resA = getStudentEnhancedResult(a.id)?.position ?? Infinity;
                     const resB = getStudentEnhancedResult(b.id)?.position ?? Infinity;
@@ -328,8 +346,7 @@ export default function ExamResultsPage() {
                    const enhanced = getStudentEnhancedResult(student.id);
                    return(
                     <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.id}</TableCell>
-                        <TableCell>{student.name}</TableCell>
+                        <TableCell className="font-medium">{student.name}<br/><span className="text-xs text-muted-foreground">{student.id}</span></TableCell>
                         {exam.subjects.map(subject => (
                         <TableCell key={subject}>
                             <Input
@@ -342,6 +359,7 @@ export default function ExamResultsPage() {
                         </TableCell>
                         ))}
                         <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>
+                        <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>
                         <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
                         <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>
                     </TableRow>
