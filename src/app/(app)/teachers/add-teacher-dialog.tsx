@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { addTeacher, getAllSubjects } from "@/lib/firebase/firestore"
+import { addTeacher } from "@/lib/firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, X } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -21,22 +21,15 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Badge } from "@/components/ui/badge"
 import { Subject } from "@/lib/data"
 import { cn } from "@/lib/utils"
+import { useAppContext } from "@/hooks/use-app-context"
 
 export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => void }) {
+    const { allSubjects } = useAppContext();
     const [name, setName] = useState('')
     const [phone, setPhone] = useState('')
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
-    const [allSubjects, setAllSubjects] = useState<Subject[]>([])
     const [isSaving, setIsSaving] = useState(false)
     const { toast } = useToast()
-
-     useEffect(() => {
-        const fetchSubjects = async () => {
-            const subjectsData = await getAllSubjects();
-            setAllSubjects(subjectsData);
-        };
-        fetchSubjects();
-    }, []);
 
     const handleSubjectSelect = (subjectName: string) => {
         if (!selectedSubjects.includes(subjectName)) {

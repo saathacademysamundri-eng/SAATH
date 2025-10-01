@@ -8,36 +8,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { type Class, type Student } from '@/lib/data';
-import { getClasses, getStudents, saveAttendance } from '@/lib/firebase/firestore';
+import { type Student } from '@/lib/data';
+import { saveAttendance } from '@/lib/firebase/firestore';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
+import { useAppContext } from '@/hooks/use-app-context';
 
 export default function AttendancePage() {
-    const [classes, setClasses] = useState<Class[]>([]);
-    const [students, setStudents] = useState<Student[]>([]);
+    const { classes, students, loading } = useAppContext();
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [attendance, setAttendance] = useState<{ [studentId: string]: 'Present' | 'Absent' }>({});
-    const [loadingClasses, setLoadingClasses] = useState(true);
     const [loadingStudents, setLoadingStudents] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
-
-    useEffect(() => {
-        async function fetchClasses() {
-            setLoadingClasses(true);
-            const classesData = await getClasses();
-            setClasses(classesData);
-            setLoadingClasses(false);
-        }
-        async function fetchStudents() {
-            const studentsData = await getStudents();
-            setStudents(studentsData);
-        }
-        fetchClasses();
-        fetchStudents();
-    }, []);
 
     const handleClassChange = (classId: string) => {
         setSelectedClassId(classId);
@@ -105,12 +89,12 @@ export default function AttendancePage() {
                 <CardContent className="space-y-4">
                     <div className="max-w-xs space-y-2">
                         <Label htmlFor="class-select">Select Class</Label>
-                        <Select onValueChange={handleClassChange} disabled={loadingClasses}>
+                        <Select onValueChange={handleClassChange} disabled={loading}>
                             <SelectTrigger id="class-select">
                                 <SelectValue placeholder="Select a class..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {loadingClasses ? (
+                                {loading ? (
                                     <SelectItem value="loading" disabled>Loading classes...</SelectItem>
                                 ) : (
                                     classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
@@ -145,7 +129,7 @@ export default function AttendancePage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {loadingStudents ? (
+                                        {loadingStudents || loading ? (
                                             Array.from({ length: 5 }).map((_, i) => (
                                                 <TableRow key={i}>
                                                     <TableCell><Skeleton className="h-5 w-12" /></TableCell>

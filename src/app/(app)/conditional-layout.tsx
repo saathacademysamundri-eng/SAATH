@@ -44,6 +44,7 @@ import { cn } from '@/lib/utils';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase/config';
 import { signOut } from 'firebase/auth';
+import { AppProvider } from '@/hooks/use-app-context';
 
 function SidebarPin() {
     const { isPinned, setPinned } = useSidebar();
@@ -170,12 +171,14 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
-      <MainSidebar />
-      <SidebarInset>
-        <Header />
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+    <AppProvider>
+        <SidebarProvider>
+            <MainSidebar />
+            <SidebarInset>
+                <Header />
+                <main className="flex-1 p-4 sm:p-6">{children}</main>
+            </SidebarInset>
+        </SidebarProvider>
+    </AppProvider>
   );
 }

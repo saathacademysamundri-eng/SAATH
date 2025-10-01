@@ -13,12 +13,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { type Income } from '@/lib/data';
-import { deleteIncomeRecord, getIncome, updateIncomeRecord } from '@/lib/firebase/firestore';
+import { deleteIncomeRecord, updateIncomeRecord } from '@/lib/firebase/firestore';
 import { cn } from '@/lib/utils';
 import { addDays, format } from 'date-fns';
 import { CalendarIcon, Loader2, MoreHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
+import { useAppContext } from '@/hooks/use-app-context';
 
 function EditIncomeDialog({
   incomeRecord,
@@ -142,27 +143,16 @@ function DeleteIncomeConfirmation({
 
 
 export default function IncomePage() {
-    const [income, setIncome] = useState<Income[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { income, loading, refreshData } = useAppContext();
     const [date, setDate] = useState<DateRange | undefined>({
         from: addDays(new Date(), -30),
         to: new Date(),
     });
      const [openDialogs, setOpenDialogs] = useState<{ [key: string]: 'edit' | 'delete' | null }>({});
 
-    const fetchIncome = async () => {
-        setLoading(true);
-        const incomeData = await getIncome();
-        setIncome(incomeData);
-        setLoading(false);
-    }
-
-    useEffect(() => {
-        fetchIncome();
-    }, []);
 
     const handleActionComplete = () => {
-      fetchIncome();
+      refreshData();
       setOpenDialogs({});
     }
 
@@ -305,4 +295,3 @@ export default function IncomePage() {
     </div>
   );
 }
-

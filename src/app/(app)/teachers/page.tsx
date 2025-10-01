@@ -26,10 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { type Teacher, type Student } from '@/lib/data';
-import { getTeachers, getStudents } from '@/lib/firebase/firestore';
 import { MoreHorizontal, Printer, Search, PlusCircle } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
@@ -37,28 +35,12 @@ import { AddTeacherDialog } from './add-teacher-dialog';
 import { Badge } from '@/components/ui/badge';
 import { EditTeacherDialog } from './edit-teacher-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useAppContext } from '@/hooks/use-app-context';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { teachers, students: allStudents, loading, refreshData } = useAppContext();
   const router = useRouter();
-
-  const fetchData = async () => {
-    setLoading(true);
-    const [teachersData, studentsData] = await Promise.all([
-      getTeachers(),
-      getStudents(),
-    ]);
-    setTeachers(teachersData);
-    setAllStudents(studentsData);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const teacherStats = useMemo(() => {
     const stats = new Map<string, { gross: number; net: number }>();
@@ -107,7 +89,7 @@ export default function TeachersPage() {
               Add Teacher
             </Button>
           </DialogTrigger>
-          <AddTeacherDialog onTeacherAdded={fetchData} />
+          <AddTeacherDialog onTeacherAdded={refreshData} />
         </Dialog>
       </div>
       <Card>
@@ -203,7 +185,7 @@ export default function TeachersPage() {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                         <EditTeacherDialog teacher={teacher} onTeacherUpdated={fetchData} />
+                         <EditTeacherDialog teacher={teacher} onTeacherUpdated={refreshData} />
                       </Dialog>
                     </TableCell>
                   </TableRow>

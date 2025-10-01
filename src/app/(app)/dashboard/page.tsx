@@ -12,12 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { dashboardStats, recentActivities, type Income, type Expense } from '@/lib/data';
-import { getIncome, getExpenses } from '@/lib/firebase/firestore';
+import { dashboardStats, recentActivities } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { ArrowDown, ArrowUp, DollarSign, Hourglass, TrendingDown, TrendingUp, UserPlus, Users, Wallet } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { OverviewChart } from './overview-chart';
+import { useAppContext } from '@/hooks/use-app-context';
 
 const iconMap: { [key: string]: React.ElementType } = {
   Users,
@@ -49,18 +49,7 @@ function getFeeStatusBadge(status: string) {
 }
 
 export default function DashboardPage() {
-    const [income, setIncome] = useState<Income[]>([]);
-    const [expenses, setExpenses] = useState<Expense[]>([]);
-
-    useEffect(() => {
-        async function fetchData() {
-            const incomeData = await getIncome();
-            const expenseData = await getExpenses();
-            setIncome(incomeData);
-            setExpenses(expenseData);
-        }
-        fetchData();
-    }, []);
+    const { income, expenses } = useAppContext();
 
     const totalIncome = income.reduce((sum, item) => sum + item.amount, 0);
     const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);

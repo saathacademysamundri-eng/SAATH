@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { type Expense } from '@/lib/data';
-import { getExpenses, addExpense } from '@/lib/firebase/firestore';
+import { addExpense } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
+import { useAppContext } from '@/hooks/use-app-context';
 
 function AddExpenseDialog({ onExpenseAdded }: { onExpenseAdded: () => void }) {
     const [description, setDescription] = useState('');
@@ -79,19 +79,7 @@ function AddExpenseDialog({ onExpenseAdded }: { onExpenseAdded: () => void }) {
 }
 
 export default function ExpensesPage() {
-    const [expenses, setExpenses] = useState<Expense[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    const fetchExpenses = async () => {
-        setLoading(true);
-        const expensesData = await getExpenses();
-        setExpenses(expensesData);
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        fetchExpenses();
-    }, []);
+    const { expenses, loading, refreshData } = useAppContext();
 
     const totalExpenses = useMemo(() => {
         return expenses.reduce((sum, item) => sum + item.amount, 0);
@@ -112,7 +100,7 @@ export default function ExpensesPage() {
                         <PlusCircle className="mr-2" /> Add Expense
                     </Button>
                 </DialogTrigger>
-                <AddExpenseDialog onExpenseAdded={fetchExpenses} />
+                <AddExpenseDialog onExpenseAdded={refreshData} />
             </Dialog>
         </div>
       <Card>

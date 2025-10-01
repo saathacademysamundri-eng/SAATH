@@ -18,6 +18,7 @@ import { Printer, Search, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
+import { useAppContext } from '@/hooks/use-app-context';
 
 export default function FeeCollectionPage() {
   const [search, setSearch] = useState('');
@@ -27,6 +28,7 @@ export default function FeeCollectionPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
+  const { refreshData } = useAppContext();
 
   const handleSearch = async () => {
     if (!search.trim()) {
@@ -117,6 +119,7 @@ export default function FeeCollectionPage() {
       
       handlePrintReceipt(paidAmount, newTotalFee, originalTotal);
       setPaidAmount(0);
+      refreshData(); // Refresh the global context
     } else {
         // If student update fails, we should ideally roll back the income record.
         // For simplicity, we'll just show an error.

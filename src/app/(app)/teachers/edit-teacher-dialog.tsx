@@ -12,31 +12,24 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { updateTeacher, getAllSubjects } from "@/lib/firebase/firestore"
+import { updateTeacher } from "@/lib/firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, X } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
-import { Subject, Teacher } from "@/lib/data"
+import { Teacher } from "@/lib/data"
 import { cn } from "@/lib/utils"
+import { useAppContext } from "@/hooks/use-app-context"
 
 export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teacher, onTeacherUpdated: () => void }) {
+    const { allSubjects } = useAppContext();
     const [name, setName] = useState(teacher.name)
     const [phone, setPhone] = useState(teacher.phone || '')
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>(teacher.subjects || [])
-    const [allSubjects, setAllSubjects] = useState<Subject[]>([])
     const [isSaving, setIsSaving] = useState(false)
     const { toast } = useToast()
-
-     useEffect(() => {
-        const fetchSubjects = async () => {
-            const subjectsData = await getAllSubjects();
-            setAllSubjects(subjectsData);
-        };
-        fetchSubjects();
-    }, []);
 
     const handleSubjectSelect = (subjectName: string) => {
         if (!selectedSubjects.includes(subjectName)) {

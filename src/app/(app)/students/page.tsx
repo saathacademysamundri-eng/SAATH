@@ -1,6 +1,5 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -26,8 +25,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { type Student } from '@/lib/data';
-import { getStudents } from '@/lib/firebase/firestore';
 import { cn } from '@/lib/utils';
 import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
@@ -35,26 +32,11 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAppContext } from '@/hooks/use-app-context';
 
 export default function StudentsPage() {
-  const [studentList, setStudentList] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { students: studentList, loading, refreshData } = useAppContext();
   const [search, setSearch] = useState('');
-
-  const fetchStudents = async () => {
-    setLoading(true);
-    const students = await getStudents();
-    setStudentList(students);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  const handleStudentAdded = () => {
-    fetchStudents(); // Re-fetch students after a new one is added
-  };
 
   const filteredStudents = studentList.filter(student =>
     student.name.toLowerCase().includes(search.toLowerCase())
@@ -76,7 +58,7 @@ export default function StudentsPage() {
               Add Student
             </Button>
           </DialogTrigger>
-          <AddStudentForm onStudentAdded={handleStudentAdded} />
+          <AddStudentForm onStudentAdded={refreshData} />
         </Dialog>
       </div>
       <Card>

@@ -13,6 +13,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useParams } from 'next/navigation';
+import { useAppContext } from '@/hooks/use-app-context';
 
 type StudentEarning = {
   student: Student;
@@ -24,51 +25,45 @@ export default function TeacherProfilePage() {
   const params = useParams();
   const teacherId = params.teacherId as string;
   
+  const { teachers, students, loading: isAppLoading } = useAppContext();
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [studentEarnings, setStudentEarnings] = useState<StudentEarning[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!teacherId) return;
-    
-    async function fetchData() {
-      setLoading(true);
-      const [teacherData, allStudentsData] = await Promise.all([
-        getTeacher(teacherId),
-        getStudents()
-      ]);
+    if (isAppLoading) return;
 
-      if (!teacherData) {
+    setLoading(true);
+    const teacherData = teachers.find(t => t.id === teacherId);
+
+    if (!teacherData) {
         setLoading(false);
         return;
-      }
-      
-      setTeacher(teacherData);
-
-      const currentStudentEarnings: StudentEarning[] = [];
-      let currentTotalEarnings = 0;
-
-      allStudentsData.forEach(student => {
-        student.subjects.forEach(subject => {
-            if (subject.teacher_id === teacherData.id && student.feeStatus === 'Paid') {
-              currentStudentEarnings.push({
-                student,
-                feeShare: subject.fee_share,
-                subjectName: subject.subject_name
-              });
-              currentTotalEarnings += subject.fee_share;
-            }
-        });
-      });
-      
-      setStudentEarnings(currentStudentEarnings);
-      setTotalEarnings(currentTotalEarnings);
-      setLoading(false);
     }
+    
+    setTeacher(teacherData);
 
-    fetchData();
-  }, [teacherId]);
+    const currentStudentEarnings: StudentEarning[] = [];
+    let currentTotalEarnings = 0;
+
+    students.forEach(student => {
+      student.subjects.forEach(subject => {
+          if (subject.teacher_id === teacherData.id && student.feeStatus === 'Paid') {
+            currentStudentEarnings.push({
+              student,
+              feeShare: subject.fee_share,
+              subjectName: subject.subject_name
+            });
+            currentTotalEarnings += subject.fee_share;
+          }
+      });
+    });
+    
+    setStudentEarnings(currentStudentEarnings);
+    setTotalEarnings(currentTotalEarnings);
+    setLoading(false);
+  }, [teacherId, teachers, students, isAppLoading]);
 
   const teacherShare = totalEarnings * 0.7;
   const academyShare = totalEarnings * 0.3;
@@ -93,7 +88,7 @@ export default function TeacherProfilePage() {
   }, [teacher, studentEarnings, totalEarnings, teacherShare, academyShare]);
 
 
-  if (loading) {
+  if (loading || isAppLoading) {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">

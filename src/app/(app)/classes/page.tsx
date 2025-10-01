@@ -16,26 +16,14 @@ import {
 } from '@/components/ui/card';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { type Class } from '@/lib/data';
-import { getClasses } from '@/lib/firebase/firestore';
 import { Book, Edit, PlusCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { EditSubjectsDialog } from './edit-subjects-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAppContext } from '@/hooks/use-app-context';
 
 export default function ClassesPage() {
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchClasses = async () => {
-    setLoading(true);
-    const classesData = await getClasses();
-    setClasses(classesData);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    fetchClasses();
-  }, []);
+  const { classes, loading, refreshData } = useAppContext();
 
   return (
     <div className="flex flex-col gap-6">
@@ -86,7 +74,7 @@ export default function ClassesPage() {
                           </DialogTrigger>
                           <EditSubjectsDialog
                             classData={c}
-                            onSubjectsUpdate={fetchClasses}
+                            onSubjectsUpdate={refreshData}
                           />
                         </Dialog>
                       </div>

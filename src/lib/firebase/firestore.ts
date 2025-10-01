@@ -1,6 +1,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -96,7 +97,7 @@ export async function getSettings(): Promise<Settings | null> {
     return null;
 }
 
-export async function updateSettings(settings: Settings) {
+export async function updateSettings(settings: Partial<Settings>) {
     const docRef = doc(db, 'settings', 'details');
     await setDoc(docRef, settings, { merge: true });
 }
@@ -131,11 +132,9 @@ export async function getStudent(id: string): Promise<Student | null> {
     return null;
 }
 
-export async function addStudent(student: Omit<Student, 'id'>) {
+export async function addStudent(student: Omit<Student, 'id'> & { id: string }) {
     try {
-        const newStudentId = await getNextStudentId();
-        const newStudentWithId = { ...student, id: newStudentId };
-        await setDoc(doc(db, 'students', newStudentId), newStudentWithId);
+        await setDoc(doc(db, 'students', student.id), student);
         return { success: true, message: "Student added successfully." };
     } catch (error) {
         console.error("Error adding student: ", error);

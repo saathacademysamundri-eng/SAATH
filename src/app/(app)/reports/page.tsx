@@ -4,28 +4,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { type Student, type Income } from '@/lib/data';
-import { getStudents, getIncome } from '@/lib/firebase/firestore';
 import { DollarSign, Hourglass, Users } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useAppContext } from '@/hooks/use-app-context';
 
 export default function ReportsPage() {
-    const [students, setStudents] = useState<Student[]>([]);
-    const [income, setIncome] = useState<Income[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        async function fetchData() {
-            setLoading(true);
-            const [studentsData, incomeData] = await Promise.all([getStudents(), getIncome()]);
-            setStudents(studentsData);
-            setIncome(incomeData);
-            setLoading(false);
-        }
-        fetchData();
-    }, []);
+    const { students, income, loading } = useAppContext();
 
     const totalStudents = useMemo(() => students.length, [students]);
     const totalFeesCollected = useMemo(() => income.reduce((sum, item) => sum + item.amount, 0), [income]);

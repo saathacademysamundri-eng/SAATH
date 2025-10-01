@@ -24,8 +24,9 @@ import { type StudentSubject, type Subject, Class, Teacher } from "@/lib/data"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { addStudent, getClasses, getNextStudentId, getTeachers } from "@/lib/firebase/firestore"
+import { addStudent, getNextStudentId } from "@/lib/firebase/firestore"
 import { Loader2 } from "lucide-react"
+import { useAppContext } from "@/hooks/use-app-context"
 
 type SelectedSubjectInfo = {
     subject: Subject;
@@ -33,6 +34,7 @@ type SelectedSubjectInfo = {
 }
 
 export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void }) {
+    const { classes, teachers } = useAppContext();
     const [name, setName] = useState('');
     const [fatherName, setFatherName] = useState('');
     const [phone, setPhone] = useState('');
@@ -43,19 +45,8 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
     const [totalFee, setTotalFee] = useState(0);
     const [selectedSubjects, setSelectedSubjects] = useState<SelectedSubjectInfo[]>([]);
     
-    const [classes, setClasses] = useState<Class[]>([]);
-    const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
-
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            const [classesData, teachersData] = await Promise.all([getClasses(), getTeachers()]);
-            setClasses(classesData);
-            setTeachers(teachersData);
-        };
-        fetchInitialData();
-    }, []);
 
     const handleClassChange = (value: string) => {
         setSelectedClassId(value);
