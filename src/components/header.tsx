@@ -37,4 +37,10 @@ export function Header() {
             <LiveDateTime />
         </div>
       </div>
-      <div className='flex items
+      <div className='flex items-center gap-2'>
+        <ThemeSwitcher />
+        <UserNav />
+      </div>
+    </header>
+  );
+}
