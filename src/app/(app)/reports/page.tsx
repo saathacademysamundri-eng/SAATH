@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import {
   ClipboardCheck,
   Printer,
   FileDown,
+  BookCopy,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type Student } from '@/lib/data';
@@ -27,6 +29,13 @@ const reportCards = [
     isEnabled: true,
   },
    {
+    id: 'student-ledger',
+    title: 'Student Financial Ledger',
+    description: 'Search for a student to view their detailed fee payment history and outstanding dues.',
+    icon: BookCopy,
+    isEnabled: true,
+  },
+  {
     id: 'fee-collection',
     title: 'Fee Collection Report',
     description: 'Summary of all fees collected within a specific date range, categorized by class or student.',
@@ -198,6 +207,12 @@ export default function ReportsPage() {
     link.click();
     document.body.removeChild(link);
   };
+  
+  const handleAction = (reportId: string) => {
+    if (reportId === 'student-ledger') {
+        router.push('/student-ledger');
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -211,6 +226,8 @@ export default function ReportsPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {reportCards.map((report) => {
           const Icon = report.icon;
+          const isLedger = report.id === 'student-ledger';
+
           return (
             <Card key={report.id} className="flex flex-col">
               <CardHeader>
@@ -227,14 +244,23 @@ export default function ReportsPage() {
                 </div>
               </CardHeader>
               <CardContent className="mt-auto flex gap-2 pt-4">
-                <Button variant="outline" className="w-full" onClick={() => handlePrint(report.id)} disabled={!report.isEnabled || studentsLoading || isSettingsLoading}>
-                  <Printer className="mr-2 h-4 w-4" />
-                  Print
-                </Button>
-                <Button variant="outline" className="w-full" onClick={() => handleExport(report.id)} disabled={!report.isEnabled || studentsLoading}>
-                  <FileDown className="mr-2 h-4 w-4" />
-                  Export as CSV
-                </Button>
+                {isLedger ? (
+                    <Button variant="outline" className="w-full" onClick={() => handleAction(report.id)} disabled={!report.isEnabled}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Generate Report
+                    </Button>
+                ) : (
+                    <>
+                        <Button variant="outline" className="w-full" onClick={() => handlePrint(report.id)} disabled={!report.isEnabled || studentsLoading || isSettingsLoading}>
+                          <Printer className="mr-2 h-4 w-4" />
+                          Print
+                        </Button>
+                        <Button variant="outline" className="w-full" onClick={() => handleExport(report.id)} disabled={!report.isEnabled || studentsLoading}>
+                          <FileDown className="mr-2 h-4 w-4" />
+                          Export as CSV
+                        </Button>
+                    </>
+                )}
               </CardContent>
             </Card>
           );

@@ -83,7 +83,6 @@ function MainSidebar() {
     { href: '/fee-collection', label: 'Fee Collection', icon: DollarSign },
     { href: '/income', label: 'Income', icon: TrendingUp },
     { href: '/expenses', label: 'Expenses', icon: TrendingDown },
-    { href: '/student-ledger', label: 'Student Ledger', icon: BookCopy },
     { href: '/reports', label: 'Reports', icon: LineChart },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
   ];
