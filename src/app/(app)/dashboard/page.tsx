@@ -12,85 +12,65 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { dashboardStats, recentActivities } from '@/lib/data';
+import { recentActivities } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { ArrowDown, ArrowUp, DollarSign, Hourglass, TrendingDown, TrendingUp, UserPlus, Users, Wallet } from 'lucide-react';
+import { ArrowDown, ArrowUp, DollarSign, BookUser, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { OverviewChart } from './overview-chart';
 import { useAppContext } from '@/hooks/use-app-context';
 
 const iconMap: { [key: string]: React.ElementType } = {
   Users,
-  UserPlus,
-  Wallet,
-  Hourglass,
-  BookUser: Users,
+  BookUser,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Wallet,
 };
 
 function getFeeStatusBadge(status: string) {
     switch (status.toLowerCase()) {
         case 'paid':
             return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-700';
-        case 'pending':
-            return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 border-amber-200 dark:border-amber-700';
-        case 'partial':
-            return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-700';
-        case 'overdue':
-            return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 border-red-200 dark:border-red-700';
         case 'admission':
              return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-700';
-        case 'exam':
-            return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700';
         default:
             return 'bg-secondary text-secondary-foreground';
     }
 }
 
 export default function DashboardPage() {
-    const { income, expenses } = useAppContext();
+    const { income, expenses, students, teachers } = useAppContext();
 
     const totalIncome = income.reduce((sum, item) => sum + item.amount, 0);
     const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
     const netProfit = totalIncome - totalExpenses;
 
     const summaryStats = [
-        { title: 'Total Income', value: `${totalIncome.toLocaleString()} PKR`, icon: 'TrendingUp', change: '' },
-        { title: 'Total Expenses', value: `${totalExpenses.toLocaleString()} PKR`, icon: 'TrendingDown', change: '' },
-        { title: 'Net Profit', value: `${netProfit.toLocaleString()} PKR`, icon: 'Wallet', change: '' },
-        ...dashboardStats.slice(0,1)
+        { title: 'Total Students', value: students.length.toLocaleString(), icon: 'Users', color: 'bg-sky-500' },
+        { title: 'Total Teachers', value: teachers.length.toLocaleString(), icon: 'BookUser', color: 'bg-amber-500' },
+        { title: 'Total Income', value: `${totalIncome.toLocaleString()}`, unit: 'PKR', icon: 'TrendingUp', color: 'bg-emerald-500' },
+        { title: 'Net Profit', value: `${netProfit.toLocaleString()}`, unit: 'PKR', icon: 'Wallet', color: 'bg-rose-500' },
     ];
 
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {summaryStats.map((stat) => {
           const Icon = iconMap[stat.icon];
-          const isPositive = stat.change ? stat.change.startsWith('+') : true;
           return (
             <Card key={stat.title} className="shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+                 <CardTitle className="text-sm font-medium">
                   {stat.title}
                 </CardTitle>
-                <Icon className="h-5 w-5 text-muted-foreground" />
+                <div className={cn("flex items-center justify-center h-8 w-8 rounded-lg text-white", stat.color)}>
+                    <Icon className="h-5 w-5" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                 {stat.change && <p className="flex items-center text-xs text-muted-foreground">
-                  <span
-                    className={cn(
-                      'flex items-center',
-                      isPositive ? 'text-green-600' : 'text-red-600'
-                    )}
-                  >
-                    {isPositive ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                    {stat.change}
-                  </span>
-                  <span className="ml-1">from last month</span>
-                </p>}
+                <div className="text-3xl font-bold">{stat.value}</div>
+                {stat.unit && <p className="text-xs text-muted-foreground">{stat.unit}</p>}
               </CardContent>
             </Card>
           );
@@ -110,7 +90,7 @@ export default function DashboardPage() {
             <CardTitle>Recent Activities</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6">
-            {recentActivities.map((activity, index) => (
+            {recentActivities.slice(0,4).map((activity, index) => (
               <div key={index} className="flex items-center gap-4">
                 <div className="grid gap-1">
                   <p className="text-sm font-medium leading-none">
@@ -122,7 +102,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="ml-auto flex flex-col items-end gap-1">
                     <Badge variant="outline" className={cn("text-xs font-normal", getFeeStatusBadge(activity.status))}>{activity.status}</Badge>
-                    {activity.amount && <p className="font-medium">{activity.amount}</p>}
+                    {activity.amount && <p className="font-medium text-sm">{activity.amount}</p>}
                 </div>
               </div>
             ))}
@@ -132,3 +112,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
