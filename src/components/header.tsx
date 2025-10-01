@@ -18,7 +18,6 @@ function getPageTitle(pathname: string) {
     if (pathname.startsWith('/income')) return 'Income';
     if (pathname.startsWith('/expenses')) return 'Expenses';
     if (pathname.startsWith('/reports')) return 'Reports';
-    if (pathname.startsWith('/earnings-reports')) return 'Earnings Reports';
     if (pathname.startsWith('/announcements')) return 'Announcements';
     if (pathname.startsWith('/settings')) return 'Settings';
     return 'Dashboard';
@@ -38,10 +37,4 @@ export function Header() {
             <LiveDateTime />
         </div>
       </div>
-      <div className='flex items-center gap-2'>
-        <ThemeSwitcher />
-        <UserNav />
-      </div>
-    </header>
-  );
-}
+      <div className='flex items

@@ -3,6 +3,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSettings } from '@/hooks/use-settings';
+import { useAppContext } from '@/hooks/use-app-context';
 import {
   Users,
   FileText,
@@ -12,29 +14,36 @@ import {
   Printer,
   FileDown,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { type Student } from '@/lib/data';
 
 const reportCards = [
   {
+    id: 'all-students',
     title: 'All Students Report',
     description: 'Generate a report with a complete list of all students currently enrolled in the academy.',
     icon: Users,
   },
   {
+    id: 'student-financial',
     title: 'Student Financial Report',
     description: 'Detailed financial report for an individual student, including fee history and outstanding dues.',
     icon: FileText,
   },
   {
+    id: 'fee-collection',
     title: 'Fee Collection Report',
     description: 'Summary of all fees collected within a specific date range, categorized by class or student.',
     icon: DollarSign,
   },
   {
+    id: 'unpaid-dues',
     title: 'Unpaid Dues Report',
     description: 'A list of all students with pending or overdue fee payments, including balance amounts.',
     icon: BadgeAlert,
   },
   {
+    id: 'attendance',
     title: 'Attendance Report',
     description: 'Generate attendance reports for a class or student for a specified period.',
     icon: ClipboardCheck,
@@ -42,20 +51,137 @@ const reportCards = [
 ];
 
 export default function ReportsPage() {
+  const { students, loading: studentsLoading } = useAppContext();
+  const { settings, isSettingsLoading } = useSettings();
+  const { toast } = useToast();
+
+  const handlePrint = (reportId: string) => {
+    if (reportId !== 'all-students') {
+      toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for printing.' });
+      return;
+    }
+    if (isSettingsLoading) {
+      toast({ variant: 'destructive', title: 'Please wait', description: 'Settings are still loading.' });
+      return;
+    }
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please allow popups for this site.' });
+      return;
+    }
+
+    const tableRows = students
+      .map(student => `
+        <tr>
+          <td>${student.id}</td>
+          <td>${student.name}</td>
+          <td>${student.class}</td>
+          <td>${student.totalFee.toLocaleString()} PKR</td>
+          <td>${student.feeStatus}</td>
+        </tr>
+      `).join('');
+
+    const printHtml = `
+      <html>
+        <head>
+          <title>All Students Report</title>
+          <style>
+            @media print {
+              @page { size: A4 portrait; margin: 0.75in; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
+            .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+            .academy-details { text-align: center; margin-bottom: 2rem; }
+            .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
+            .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
+            .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
+            .report-title { text-align: center; margin: 2rem 0; }
+            .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0; }
+            table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+            th, td { padding: 8px 10px; border: 1px solid #ddd; }
+            th { font-weight: bold; background-color: #f2f2f2; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+          </style>
+        </head>
+        <body>
+          <div class="report-container">
+            <div class="academy-details">
+              ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+              <h1>${settings.name}</h1>
+              <p>${settings.address}</p>
+              <p>Phone: ${settings.phone}</p>
+            </div>
+            <div class="report-title">
+              <h2>All Students Report</h2>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Roll #</th>
+                  <th>Student Name</th>
+                  <th>Class</th>
+                  <th>Outstanding Fee</th>
+                  <th>Fee Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+  };
+
+  const handleExport = (reportId: string) => {
+     if (reportId !== 'all-students') {
+      toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for export.' });
+      return;
+    }
+
+    const headers = ["ID", "Name", "Class", "Total Fee", "Fee Status", "Subjects"];
+    const csvContent = [
+      headers.join(','),
+      ...students.map((s: Student) => [
+        s.id,
+        s.name,
+        s.class,
+        s.totalFee,
+        s.feeStatus,
+        `"${s.subjects.map(sub => sub.subject_name).join(', ')}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'all-students-report.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Reports Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
         <p className="text-muted-foreground">
           Generate, view, and export various reports for your academy.
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {reportCards.map((report, index) => {
+        {reportCards.map((report) => {
           const Icon = report.icon;
           return (
-            <Card key={index} className="flex flex-col">
+            <Card key={report.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -70,13 +196,13 @@ export default function ReportsPage() {
                 </div>
               </CardHeader>
               <CardContent className="mt-auto flex gap-2 pt-4">
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => handlePrint(report.id)} disabled={report.id !== 'all-students' || studentsLoading || isSettingsLoading}>
                   <Printer className="mr-2 h-4 w-4" />
                   Print
                 </Button>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => handleExport(report.id)} disabled={report.id !== 'all-students' || studentsLoading}>
                   <FileDown className="mr-2 h-4 w-4" />
-                  Export
+                  Export as CSV
                 </Button>
               </CardContent>
             </Card>
