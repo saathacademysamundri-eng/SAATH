@@ -86,11 +86,11 @@ export default function DashboardPage() {
             <OverviewChart />
           </CardContent>
         </Card>
-        <Card className="col-span-1 shadow-sm lg:col-span-2">
+        <Card className="col-span-1 flex flex-col shadow-sm lg:col-span-2">
           <CardHeader>
             <CardTitle>Recent Activities</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px] overflow-hidden relative">
+          <CardContent className="flex-grow overflow-hidden relative">
             <div className="absolute top-0 animate-scroll-up">
               {[...recentActivities, ...recentActivities].map((activity, index) => (
                 <div key={index} className="flex items-center gap-4 py-3">
