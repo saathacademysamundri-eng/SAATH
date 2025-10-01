@@ -1,128 +1,88 @@
 
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
-import { DollarSign, Hourglass, Users } from 'lucide-react';
-import { useMemo } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { useAppContext } from '@/hooks/use-app-context';
+import {
+  Users,
+  FileText,
+  DollarSign,
+  BadgeAlert,
+  ClipboardCheck,
+  Printer,
+  FileDown,
+} from 'lucide-react';
+
+const reportCards = [
+  {
+    title: 'All Students Report',
+    description: 'Generate a report with a complete list of all students currently enrolled in the academy.',
+    icon: Users,
+  },
+  {
+    title: 'Student Financial Report',
+    description: 'Detailed financial report for an individual student, including fee history and outstanding dues.',
+    icon: FileText,
+  },
+  {
+    title: 'Fee Collection Report',
+    description: 'Summary of all fees collected within a specific date range, categorized by class or student.',
+    icon: DollarSign,
+  },
+  {
+    title: 'Unpaid Dues Report',
+    description: 'A list of all students with pending or overdue fee payments, including balance amounts.',
+    icon: BadgeAlert,
+  },
+  {
+    title: 'Attendance Report',
+    description: 'Generate attendance reports for a class or student for a specified period.',
+    icon: ClipboardCheck,
+  },
+];
 
 export default function ReportsPage() {
-    const { students, income, loading } = useAppContext();
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Reports Dashboard</h1>
+        <p className="text-muted-foreground">
+          Generate, view, and export various reports for your academy.
+        </p>
+      </div>
 
-    const totalStudents = useMemo(() => students.length, [students]);
-    const totalFeesCollected = useMemo(() => income.reduce((sum, item) => sum + item.amount, 0), [income]);
-
-    const pendingStudents = useMemo(() => {
-        return students.filter(s => s.feeStatus === 'Pending' || s.feeStatus === 'Partial' || s.feeStatus === 'Overdue');
-    }, [students]);
-
-    const totalPendingFees = useMemo(() => {
-        return pendingStudents.reduce((sum, s) => sum + s.totalFee, 0);
-    }, [pendingStudents]);
-
-    function getFeeStatusBadge(status: string) {
-        switch (status.toLowerCase()) {
-            case 'pending': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 border-amber-200 dark:border-amber-700';
-            case 'partial': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-700';
-            case 'overdue': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 border-red-200 dark:border-red-700';
-            default: return 'bg-secondary text-secondary-foreground';
-        }
-    }
-
-    const summaryStats = [
-        { title: 'Total Students', value: totalStudents.toLocaleString(), icon: Users },
-        { title: 'Total Fees Collected', value: `${totalFeesCollected.toLocaleString()} PKR`, icon: DollarSign },
-        { title: 'Total Pending Fees', value: `${totalPendingFees.toLocaleString()} PKR`, icon: Hourglass },
-    ];
-
-    return (
-        <div className="flex flex-col gap-6">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">General Reports</h1>
-                <p className="text-muted-foreground">
-                    An overview of key academy metrics.
-                </p>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {loading ? Array.from({length: 3}).map((_, i) => (
-                    <Card key={i}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                           <Skeleton className="h-5 w-32" />
-                           <Skeleton className="h-5 w-5" />
-                        </CardHeader>
-                        <CardContent>
-                           <Skeleton className="h-8 w-24" />
-                        </CardContent>
-                    </Card>
-                )) : summaryStats.map((stat) => {
-                    const Icon = stat.icon;
-                    return (
-                        <Card key={stat.title}>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                                <Icon className="h-5 w-5 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stat.value}</div>
-                            </CardContent>
-                        </Card>
-                    );
-                })}
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Students with Pending Fees</CardTitle>
-                    <CardDescription>A list of all students with outstanding fee balances.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Roll #</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Class</TableHead>
-                                <TableHead>Fee Status</TableHead>
-                                <TableHead className="text-right">Balance (PKR)</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? Array.from({ length: 5 }).map((_, i) => (
-                                <TableRow key={i}>
-                                    <TableCell><Skeleton className="h-5 w-12" /></TableCell>
-                                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                                    <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                                    <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                                </TableRow>
-                            )) : (
-                                pendingStudents.length > 0 ? pendingStudents.map((student) => (
-                                    <TableRow key={student.id}>
-                                        <TableCell className="font-medium">{student.id}</TableCell>
-                                        <TableCell>{student.name}</TableCell>
-                                        <TableCell>{student.class}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className={cn("text-xs font-normal", getFeeStatusBadge(student.feeStatus))}>{student.feeStatus}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right font-medium">{student.totalFee.toLocaleString()}</TableCell>
-                                    </TableRow>
-                                )) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
-                                            No students with pending fees.
-                                        </TableCell>
-                                    </TableRow>
-                                )
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {reportCards.map((report, index) => {
+          const Icon = report.icon;
+          return (
+            <Card key={index} className="flex flex-col">
+              <CardHeader>
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle>{report.title}</CardTitle>
+                    <CardDescription className="mt-1">
+                      {report.description}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="mt-auto flex gap-2 pt-4">
+                <Button variant="outline" className="w-full">
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print
+                </Button>
+                <Button variant="outline" className="w-full">
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
+              </CardContent>
             </Card>
-        </div>
-    );
+          );
+        })}
+      </div>
+    </div>
+  );
 }
