@@ -3,12 +3,38 @@
 
 import { useState, useEffect } from 'react';
 
-export function LiveDateTime() {
-  const [dateTime, setDateTime] = useState(new Date());
+export function LiveDate() {
+  const [date, setDate] = useState(new Date());
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setDateTime(new Date());
+      setDate(new Date());
+    }, 60000); // Update once a minute is enough for the date
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
+  const formattedDate = date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  return (
+    <div className="hidden items-center justify-center rounded-md bg-muted px-3 py-1.5 text-sm font-medium lg:flex">
+      {formattedDate}
+    </div>
+  );
+}
+
+export function LiveTime() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime(new Date());
     }, 1000);
 
     return () => {
@@ -16,18 +42,16 @@ export function LiveDateTime() {
     };
   }, []);
 
-  const formattedDate = dateTime.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+  const formattedTime = time.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
   });
 
-  const formattedTime = dateTime.toLocaleTimeString('en-US');
-
   return (
-    <p className="text-xs text-muted-foreground">
-      {formattedDate} | {formattedTime}
-    </p>
+    <div className="hidden items-center justify-center rounded-md bg-muted px-3 py-1.5 text-sm font-medium lg:flex">
+      {formattedTime}
+    </div>
   );
 }
