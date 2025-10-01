@@ -21,9 +21,6 @@ export function Header() {
     <header className="sticky top-0 z-10 flex h-20 w-full items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 print:hidden">
       <div className="flex items-center gap-4">
         <SidebarTrigger className="md:hidden" />
-        <div>
-            <h1 className="text-xl font-bold md:text-2xl">Welcome to {settings.name}</h1>
-        </div>
       </div>
       <div className='flex items-center gap-4'>
         <div className="relative hidden md:block">
@@ -45,4 +42,3 @@ export function Header() {
     </>
   );
 }
-
