@@ -4,9 +4,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppContext } from '@/hooks/use-app-context';
-import { BookCopy, DollarSign } from 'lucide-react';
+import { BookCopy, DollarSign, BookOpenCheck } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
@@ -14,7 +15,7 @@ export default function StudentProfilePage() {
   const params = useParams();
   const router = useRouter();
   const studentId = params.studentId as string;
-  const { students, loading } = useAppContext();
+  const { students, teachers, loading } = useAppContext();
 
   const student = useMemo(() => {
     return students.find(s => s.id === studentId);
@@ -56,6 +57,10 @@ export default function StudentProfilePage() {
         case 'Overdue': return 'text-red-500';
         default: return 'text-muted-foreground';
     }
+  }
+  
+  const getTeacherName = (teacherId: string) => {
+    return teachers.find(t => t.id === teacherId)?.name || 'N/A';
   }
 
   return (
@@ -104,6 +109,33 @@ export default function StudentProfilePage() {
                     <BookCopy className="mr-3" />
                     View Financial Ledger
                 </Button>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpenCheck />
+                  Subjects Enrolled
+                </CardTitle>
+                <CardDescription>List of subjects and assigned teachers for this student.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Subject</TableHead>
+                            <TableHead>Teacher</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {student.subjects.map(subjectInfo => (
+                            <TableRow key={subjectInfo.subject_name}>
+                                <TableCell className="font-medium">{subjectInfo.subject_name}</TableCell>
+                                <TableCell>{getTeacherName(subjectInfo.teacher_id)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
       </div>
