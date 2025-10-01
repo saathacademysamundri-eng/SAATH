@@ -8,15 +8,19 @@ import { useToast } from '@/hooks/use-toast';
 import { type Student, type Income } from '@/lib/data';
 import { getStudent } from '@/lib/firebase/firestore';
 import { Loader2, Search, Printer } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useSettings } from '@/hooks/use-settings';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useSearchParams } from 'next/navigation';
 
 export default function StudentLedgerPage() {
-  const [search, setSearch] = useState('');
+  const searchParams = useSearchParams()
+  const prefilledSearch = searchParams.get('search')
+  
+  const [search, setSearch] = useState(prefilledSearch || '');
   const [searchedStudent, setSearchedStudent] = useState<Student | null>(null);
   const [studentIncome, setStudentIncome] = useState<Income[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -24,8 +28,9 @@ export default function StudentLedgerPage() {
   const { income, loading: isAppLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
 
-  const handleSearch = async () => {
-    if (!search.trim()) {
+  const handleSearch = async (searchId?: string) => {
+    const idToSearch = searchId || search.trim();
+    if (!idToSearch) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -35,7 +40,7 @@ export default function StudentLedgerPage() {
       return;
     }
     setIsSearching(true);
-    const student = await getStudent(search.trim());
+    const student = await getStudent(idToSearch);
     if (student) {
       setSearchedStudent(student);
       const relatedIncome = income.filter(i => i.studentId === student.id);
@@ -51,6 +56,12 @@ export default function StudentLedgerPage() {
     }
     setIsSearching(false);
   };
+
+  useEffect(() => {
+    if (prefilledSearch) {
+        handleSearch(prefilledSearch);
+    }
+  }, [prefilledSearch, income]);
   
   const totalPaid = useMemo(() => {
     return studentIncome.reduce((acc, i) => acc + i.amount, 0);
@@ -171,7 +182,7 @@ export default function StudentLedgerPage() {
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               disabled={isSearching}
             />
-            <Button onClick={handleSearch} disabled={isSearching}>
+            <Button onClick={() => handleSearch()} disabled={isSearching}>
               {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
                {isSearching ? 'Searching...' : 'Search'}
             </Button>
@@ -246,4 +257,5 @@ export default function StudentLedgerPage() {
     </div>
   );
 }
+
 
