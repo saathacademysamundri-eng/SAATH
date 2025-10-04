@@ -14,6 +14,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -159,8 +160,14 @@ export async function addStudent(student: Omit<Student, 'id'> & { id: string }) 
 
 export async function updateStudent(studentId: string, studentData: Partial<Omit<Student, 'id'>>) {
     try {
+        const dataToUpdate = { ...studentData };
+        // Ensure monthlyFee is not undefined
+        if (dataToUpdate.monthlyFee === undefined || dataToUpdate.monthlyFee === null || isNaN(dataToUpdate.monthlyFee)) {
+            dataToUpdate.monthlyFee = 0;
+        }
+
         const studentRef = doc(db, 'students', studentId);
-        await updateDoc(studentRef, studentData);
+        await updateDoc(studentRef, dataToUpdate);
         return { success: true, message: "Student updated successfully." };
     } catch (error) {
         console.error("Error updating student: ", error);
@@ -464,25 +471,22 @@ export async function deleteIncomeRecord(incomeId: string) {
             const studentRef = doc(db, 'students', incomeData.studentId);
             const studentDoc = await transaction.get(studentRef);
 
-            if (!studentDoc.exists()) {
-                // If student doesn't exist, just delete the income record
-                transaction.delete(incomeRef);
-                return;
+            if (studentDoc.exists()) {
+                 const studentData = studentDoc.data() as Student;
+                
+                // Add the income amount back to the student's totalFee (dues)
+                const newTotalFee = studentData.totalFee + incomeData.amount;
+                
+                // Update student's fee status
+                const newFeeStatus: Student['feeStatus'] = newTotalFee > 0 ? 'Partial' : 'Paid';
+
+                transaction.update(studentRef, {
+                    totalFee: newTotalFee,
+                    feeStatus: newFeeStatus
+                });
             }
-
-            const studentData = studentDoc.data() as Student;
             
-            // Add the income amount back to the student's totalFee (dues)
-            const newTotalFee = studentData.totalFee + incomeData.amount;
-            
-            // Update student's fee status
-            const newFeeStatus: Student['feeStatus'] = newTotalFee > 0 ? 'Partial' : 'Paid';
-
-            transaction.update(studentRef, {
-                totalFee: newTotalFee,
-                feeStatus: newFeeStatus
-            });
-            
+            // Now, delete the income record itself
             transaction.delete(incomeRef);
         });
 
@@ -590,16 +594,24 @@ export async function deleteExpense(expenseId: string) {
                 if (payoutDoc.exists()) {
                     const payoutData = payoutDoc.data() as TeacherPayout;
 
-                    // For each income record in the payout, find it and mark it as NOT paid out
+                    // For each income record in the payout, fully reverse it
                     for (const incomeId of payoutData.incomeIds) {
                         const incomeRef = doc(db, 'income', incomeId);
                         const incomeDoc = await transaction.get(incomeRef);
 
                         if (incomeDoc.exists()) {
-                             transaction.update(incomeRef, {
-                                isPaidOut: false,
-                                payoutId: deleteDoc,
-                            });
+                             const incomeData = incomeDoc.data() as Income;
+                             const studentRef = doc(db, 'students', incomeData.studentId);
+                             const studentDoc = await transaction.get(studentRef);
+
+                             if (studentDoc.exists()) {
+                                 const studentData = studentDoc.data() as Student;
+                                 const newTotalFee = studentData.totalFee + incomeData.amount;
+                                 const newStatus = newTotalFee > 0 ? 'Partial' : 'Paid';
+                                 transaction.update(studentRef, { totalFee: newTotalFee, feeStatus: newStatus });
+                             }
+                             // Now delete the income record entirely since it's voided
+                             transaction.delete(incomeRef);
                         }
                     }
 
