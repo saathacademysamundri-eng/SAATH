@@ -1,27 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -822,6 +799,7 @@ export async function getAttendanceForMonth(studentId: string, month: number, ye
         querySnapshot.forEach(doc => {
             const data = doc.data();
             const recordDate = new Date(data.date);
+            recordDate.setHours(0,0,0,0); // Normalize date to avoid timezone issues
             
             if (recordDate >= startDate && recordDate <= endDate) {
                 if (data.records && data.records[studentId]) {
@@ -843,28 +821,30 @@ export async function getAttendanceForMonth(studentId: string, month: number, ye
 export async function getAttendanceForClassInMonth(classId: string, month: number, year: number) {
     const monthlyAttendance: { [studentId: string]: { [day: number]: 'P' | 'A' | 'L' } } = {};
     try {
-        const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-        const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+        const startDate = new Date(year, month, 1);
+        const endDate = new Date(year, month + 1, 0);
 
         const q = query(
             collection(db, 'attendance'),
-            where('classId', '==', classId),
-            orderBy('date'),
-            startAt(startDate),
-            endAt(endDate)
+            where('classId', '==', classId)
         );
 
         const querySnapshot = await getDocs(q);
 
         querySnapshot.forEach(doc => {
             const data = doc.data();
-            const day = new Date(data.date).getDate() + 1; // getDate() is 0-indexed for some reason with timezone issues
-            for (const studentId in data.records) {
-                if (!monthlyAttendance[studentId]) {
-                    monthlyAttendance[studentId] = {};
+            const recordDate = new Date(data.date);
+            recordDate.setHours(0,0,0,0); // Normalize date to avoid timezone issues
+            
+            if (recordDate >= startDate && recordDate <= endDate) {
+                const day = recordDate.getDate();
+                for (const studentId in data.records) {
+                    if (!monthlyAttendance[studentId]) {
+                        monthlyAttendance[studentId] = {};
+                    }
+                    const status = data.records[studentId];
+                    monthlyAttendance[studentId][day] = status.charAt(0) as 'P' | 'A' | 'L';
                 }
-                const status = data.records[studentId];
-                monthlyAttendance[studentId][day] = status.charAt(0) as 'P' | 'A' | 'L';
             }
         });
         return monthlyAttendance;
