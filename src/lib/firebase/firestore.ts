@@ -6,6 +6,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -599,11 +600,10 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
 export async function getTeacherPayouts(teacherId: string): Promise<TeacherPayout[]> {
     const q = query(
         collection(db, "teacher_payouts"), 
-        where("teacherId", "==", teacherId), 
-        orderBy("payoutDate", "desc")
+        where("teacherId", "==", teacherId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
+    const payouts = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
@@ -611,6 +611,8 @@ export async function getTeacherPayouts(teacherId: string): Promise<TeacherPayou
             payoutDate: data.payoutDate.toDate(),
         } as TeacherPayout;
     });
+    // Sort manually on the client
+    return payouts.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
 }
 
 
