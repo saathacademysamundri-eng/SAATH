@@ -87,7 +87,7 @@ export default function StudentProfilePage() {
             <CardContent className="space-y-4">
                  <div className='p-4 bg-secondary rounded-lg text-center'>
                     <p className='text-sm text-muted-foreground'>Outstanding Dues</p>
-                    <p className='text-3xl font-bold text-destructive'>{student.totalFee.toLocaleString()} PKR</p>
+                    <p className='text-3xl font-bold text-destructive'>{(student.totalFee || 0).toLocaleString()} PKR</p>
                 </div>
                  <div className='p-4 bg-secondary rounded-lg text-center'>
                     <p className='text-sm text-muted-foreground'>Fee Status</p>
@@ -95,7 +95,7 @@ export default function StudentProfilePage() {
                 </div>
                  <div className='p-4 bg-secondary rounded-lg text-center'>
                     <p className='text-sm text-muted-foreground'>Base Monthly Fee</p>
-                    <p className='text-3xl font-bold'>{student.monthlyFee.toLocaleString()} PKR</p>
+                    <p className='text-3xl font-bold'>{(student.monthlyFee || 0).toLocaleString()} PKR</p>
                 </div>
             </CardContent>
         </Card>
