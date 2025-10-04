@@ -15,6 +15,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -586,7 +587,7 @@ export async function deleteExpense(expenseId: string) {
 
             const expenseData = expenseDoc.data() as Expense;
 
-            // If it's a payout, reverse the entire transaction chain
+            // If it's a payout, reverse the associated records
             if (expenseData.source === 'payout' && expenseData.payoutId) {
                 const payoutRef = doc(db, 'teacher_payouts', expenseData.payoutId);
                 const payoutDoc = await transaction.get(payoutRef);
@@ -594,30 +595,23 @@ export async function deleteExpense(expenseId: string) {
                 if (payoutDoc.exists()) {
                     const payoutData = payoutDoc.data() as TeacherPayout;
 
-                    // For each income record in the payout, fully reverse it
+                    // Revert each income record instead of deleting it
                     for (const incomeId of payoutData.incomeIds) {
                         const incomeRef = doc(db, 'income', incomeId);
                         const incomeDoc = await transaction.get(incomeRef);
 
                         if (incomeDoc.exists()) {
-                             const incomeData = incomeDoc.data() as Income;
-                             const studentRef = doc(db, 'students', incomeData.studentId);
-                             const studentDoc = await transaction.get(studentRef);
-
-                             if (studentDoc.exists()) {
-                                 const studentData = studentDoc.data() as Student;
-                                 const newTotalFee = studentData.totalFee + incomeData.amount;
-                                 const newStatus = newTotalFee > 0 ? 'Partial' : 'Paid';
-                                 transaction.update(studentRef, { totalFee: newTotalFee, feeStatus: newStatus });
-                             }
-                             // Now delete the income record entirely since it's voided
-                             transaction.delete(incomeRef);
+                             // Mark as not paid out
+                             transaction.update(incomeRef, {
+                                 isPaidOut: false,
+                                 payoutId: deleteDoc, // Firestore field deletion
+                             });
                         }
                     }
 
                     // Delete the report associated with the payout
-                     const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payoutRef.id), limit(1));
-                    const reportSnap = await getDocs(reportQuery);
+                    const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payoutRef.id), limit(1));
+                    const reportSnap = await getDocs(reportQuery); // Use regular getDocs, not in transaction
                     if (!reportSnap.empty) {
                         transaction.delete(reportSnap.docs[0].ref);
                     }
@@ -631,7 +625,7 @@ export async function deleteExpense(expenseId: string) {
             transaction.delete(expenseRef);
         });
 
-        return { success: true, message: "Expense deleted and associated transactions fully reversed." };
+        return { success: true, message: "Expense deleted. Teacher payout has been reversed." };
 
     } catch (error) {
         console.error("Error deleting expense:", error);
