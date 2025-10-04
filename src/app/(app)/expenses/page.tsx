@@ -151,19 +151,19 @@ function DeleteExpenseDialog({ expense, onExpenseDeleted }: { expense: Expense, 
                     This action cannot be undone. This will permanently delete the expense record for
                     <span className="font-semibold"> {expense.description} </span>
                     of <span className="font-semibold">{expense.amount.toLocaleString()} PKR</span>.
-                    {expense.source === 'payout' && (
-                        <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive flex items-start gap-3">
-                            <AlertCircle className="h-5 w-5 mt-0.5" />
-                            <div>
-                                <h4 className="font-bold">Payout Reversal</h4>
-                                <p className="text-xs">
-                                    Deleting this expense will fully reverse the associated teacher payout. The original student fee payments will be voided, and the amounts will be added back to each student's outstanding balance. The teacher's earnings for that period will be reset.
-                                </p>
-                            </div>
-                        </div>
-                    )}
                 </DialogDescription>
             </DialogHeader>
+            {expense.source === 'payout' && (
+                <div className="mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                    <div>
+                        <h4 className="font-bold">Payout Reversal</h4>
+                        <p className="text-xs">
+                            Deleting this expense will fully reverse the associated teacher payout. The original student fee payments will be voided, and the amounts will be added back to each student's outstanding balance. The teacher's earnings for that period will be reset.
+                        </p>
+                    </div>
+                </div>
+            )}
             <DialogFooter>
                 <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
                 <DialogClose asChild>
@@ -352,3 +352,5 @@ export default function ExpensesPage() {
     </div>
   );
 }
+
+    
