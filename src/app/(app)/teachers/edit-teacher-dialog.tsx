@@ -14,8 +14,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { updateTeacher } from "@/lib/firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, X, User } from "lucide-react"
-import { useState } from "react"
+import { Loader2, X, User, Upload } from "lucide-react"
+import { useState, useRef } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
@@ -35,6 +35,7 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>(teacher.subjects || [])
     const [isSaving, setIsSaving] = useState(false)
     const { toast } = useToast()
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleSubjectSelect = (subjectName: string) => {
         if (!selectedSubjects.includes(subjectName)) {
@@ -72,6 +73,18 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
         }
         setIsSaving(false);
     };
+    
+    const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImageUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
 
     return (
         <DialogContent className="sm:max-w-xl">
@@ -80,7 +93,7 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
                 <DialogDescription>Update the details for this teacher.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
-                <div className="space-y-2">
+                 <div className="space-y-2">
                     <Label htmlFor="imageUrl">Photo URL</Label>
                     <div className="flex items-center gap-4">
                         <div className="w-20 h-20 rounded-full border flex items-center justify-center bg-muted overflow-hidden">
@@ -90,12 +103,25 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
                                 <User className="w-10 h-10 text-muted-foreground" />
                             )}
                         </div>
-                        <Input 
-                            id="imageUrl" 
-                            placeholder="https://example.com/photo.png"
-                            value={imageUrl}
-                            onChange={(e) => setImageUrl(e.target.value)}
-                        />
+                         <div className="flex-1 space-y-2">
+                            <Input 
+                                id="imageUrl" 
+                                placeholder="https://example.com/photo.png"
+                                value={imageUrl}
+                                onChange={(e) => setImageUrl(e.target.value)}
+                            />
+                             <input 
+                                type="file" 
+                                ref={fileInputRef}
+                                onChange={handleImageFileChange}
+                                className="hidden"
+                                accept="image/*"
+                            />
+                            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
+                                <Upload className="mr-2" />
+                                Upload from Computer
+                            </Button>
+                        </div>
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
