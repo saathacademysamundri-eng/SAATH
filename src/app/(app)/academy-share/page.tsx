@@ -7,13 +7,14 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { TrendingUp, Printer, X, TrendingDown, Wallet } from 'lucide-react';
+import { TrendingUp, Printer, X, TrendingDown, Wallet, BookOpen } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 const months = [
     { value: '1', label: 'January' }, { value: '2', label: 'February' }, { value: '3', label: 'March' },
@@ -80,9 +81,9 @@ export default function AcademySharePage() {
     return academyShareData.reduce((acc, curr) => acc + curr.totalShare, 0);
   }, [academyShareData]);
 
-   const totalManualExpenses = useMemo(() => {
+   const filteredManualExpenses = useMemo(() => {
     const manualExpenses = expenses.filter(e => e.source === 'manual');
-    if (!selectedYear) return manualExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+    if (!selectedYear) return manualExpenses;
 
     const filtered = manualExpenses.filter(expense => {
         const expenseYear = expense.date.getFullYear().toString();
@@ -91,9 +92,13 @@ export default function AcademySharePage() {
         if (selectedYear && selectedMonth) return expenseYear === selectedYear && expenseMonth === selectedMonth;
         return true;
     });
-
-    return filtered.reduce((acc, curr) => acc + curr.amount, 0);
+    return filtered;
   }, [expenses, selectedYear, selectedMonth]);
+
+  const totalManualExpenses = useMemo(() => {
+    return filteredManualExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+  }, [filteredManualExpenses]);
+
 
   const netAcademyEarnings = totalAcademyEarnings - totalManualExpenses;
 
@@ -123,11 +128,20 @@ export default function AcademySharePage() {
         dateRangeString = `For Year ${selectedYear}`;
     }
 
-    const tableHeaders = ["Teacher", "Total Academy Share"];
-    const tableRows = academyShareData.map(item => `
+    const shareTableHeaders = ["Teacher", "Total Academy Share"];
+    const shareTableRows = academyShareData.map(item => `
         <tr>
           <td>${item.teacher.name}</td>
           <td style="text-align: right;">${item.totalShare.toLocaleString()} PKR</td>
+        </tr>
+      `).join('');
+    
+    const expenseTableHeaders = ["Description", "Category", "Amount"];
+    const expenseTableRows = filteredManualExpenses.map(item => `
+        <tr>
+          <td>${item.description}</td>
+          <td>${item.category || 'N/A'}</td>
+          <td style="text-align: right;">${item.amount.toLocaleString()} PKR</td>
         </tr>
       `).join('');
 
@@ -159,13 +173,14 @@ export default function AcademySharePage() {
             .expense .amount { color: #c62828; }
             .net { background-color: #e3f2fd; }
             .net .amount { color: #1565c0; }
-            table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+            table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; margin-bottom: 2rem; }
             th, td { padding: 8px 10px; border: 1px solid #ddd; }
             th { font-weight: bold; background-color: #f2f2f2; }
             tr:nth-child(even) { background-color: #f9f9f9; }
              .final-summary { margin-top: 2rem; float: right; width: 50%; }
              .final-summary th { text-align: left; }
              .final-summary td { text-align: right; }
+             h3.table-title { font-size: 1.2rem; font-weight: bold; margin: 2rem 0 1rem 0; }
           </style>
         </head>
         <body>
@@ -194,14 +209,28 @@ export default function AcademySharePage() {
                     <p class="amount">${netAcademyEarnings.toLocaleString()} PKR</p>
                 </div>
             </div>
+
+            <h3 class="table-title">Share Per Teacher</h3>
             <table>
               <thead>
                 <tr>
-                  ${tableHeaders.map(h => `<th>${h}</th>`).join('')}
+                  ${shareTableHeaders.map(h => `<th>${h}</th>`).join('')}
                 </tr>
               </thead>
               <tbody>
-                ${tableRows.length > 0 ? tableRows : `<tr><td colspan="${tableHeaders.length}" style="text-align: center;">No data for this period.</td></tr>`}
+                ${shareTableRows.length > 0 ? shareTableRows : `<tr><td colspan="${shareTableHeaders.length}" style="text-align: center;">No data for this period.</td></tr>`}
+              </tbody>
+            </table>
+            
+             <h3 class="table-title">Manual Expense Breakdown</h3>
+             <table>
+              <thead>
+                <tr>
+                  ${expenseTableHeaders.map(h => `<th>${h}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${expenseTableRows.length > 0 ? expenseTableRows : `<tr><td colspan="${expenseTableHeaders.length}" style="text-align: center;">No manual expenses for this period.</td></tr>`}
               </tbody>
             </table>
 
@@ -335,7 +364,7 @@ export default function AcademySharePage() {
         </Card>
       </div>
 
-
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
           <CardTitle>Share per Teacher</CardTitle>
@@ -378,6 +407,49 @@ export default function AcademySharePage() {
           </Table>
         </CardContent>
       </Card>
+       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen />
+            Manual Expense Breakdown
+          </CardTitle>
+          <CardDescription>
+            A detailed list of all manually entered expenses for the selected period.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Description</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredManualExpenses.map((expense) => (
+                <TableRow key={expense.id}>
+                  <TableCell className="font-medium">{expense.description}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{expense.category || 'N/A'}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {expense.amount.toLocaleString()} PKR
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredManualExpenses.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
+                        No manual expenses recorded for this period.
+                    </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      </div>
     </div>
   );
 }
