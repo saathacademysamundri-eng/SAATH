@@ -281,6 +281,15 @@ export async function updateTeacher(teacherId: string, teacherData: Partial<Omit
     }
 }
 
+export async function deleteTeacher(teacherId: string) {
+    try {
+        await deleteDoc(doc(db, "teachers", teacherId));
+        return { success: true, message: "Teacher deleted successfully." };
+    } catch (error) {
+        return { success: false, message: (error as Error).message };
+    }
+}
+
 async function getNextClassId(): Promise<string> {
     const q = query(collection(db, "classes"), orderBy("id", "desc"), limit(1));
     const querySnapshot = await getDocs(q);
@@ -798,8 +807,10 @@ export async function getAttendanceForMonth(studentId: string, month: number, ye
 
         querySnapshot.forEach(doc => {
             const data = doc.data();
+            // Firestore date might be a string if it's from the old data, or a Timestamp.
+            // Be robust.
             const recordDate = new Date(data.date);
-            recordDate.setHours(0,0,0,0); // Normalize date to avoid timezone issues
+            recordDate.setUTCHours(0,0,0,0); // Use UTC to avoid timezone shifts
             
             if (recordDate >= startDate && recordDate <= endDate) {
                 if (data.records && data.records[studentId]) {
@@ -834,10 +845,10 @@ export async function getAttendanceForClassInMonth(classId: string, month: numbe
         querySnapshot.forEach(doc => {
             const data = doc.data();
             const recordDate = new Date(data.date);
-            recordDate.setHours(0,0,0,0); // Normalize date to avoid timezone issues
+            recordDate.setUTCHours(0,0,0,0);
             
             if (recordDate >= startDate && recordDate <= endDate) {
-                const day = recordDate.getDate();
+                const day = recordDate.getUTCDate();
                 for (const studentId in data.records) {
                     if (!monthlyAttendance[studentId]) {
                         monthlyAttendance[studentId] = {};
