@@ -5,6 +5,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -577,6 +578,15 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
                 payoutId: payoutRef.id
             });
         });
+
+        // 3. Add the payout as an expense
+        const expenseRef = doc(collection(db, 'expenses'));
+        batch.set(expenseRef, {
+            description: `Payout to ${teacherName}`,
+            amount: amount,
+            date: serverTimestamp()
+        });
+
 
         await batch.commit();
         return { success: true, message: `Successfully paid ${amount.toLocaleString()} PKR to ${teacherName}.` };
