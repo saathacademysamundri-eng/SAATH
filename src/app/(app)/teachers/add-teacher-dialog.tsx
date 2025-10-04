@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -22,11 +23,15 @@ import { Badge } from "@/components/ui/badge"
 import { Subject } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import { useAppContext } from "@/hooks/use-app-context"
+import { Textarea } from "@/components/ui/textarea"
 
 export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => void }) {
     const { allSubjects } = useAppContext();
     const [name, setName] = useState('')
+    const [fatherName, setFatherName] = useState('')
     const [phone, setPhone] = useState('')
+    const [address, setAddress] = useState('')
+    const [email, setEmail] = useState('')
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
     const [isSaving, setIsSaving] = useState(false)
     const { toast } = useToast()
@@ -44,20 +49,30 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
 
 
     const handleSubmit = async () => {
-        if (!name.trim() || !phone.trim() || selectedSubjects.length === 0) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all fields and select at least one subject.' });
+        if (!name.trim() || !phone.trim() || !fatherName.trim() || !address.trim() || selectedSubjects.length === 0) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all required fields and select at least one subject.' });
             return;
         }
 
         setIsSaving(true);
-        const result = await addTeacher({ name: name.trim(), phone: phone.trim(), subjects: selectedSubjects });
+        const result = await addTeacher({ 
+            name: name.trim(),
+            fatherName: fatherName.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
+            email: email.trim(),
+            subjects: selectedSubjects 
+        });
 
         if (result.success) {
             toast({ title: 'Teacher Added', description: 'The new teacher has been saved.' });
             onTeacherAdded();
             // Reset form
             setName('');
+            setFatherName('');
             setPhone('');
+            setAddress('');
+            setEmail('');
             setSelectedSubjects([]);
         } else {
             toast({ variant: 'destructive', title: 'Failed to Add', description: result.message });
@@ -66,29 +81,59 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
     };
 
     return (
-        <DialogContent>
+        <DialogContent className="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>Add New Teacher</DialogTitle>
                 <DialogDescription>Enter the details for the new teacher.</DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="name">Teacher Name</Label>
-                    <Input
-                        id="name"
-                        placeholder="e.g., Mr. Ahmed"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
+            <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Teacher Name</Label>
+                        <Input
+                            id="name"
+                            placeholder="e.g., Mr. Ahmed"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="fatherName">Father's Name</Label>
+                        <Input
+                            id="fatherName"
+                            placeholder="e.g., Ahmed Father"
+                            value={fatherName}
+                            onChange={(e) => setFatherName(e.target.value)}
+                        />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input
+                            id="phone"
+                            type="tel"
+                            placeholder="e.g., 03001234567"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="email">Email (Optional)</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            placeholder="e.g., teacher@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="e.g., 03001234567"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                    <Label htmlFor="address">Address</Label>
+                    <Textarea 
+                        id="address" 
+                        placeholder="Enter teacher's address"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
                     />
                 </div>
                  <div className="space-y-2">

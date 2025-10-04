@@ -6,6 +6,7 @@
 
 
 
+
 export type Subject = {
     id: string;
     name: string;
@@ -41,7 +42,10 @@ export type Student = {
 export type Teacher = {
   id: string;
   name: string;
+  fatherName: string;
   phone: string;
+  address: string;
+  email?: string;
   subjects: string[]; // Names of subjects
 };
 
@@ -255,11 +259,11 @@ export let students: Student[] = [
 ];
 
 export const teachers: Teacher[] = [
-    { id: 'T01', name: 'Dr. Arshad', phone: '03001234567', subjects: ['Physics'] },
-    { id: 'T02', name: 'Mrs. Samina', phone: '03011234567', subjects: ['Chemistry'] },
-    { id: 'T03', name: 'Mr. Qasim', phone: '03021234567', subjects: ['Mathematics', 'Computer Science', 'Pre-Eng. Mathematics'] },
-    { id: 'T04', name: 'Ms. Farhat', phone: '03031234567', subjects: ['English'] },
-    { id: 'T05', name: 'Dr. Nida', phone: '03041234567', subjects: ['Biology', 'Pre-Med. Biology'] },
+    { id: 'T01', name: 'Dr. Arshad', fatherName: 'Arshad Father', phone: '03001234567', address: 'Address 1', subjects: ['Physics'] },
+    { id: 'T02', name: 'Mrs. Samina', fatherName: 'Samina Father', phone: '03011234567', address: 'Address 2', subjects: ['Chemistry'] },
+    { id: 'T03', name: 'Mr. Qasim', fatherName: 'Qasim Father', phone: '03021234567', address: 'Address 3', subjects: ['Mathematics', 'Computer Science', 'Pre-Eng. Mathematics'] },
+    { id: 'T04', name: 'Ms. Farhat', fatherName: 'Farhat Father', phone: '03031234567', address: 'Address 4', subjects: ['English'] },
+    { id: 'T05', name: 'Dr. Nida', fatherName: 'Nida Father', phone: '03041234567', address: 'Address 5', subjects: ['Biology', 'Pre-Med. Biology'] },
 ];
 
 export const classes: Class[] = [

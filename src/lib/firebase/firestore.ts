@@ -1,5 +1,6 @@
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -248,14 +249,12 @@ export async function getNextTeacherId(): Promise<string> {
     return `T${newNumber.toString().padStart(2, '0')}`;
 }
 
-export async function addTeacher(teacherData: Omit<Teacher, 'id' | 'avatar'>) {
+export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
     try {
         const newTeacherId = await getNextTeacherId();
         const newTeacher: Teacher = {
             id: newTeacherId,
-            name: teacherData.name,
-            phone: teacherData.phone,
-            subjects: teacherData.subjects,
+            ...teacherData
         };
         await setDoc(doc(db, 'teachers', newTeacherId), newTeacher);
         return { success: true, message: "Teacher added successfully." };
@@ -265,7 +264,7 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id' | 'avatar'>) {
     }
 }
 
-export async function updateTeacher(teacherId: string, teacherData: Partial<Omit<Teacher, 'id' | 'avatar'>>) {
+export async function updateTeacher(teacherId: string, teacherData: Partial<Omit<Teacher, 'id'>>) {
     try {
         const teacherRef = doc(db, 'teachers', teacherId);
         await updateDoc(teacherRef, teacherData);
