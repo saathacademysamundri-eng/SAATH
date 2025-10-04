@@ -19,6 +19,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -783,7 +784,7 @@ export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Repor
 
 
 // Attendance Functions
-export async function saveAttendance(attendanceData: { classId: string; date: string; records: { [studentId: string]: 'Present' | 'Absent' } }) {
+export async function saveAttendance(attendanceData: { classId: string; date: string; records: { [studentId: string]: 'Present' | 'Absent' | 'Leave' } }) {
     try {
         const docId = `${attendanceData.date}_${attendanceData.classId}`;
         const docRef = doc(db, 'attendance', docId);
