@@ -12,8 +12,9 @@ import { Student } from '@/lib/data';
 import { getAttendanceForMonth, getStudent } from '@/lib/firebase/firestore';
 import { cn } from '@/lib/utils';
 import { addMonths, format } from 'date-fns';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, Printer } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
+import { useSettings } from '@/hooks/use-settings';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
 type AttendanceRecord = {
@@ -36,6 +37,7 @@ export function AttendanceReport() {
     const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
 
     const { toast } = useToast();
+    const { settings, isSettingsLoading } = useSettings();
 
     const handleSearch = async () => {
         if (!search.trim()) {
@@ -74,6 +76,103 @@ export function AttendanceReport() {
             return acc;
         }, {} as { [key in AttendanceStatus]?: number });
     }, [attendanceData]);
+
+    const handlePrint = () => {
+        if (isSettingsLoading || !student) {
+            toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please search for a student first.' });
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please allow popups for this site.' });
+            return;
+        }
+        
+        const calendarHtml = document.querySelector('.rdp')?.outerHTML || 'Calendar not available';
+
+        const printHtml = `
+          <html>
+            <head>
+              <title>Attendance Report - ${student.name}</title>
+              <style>
+                @media print {
+                  @page { size: A4 portrait; margin: 0.75in; }
+                  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
+                .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+                .academy-details { text-align: center; margin-bottom: 2rem; }
+                .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
+                .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
+                .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
+                .report-title { text-align: center; margin: 2rem 0; }
+                .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0 0 0.5rem 0; }
+                .report-title p { font-size: 1.1rem; color: #555; margin: 0; }
+                
+                .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+                
+                /* Calendar Styles */
+                .rdp { font-family: sans-serif; --rdp-cell-size: 40px; --rdp-accent-color: #007bff; --rdp-background-color: #f0f0f0; }
+                .rdp-day_selected { background-color: #007bff !important; color: white !important; }
+                .rdp-day_today:not(.rdp-day_selected) { border: 1px solid #007bff; }
+                .bg-green-100 { background-color: #d1fae5; } .text-green-800 { color: #065f46; }
+                .bg-red-100 { background-color: #fee2e2; } .text-red-800 { color: #991b1b; }
+                .bg-yellow-100 { background-color: #fef9c3; } .text-yellow-700 { color: #854d0e; }
+                .rdp-table { margin: 0 auto; }
+                .rdp-head_cell { font-weight: bold; }
+
+                /* Summary Styles */
+                .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center; }
+                .summary-card { padding: 1rem; border-radius: 8px; }
+                .summary-card .label { font-size: 0.9rem; }
+                .summary-card .count { font-size: 2rem; font-weight: bold; }
+                
+              </style>
+            </head>
+            <body>
+              <div class="report-container">
+                <div class="academy-details">
+                  ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                  <h1>${settings.name}</h1>
+                  <p>${settings.address}</p>
+                  <p>Phone: ${settings.phone}</p>
+                </div>
+                <div class="report-title">
+                  <h2>Student Attendance Report</h2>
+                   <p>${student.name} (${student.id}) - ${student.class}</p>
+                  <p style="font-size: 1rem;">${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}</p>
+                </div>
+
+                <div class="grid-container">
+                    <div>${calendarHtml}</div>
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold">Attendance Summary</h3>
+                        <div class="summary-grid">
+                            <div class="summary-card bg-green-100">
+                                <p class="label text-green-800">Present</p>
+                                <p class="count text-green-700">${summary.Present || 0}</p>
+                            </div>
+                            <div class="summary-card bg-red-100">
+                                <p class="label text-red-800">Absent</p>
+                                <p class="count text-red-700">${summary.Absent || 0}</p>
+                            </div>
+                            <div class="summary-card bg-yellow-100">
+                                <p class="label text-yellow-800">Leave</p>
+                                <p class="count text-yellow-700">${summary.Leave || 0}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </body>
+          </html>
+        `;
+
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+    };
+
 
     return (
         <div className="space-y-6">
@@ -118,6 +217,10 @@ export function AttendanceReport() {
                         </Select>
                     </div>
                 </div>
+                <Button onClick={handlePrint} variant="outline" disabled={!student || isSettingsLoading}>
+                    <Printer className="mr-2"/>
+                    Print
+                </Button>
             </div>
 
             {(isSearching || isLoadingReport) && <Skeleton className="h-80 w-full" />}

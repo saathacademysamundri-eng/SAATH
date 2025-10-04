@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TakeAttendance } from './take-attendance';
 import { AttendanceReport } from './attendance-report';
+import { ClassAttendanceReport } from './class-attendance-report';
 
 export default function AttendancePage() {
     return (
@@ -14,9 +15,10 @@ export default function AttendancePage() {
                 <p className="text-muted-foreground">Mark and review student attendance.</p>
             </div>
             <Tabs defaultValue="take-attendance" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-lg">
+                <TabsList className="grid w-full grid-cols-3 max-w-2xl">
                     <TabsTrigger value="take-attendance">Take Daily Attendance</TabsTrigger>
-                    <TabsTrigger value="attendance-report">Attendance Report</TabsTrigger>
+                    <TabsTrigger value="student-report">Student Report</TabsTrigger>
+                    <TabsTrigger value="class-report">Class Report</TabsTrigger>
                 </TabsList>
                 <TabsContent value="take-attendance">
                     <Card>
@@ -29,7 +31,7 @@ export default function AttendancePage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="attendance-report">
+                <TabsContent value="student-report">
                     <Card>
                         <CardHeader>
                             <CardTitle>Student Attendance Report</CardTitle>
@@ -37,6 +39,17 @@ export default function AttendancePage() {
                         </CardHeader>
                         <CardContent>
                             <AttendanceReport />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="class-report">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Class Attendance Report</CardTitle>
+                            <CardDescription>Select a class and month to view the full attendance sheet.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ClassAttendanceReport />
                         </CardContent>
                     </Card>
                 </TabsContent>

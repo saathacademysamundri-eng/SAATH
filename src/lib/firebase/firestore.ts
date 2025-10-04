@@ -21,6 +21,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -801,9 +802,6 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
 
 export async function getAttendanceForMonth(studentId: string, month: number, year: number): Promise<{ date: Date, status: AttendanceStatus }[]> {
     try {
-        const startDate = new Date(year, month, 1);
-        const endDate = new Date(year, month + 1, 0);
-
         const studentData = await getStudent(studentId);
         if (!studentData) return [];
 
@@ -814,21 +812,24 @@ export async function getAttendanceForMonth(studentId: string, month: number, ye
 
         const q = query(
             collection(db, 'attendance'),
-            where('classId', '==', studentClass.id),
-            orderBy('date'),
-            startAt(startDate.toISOString().split('T')[0]),
-            endAt(endDate.toISOString().split('T')[0])
+            where('classId', '==', studentClass.id)
         );
-
         const querySnapshot = await getDocs(q);
+        
+        const startDate = new Date(year, month, 1);
+        const endDate = new Date(year, month + 1, 0);
 
         querySnapshot.forEach(doc => {
             const data = doc.data();
-            if (data.records && data.records[studentId]) {
-                studentAttendance.push({
-                    date: new Date(data.date),
-                    status: data.records[studentId],
-                });
+            const recordDate = new Date(data.date);
+            
+            if (recordDate >= startDate && recordDate <= endDate) {
+                if (data.records && data.records[studentId]) {
+                    studentAttendance.push({
+                        date: recordDate,
+                        status: data.records[studentId],
+                    });
+                }
             }
         });
         
@@ -836,6 +837,40 @@ export async function getAttendanceForMonth(studentId: string, month: number, ye
     } catch (error) {
         console.error("Error fetching attendance for month: ", error);
         return [];
+    }
+}
+
+export async function getAttendanceForClassInMonth(classId: string, month: number, year: number) {
+    const monthlyAttendance: { [studentId: string]: { [day: number]: 'P' | 'A' | 'L' } } = {};
+    try {
+        const startDate = new Date(year, month, 1).toISOString().split('T')[0];
+        const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+
+        const q = query(
+            collection(db, 'attendance'),
+            where('classId', '==', classId),
+            orderBy('date'),
+            startAt(startDate),
+            endAt(endDate)
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            const day = new Date(data.date).getDate() + 1; // getDate() is 0-indexed for some reason with timezone issues
+            for (const studentId in data.records) {
+                if (!monthlyAttendance[studentId]) {
+                    monthlyAttendance[studentId] = {};
+                }
+                const status = data.records[studentId];
+                monthlyAttendance[studentId][day] = status.charAt(0) as 'P' | 'A' | 'L';
+            }
+        });
+        return monthlyAttendance;
+    } catch (error) {
+        console.error("Error fetching class attendance:", error);
+        return {};
     }
 }
 
