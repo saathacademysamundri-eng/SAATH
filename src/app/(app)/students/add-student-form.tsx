@@ -4,7 +4,6 @@
 
 import { Button } from "@/components/ui/button"
 import {
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -261,12 +260,10 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
           )}
         </div>
         <DialogFooter>
-            <DialogClose asChild>
-                <Button type="button" onClick={handleSubmit} disabled={isSaving}>
-                    {isSaving && <Loader2 className="animate-spin mr-2"/>}
-                    {isSaving ? 'Adding Student...' : 'Add Student'}
-                </Button>
-            </DialogClose>
+            <Button type="button" onClick={handleSubmit} disabled={isSaving}>
+                {isSaving && <Loader2 className="animate-spin mr-2"/>}
+                {isSaving ? 'Adding Student...' : 'Add Student'}
+            </Button>
         </DialogFooter>
       </DialogContent>
   )

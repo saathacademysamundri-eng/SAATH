@@ -1,10 +1,10 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -227,12 +227,10 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
                  </div>
             </div>
             <DialogFooter>
-                <DialogClose asChild>
-                    <Button onClick={handleSubmit} disabled={isSaving}>
-                        {isSaving ? <Loader2 className="animate-spin mr-2" /> : null}
-                        {isSaving ? 'Saving...' : 'Save Teacher'}
-                    </Button>
-                </DialogClose>
+                <Button onClick={handleSubmit} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="animate-spin mr-2" /> : null}
+                    {isSaving ? 'Saving...' : 'Save Teacher'}
+                </Button>
             </DialogFooter>
         </DialogContent>
     );
