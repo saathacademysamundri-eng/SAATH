@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useSettings } from '@/hooks/use-settings';
 import { Teacher } from '@/lib/data';
 import { getTeacher } from '@/lib/firebase/firestore';
-import { Home, Mail, Phone, BookOpen } from 'lucide-react';
+import { Home, Mail, Phone, BookOpen, User } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -24,11 +24,11 @@ function ProfileSkeleton() {
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="flex-row items-center gap-4 space-y-0 pb-4">
-                        <Skeleton className="w-24 h-24 rounded-full" />
+                    <CardHeader className="items-center text-center space-y-4">
+                        <Skeleton className="w-28 h-28 rounded-full" />
                         <div className='grid gap-2 w-full'>
-                            <Skeleton className="h-8 w-1/2" />
-                            <Skeleton className="h-5 w-1/3" />
+                            <Skeleton className="h-8 w-1/2 mx-auto" />
+                            <Skeleton className="h-5 w-1/3 mx-auto" />
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -95,39 +95,48 @@ export default function TeacherPublicProfile() {
                 </header>
 
                 <Card>
-                    <CardHeader className="flex-row items-center gap-4 space-y-0 pb-4">
-                        <Avatar className="h-24 w-24 border-2 border-primary">
+                    <CardHeader className="items-center text-center space-y-4">
+                        <Avatar className="h-28 w-28 border-4 border-primary shadow-lg">
                             <AvatarImage src={teacher.imageUrl} alt={teacher.name} />
-                            <AvatarFallback className="text-3xl">{teacher.name.charAt(0)}</AvatarFallback>
+                            <AvatarFallback className="text-4xl">{teacher.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className='grid gap-1'>
-                            <CardTitle className="text-2xl">{teacher.name}</CardTitle>
-                            <CardDescription>Father's Name: {teacher.fatherName}</CardDescription>
+                            <CardTitle className="text-3xl font-bold">{teacher.name}</CardTitle>
+                            <CardDescription className="text-base">Father's Name: {teacher.fatherName}</CardDescription>
                         </div>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                        <div className="flex items-center gap-4 rounded-md border p-3">
-                            <Phone className="h-5 w-5 text-muted-foreground" />
-                            <span>{teacher.phone}</span>
+                    <CardContent className="mt-4 space-y-3">
+                        <div className="flex items-center gap-4 rounded-md border p-4">
+                            <Phone className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+                            <div>
+                                <p className="text-sm text-muted-foreground">Phone Number</p>
+                                <p className="font-medium">{teacher.phone}</p>
+                            </div>
                         </div>
                         {teacher.email && (
-                            <div className="flex items-center gap-4 rounded-md border p-3">
-                                <Mail className="h-5 w-5 text-muted-foreground" />
-                                <span>{teacher.email}</span>
+                            <div className="flex items-center gap-4 rounded-md border p-4">
+                                <Mail className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+                                 <div>
+                                    <p className="text-sm text-muted-foreground">Email Address</p>
+                                    <p className="font-medium">{teacher.email}</p>
+                                </div>
                             </div>
                         )}
-                        <div className="flex items-start gap-4 rounded-md border p-3">
-                            <Home className="h-5 w-5 text-muted-foreground mt-1" />
-                            <span>{teacher.address}</span>
+                        <div className="flex items-start gap-4 rounded-md border p-4">
+                            <Home className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />
+                             <div>
+                                <p className="text-sm text-muted-foreground">Address</p>
+                                <p className="font-medium">{teacher.address}</p>
+                            </div>
                         </div>
-                        <div className="space-y-2 pt-2">
-                             <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <div className="rounded-md border p-4">
+                             <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-3">
                                 <BookOpen className="h-5 w-5" />
-                                Subjects
+                                Subjects Taught
                             </h3>
                             <div className="flex flex-wrap gap-2">
                                 {teacher.subjects.map(subject => (
-                                    <Badge key={subject} variant="secondary">{subject}</Badge>
+                                    <Badge key={subject} variant="secondary" className="text-base px-3 py-1">{subject}</Badge>
                                 ))}
                             </div>
                         </div>
