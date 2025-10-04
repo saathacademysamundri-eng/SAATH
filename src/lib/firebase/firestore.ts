@@ -2,6 +2,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -220,6 +221,34 @@ export async function updateTeacher(teacherId: string, teacherData: Partial<Omit
         return { success: false, message: (error as Error).message };
     }
 }
+
+async function getNextClassId(): Promise<string> {
+    const q = query(collection(db, "classes"), orderBy("id", "desc"), limit(1));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return "C01";
+    }
+    const lastId = querySnapshot.docs[0].id;
+    const lastNumber = parseInt(lastId.substring(1));
+    const newNumber = lastNumber + 1;
+    return `C${newNumber.toString().padStart(2, '0')}`;
+}
+
+export async function addClass(name: string) {
+    try {
+        const newClassId = await getNextClassId();
+        const newClass = {
+            id: newClassId,
+            name: name,
+        };
+        await setDoc(doc(db, 'classes', newClassId), newClass);
+        return { success: true, message: "Class created successfully." };
+    } catch (error) {
+        console.error("Error adding class: ", error);
+        return { success: false, message: (error as Error).message };
+    }
+}
+
 
 export async function getClasses(): Promise<Class[]> {
     const classesCollection = collection(db, 'classes');

@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -17,10 +18,10 @@ import {
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { type Class } from '@/lib/data';
 import { Book, Edit, PlusCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import { EditSubjectsDialog } from './edit-subjects-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppContext } from '@/hooks/use-app-context';
+import { AddClassDialog } from './add-class-dialog';
 
 export default function ClassesPage() {
   const { classes, loading, refreshData } = useAppContext();
@@ -34,10 +35,15 @@ export default function ClassesPage() {
             Manage classes and their subjects.
           </p>
         </div>
-        <Button>
-          <PlusCircle />
-          Add Class
-        </Button>
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button>
+                    <PlusCircle />
+                    Add Class
+                </Button>
+            </DialogTrigger>
+            <AddClassDialog onClassAdded={refreshData} />
+        </Dialog>
       </div>
       <Card>
         <CardHeader>
