@@ -163,6 +163,9 @@ export default function AcademySharePage() {
             th, td { padding: 8px 10px; border: 1px solid #ddd; }
             th { font-weight: bold; background-color: #f2f2f2; }
             tr:nth-child(even) { background-color: #f9f9f9; }
+             .final-summary { margin-top: 2rem; float: right; width: 50%; }
+             .final-summary th { text-align: left; }
+             .final-summary td { text-align: right; }
           </style>
         </head>
         <body>
@@ -201,6 +204,13 @@ export default function AcademySharePage() {
                 ${tableRows.length > 0 ? tableRows : `<tr><td colspan="${tableHeaders.length}" style="text-align: center;">No data for this period.</td></tr>`}
               </tbody>
             </table>
+
+            <table class="final-summary">
+                <tr><th>Total Academy Share</th><td>${totalAcademyEarnings.toLocaleString()} PKR</td></tr>
+                <tr><th>Total Manual Expenses</th><td>${totalManualExpenses.toLocaleString()} PKR</td></tr>
+                <tr style="font-weight: bold; border-top: 2px solid #333;"><th>Net Earnings</th><td>${netAcademyEarnings.toLocaleString()} PKR</td></tr>
+            </table>
+
           </div>
         </body>
       </html>
