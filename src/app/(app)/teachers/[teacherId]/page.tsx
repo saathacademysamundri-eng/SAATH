@@ -62,23 +62,26 @@ export default function TeacherProfilePage() {
 
     unpaidIncome.forEach(incomeRecord => {
         const student = students.find(s => s.id === incomeRecord.studentId);
-        if (student && student.monthlyFee > 0) {
-            student.subjects.forEach(subjectInfo => {
-                if (subjectInfo.teacher_id === teacherData.id) {
-                    // Calculate the proportion of the fee that was paid
-                    const paymentProportion = incomeRecord.amount / student.monthlyFee;
-                    // The teacher earns their share of the paid amount
-                    const earnedShare = subjectInfo.fee_share * paymentProportion;
+        if (student && student.subjects.length > 0) {
+            // Find all unique teachers for this student
+            const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
+            
+            // Check if the current teacher is one of them
+            if (studentTeachers.includes(teacherData.id)) {
+                // Divide the income equally among all the student's teachers
+                const earnedShare = incomeRecord.amount / studentTeachers.length;
 
-                    currentStudentEarnings.push({
-                        student,
-                        incomeRecord,
-                        earnedShare,
-                        subjectName: subjectInfo.subject_name
-                    });
-                    currentTotalEarnings += earnedShare;
-                }
-            });
+                // Find the subject this teacher teaches the student to display in the breakdown
+                const relevantSubject = student.subjects.find(s => s.teacher_id === teacherData.id);
+
+                currentStudentEarnings.push({
+                    student,
+                    incomeRecord,
+                    earnedShare,
+                    subjectName: relevantSubject?.subject_name || 'N/A'
+                });
+                currentTotalEarnings += earnedShare;
+            }
         }
     });
     
@@ -466,4 +469,5 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
+
 
