@@ -7,6 +7,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -531,7 +532,7 @@ export async function getExpenses(): Promise<Expense[]> {
 }
 
 // Reports Functions
-export async function addReport(reportData: Omit<Report, 'id'>) {
+export async function addReport(reportData: Omit<Report, 'id' | 'reportDate'>) {
     try {
         const docRef = await addDoc(collection(db, 'reports'), {
             ...reportData,
