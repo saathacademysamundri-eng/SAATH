@@ -4,6 +4,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -56,6 +57,9 @@ service cloud.firestore {
     match /income/{incomeId} {
        allow read, write: if isAdmin();
     }
+     match /teacher_payouts/{payoutId} {
+       allow read, write: if isAdmin();
+    }
     match /expenses/{expenseId} {
        allow read, write: if isAdmin();
     }
@@ -84,7 +88,7 @@ service cloud.firestore {
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment } from 'firebase/firestore';
 import { app } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult } from '@/lib/data';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 
 const db = getFirestore(app);
@@ -549,6 +553,56 @@ export async function getReports(): Promise<Report[]> {
         } as Report;
     });
 }
+
+// Teacher Payout Functions
+export async function payoutTeacher(teacherId: string, teacherName: string, amount: number, incomeIds: string[]) {
+    try {
+        const batch = writeBatch(db);
+
+        // 1. Create a new payout record
+        const payoutRef = doc(collection(db, 'teacher_payouts'));
+        batch.set(payoutRef, {
+            teacherId,
+            teacherName,
+            amount,
+            payoutDate: serverTimestamp(),
+            incomeIds,
+        });
+
+        // 2. Mark all contributing income records as paid out
+        incomeIds.forEach(incomeId => {
+            const incomeRef = doc(db, 'income', incomeId);
+            batch.update(incomeRef, {
+                isPaidOut: true,
+                payoutId: payoutRef.id
+            });
+        });
+
+        await batch.commit();
+        return { success: true, message: `Successfully paid ${amount.toLocaleString()} PKR to ${teacherName}.` };
+    } catch (error) {
+        console.error("Error processing teacher payout: ", error);
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+export async function getTeacherPayouts(teacherId: string): Promise<TeacherPayout[]> {
+    const q = query(
+        collection(db, "teacher_payouts"), 
+        where("teacherId", "==", teacherId), 
+        orderBy("payoutDate", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            payoutDate: data.payoutDate.toDate(),
+        } as TeacherPayout;
+    });
+}
+
 
 // Attendance Functions
 export async function saveAttendance(attendanceData: { classId: string; date: string; records: { [studentId: string]: 'Present' | 'Absent' } }) {

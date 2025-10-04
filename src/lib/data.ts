@@ -1,6 +1,7 @@
 
 
 
+
 export type Subject = {
     id: string;
     name: string;
@@ -41,6 +42,17 @@ export type Income = {
     studentId: string;
     amount: number;
     date: Date;
+    isPaidOut?: boolean; // New field to track payout status
+    payoutId?: string; // Reference to the payout record
+}
+
+export type TeacherPayout = {
+    id: string;
+    teacherId: string;
+    teacherName: string;
+    amount: number;
+    payoutDate: Date;
+    incomeIds: string[];
 }
 
 export type Expense = {

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -6,17 +7,21 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type Student, type Teacher } from '@/lib/data';
-import { getTeacher, getStudents } from '@/lib/firebase/firestore';
-import { Phone } from 'lucide-react';
+import { type Student, type Teacher, type Income, type TeacherPayout } from '@/lib/data';
+import { getTeacherPayouts, payoutTeacher } from '@/lib/firebase/firestore';
+import { Loader2, Phone, Wallet } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useParams } from 'next/navigation';
 import { useAppContext } from '@/hooks/use-app-context';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 type StudentEarning = {
   student: Student;
+  incomeRecord: Income;
   feeShare: number;
   subjectName: string;
 };
@@ -24,12 +29,16 @@ type StudentEarning = {
 export default function TeacherProfilePage() {
   const params = useParams();
   const teacherId = params.teacherId as string;
+  const { toast } = useToast();
   
-  const { teachers, students, loading: isAppLoading } = useAppContext();
+  const { teachers, students, income, loading: isAppLoading, refreshData } = useAppContext();
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [studentEarnings, setStudentEarnings] = useState<StudentEarning[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
+  const [payouts, setPayouts] = useState<TeacherPayout[]>([]);
+  
   const [loading, setLoading] = useState(true);
+  const [isPaying, setIsPaying] = useState(false);
 
   useEffect(() => {
     if (isAppLoading) return;
@@ -46,27 +55,63 @@ export default function TeacherProfilePage() {
 
     const currentStudentEarnings: StudentEarning[] = [];
     let currentTotalEarnings = 0;
+    
+    // Filter for income that hasn't been paid out yet
+    const unpaidIncome = income.filter(i => !i.isPaidOut);
 
     students.forEach(student => {
-      student.subjects.forEach(subject => {
-          if (subject.teacher_id === teacherData.id && student.feeStatus === 'Paid') {
-            currentStudentEarnings.push({
-              student,
-              feeShare: subject.fee_share,
-              subjectName: subject.subject_name
-            });
-            currentTotalEarnings += subject.fee_share;
+      student.subjects.forEach(subjectInfo => {
+        if (subjectInfo.teacher_id === teacherData.id) {
+          // Find income records for this student that are not yet paid out
+          const relevantIncome = unpaidIncome.find(i => i.studentId === student.id);
+          if (relevantIncome) {
+             currentStudentEarnings.push({
+                student,
+                incomeRecord: relevantIncome,
+                feeShare: subjectInfo.fee_share,
+                subjectName: subjectInfo.subject_name
+             });
+             currentTotalEarnings += subjectInfo.fee_share;
           }
+        }
       });
     });
     
     setStudentEarnings(currentStudentEarnings);
     setTotalEarnings(currentTotalEarnings);
+
+    const fetchPayouts = async () => {
+        const payoutData = await getTeacherPayouts(teacherId);
+        setPayouts(payoutData);
+    }
+    fetchPayouts();
+
     setLoading(false);
-  }, [teacherId, teachers, students, isAppLoading]);
+  }, [teacherId, teachers, students, income, isAppLoading]);
 
   const teacherShare = totalEarnings * 0.7;
   const academyShare = totalEarnings * 0.3;
+
+  const handlePayout = async () => {
+      if (!teacher || totalEarnings === 0) {
+          toast({ variant: 'destructive', title: 'Payout Error', description: 'No earnings to pay out.' });
+          return;
+      }
+
+      setIsPaying(true);
+      const incomeIdsToPayout = studentEarnings.map(se => se.incomeRecord.id);
+      
+      const result = await payoutTeacher(teacher.id, teacher.name, teacherShare, incomeIdsToPayout);
+
+      if (result.success) {
+          toast({ title: 'Payout Successful', description: result.message });
+          refreshData(); // This will re-trigger the useEffect and update the earnings
+      } else {
+          toast({ variant: 'destructive', title: 'Payout Failed', description: result.message });
+      }
+      setIsPaying(false);
+  };
+
 
   const getReportData = useCallback(() => {
     if (!teacher) return null;
@@ -153,7 +198,8 @@ export default function TeacherProfilePage() {
         
         <Tabs defaultValue="earnings" className="mt-4">
             <TabsList className="print:hidden">
-                <TabsTrigger value="earnings">Earnings</TabsTrigger>
+                <TabsTrigger value="earnings">Current Earnings</TabsTrigger>
+                <TabsTrigger value="payouts">Payout History</TabsTrigger>
                 <TabsTrigger value="profile">Profile Details</TabsTrigger>
             </TabsList>
             <TabsContent value="earnings" className="mt-4">
@@ -162,7 +208,7 @@ export default function TeacherProfilePage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Gross Earnings (from Paid Fees)</CardTitle>
-                                <CardDescription>This is the total amount collected from students taught by {teacher.name}.</CardDescription>
+                                <CardDescription>Total amount from students taught by {teacher.name} that has not been paid out yet.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <p data-stat="gross-earnings" className="text-3xl font-bold">{totalEarnings.toLocaleString()} PKR</p>
@@ -174,6 +220,12 @@ export default function TeacherProfilePage() {
                             </CardHeader>
                             <CardContent>
                                 <p data-stat="teacher-share" className="text-3xl font-bold text-green-600">{teacherShare.toLocaleString()} PKR</p>
+                            </CardContent>
+                             <CardContent>
+                                <Button onClick={handlePayout} disabled={isPaying || teacherShare <= 0}>
+                                    {isPaying ? <Loader2 className="mr-2 animate-spin" /> : <Wallet className="mr-2" />}
+                                    {isPaying ? 'Processing...' : 'Pay Teacher & Reset'}
+                                </Button>
                             </CardContent>
                         </Card>
                         <Card className="border-blue-500/50">
@@ -188,8 +240,8 @@ export default function TeacherProfilePage() {
                     <div className="lg:col-span-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Student Breakdown (Paid Fees Only)</CardTitle>
-                                <CardDescription>List of students contributing to the earnings.</CardDescription>
+                                <CardTitle>Student Fee Contribution (Current Cycle)</CardTitle>
+                                <CardDescription>List of students contributing to the current unpaid earnings.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <Table>
@@ -220,8 +272,8 @@ export default function TeacherProfilePage() {
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={4} className="text-center text-muted-foreground">
-                                                    No paid fees from assigned students yet.
+                                                <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                                                    No unpaid income from students for this teacher.
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -231,6 +283,40 @@ export default function TeacherProfilePage() {
                         </Card>
                     </div>
                 </div>
+            </TabsContent>
+            <TabsContent value="payouts">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Teacher Payout History</CardTitle>
+                        <CardDescription>A record of all payments made to {teacher.name}.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Payout Date</TableHead>
+                                    <TableHead className="text-right">Amount Paid</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {payouts.length > 0 ? (
+                                    payouts.map((payout) => (
+                                        <TableRow key={payout.id}>
+                                            <TableCell>{format(payout.payoutDate, 'PPP')}</TableCell>
+                                            <TableCell className="text-right font-medium">{payout.amount.toLocaleString()} PKR</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">
+                                            No payout history for this teacher.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             </TabsContent>
             <TabsContent value="profile">
                 <Card>

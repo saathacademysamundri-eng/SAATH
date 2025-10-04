@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -36,29 +37,33 @@ import { Badge } from '@/components/ui/badge';
 import { EditTeacherDialog } from './edit-teacher-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAppContext } from '@/hooks/use-app-context';
+import { Income } from '@/lib/data';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
-  const { teachers, students: allStudents, loading, refreshData } = useAppContext();
+  const { teachers, students: allStudents, income, loading, refreshData } = useAppContext();
   const router = useRouter();
 
   const teacherStats = useMemo(() => {
-    const stats = new Map<string, { gross: number; net: number }>();
+    const stats = new Map<string, { gross: number; net: number; unpaidIncomeRecords: Income[] }>();
     
     teachers.forEach(teacher => {
-        stats.set(teacher.id, { gross: 0, net: 0 });
+        stats.set(teacher.id, { gross: 0, net: 0, unpaidIncomeRecords: [] });
     });
+    
+    const unpaidIncome = income.filter(i => !i.isPaidOut);
 
-    allStudents.forEach(student => {
-      // Only count fees from paid students
-      if (student.feeStatus === 'Paid') {
-        student.subjects.forEach(subject => {
-          if (stats.has(subject.teacher_id)) {
-              const currentStats = stats.get(subject.teacher_id)!;
-              currentStats.gross += subject.fee_share;
-          }
-        });
-      }
+    unpaidIncome.forEach(inc => {
+        const student = allStudents.find(s => s.id === inc.studentId);
+        if (student) {
+            student.subjects.forEach(sub => {
+                if (stats.has(sub.teacher_id)) {
+                    const currentStats = stats.get(sub.teacher_id)!;
+                    currentStats.gross += sub.fee_share;
+                    currentStats.unpaidIncomeRecords.push(inc);
+                }
+            });
+        }
     });
 
     stats.forEach(stat => {
@@ -66,7 +71,7 @@ export default function TeachersPage() {
     });
 
     return stats;
-  }, [teachers, allStudents]);
+  }, [teachers, allStudents, income]);
 
 
   const filteredTeachers = teachers.filter(teacher =>
@@ -96,7 +101,7 @@ export default function TeachersPage() {
         <CardHeader>
           <CardTitle>Teacher List</CardTitle>
           <CardDescription>
-            A list of all teachers in the academy.
+            A list of all teachers in the academy. Earnings are calculated from paid student fees that have not yet been paid out.
           </CardDescription>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -114,7 +119,7 @@ export default function TeachersPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Subject(s)</TableHead>
-                <TableHead>Net Earnings (70%)</TableHead>
+                <TableHead>Current Net Earnings (70%)</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -168,7 +173,7 @@ export default function TeachersPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
-                              View Profile
+                              View Profile & Pay
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
                                 <Printer className="mr-2 h-4 w-4" />
