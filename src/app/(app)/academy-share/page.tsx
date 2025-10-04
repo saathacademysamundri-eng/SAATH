@@ -7,16 +7,20 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { TrendingUp, Printer, Calendar as CalendarIcon, X } from 'lucide-react';
+import { TrendingUp, Printer, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type { DateRange } from 'react-day-picker';
-import { addDays, format } from 'date-fns';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
+
+const months = [
+    { value: '1', label: 'January' }, { value: '2', label: 'February' }, { value: '3', label: 'March' },
+    { value: '4', label: 'April' }, { value: '5', label: 'May' }, { value: '6', label: 'June' },
+    { value: '7', label: 'July' }, { value: '8', label: 'August' }, { value: '9', label: 'September' },
+    { value: '10', label: 'October' }, { value: '11', label: 'November' }, { value: '12', label: 'December' }
+];
 
 export default function AcademySharePage() {
   const { teachers, allPayouts, loading: isAppLoading } = useAppContext();
@@ -24,18 +28,30 @@ export default function AcademySharePage() {
   const { toast } = useToast();
   const router = useRouter();
   
-  const [date, setDate] = useState<DateRange | undefined>(undefined);
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+
+  const availableYears = useMemo(() => {
+    const years = new Set(allPayouts.map(p => p.payoutDate.getFullYear().toString()));
+    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+  }, [allPayouts]);
 
   const filteredPayouts = useMemo(() => {
-    if (!date?.from) return allPayouts;
-    const fromDate = date.from;
-    const toDate = date.to ? addDays(date.to, 1) : addDays(fromDate, 1);
+    if (!selectedYear) return allPayouts;
 
     return allPayouts.filter(payout => {
-      const payoutDate = payout.payoutDate;
-      return payoutDate >= fromDate && payoutDate < toDate;
+      const payoutYear = payout.payoutDate.getFullYear().toString();
+      const payoutMonth = (payout.payoutDate.getMonth() + 1).toString();
+      
+      if (selectedYear && !selectedMonth) {
+        return payoutYear === selectedYear;
+      }
+      if (selectedYear && selectedMonth) {
+        return payoutYear === selectedYear && payoutMonth === selectedMonth;
+      }
+      return true;
     });
-  }, [allPayouts, date]);
+  }, [allPayouts, selectedYear, selectedMonth]);
 
   const academyShareData = useMemo(() => {
     if (isAppLoading) return [];
@@ -64,6 +80,11 @@ export default function AcademySharePage() {
     return academyShareData.reduce((acc, curr) => acc + curr.totalShare, 0);
   }, [academyShareData]);
 
+  const handleClearFilters = () => {
+      setSelectedYear(null);
+      setSelectedMonth(null);
+  }
+
   const handlePrint = () => {
     if (isSettingsLoading) {
       toast({ variant: 'destructive', title: 'Please wait', description: 'Settings are still loading.' });
@@ -77,7 +98,14 @@ export default function AcademySharePage() {
     }
 
     const reportTitle = 'Academy Share Report';
-    const dateRangeString = date?.from ? `${format(date.from, 'PPP')} to ${date.to ? format(date.to, 'PPP') : 'today'}` : 'All Time';
+    let dateRangeString = 'All Time';
+    if(selectedYear && selectedMonth) {
+        const monthName = months.find(m => m.value === selectedMonth)?.label;
+        dateRangeString = `For ${monthName}, ${selectedYear}`;
+    } else if (selectedYear) {
+        dateRangeString = `For Year ${selectedYear}`;
+    }
+
     const tableHeaders = ["Teacher", "Total Academy Share"];
     const tableRows = academyShareData.map(item => `
         <tr>
@@ -186,42 +214,29 @@ export default function AcademySharePage() {
             </p>
         </div>
         <div className="flex items-center gap-2">
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button
-                        id="date"
-                        variant={"outline"}
-                        className={cn(
-                            "w-[260px] justify-start text-left font-normal",
-                            !date && "text-muted-foreground"
-                        )}
-                    >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date?.from ? (
-                            date.to ? (
-                                <>
-                                    {format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}
-                                </>
-                            ) : (
-                                format(date.from, "LLL dd, y")
-                            )
-                        ) : (
-                            <span>Pick a date range</span>
-                        )}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={date?.from}
-                        selected={date}
-                        onSelect={setDate}
-                        numberOfMonths={2}
-                    />
-                </PopoverContent>
-            </Popover>
-            {date && <Button variant="ghost" size="icon" onClick={() => setDate(undefined)}><X /></Button>}
+            <Select value={selectedYear || ''} onValueChange={(v) => setSelectedYear(v)}>
+                <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                    {availableYears.map(year => (
+                        <SelectItem key={year} value={year}>{year}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            <Select value={selectedMonth || ''} onValueChange={(v) => setSelectedMonth(v)} disabled={!selectedYear}>
+                <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Month (All)" />
+                </SelectTrigger>
+                <SelectContent>
+                    {months.map(month => (
+                        <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            {(selectedYear || selectedMonth) && <Button variant="ghost" size="icon" onClick={handleClearFilters}><X className="h-4 w-4" /></Button>}
              <Button onClick={handlePrint} disabled={isSettingsLoading}>
                 <Printer className="mr-2 h-4 w-4" />
                 Print
@@ -237,7 +252,8 @@ export default function AcademySharePage() {
             </CardTitle>
             <CardDescription>
                 This is the cumulative 30% share the academy has earned from all teacher payouts
-                {date?.from && ` between ${format(date.from, 'PPP')} and ${date.to ? format(date.to, 'PPP') : 'today'}`}.
+                {selectedYear && !selectedMonth && ` for ${selectedYear}`}
+                {selectedYear && selectedMonth && ` for ${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}`}.
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -290,3 +306,5 @@ export default function AcademySharePage() {
     </div>
   );
 }
+
+    
