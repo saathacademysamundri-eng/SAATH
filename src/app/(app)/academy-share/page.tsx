@@ -7,7 +7,7 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { TrendingUp, Printer, X } from 'lucide-react';
+import { TrendingUp, Printer, X, TrendingDown, Wallet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ const months = [
 ];
 
 export default function AcademySharePage() {
-  const { teachers, allPayouts, loading: isAppLoading } = useAppContext();
+  const { teachers, allPayouts, expenses, loading: isAppLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const router = useRouter();
@@ -80,6 +80,23 @@ export default function AcademySharePage() {
     return academyShareData.reduce((acc, curr) => acc + curr.totalShare, 0);
   }, [academyShareData]);
 
+   const totalManualExpenses = useMemo(() => {
+    const manualExpenses = expenses.filter(e => e.source === 'manual');
+    if (!selectedYear) return manualExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+
+    const filtered = manualExpenses.filter(expense => {
+        const expenseYear = expense.date.getFullYear().toString();
+        const expenseMonth = (expense.date.getMonth() + 1).toString();
+        if (selectedYear && !selectedMonth) return expenseYear === selectedYear;
+        if (selectedYear && selectedMonth) return expenseYear === selectedYear && expenseMonth === selectedMonth;
+        return true;
+    });
+
+    return filtered.reduce((acc, curr) => acc + curr.amount, 0);
+  }, [expenses, selectedYear, selectedMonth]);
+
+  const netAcademyEarnings = totalAcademyEarnings - totalManualExpenses;
+
   const handleClearFilters = () => {
       setSelectedYear(null);
       setSelectedMonth(null);
@@ -132,9 +149,16 @@ export default function AcademySharePage() {
             .report-title { text-align: center; margin: 2rem 0; }
             .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0 0 0.5rem 0; }
             .report-title p { font-size: 1rem; color: #555; }
-            .summary-total { text-align: center; margin: 2rem 0; padding: 1.5rem; background-color: #f8f9fa; border-radius: 8px; }
-            .summary-total p { margin: 0; font-size: 1.1rem; color: #555; }
-            .summary-total .amount { font-size: 2.5rem; font-weight: bold; color: #28a745; margin-top: 0.5rem; }
+            .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; text-align: center; }
+            .summary-card { padding: 1.5rem; border-radius: 8px; }
+            .summary-card p { margin: 0; font-size: 1.1rem; color: #555; }
+            .summary-card .amount { font-size: 2rem; font-weight: bold; margin-top: 0.5rem; }
+            .income { background-color: #e8f5e9; }
+            .income .amount { color: #2e7d32; }
+            .expense { background-color: #ffebee; }
+            .expense .amount { color: #c62828; }
+            .net { background-color: #e3f2fd; }
+            .net .amount { color: #1565c0; }
             table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
             th, td { padding: 8px 10px; border: 1px solid #ddd; }
             th { font-weight: bold; background-color: #f2f2f2; }
@@ -153,9 +177,19 @@ export default function AcademySharePage() {
               <h2>${reportTitle}</h2>
               <p>${dateRangeString}</p>
             </div>
-             <div class="summary-total">
-                <p>Total Academy Earnings for Period</p>
-                <p class="amount">${totalAcademyEarnings.toLocaleString()} PKR</p>
+             <div class="summary-grid">
+                <div class="summary-card income">
+                    <p>Total Academy Earnings</p>
+                    <p class="amount">${totalAcademyEarnings.toLocaleString()} PKR</p>
+                </div>
+                 <div class="summary-card expense">
+                    <p>Total Manual Expenses</p>
+                    <p class="amount">${totalManualExpenses.toLocaleString()} PKR</p>
+                </div>
+                <div class="summary-card net">
+                    <p>Net Academy Earnings</p>
+                    <p class="amount">${netAcademyEarnings.toLocaleString()} PKR</p>
+                </div>
             </div>
             <table>
               <thead>
@@ -244,22 +278,53 @@ export default function AcademySharePage() {
         </div>
       </div>
       
-      <Card>
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <TrendingUp />
-                Total Academy Earnings
-            </CardTitle>
-            <CardDescription>
-                This is the cumulative 30% share the academy has earned from all teacher payouts
-                {selectedYear && !selectedMonth && ` for ${selectedYear}`}
-                {selectedYear && selectedMonth && ` for ${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}`}.
-            </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <p className="text-4xl font-bold text-primary">{totalAcademyEarnings.toLocaleString()} PKR</p>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                  <TrendingUp />
+                  Total Academy Earnings
+              </CardTitle>
+              <CardDescription>
+                  The cumulative 30% share from all teacher payouts
+                  {selectedYear && !selectedMonth && ` for ${selectedYear}`}
+                  {selectedYear && selectedMonth && ` for ${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}`}.
+              </CardDescription>
+          </CardHeader>
+          <CardContent>
+              <p className="text-4xl font-bold text-primary">{totalAcademyEarnings.toLocaleString()} PKR</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                  <TrendingDown className="text-destructive" />
+                  Total Manual Expenses
+              </CardTitle>
+              <CardDescription>
+                  Operational costs like utility bills for the selected period.
+              </CardDescription>
+          </CardHeader>
+          <CardContent>
+              <p className="text-4xl font-bold text-destructive">{totalManualExpenses.toLocaleString()} PKR</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                  <Wallet className="text-green-600" />
+                  Net Academy Earnings
+              </CardTitle>
+              <CardDescription>
+                  The academy's final profit after deducting manual expenses.
+              </CardDescription>
+          </CardHeader>
+          <CardContent>
+              <p className="text-4xl font-bold text-green-600">{netAcademyEarnings.toLocaleString()} PKR</p>
+          </CardContent>
+        </Card>
+      </div>
+
 
       <Card>
         <CardHeader>
@@ -306,5 +371,3 @@ export default function AcademySharePage() {
     </div>
   );
 }
-
-    
