@@ -104,7 +104,7 @@ function CategoryCombobox({ value, onChange }: { value: string, onChange: (value
     );
 }
 
-function AddExpenseDialog({ onExpenseAdded }: { onExpenseAdded: (expense: Expense) => void }) {
+function AddExpenseDialog({ onExpenseAdded, onPrintVoucher }: { onExpenseAdded: (expense: Expense) => void, onPrintVoucher: (expense: Expense) => void }) {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState(0);
     const [category, setCategory] = useState('');
@@ -126,7 +126,7 @@ function AddExpenseDialog({ onExpenseAdded }: { onExpenseAdded: (expense: Expens
             toast({ 
                 title: 'Expense Added', 
                 description: 'The new expense has been recorded.',
-                action: <ToastAction altText="Print Voucher" onClick={() => handlePrintVoucher(finalExpense)}>Print Voucher</ToastAction>
+                action: <ToastAction altText="Print Voucher" onClick={() => onPrintVoucher(finalExpense)}>Print Voucher</ToastAction>
             });
             onExpenseAdded(finalExpense);
             // Reset form
@@ -138,86 +138,6 @@ function AddExpenseDialog({ onExpenseAdded }: { onExpenseAdded: (expense: Expens
         }
         setIsSaving(false);
     };
-
-    const { settings } = useSettings();
-
-    const handlePrintVoucher = (expense: Expense) => {
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
-        
-        const voucherHtml = `
-            <html>
-                <head><title>Expense Voucher - ${expense.id}</title>
-                 <style>
-                    body { font-family: 'Segoe UI', sans-serif; margin: 20px; font-size: 12pt; }
-                    .voucher-container { border: 2px solid #000; padding: 20px; max-width: 800px; margin: auto; }
-                    .header { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
-                    .header img { max-height: 60px; margin-bottom: 10px; }
-                    .header h1 { margin: 0; font-size: 1.5rem; }
-                    .header h2 { margin: 5px 0; font-size: 1.2rem; font-weight: normal; }
-                    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
-                    .details-grid > div { display: flex; flex-direction: column; }
-                    .details-grid label { font-weight: bold; color: #555; font-size: 0.9rem; margin-bottom: 5px; }
-                    .details-grid span { border-bottom: 1px dotted #888; padding: 5px; }
-                    .amount-in-words { margin-bottom: 30px; }
-                    .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 50px; text-align: center; }
-                    .signatures > div { border-top: 1px solid #000; padding-top: 8px; font-weight: bold; }
-                </style>
-                </head>
-                <body>
-                    <div class="voucher-container">
-                        <div class="header">
-                            ${settings.logo ? `<img src="${settings.logo}" alt="Logo">` : ''}
-                            <h1>${settings.name}</h1>
-                            <h2>Expense Voucher</h2>
-                        </div>
-                        <div class="details-grid">
-                            <div><label>Voucher #:</label><span>${expense.id}</span></div>
-                            <div><label>Date:</label><span>${format(expense.date, 'PPP')}</span></div>
-                            <div><label>Pay To:</label><span>${expense.description}</span></div>
-                            <div><label>Category:</label><span>${expense.category}</span></div>
-                        </div>
-                        <div class="details-grid" style="grid-template-columns: 3fr 1fr;">
-                            <div class="amount-in-words">
-                                <label>Amount in Words:</label>
-                                <span>Rupees ${amountToWords(expense.amount)} Only</span>
-                            </div>
-                             <div>
-                                <label>Amount (PKR):</label>
-                                <span style="font-weight: bold; font-size: 1.2rem;">${expense.amount.toLocaleString()} /-</span>
-                            </div>
-                        </div>
-                        <div class="signatures">
-                            <div>Prepared By</div>
-                            <div>Approved By</div>
-                            <div>Received By</div>
-                        </div>
-                    </div>
-                </body>
-            </html>
-        `;
-
-        printWindow.document.write(voucherHtml);
-        printWindow.document.close();
-        printWindow.focus();
-    };
-
-    const amountToWords = (num: number) => {
-        // Basic implementation for converting number to words for vouchers
-        const a = ['','one ','two ','three ','four ', 'five ','six ','seven ','eight ','nine ','ten ','eleven ','twelve ','thirteen ','fourteen ','fifteen ','sixteen ','seventeen ','eighteen ','nineteen '];
-        const b = ['', '', 'twenty','thirty','forty','fifty', 'sixty','seventy','eighty','ninety'];
-        
-        if ((num = num.toString()).length > 9) return 'overflow';
-        const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-        if (!n) return; let str = '';
-        str += (n[1] != '00') ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'crore ' : '';
-        str += (n[2] != '00') ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'lakh ' : '';
-        str += (n[3] != '00') ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'thousand ' : '';
-        str += (n[4] != '0') ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'hundred ' : '';
-        str += (n[5] != '00') ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
-        return str.trim();
-    }
-
 
     return (
         <DialogContent>
@@ -385,7 +305,84 @@ export default function ExpensesPage() {
         setOpenDialogs(prev => ({ ...Object.fromEntries(Object.keys(prev).map(k => [k, null])), [id]: type }));
     }
 
-    const handlePrint = () => {
+    const amountToWords = (num: number) => {
+        // Basic implementation for converting number to words for vouchers
+        const a = ['','one ','two ','three ','four ', 'five ','six ','seven ','eight ','nine ','ten ','eleven ','twelve ','thirteen ','fourteen ','fifteen ','sixteen ','seventeen ','eighteen ','nineteen '];
+        const b = ['', '', 'twenty','thirty','forty','fifty', 'sixty','seventy','eighty','ninety'];
+        
+        if ((num = num.toString()).length > 9) return 'overflow';
+        const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+        if (!n) return ''; let str = '';
+        str += (n[1] != '00') ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'crore ' : '';
+        str += (n[2] != '00') ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'lakh ' : '';
+        str += (n[3] != '00') ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'thousand ' : '';
+        str += (n[4] != '0') ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'hundred ' : '';
+        str += (n[5] != '00') ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+        return str.trim();
+    }
+
+    const handlePrintVoucher = (expense: Expense) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+        
+        const voucherHtml = `
+            <html>
+                <head><title>Expense Voucher - ${expense.id}</title>
+                 <style>
+                    body { font-family: 'Segoe UI', sans-serif; margin: 20px; font-size: 12pt; }
+                    .voucher-container { border: 2px solid #000; padding: 20px; max-width: 800px; margin: auto; }
+                    .header { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+                    .header img { max-height: 60px; margin-bottom: 10px; }
+                    .header h1 { margin: 0; font-size: 1.5rem; }
+                    .header h2 { margin: 5px 0; font-size: 1.2rem; font-weight: normal; }
+                    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+                    .details-grid > div { display: flex; flex-direction: column; }
+                    .details-grid label { font-weight: bold; color: #555; font-size: 0.9rem; margin-bottom: 5px; }
+                    .details-grid span { border-bottom: 1px dotted #888; padding: 5px; }
+                    .amount-in-words { margin-bottom: 30px; }
+                    .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 50px; text-align: center; }
+                    .signatures > div { border-top: 1px solid #000; padding-top: 8px; font-weight: bold; }
+                </style>
+                </head>
+                <body>
+                    <div class="voucher-container">
+                        <div class="header">
+                            ${settings.logo ? `<img src="${settings.logo}" alt="Logo">` : ''}
+                            <h1>${settings.name}</h1>
+                            <h2>Expense Voucher</h2>
+                        </div>
+                        <div class="details-grid">
+                            <div><label>Voucher #:</label><span>${expense.id}</span></div>
+                            <div><label>Date:</label><span>${format(expense.date, 'PPP')}</span></div>
+                            <div><label>Pay To:</label><span>${expense.description}</span></div>
+                            <div><label>Category:</label><span>${expense.category}</span></div>
+                        </div>
+                        <div class="details-grid" style="grid-template-columns: 3fr 1fr;">
+                            <div class="amount-in-words">
+                                <label>Amount in Words:</label>
+                                <span>Rupees ${amountToWords(expense.amount)} Only</span>
+                            </div>
+                             <div>
+                                <label>Amount (PKR):</label>
+                                <span style="font-weight: bold; font-size: 1.2rem;">${expense.amount.toLocaleString()} /-</span>
+                            </div>
+                        </div>
+                        <div class="signatures">
+                            <div>Prepared By</div>
+                            <div>Approved By</div>
+                            <div>Received By</div>
+                        </div>
+                    </div>
+                </body>
+            </html>
+        `;
+
+        printWindow.document.write(voucherHtml);
+        printWindow.document.close();
+        printWindow.focus();
+    };
+
+    const handlePrintReport = () => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
 
@@ -447,7 +444,7 @@ export default function ExpensesPage() {
                 </p>
             </div>
             <div className="flex items-center gap-2">
-                <Button onClick={handlePrint} variant="outline" disabled={isSettingsLoading}>
+                <Button onClick={handlePrintReport} variant="outline" disabled={isSettingsLoading}>
                     <Printer className="mr-2" /> Print Report
                 </Button>
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -456,7 +453,7 @@ export default function ExpensesPage() {
                             <PlusCircle className="mr-2" /> Add Expense
                         </Button>
                     </DialogTrigger>
-                    <AddExpenseDialog onExpenseAdded={onExpenseAdded} />
+                    <AddExpenseDialog onExpenseAdded={onExpenseAdded} onPrintVoucher={handlePrintVoucher} />
                 </Dialog>
             </div>
         </div>
@@ -514,12 +511,17 @@ export default function ExpensesPage() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent>
                                                 <DropdownMenuItem 
+                                                    onSelect={() => handlePrintVoucher(item)}
+                                                >
+                                                    <Printer className="mr-2" /> Print Voucher
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem 
                                                     onSelect={() => handleSetDialog(item.id, 'edit')}
                                                     disabled={item.source === 'payout'}
                                                 >
                                                     <Edit className="mr-2" /> Edit
                                                 </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
                                                 <DropdownMenuItem 
                                                     className="text-destructive" 
                                                     onSelect={() => handleSetDialog(item.id, 'delete')}
