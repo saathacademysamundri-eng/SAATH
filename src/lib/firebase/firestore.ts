@@ -9,6 +9,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -611,7 +612,7 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
     }
 }
 
-export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayout & { report?: Report })[]> {
+export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
     const q = query(
         collection(db, "teacher_payouts"), 
         where("teacherId", "==", teacherId)
@@ -630,13 +631,14 @@ export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayo
     const sortedPayouts = payouts.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
 
     // Fetch associated reports
-    const payoutsWithReports: (TeacherPayout & { report?: Report })[] = [];
+    const payoutsWithReports: (TeacherPayout & { report?: Report, academyShare?: number })[] = [];
     for (const payout of sortedPayouts) {
         const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payout.id), limit(1));
         const reportSnap = await getDocs(reportQuery);
         if (!reportSnap.empty) {
             const report = reportSnap.docs[0].data() as Report;
-            payoutsWithReports.push({ ...payout, report });
+            const academyShare = report.grossEarnings ? report.grossEarnings * 0.3 : 0;
+            payoutsWithReports.push({ ...payout, report, academyShare });
         } else {
             payoutsWithReports.push(payout);
         }

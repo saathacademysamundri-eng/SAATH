@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type Student, type Teacher, type Income, type TeacherPayout, type Report } from '@/lib/data';
 import { getTeacherPayouts, payoutTeacher } from '@/lib/firebase/firestore';
 import { Loader2, Phone, Wallet, Printer } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useParams } from 'next/navigation';
@@ -36,7 +36,7 @@ export default function TeacherProfilePage() {
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [studentEarnings, setStudentEarnings] = useState<StudentEarning[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
-  const [payouts, setPayouts] = useState<(TeacherPayout & { report?: Report })[]>([]);
+  const [payouts, setPayouts] = useState<(TeacherPayout & { report?: Report, academyShare?: number })[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [isPaying, setIsPaying] = useState(false);
@@ -91,6 +91,10 @@ export default function TeacherProfilePage() {
 
   const teacherShare = totalEarnings * 0.7;
   const academyShare = totalEarnings * 0.3;
+
+  const totalAcademyShareFromHistory = useMemo(() => {
+    return payouts.reduce((acc, p) => acc + (p.academyShare || 0), 0);
+  }, [payouts]);
 
   const handlePayout = async () => {
       if (!teacher || totalEarnings === 0) {
@@ -317,9 +321,10 @@ export default function TeacherProfilePage() {
         </Card>
         
         <Tabs defaultValue="earnings" className="mt-4">
-            <TabsList className="print:hidden">
+            <TabsList className="print:hidden grid w-full grid-cols-4">
                 <TabsTrigger value="earnings">Current Earnings</TabsTrigger>
                 <TabsTrigger value="payouts">Payout History</TabsTrigger>
+                <TabsTrigger value="academy">Academy Share</TabsTrigger>
                 <TabsTrigger value="profile">Profile Details</TabsTrigger>
             </TabsList>
             <TabsContent value="earnings" className="mt-4">
@@ -437,6 +442,48 @@ export default function TeacherProfilePage() {
                                     <TableRow>
                                         <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
                                             No payout history for this teacher.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+             <TabsContent value="academy">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Academy Share History</CardTitle>
+                        <CardDescription>
+                            A record of the academy's 30% share from this teacher's payouts.
+                        </CardDescription>
+                         <div className='p-4 bg-secondary rounded-lg text-center'>
+                            <p className='text-sm text-muted-foreground'>Total Academy Share from this Teacher</p>
+                            <p className='text-3xl font-bold'>{totalAcademyShareFromHistory.toLocaleString()} PKR</p>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Payout Date</TableHead>
+                                    <TableHead>Gross Earnings</TableHead>
+                                    <TableHead className="text-right">Academy Share (30%)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {payouts.length > 0 ? (
+                                    payouts.map((payout) => (
+                                        <TableRow key={payout.id}>
+                                            <TableCell>{format(payout.payoutDate, 'PPP')}</TableCell>
+                                            <TableCell>{payout.report?.grossEarnings?.toLocaleString()} PKR</TableCell>
+                                            <TableCell className="text-right font-medium text-blue-600">{payout.academyShare?.toLocaleString()} PKR</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                            No payout history available to calculate academy share.
                                         </TableCell>
                                     </TableRow>
                                 )}
