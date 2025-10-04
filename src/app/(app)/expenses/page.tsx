@@ -398,34 +398,47 @@ export default function ExpensesPage() {
 
         const printHtml = `
             <html>
-                <head><title>Expense Report</title>
+              <head>
+                <title>Expense Report</title>
                 <style>
-                    body { font-family: sans-serif; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    th { background-color: #f2f2f2; }
-                    @media print {
-                        body { -webkit-print-color-adjust: exact; }
-                        .print-header { display: block; text-align: center; margin-bottom: 20px; }
-                        .print-header img { max-height: 80px; }
-                    }
-                    .print-header { display: none; }
+                  @media print {
+                    @page { size: A4 portrait; margin: 0.75in; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                  }
+                  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
+                  .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+                  .academy-details { text-align: center; margin-bottom: 2rem; }
+                  .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
+                  .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
+                  .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
+                  .report-title { text-align: center; margin: 2rem 0; }
+                  .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0; }
+                  table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+                  th, td { padding: 8px 10px; border: 1px solid #ddd; }
+                  th { font-weight: bold; background-color: #f2f2f2; }
+                  tr:nth-child(even) { background-color: #f9f9f9; }
                 </style>
-                </head>
-                <body>
-                    <div class="print-header">
-                        ${settings.logo ? `<img src="${settings.logo}" alt="Logo">` : ''}
-                        <h1>${settings.name}</h1>
-                        <h2>Expense Report</h2>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr><th>Date</th><th>Description</th><th>Category</th><th>Source</th><th style="text-align: right;">Amount</th></tr>
-                        </thead>
-                        <tbody>${tableRows}</tbody>
-                    </table>
-                    <h3>Total Expenses: ${totalExpenses.toLocaleString()} PKR</h3>
-                </body>
+              </head>
+              <body>
+                <div class="report-container">
+                  <div class="academy-details">
+                    ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                    <h1>${settings.name}</h1>
+                    <p>${settings.address}</p>
+                    <p>Phone: ${settings.phone}</p>
+                  </div>
+                  <div class="report-title">
+                    <h2>Expense Report</h2>
+                  </div>
+                  <table>
+                    <thead>
+                        <tr><th>Date</th><th>Description</th><th>Category</th><th>Source</th><th style="text-align: right;">Amount</th></tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                  </table>
+                  <h3 style="text-align: right; margin-top: 1rem;">Total Expenses: ${totalExpenses.toLocaleString()} PKR</h3>
+                </div>
+              </body>
             </html>
         `;
 
