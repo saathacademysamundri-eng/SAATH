@@ -23,7 +23,7 @@ import { useSettings } from '@/hooks/use-settings';
 type StudentEarning = {
   student: Student;
   incomeRecord: Income;
-  feeShare: number;
+  earnedShare: number;
   subjectName: string;
 };
 
@@ -60,21 +60,26 @@ export default function TeacherProfilePage() {
     
     const unpaidIncome = income.filter(i => !i.isPaidOut);
 
-    students.forEach(student => {
-      student.subjects.forEach(subjectInfo => {
-        if (subjectInfo.teacher_id === teacherData.id) {
-          const relevantIncome = unpaidIncome.find(i => i.studentId === student.id);
-          if (relevantIncome) {
-             currentStudentEarnings.push({
-                student,
-                incomeRecord: relevantIncome,
-                feeShare: subjectInfo.fee_share,
-                subjectName: subjectInfo.subject_name
-             });
-             currentTotalEarnings += subjectInfo.fee_share;
-          }
+    unpaidIncome.forEach(incomeRecord => {
+        const student = students.find(s => s.id === incomeRecord.studentId);
+        if (student && student.monthlyFee > 0) {
+            student.subjects.forEach(subjectInfo => {
+                if (subjectInfo.teacher_id === teacherData.id) {
+                    // Calculate the proportion of the fee that was paid
+                    const paymentProportion = incomeRecord.amount / student.monthlyFee;
+                    // The teacher earns their share of the paid amount
+                    const earnedShare = subjectInfo.fee_share * paymentProportion;
+
+                    currentStudentEarnings.push({
+                        student,
+                        incomeRecord,
+                        earnedShare,
+                        subjectName: subjectInfo.subject_name
+                    });
+                    currentTotalEarnings += earnedShare;
+                }
+            });
         }
-      });
     });
     
     setStudentEarnings(currentStudentEarnings);
@@ -100,7 +105,7 @@ export default function TeacherProfilePage() {
       }
 
       setIsPaying(true);
-      const incomeIdsToPayout = studentEarnings.map(se => se.incomeRecord.id);
+      const incomeIdsToPayout = [...new Set(studentEarnings.map(se => se.incomeRecord.id))];
       
       const result = await payoutTeacher(teacher.id, teacher.name, teacherShare, incomeIdsToPayout, getReportData());
 
@@ -123,7 +128,7 @@ export default function TeacherProfilePage() {
       studentName: earning.student.name,
       studentClass: earning.student.class,
       subjectName: earning.subjectName,
-      feeShare: earning.feeShare,
+      feeShare: earning.earnedShare, // Use the calculated earned share
     }));
 
     return {
@@ -144,7 +149,7 @@ export default function TeacherProfilePage() {
         <td>${item.studentName} (${item.studentId})</td>
         <td>${item.studentClass}</td>
         <td>${item.subjectName}</td>
-        <td style="text-align: right;">${item.feeShare.toLocaleString()} PKR</td>
+        <td style="text-align: right;">${item.feeShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</td>
       </tr>
     `).join('');
 
@@ -201,15 +206,15 @@ export default function TeacherProfilePage() {
             <div class="stats-grid">
                 <div class="stat-card">
                     <p>Total Gross Earnings</p>
-                    <p class="amount">${grossEarnings.toLocaleString()} PKR</p>
+                    <p class="amount">${grossEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
                 </div>
                 <div class="stat-card">
                     <p>Teacher's Share (70%)</p>
-                    <p class="amount teacher-share">${teacherShare.toLocaleString()} PKR</p>
+                    <p class="amount teacher-share">${teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
                 </div>
                 <div class="stat-card">
                     <p>Academy's Share (30%)</p>
-                    <p class="amount academy-share">${academyShare.toLocaleString()} PKR</p>
+                    <p class="amount academy-share">${academyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
                 </div>
             </div>
             <h3 class="breakdown-title">Student Breakdown</h3>
@@ -332,7 +337,7 @@ export default function TeacherProfilePage() {
                                 <CardDescription>Total amount from students taught by {teacher.name} that has not been paid out yet.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <p data-stat="gross-earnings" className="text-3xl font-bold">{totalEarnings.toLocaleString()} PKR</p>
+                                <p data-stat="gross-earnings" className="text-3xl font-bold">{totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
                             </CardContent>
                         </Card>
                         <Card className="border-green-500/50">
@@ -340,7 +345,7 @@ export default function TeacherProfilePage() {
                                 <CardTitle>Teacher's Share (70%)</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p data-stat="teacher-share" className="text-3xl font-bold text-green-600">{teacherShare.toLocaleString()} PKR</p>
+                                <p data-stat="teacher-share" className="text-3xl font-bold text-green-600">{teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
                             </CardContent>
                              <CardContent>
                                 <Button onClick={handlePayout} disabled={isPaying || teacherShare <= 0}>
@@ -354,7 +359,7 @@ export default function TeacherProfilePage() {
                                 <CardTitle>Academy's Share (30%)</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p data-stat="academy-share" className="text-3xl font-bold text-blue-600">{academyShare.toLocaleString()} PKR</p>
+                                <p data-stat="academy-share" className="text-3xl font-bold text-blue-600">{academyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
                             </CardContent>
                         </Card>
                     </div>
@@ -376,7 +381,7 @@ export default function TeacherProfilePage() {
                                     </TableHeader>
                                     <TableBody>
                                         {studentEarnings.length > 0 ? (
-                                            studentEarnings.map(({ student, feeShare, subjectName }, index) => (
+                                            studentEarnings.map(({ student, earnedShare, subjectName }, index) => (
                                                 <TableRow key={`${student.id}-${index}`}>
                                                     <TableCell>
                                                         <div className="flex items-center gap-3">
@@ -388,7 +393,7 @@ export default function TeacherProfilePage() {
                                                     </TableCell>
                                                     <TableCell>{student.class}</TableCell>
                                                     <TableCell>{subjectName}</TableCell>
-                                                    <TableCell className="text-right">{feeShare.toLocaleString()} PKR</TableCell>
+                                                    <TableCell className="text-right">{earnedShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
                                                 </TableRow>
                                             ))
                                         ) : (
@@ -425,7 +430,7 @@ export default function TeacherProfilePage() {
                                     payouts.map((payout) => (
                                         <TableRow key={payout.id}>
                                             <TableCell>{format(payout.payoutDate, 'PPP')}</TableCell>
-                                            <TableCell className="font-medium">{payout.amount.toLocaleString()} PKR</TableCell>
+                                            <TableCell className="font-medium">{payout.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="outline" size="sm" onClick={() => handlePrintHistory(payout)} disabled={!payout.report || isSettingsLoading}>
                                                     <Printer className="mr-2 h-4 w-4" />
@@ -461,3 +466,4 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
+
