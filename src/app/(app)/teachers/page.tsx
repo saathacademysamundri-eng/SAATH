@@ -233,8 +233,12 @@ export default function TeachersPage() {
                            </div>
                         </CardContent>
                         <CardFooter className="flex gap-2">
-                            <Button className="w-full" onClick={() => router.push(`/teachers/${teacher.id}`)}>
+                           <Button className="w-full" variant="outline" size="sm" onClick={() => router.push(`/teachers/${teacher.id}`)}>
                                 View Profile
+                            </Button>
+                            <Button className="w-full" variant="outline" size="sm" onClick={() => handleQrClick(teacher)}>
+                                <QrCode className="mr-2 h-4 w-4" />
+                                QR Code
                             </Button>
                         </CardFooter>
                     </Card>
