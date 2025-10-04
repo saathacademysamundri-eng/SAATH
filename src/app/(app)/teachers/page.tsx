@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { MoreHorizontal, Printer, Search, PlusCircle, Edit, Trash } from 'lucide-react';
+import { MoreHorizontal, Printer, Search, PlusCircle, Edit, Trash, QrCode } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { deleteTeacher } from '@/lib/firebase/firestore';
+import { QrCodeDialog } from './qr-code-dialog';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
@@ -53,10 +54,12 @@ export default function TeachersPage() {
   const [dialogState, setDialogState] = useState<{
     isAddOpen: boolean;
     isEditOpen: boolean;
+    isQrOpen: boolean;
     selectedTeacher: Teacher | null;
   }>({
     isAddOpen: false,
     isEditOpen: false,
+    isQrOpen: false,
     selectedTeacher: null,
   });
 
@@ -101,8 +104,12 @@ export default function TeachersPage() {
     setDialogState({ ...dialogState, isEditOpen: true, selectedTeacher: teacher });
   };
   
+  const handleQrClick = (teacher: Teacher) => {
+    setDialogState({ ...dialogState, isQrOpen: true, selectedTeacher: teacher });
+  }
+
   const closeDialogs = () => {
-    setDialogState({ isAddOpen: false, isEditOpen: false, selectedTeacher: null });
+    setDialogState({ isAddOpen: false, isEditOpen: false, isQrOpen: false, selectedTeacher: null });
   };
 
   const onActionComplete = () => {
@@ -202,6 +209,10 @@ export default function TeachersPage() {
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleQrClick(teacher)}>
+                                      <QrCode className="mr-2 h-4 w-4" />
+                                      QR Code
+                                  </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <AlertDialogTrigger asChild>
                                     <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
@@ -221,7 +232,7 @@ export default function TeachersPage() {
                                 <p className="text-2xl font-bold text-green-600">{stats.net.toLocaleString()} PKR</p>
                            </div>
                         </CardContent>
-                        <CardFooter>
+                        <CardFooter className="flex gap-2">
                             <Button className="w-full" onClick={() => router.push(`/teachers/${teacher.id}`)}>
                                 View Profile
                             </Button>
@@ -250,12 +261,17 @@ export default function TeachersPage() {
           )}
        </div>
         {dialogState.selectedTeacher && (
-          <Dialog open={dialogState.isEditOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isEditOpen: isOpen })}>
+          <Dialog open={dialogState.isEditOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isEditOpen: isOpen, selectedTeacher: isOpen ? dialogState.selectedTeacher : null })}>
               <EditTeacherDialog 
                   teacher={dialogState.selectedTeacher}
                   onTeacherUpdated={onActionComplete}
               />
           </Dialog>
+        )}
+        {dialogState.selectedTeacher && (
+            <Dialog open={dialogState.isQrOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isQrOpen: isOpen, selectedTeacher: isOpen ? dialogState.selectedTeacher : null })}>
+                <QrCodeDialog teacher={dialogState.selectedTeacher} />
+            </Dialog>
         )}
     </div>
   );
