@@ -102,10 +102,16 @@ export default function TeacherPublicProfile() {
                         </Avatar>
                         <div className='grid gap-1'>
                             <CardTitle className="text-3xl font-bold">{teacher.name}</CardTitle>
-                            <CardDescription className="text-base">Father's Name: {teacher.fatherName}</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="mt-4 space-y-3">
+                         <div className="flex items-center gap-4 rounded-md border p-4">
+                            <User className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+                            <div>
+                                <p className="text-sm text-muted-foreground">Father's Name</p>
+                                <p className="font-medium">{teacher.fatherName}</p>
+                            </div>
+                        </div>
                         <div className="flex items-center gap-4 rounded-md border p-4">
                             <Phone className="h-6 w-6 text-muted-foreground flex-shrink-0" />
                             <div>
