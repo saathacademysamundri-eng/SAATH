@@ -38,7 +38,6 @@ export default function FeeCollectionPage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [isResettingFees, setIsResettingFees] = useState(false);
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
   const { refreshData } = useAppContext();
@@ -289,28 +288,11 @@ export default function FeeCollectionPage() {
     }, 250);
 };
 
-  const handleNextMonth = async () => {
-    setIsResettingFees(true);
-    const result = await resetMonthlyFees();
-    if (result.success) {
-        toast({ title: 'Success', description: result.message });
-        refreshData();
-        // If a student is currently being viewed, refresh their data too
-        if (searchedStudent) {
-            handleSearch();
-        }
-    } else {
-        toast({ variant: 'destructive', title: 'Error', description: result.message });
-    }
-    setIsResettingFees(false);
-  }
-
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+       <Card>
             <CardHeader>
             <CardTitle>Collect Fee</CardTitle>
             <CardDescription>
@@ -335,38 +317,6 @@ export default function FeeCollectionPage() {
             </div>
             </CardContent>
         </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Admin Actions</CardTitle>
-                <CardDescription>Perform administrative tasks for fee management.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive">
-                            <CalendarPlus className="mr-2" />
-                            Start Next Month
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action will generate the next month's fee for ALL students. It will add the monthly fee amount to each student's outstanding balance. This cannot be undone.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleNextMonth} disabled={isResettingFees}>
-                                 {isResettingFees ? <Loader2 className="animate-spin" /> : null}
-                                Continue
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </CardContent>
-        </Card>
-      </div>
 
       {searchedStudent && (
         <div className="grid gap-6">

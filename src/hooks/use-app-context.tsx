@@ -1,8 +1,8 @@
 
 'use client';
 
-import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSubjects } from '@/lib/firebase/firestore';
-import type { Class, Expense, Income, Student, Subject, Teacher } from '@/lib/data';
+import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSubjects, getAllPayouts } from '@/lib/firebase/firestore';
+import type { Class, Expense, Income, Student, Subject, Teacher, TeacherPayout, Report } from '@/lib/data';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 
 interface AppContextType {
@@ -12,6 +12,7 @@ interface AppContextType {
   income: Income[];
   expenses: Expense[];
   allSubjects: Subject[];
+  allPayouts: (TeacherPayout & { report?: Report, academyShare?: number })[];
   loading: boolean;
   refreshData: () => Promise<void>;
 }
@@ -25,6 +26,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [income, setIncome] = useState<Income[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
+  const [allPayouts, setAllPayouts] = useState<(TeacherPayout & { report?: Report, academyShare?: number })[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -36,7 +38,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         classesData,
         incomeData,
         expensesData,
-        allSubjectsData
+        allSubjectsData,
+        allPayoutsData,
       ] = await Promise.all([
         getStudents(),
         getTeachers(),
@@ -44,6 +47,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         getIncome(),
         getExpenses(),
         getAllSubjects(),
+        getAllPayouts(),
       ]);
 
       setStudents(studentsData);
@@ -52,6 +56,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setIncome(incomeData);
       setExpenses(expensesData);
       setAllSubjects(allSubjectsData);
+      setAllPayouts(allPayoutsData);
 
     } catch (error) {
       console.error("Failed to fetch app data:", error);
@@ -72,6 +77,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     income,
     expenses,
     allSubjects,
+    allPayouts,
     loading,
     refreshData: fetchData,
   };

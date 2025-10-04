@@ -10,6 +10,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -646,6 +647,38 @@ export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayo
     
     return payoutsWithReports;
 }
+
+export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
+    const q = query(
+        collection(db, "teacher_payouts"), 
+        orderBy("payoutDate", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    const payouts = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            payoutDate: data.payoutDate.toDate(),
+        } as TeacherPayout;
+    });
+
+    const payoutsWithReports: (TeacherPayout & { report?: Report, academyShare?: number })[] = [];
+    for (const payout of payouts) {
+        const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payout.id), limit(1));
+        const reportSnap = await getDocs(reportQuery);
+        if (!reportSnap.empty) {
+            const report = reportSnap.docs[0].data() as Report;
+            const academyShare = report.grossEarnings ? report.grossEarnings * 0.3 : 0;
+            payoutsWithReports.push({ ...payout, report, academyShare });
+        } else {
+            payoutsWithReports.push(payout);
+        }
+    }
+    
+    return payoutsWithReports;
+}
+
 
 
 

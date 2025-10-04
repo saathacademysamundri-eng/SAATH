@@ -84,6 +84,7 @@ function MainSidebar() {
     { href: '/fee-collection', label: 'Fee Collection', icon: DollarSign },
     { href: '/income', label: 'Income', icon: TrendingUp },
     { href: '/expenses', label: 'Expenses', icon: TrendingDown },
+    { href: '/academy-share', label: 'Academy Share', icon: TrendingUp },
     { href: '/reports', label: 'Reports', icon: LineChart },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
   ];
