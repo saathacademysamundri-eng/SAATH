@@ -8,6 +8,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -558,9 +559,10 @@ export async function getReports(): Promise<Report[]> {
 }
 
 // Teacher Payout Functions
-export async function payoutTeacher(teacherId: string, teacherName: string, amount: number, incomeIds: string[]) {
+export async function payoutTeacher(teacherId: string, teacherName: string, amount: number, incomeIds: string[], reportData: any) {
     try {
         const batch = writeBatch(db);
+        const payoutTimestamp = serverTimestamp();
 
         // 1. Create a new payout record
         const payoutRef = doc(collection(db, 'teacher_payouts'));
@@ -568,7 +570,7 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
             teacherId,
             teacherName,
             amount,
-            payoutDate: serverTimestamp(),
+            payoutDate: payoutTimestamp,
             incomeIds,
         });
 
@@ -586,9 +588,20 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
         batch.set(expenseRef, {
             description: `Payout to ${teacherName}`,
             amount: amount,
-            date: serverTimestamp()
+            date: payoutTimestamp
         });
 
+        // 4. Save the report snapshot
+        if (reportData) {
+            const reportRef = doc(collection(db, 'reports'));
+             batch.set(reportRef, {
+                ...reportData,
+                teacherId,
+                teacherName,
+                payoutId: payoutRef.id,
+                reportDate: payoutTimestamp,
+            });
+        }
 
         await batch.commit();
         return { success: true, message: `Successfully paid ${amount.toLocaleString()} PKR to ${teacherName}.` };
@@ -598,7 +611,7 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
     }
 }
 
-export async function getTeacherPayouts(teacherId: string): Promise<TeacherPayout[]> {
+export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayout & { report?: Report })[]> {
     const q = query(
         collection(db, "teacher_payouts"), 
         where("teacherId", "==", teacherId)
@@ -612,9 +625,26 @@ export async function getTeacherPayouts(teacherId: string): Promise<TeacherPayou
             payoutDate: data.payoutDate.toDate(),
         } as TeacherPayout;
     });
+    
     // Sort manually on the client
-    return payouts.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
+    const sortedPayouts = payouts.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
+
+    // Fetch associated reports
+    const payoutsWithReports: (TeacherPayout & { report?: Report })[] = [];
+    for (const payout of sortedPayouts) {
+        const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payout.id), limit(1));
+        const reportSnap = await getDocs(reportQuery);
+        if (!reportSnap.empty) {
+            const report = reportSnap.docs[0].data() as Report;
+            payoutsWithReports.push({ ...payout, report });
+        } else {
+            payoutsWithReports.push(payout);
+        }
+    }
+    
+    return payoutsWithReports;
 }
+
 
 
 // Attendance Functions

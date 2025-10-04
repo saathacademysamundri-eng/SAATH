@@ -8,6 +8,8 @@ import { ArrowLeft, Printer, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+
 
 export function TeacherEarningsClient({ 
   teacherId, 
@@ -39,21 +41,11 @@ export function TeacherEarningsClient({
     }
 
     try {
-      // 1. Save the report to Firestore
-      const result = await addReport({
-        teacherId,
-        teacherName,
-        ...reportData
-      });
+      // The report is now saved within the payoutTeacher transaction.
+      // This button is now only for printing a preview of the CURRENT earnings cycle.
+      toast({ title: 'Printing Preview', description: 'This is a preview of the current cycle. The final report is saved upon payout.' });
 
-      if (!result.success) {
-        throw new Error(result.message || "Failed to save the report.");
-      }
-      
-      toast({ title: 'Report Saved', description: 'The earnings report has been saved.' });
-
-      // 2. Open print dialog
-      const printHtml = generatePrintHtml(reportData, teacherName);
+      const printHtml = generatePrintHtml(reportData, teacherName, new Date());
       const printWindow = window.open('', '', 'height=800,width=800');
       if (printWindow) {
         printWindow.document.write(printHtml);
@@ -74,10 +66,10 @@ export function TeacherEarningsClient({
     }
   };
 
-  const generatePrintHtml = (reportData: any, teacherName: string) => {
+  const generatePrintHtml = (reportData: any, teacherName: string, reportDate: Date) => {
     const { grossEarnings, teacherShare, academyShare, studentBreakdown } = reportData;
     const { logo, name, address, phone } = settings;
-    const reportDate = new Date().toLocaleDateString('en-GB');
+    const formattedReportDate = format(reportDate, 'PPP');
 
     const studentRows = studentBreakdown.map((item: any) => `
       <tr>
@@ -136,7 +128,7 @@ export function TeacherEarningsClient({
             </div>
             <div class="report-title">
               <h2>Earnings Report</h2>
-              <p>For: ${teacherName} | Date: ${reportDate}</p>
+              <p>For: ${teacherName} | Date: ${formattedReportDate}</p>
             </div>
             <div class="stats-grid">
                 <div class="stat-card">
@@ -183,7 +175,7 @@ export function TeacherEarningsClient({
       </div>
       <Button variant="outline" className="ml-auto" onClick={handleGenerateAndPrint} disabled={isGenerating || isSettingsLoading}>
         {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Printer className="mr-2" />}
-        {isGenerating ? 'Generating...' : 'Generate & Print Report'}
+        {isGenerating ? 'Generating...' : 'Print Current Cycle'}
       </Button>
     </div>
   );
