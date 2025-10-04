@@ -11,6 +11,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -511,11 +512,11 @@ export async function updateIncomeRecord(incomeId: string, newAmount: number) {
 // Expense Functions
 export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>) {
     try {
-        await addDoc(collection(db, 'expenses'), {
+        const docRef = await addDoc(collection(db, 'expenses'), {
             ...expenseData,
             date: serverTimestamp()
         });
-        return { success: true, message: 'Expense record added.' };
+        return { success: true, message: 'Expense record added.', id: docRef.id };
     } catch (error) {
         return { success: false, message: (error as Error).message };
     }
@@ -532,6 +533,59 @@ export async function getExpenses(): Promise<Expense[]> {
             date: data.date.toDate(),
         } as Expense;
     });
+}
+
+export async function updateExpense(expenseId: string, data: { description: string; amount: number }) {
+    try {
+        const expenseRef = doc(db, 'expenses', expenseId);
+        await updateDoc(expenseRef, data);
+        return { success: true };
+    } catch (error) {
+        return { success: false, message: (error as Error).message };
+    }
+}
+
+export async function deleteExpense(expenseId: string) {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const expenseRef = doc(db, 'expenses', expenseId);
+            const expenseDoc = await transaction.get(expenseRef);
+
+            if (!expenseDoc.exists()) {
+                throw new Error("Expense not found.");
+            }
+
+            const expenseData = expenseDoc.data() as Expense;
+
+            // If it's a payout, reverse the entire payout transaction
+            if (expenseData.source === 'payout' && expenseData.payoutId) {
+                const payoutRef = doc(db, 'teacher_payouts', expenseData.payoutId);
+                const payoutDoc = await transaction.get(payoutRef);
+
+                if (payoutDoc.exists()) {
+                    const payoutData = payoutDoc.data() as TeacherPayout;
+
+                    // Revert income records
+                    payoutData.incomeIds.forEach(incomeId => {
+                        const incomeRef = doc(db, 'income', incomeId);
+                        transaction.update(incomeRef, { isPaidOut: false, payoutId: null });
+                    });
+
+                    // Delete the payout record
+                    transaction.delete(payoutRef);
+                }
+            }
+
+            // Finally, delete the expense record
+            transaction.delete(expenseRef);
+        });
+
+        return { success: true, message: "Expense deleted and associated transactions reversed." };
+
+    } catch (error) {
+        console.error("Error deleting expense:", error);
+        return { success: false, message: (error as Error).message };
+    }
 }
 
 // Reports Functions
@@ -590,7 +644,9 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
         batch.set(expenseRef, {
             description: `Payout to ${teacherName}`,
             amount: amount,
-            date: payoutTimestamp
+            date: payoutTimestamp,
+            source: 'payout',
+            payoutId: payoutRef.id
         });
 
         // 4. Save the report snapshot
