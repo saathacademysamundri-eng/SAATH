@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -13,12 +14,23 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student } from '@/lib/data';
-import { getStudent, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
-import { Printer, Search, Loader2 } from 'lucide-react';
+import { getStudent, updateStudentFeeStatus, addIncome, resetMonthlyFees } from '@/lib/firebase/firestore';
+import { Printer, Search, Loader2, CalendarPlus } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useAppContext } from '@/hooks/use-app-context';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function FeeCollectionPage() {
   const [search, setSearch] = useState('');
@@ -26,6 +38,7 @@ export default function FeeCollectionPage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isResettingFees, setIsResettingFees] = useState(false);
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
   const { refreshData } = useAppContext();
@@ -276,41 +289,84 @@ export default function FeeCollectionPage() {
     }, 250);
 };
 
+  const handleNextMonth = async () => {
+    setIsResettingFees(true);
+    const result = await resetMonthlyFees();
+    if (result.success) {
+        toast({ title: 'Success', description: result.message });
+        refreshData();
+        // If a student is currently being viewed, refresh their data too
+        if (searchedStudent) {
+            handleSearch();
+        }
+    } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
+    setIsResettingFees(false);
+  }
+
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Fee Collection</h1>
-        <p className="text-muted-foreground">
-          Search for a student to collect fees and view outstanding dues.
-        </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+            <CardHeader>
+            <CardTitle>Collect Fee</CardTitle>
+            <CardDescription>
+                Enter a student roll number to view outstanding dues and collect
+                fees.
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            <div className="flex w-full max-w-sm items-center space-x-2">
+                <Input
+                type="text"
+                placeholder="Enter student roll number..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                disabled={isSearching}
+                />
+                <Button onClick={handleSearch} disabled={isSearching}>
+                {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                {isSearching ? 'Searching...' : 'Search'}
+                </Button>
+            </div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Admin Actions</CardTitle>
+                <CardDescription>Perform administrative tasks for fee management.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive">
+                            <CalendarPlus className="mr-2" />
+                            Start Next Month
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action will generate the next month's fee for ALL students. It will add the monthly fee amount to each student's outstanding balance. This cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleNextMonth} disabled={isResettingFees}>
+                                 {isResettingFees ? <Loader2 className="animate-spin" /> : null}
+                                Continue
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </CardContent>
+        </Card>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Collect Fee</CardTitle>
-          <CardDescription>
-            Enter a student roll number to view outstanding dues and collect
-            fees.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex w-full max-w-sm items-center space-x-2">
-            <Input
-              type="text"
-              placeholder="Enter student roll number..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              disabled={isSearching}
-            />
-            <Button onClick={handleSearch} disabled={isSearching}>
-              {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-               {isSearching ? 'Searching...' : 'Search'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {searchedStudent && (
         <div className="grid gap-6">

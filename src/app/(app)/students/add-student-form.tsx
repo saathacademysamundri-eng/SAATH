@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -42,7 +43,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
     const [address, setAddress] = useState('');
     const [gender, setGender] = useState('male');
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-    const [totalFee, setTotalFee] = useState(0);
+    const [monthlyFee, setMonthlyFee] = useState(0);
     const [selectedSubjects, setSelectedSubjects] = useState<SelectedSubjectInfo[]>([]);
     
     const [isSaving, setIsSaving] = useState(false);
@@ -71,14 +72,14 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
     }
 
     const feeShare = useMemo(() => {
-        if (selectedSubjects.length === 0 || totalFee === 0) {
+        if (selectedSubjects.length === 0 || monthlyFee === 0) {
             return 0;
         }
-        return totalFee / selectedSubjects.length;
-    }, [totalFee, selectedSubjects.length]);
+        return monthlyFee / selectedSubjects.length;
+    }, [monthlyFee, selectedSubjects.length]);
 
     const handleSubmit = async () => {
-        const hasMissingInfo = !name || !fatherName || !phone || !college || !address || !selectedClassId || totalFee <= 0 || selectedSubjects.length === 0;
+        const hasMissingInfo = !name || !fatherName || !phone || !college || !address || !selectedClassId || monthlyFee <= 0 || selectedSubjects.length === 0;
         const hasNullTeacher = selectedSubjects.some(s => s.teacherId === null);
 
         if (hasMissingInfo || hasNullTeacher) {
@@ -106,7 +107,8 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             class: currentClassDetails?.name || '',
             subjects: studentSubjects,
             feeStatus: 'Pending' as const,
-            totalFee: totalFee,
+            totalFee: monthlyFee, // Initial outstanding balance is the monthly fee
+            monthlyFee: monthlyFee,
         };
 
         const result = await addStudent(newStudent);
@@ -193,13 +195,13 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                 </Select>
             </div>
             <div className="grid gap-2">
-                <Label htmlFor="totalFee">Total Fee (PKR)</Label>
+                <Label htmlFor="monthlyFee">Total Monthly Fee (PKR)</Label>
                 <Input 
-                    id="totalFee" 
+                    id="monthlyFee" 
                     type="number" 
                     placeholder="Enter total monthly fee" 
-                    value={totalFee || ''}
-                    onChange={(e) => setTotalFee(Number(e.target.value))}
+                    value={monthlyFee || ''}
+                    onChange={(e) => setMonthlyFee(Number(e.target.value))}
                 />
             </div>
           </div>

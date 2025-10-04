@@ -86,6 +86,7 @@ export default function StudentsPage() {
               <TableRow>
                 <TableHead>Roll #</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Fee Status</TableHead>
                 <TableHead className="hidden md:table-cell">Class</TableHead>
                 <TableHead className="hidden lg:table-cell">Subjects</TableHead>
                 <TableHead>
@@ -103,6 +104,7 @@ export default function StudentsPage() {
                         <Skeleton className="h-5 w-32" />
                       </div>
                     </TableCell>
+                     <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-8" /></TableCell>
@@ -114,6 +116,13 @@ export default function StudentsPage() {
                     <TableCell className="font-medium">{student.id}</TableCell>
                     <TableCell>
                       <div className="font-medium">{student.name}</div>
+                    </TableCell>
+                    <TableCell>
+                        <Badge variant={
+                            student.feeStatus === 'Paid' ? 'secondary' : 
+                            student.feeStatus === 'Overdue' ? 'destructive' :
+                            'outline'
+                        }>{student.feeStatus}</Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{student.class}</TableCell>
                     <TableCell className="hidden lg:table-cell">

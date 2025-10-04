@@ -93,6 +93,10 @@ export default function StudentProfilePage() {
                     <p className='text-sm text-muted-foreground'>Fee Status</p>
                     <p className={`text-3xl font-bold ${getFeeStatusColor(student.feeStatus)}`}>{student.feeStatus}</p>
                 </div>
+                 <div className='p-4 bg-secondary rounded-lg text-center'>
+                    <p className='text-sm text-muted-foreground'>Base Monthly Fee</p>
+                    <p className='text-3xl font-bold'>{student.monthlyFee.toLocaleString()} PKR</p>
+                </div>
             </CardContent>
         </Card>
         <Card>

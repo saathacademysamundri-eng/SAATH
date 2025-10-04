@@ -1,5 +1,6 @@
 
 
+
 export type Subject = {
     id: string;
     name: string;
@@ -23,7 +24,8 @@ export type Student = {
     class: string;
     subjects: StudentSubject[];
     feeStatus: 'Paid' | 'Pending' | 'Partial' | 'Overdue';
-    totalFee: number;
+    totalFee: number; // This represents the outstanding balance
+    monthlyFee: number; // This is the base fee charged each month
 };
 
 export type Teacher = {
@@ -117,7 +119,8 @@ export let students: Student[] = [
             { subject_name: 'Physics', teacher_id: 'T01', fee_share: 1500 }
         ], 
         feeStatus: 'Paid', 
-        totalFee: 0 
+        totalFee: 0,
+        monthlyFee: 3000
     },
     { 
         id: 'S002', 
@@ -128,7 +131,8 @@ export let students: Student[] = [
             { subject_name: 'Biology', teacher_id: 'T05', fee_share: 1250 }
         ], 
         feeStatus: 'Pending', 
-        totalFee: 2500 
+        totalFee: 2500,
+        monthlyFee: 2500
     },
     { 
         id: 'S003', 
@@ -139,7 +143,8 @@ export let students: Student[] = [
              { subject_name: 'Computer Science', teacher_id: 'T03', fee_share: 1000 }
         ], 
         feeStatus: 'Partial', 
-        totalFee: 1000 
+        totalFee: 1000,
+        monthlyFee: 2000
     },
     { 
         id: 'S004', 
@@ -150,7 +155,8 @@ export let students: Student[] = [
              { subject_name: 'Chemistry', teacher_id: 'T02', fee_share: 2000 }
         ], 
         feeStatus: 'Paid', 
-        totalFee: 0 
+        totalFee: 0,
+        monthlyFee: 4000
     },
     { 
         id: 'S005', 
@@ -160,7 +166,8 @@ export let students: Student[] = [
             { subject_name: 'Pre-Eng. Mathematics', teacher_id: 'T03', fee_share: 4500 }
         ], 
         feeStatus: 'Overdue', 
-        totalFee: 4500 
+        totalFee: 4500,
+        monthlyFee: 4500
     },
     { 
         id: 'S006', 
@@ -171,7 +178,8 @@ export let students: Student[] = [
             { subject_name: 'English', teacher_id: 'T04', fee_share: 1250 }
         ], 
         feeStatus: 'Paid', 
-        totalFee: 0 
+        totalFee: 0,
+        monthlyFee: 2500
     },
     { 
         id: 'S007', 
@@ -182,7 +190,8 @@ export let students: Student[] = [
             { subject_name: 'Physics', teacher_id: 'T01', fee_share: 1500 }
         ], 
         feeStatus: 'Pending', 
-        totalFee: 3000 
+        totalFee: 3000,
+        monthlyFee: 3000
     },
 ];
 

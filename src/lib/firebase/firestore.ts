@@ -3,6 +3,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -81,7 +82,7 @@ service cloud.firestore {
 */
 
 
-import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction } from 'firebase/firestore';
+import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
@@ -169,6 +170,36 @@ export async function updateStudentFeeStatus(studentId: string, newBalance: numb
     }
 }
 
+export async function resetMonthlyFees() {
+    try {
+        const studentsCollection = collection(db, 'students');
+        const studentsSnap = await getDocs(studentsCollection);
+        const batch = writeBatch(db);
+
+        studentsSnap.forEach(studentDoc => {
+            const student = studentDoc.data() as Student;
+            const studentRef = studentDoc.ref;
+            
+            // Add monthly fee to current balance
+            const newTotalFee = student.totalFee + student.monthlyFee;
+
+            // Set status to Overdue if they already had a balance, otherwise Pending
+            const newStatus = student.totalFee > 0 ? 'Overdue' : 'Pending';
+
+            batch.update(studentRef, {
+                totalFee: newTotalFee,
+                feeStatus: newStatus,
+            });
+        });
+
+        await batch.commit();
+        return { success: true, message: "Next month's fees have been generated for all students." };
+    } catch (error) {
+        console.error("Error resetting monthly fees: ", error);
+        return { success: false, message: (error as Error).message };
+    }
+}
+
 
 export async function getTeachers(): Promise<Teacher[]> {
     const teachersCollection = collection(db, 'teachers');
@@ -240,6 +271,7 @@ export async function addClass(name: string) {
         const newClass = {
             id: newClassId,
             name: name,
+            subjects: []
         };
         await setDoc(doc(db, 'classes', newClassId), newClass);
         return { success: true, message: "Class created successfully." };
