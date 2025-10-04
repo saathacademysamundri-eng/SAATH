@@ -52,8 +52,24 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
 
 
     const handleSubmit = async () => {
-        if (!name.trim() || !phone.trim() || !fatherName.trim() || !address.trim() || selectedSubjects.length === 0) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all required fields and select at least one subject.' });
+        if (!name.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter the teacher\'s name.' });
+            return;
+        }
+        if (!fatherName.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter the father\'s name.' });
+            return;
+        }
+        if (!phone.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter a phone number.' });
+            return;
+        }
+        if (!address.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter an address.' });
+            return;
+        }
+        if (selectedSubjects.length === 0) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please select at least one subject.' });
             return;
         }
 
