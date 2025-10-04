@@ -12,6 +12,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -552,12 +553,12 @@ export async function deleteExpense(expenseId: string) {
             const expenseDoc = await transaction.get(expenseRef);
 
             if (!expenseDoc.exists()) {
-                throw new Error("Expense not found.");
+                throw new Error("Expense record not found.");
             }
 
             const expenseData = expenseDoc.data() as Expense;
 
-            // If it's a payout, reverse the entire payout transaction
+            // If it's a payout, reverse the entire transaction chain
             if (expenseData.source === 'payout' && expenseData.payoutId) {
                 const payoutRef = doc(db, 'teacher_payouts', expenseData.payoutId);
                 const payoutDoc = await transaction.get(payoutRef);
@@ -565,11 +566,32 @@ export async function deleteExpense(expenseId: string) {
                 if (payoutDoc.exists()) {
                     const payoutData = payoutDoc.data() as TeacherPayout;
 
-                    // Revert income records
-                    payoutData.incomeIds.forEach(incomeId => {
+                    // For each income record in the payout, reverse it
+                    for (const incomeId of payoutData.incomeIds) {
                         const incomeRef = doc(db, 'income', incomeId);
-                        transaction.update(incomeRef, { isPaidOut: false, payoutId: null });
-                    });
+                        const incomeDoc = await transaction.get(incomeRef);
+
+                        if (incomeDoc.exists()) {
+                            const incomeData = incomeDoc.data() as Income;
+                            const studentRef = doc(db, 'students', incomeData.studentId);
+                            
+                            // Re-add the paid amount to the student's balance
+                            transaction.update(studentRef, {
+                                totalFee: increment(incomeData.amount),
+                                feeStatus: 'Pending' // Or a more complex logic to set status
+                            });
+
+                            // Delete the income record as it's now void
+                            transaction.delete(incomeRef);
+                        }
+                    }
+
+                    // Delete the report associated with the payout
+                     const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payoutRef.id), limit(1));
+                    const reportSnap = await getDocs(reportQuery);
+                    if (!reportSnap.empty) {
+                        transaction.delete(reportSnap.docs[0].ref);
+                    }
 
                     // Delete the payout record
                     transaction.delete(payoutRef);
@@ -580,7 +602,7 @@ export async function deleteExpense(expenseId: string) {
             transaction.delete(expenseRef);
         });
 
-        return { success: true, message: "Expense deleted and associated transactions reversed." };
+        return { success: true, message: "Expense deleted and associated transactions fully reversed." };
 
     } catch (error) {
         console.error("Error deleting expense:", error);

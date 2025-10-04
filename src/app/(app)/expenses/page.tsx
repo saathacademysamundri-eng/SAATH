@@ -10,13 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { addExpense, deleteExpense, updateExpense } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MoreHorizontal, PlusCircle, Printer, Trash, Edit, AlertCircle, Badge } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Printer, Trash, Edit, AlertCircle } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useAppContext } from '@/hooks/use-app-context';
 import { Expense } from '@/lib/data';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useSettings } from '@/hooks/use-settings';
+import { Badge } from '@/components/ui/badge';
 
 function AddExpenseDialog({ onExpenseAdded }: { onExpenseAdded: () => void }) {
     const [description, setDescription] = useState('');
@@ -156,7 +157,7 @@ function DeleteExpenseDialog({ expense, onExpenseDeleted }: { expense: Expense, 
                             <div>
                                 <h4 className="font-bold">Payout Reversal</h4>
                                 <p className="text-xs">
-                                    Since this is a payout expense, deleting it will reverse the transaction. The teacher payout record will be removed, and the funds will be returned to the teacher's pending earnings.
+                                    Deleting this expense will fully reverse the associated teacher payout. The original student fee payments will be voided, and the amounts will be added back to each student's outstanding balance. The teacher's earnings for that period will be reset.
                                 </p>
                             </div>
                         </div>
