@@ -16,6 +16,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -97,7 +98,7 @@ service cloud.firestore {
 */
 
 
-import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment } from 'firebase/firestore';
+import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
@@ -595,23 +596,22 @@ export async function deleteExpense(expenseId: string) {
                 if (payoutDoc.exists()) {
                     const payoutData = payoutDoc.data() as TeacherPayout;
 
-                    // Revert each income record instead of deleting it
+                    // Revert each income record by marking it as not paid out
                     for (const incomeId of payoutData.incomeIds) {
                         const incomeRef = doc(db, 'income', incomeId);
                         const incomeDoc = await transaction.get(incomeRef);
 
                         if (incomeDoc.exists()) {
-                             // Mark as not paid out
                              transaction.update(incomeRef, {
                                  isPaidOut: false,
-                                 payoutId: deleteDoc, // Firestore field deletion
+                                 payoutId: deleteField(),
                              });
                         }
                     }
 
                     // Delete the report associated with the payout
                     const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payoutRef.id), limit(1));
-                    const reportSnap = await getDocs(reportQuery); // Use regular getDocs, not in transaction
+                    const reportSnap = await getDocs(reportQuery);
                     if (!reportSnap.empty) {
                         transaction.delete(reportSnap.docs[0].ref);
                     }
