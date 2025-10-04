@@ -17,6 +17,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -566,7 +567,7 @@ export async function getExpenses(): Promise<Expense[]> {
     });
 }
 
-export async function updateExpense(expenseId: string, data: { description: string; amount: number }) {
+export async function updateExpense(expenseId: string, data: { description: string; amount: number, category: string }) {
     try {
         const expenseRef = doc(db, 'expenses', expenseId);
         await updateDoc(expenseRef, data);
@@ -599,23 +600,19 @@ export async function deleteExpense(expenseId: string) {
                     // Revert each income record by marking it as not paid out
                     for (const incomeId of payoutData.incomeIds) {
                         const incomeRef = doc(db, 'income', incomeId);
-                        const incomeDoc = await transaction.get(incomeRef);
-
-                        if (incomeDoc.exists()) {
-                             transaction.update(incomeRef, {
-                                 isPaidOut: false,
-                                 payoutId: deleteField(),
-                             });
-                        }
+                        transaction.update(incomeRef, {
+                            isPaidOut: false,
+                            payoutId: deleteField(),
+                        });
                     }
 
                     // Delete the report associated with the payout
                     const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payoutRef.id), limit(1));
-                    const reportSnap = await getDocs(reportQuery);
+                    const reportSnap = await getDocs(reportQuery); // Needs to be outside transaction or passed in
                     if (!reportSnap.empty) {
                         transaction.delete(reportSnap.docs[0].ref);
                     }
-
+                    
                     // Delete the payout record
                     transaction.delete(payoutRef);
                 }
@@ -625,7 +622,7 @@ export async function deleteExpense(expenseId: string) {
             transaction.delete(expenseRef);
         });
 
-        return { success: true, message: "Expense deleted. Teacher payout has been reversed." };
+        return { success: true, message: "Expense deleted. If it was a payout, the transaction has been reversed." };
 
     } catch (error) {
         console.error("Error deleting expense:", error);
@@ -691,7 +688,8 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
             amount: amount,
             date: payoutTimestamp,
             source: 'payout',
-            payoutId: payoutRef.id
+            payoutId: payoutRef.id,
+            category: 'Salaries',
         });
 
         // 4. Save the report snapshot

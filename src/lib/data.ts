@@ -4,6 +4,7 @@
 
 
 
+
 export type Subject = {
     id: string;
     name: string;
@@ -63,6 +64,7 @@ export type Expense = {
     amount: number;
     date: Date;
     source: 'manual' | 'payout';
+    category?: string;
     payoutId?: string;
 }
 
