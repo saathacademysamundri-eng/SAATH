@@ -20,6 +20,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -89,6 +90,7 @@ service cloud.firestore {
     // Rules for new collections
     match /attendance/{attendanceId} {
       allow read, write: if isAdmin();
+      allow read: if request.auth != null;
     }
     match /exams/{examId} {
       allow read, write: if isAdmin();
@@ -101,7 +103,7 @@ service cloud.firestore {
 */
 
 
-import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField } from 'firebase/firestore';
+import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
@@ -784,7 +786,8 @@ export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Repor
 
 
 // Attendance Functions
-export async function saveAttendance(attendanceData: { classId: string; date: string; records: { [studentId: string]: 'Present' | 'Absent' | 'Leave' } }) {
+type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
+export async function saveAttendance(attendanceData: { classId: string; className: string; date: string; records: { [studentId: string]: AttendanceStatus } }) {
     try {
         const docId = `${attendanceData.date}_${attendanceData.classId}`;
         const docRef = doc(db, 'attendance', docId);
@@ -795,6 +798,47 @@ export async function saveAttendance(attendanceData: { classId: string; date: st
         return { success: false, message: (error as Error).message };
     }
 }
+
+export async function getAttendanceForMonth(studentId: string, month: number, year: number): Promise<{ date: Date, status: AttendanceStatus }[]> {
+    try {
+        const startDate = new Date(year, month, 1);
+        const endDate = new Date(year, month + 1, 0);
+
+        const studentData = await getStudent(studentId);
+        if (!studentData) return [];
+
+        const studentClass = await getClasses().then(classes => classes.find(c => c.name === studentData.class));
+        if (!studentClass) return [];
+
+        const studentAttendance: { date: Date, status: AttendanceStatus }[] = [];
+
+        const q = query(
+            collection(db, 'attendance'),
+            where('classId', '==', studentClass.id),
+            orderBy('date'),
+            startAt(startDate.toISOString().split('T')[0]),
+            endAt(endDate.toISOString().split('T')[0])
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.records && data.records[studentId]) {
+                studentAttendance.push({
+                    date: new Date(data.date),
+                    status: data.records[studentId],
+                });
+            }
+        });
+        
+        return studentAttendance;
+    } catch (error) {
+        console.error("Error fetching attendance for month: ", error);
+        return [];
+    }
+}
+
 
 // Exam Functions
 export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
