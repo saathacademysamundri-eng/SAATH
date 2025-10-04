@@ -45,24 +45,28 @@ export default function TeachersPage() {
   const router = useRouter();
 
   const teacherStats = useMemo(() => {
-    const stats = new Map<string, { gross: number; net: number; unpaidIncomeRecords: Income[] }>();
-    
+    const stats = new Map<string, { gross: number; net: number }>();
+
     teachers.forEach(teacher => {
-        stats.set(teacher.id, { gross: 0, net: 0, unpaidIncomeRecords: [] });
+        stats.set(teacher.id, { gross: 0, net: 0 });
     });
-    
+
     const unpaidIncome = income.filter(i => !i.isPaidOut);
 
     unpaidIncome.forEach(inc => {
         const student = allStudents.find(s => s.id === inc.studentId);
-        if (student) {
-            student.subjects.forEach(sub => {
-                if (stats.has(sub.teacher_id)) {
-                    const currentStats = stats.get(sub.teacher_id)!;
-                    currentStats.gross += sub.fee_share;
-                    currentStats.unpaidIncomeRecords.push(inc);
-                }
-            });
+        if (student && student.subjects.length > 0) {
+            const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
+            if (studentTeachers.length > 0) {
+                const sharePerTeacher = inc.amount / studentTeachers.length;
+
+                studentTeachers.forEach(teacherId => {
+                    if (stats.has(teacherId)) {
+                        const currentStats = stats.get(teacherId)!;
+                        currentStats.gross += sharePerTeacher;
+                    }
+                });
+            }
         }
     });
 
@@ -71,7 +75,7 @@ export default function TeachersPage() {
     });
 
     return stats;
-  }, [teachers, allStudents, income]);
+}, [teachers, allStudents, income]);
 
 
   const filteredTeachers = teachers.filter(teacher =>
