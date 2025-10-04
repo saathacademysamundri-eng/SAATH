@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type Student, type Teacher, type Income, type TeacherPayout, type Report } from '@/lib/data';
 import { getTeacherPayouts, payoutTeacher } from '@/lib/firebase/firestore';
-import { Loader2, Phone, Wallet, Printer } from 'lucide-react';
+import { Loader2, Phone, Wallet, Printer, Mail, Home, User } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -458,9 +458,47 @@ export default function TeacherProfilePage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Teacher Information</CardTitle>
+                        <CardDescription>Personal and contact details for {teacher.name}.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <p>More profile details and settings can be added here.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex items-center gap-3 rounded-md border p-3">
+                                <User className="h-5 w-5 text-muted-foreground" />
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Father's Name</p>
+                                    <p className="font-medium">{teacher.fatherName}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 rounded-md border p-3">
+                                <Phone className="h-5 w-5 text-muted-foreground" />
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Phone</p>
+                                    <p className="font-medium">{teacher.phone}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 rounded-md border p-3">
+                                <Mail className="h-5 w-5 text-muted-foreground" />
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Email</p>
+                                    <p className="font-medium">{teacher.email || 'Not provided'}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 rounded-md border p-3">
+                                <Home className="h-5 w-5 text-muted-foreground" />
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Address</p>
+                                    <p className="font-medium">{teacher.address}</p>
+                                </div>
+                            </div>
+                        </div>
+                         <div>
+                            <p className="text-sm font-medium mb-2">Subjects Taught</p>
+                            <div className="flex flex-wrap gap-2">
+                                {teacher.subjects && teacher.subjects.map(subject => (
+                                    <Badge key={subject} variant="secondary">{subject}</Badge>
+                                ))}
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -469,6 +507,7 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
+
 
 
 
