@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { updateTeacher } from "@/lib/firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, X } from "lucide-react"
+import { Loader2, X, User } from "lucide-react"
 import { useState } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
@@ -31,6 +31,7 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
     const [phone, setPhone] = useState(teacher.phone || '')
     const [address, setAddress] = useState(teacher.address || '')
     const [email, setEmail] = useState(teacher.email || '')
+    const [imageUrl, setImageUrl] = useState(teacher.imageUrl || '');
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>(teacher.subjects || [])
     const [isSaving, setIsSaving] = useState(false)
     const { toast } = useToast()
@@ -59,7 +60,8 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
             phone: phone.trim(),
             address: address.trim(),
             email: email.trim(),
-            subjects: selectedSubjects 
+            subjects: selectedSubjects,
+            imageUrl: imageUrl.trim(),
         });
 
         if (result.success) {
@@ -78,6 +80,24 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
                 <DialogDescription>Update the details for this teacher.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
+                <div className="space-y-2">
+                    <Label htmlFor="imageUrl">Photo URL</Label>
+                    <div className="flex items-center gap-4">
+                        <div className="w-20 h-20 rounded-full border flex items-center justify-center bg-muted overflow-hidden">
+                            {imageUrl ? (
+                                <img src={imageUrl} alt="Teacher" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-10 h-10 text-muted-foreground" />
+                            )}
+                        </div>
+                        <Input 
+                            id="imageUrl" 
+                            placeholder="https://example.com/photo.png"
+                            value={imageUrl}
+                            onChange={(e) => setImageUrl(e.target.value)}
+                        />
+                    </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Teacher Name</Label>

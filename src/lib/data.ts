@@ -7,6 +7,7 @@
 
 
 
+
 export type Subject = {
     id: string;
     name: string;
@@ -47,6 +48,7 @@ export type Teacher = {
   address: string;
   email?: string;
   subjects: string[]; // Names of subjects
+  imageUrl?: string;
 };
 
 export type Income = {

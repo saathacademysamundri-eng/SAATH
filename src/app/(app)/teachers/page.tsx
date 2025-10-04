@@ -27,7 +27,7 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { AddTeacherDialog } from './add-teacher-dialog';
 import { Badge } from '@/components/ui/badge';
 import { EditTeacherDialog } from './edit-teacher-dialog';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAppContext } from '@/hooks/use-app-context';
 import { Teacher } from '@/lib/data';
 import {
@@ -179,6 +179,7 @@ export default function TeachersPage() {
                     <Card className="flex flex-col">
                         <CardHeader className="flex-row gap-4 items-start">
                             <Avatar className="w-12 h-12 border-2 border-primary">
+                              <AvatarImage src={teacher.imageUrl} alt={teacher.name} />
                               <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">

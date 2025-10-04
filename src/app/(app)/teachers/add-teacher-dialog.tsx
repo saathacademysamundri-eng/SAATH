@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { addTeacher } from "@/lib/firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, X } from "lucide-react"
+import { Loader2, X, User } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
@@ -32,6 +32,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
     const [phone, setPhone] = useState('')
     const [address, setAddress] = useState('')
     const [email, setEmail] = useState('')
+    const [imageUrl, setImageUrl] = useState('')
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
     const [isSaving, setIsSaving] = useState(false)
     const { toast } = useToast()
@@ -61,7 +62,8 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
             phone: phone.trim(),
             address: address.trim(),
             email: email.trim(),
-            subjects: selectedSubjects 
+            subjects: selectedSubjects,
+            imageUrl: imageUrl.trim(),
         });
 
         if (result.success) {
@@ -73,6 +75,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
             setPhone('');
             setAddress('');
             setEmail('');
+            setImageUrl('');
             setSelectedSubjects([]);
         } else {
             toast({ variant: 'destructive', title: 'Failed to Add', description: result.message });
@@ -87,6 +90,24 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
                 <DialogDescription>Enter the details for the new teacher.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
+                <div className="space-y-2">
+                    <Label htmlFor="imageUrl">Photo URL</Label>
+                    <div className="flex items-center gap-4">
+                        <div className="w-20 h-20 rounded-full border flex items-center justify-center bg-muted overflow-hidden">
+                            {imageUrl ? (
+                                <img src={imageUrl} alt="Teacher" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-10 h-10 text-muted-foreground" />
+                            )}
+                        </div>
+                        <Input 
+                            id="imageUrl" 
+                            placeholder="https://example.com/photo.png"
+                            value={imageUrl}
+                            onChange={(e) => setImageUrl(e.target.value)}
+                        />
+                    </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Teacher Name</Label>
