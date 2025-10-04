@@ -317,7 +317,7 @@ export default function TeacherProfilePage() {
                         <Phone className="h-4 w-4" /> {teacher.phone}
                     </CardDescription>
                     <div className="flex flex-wrap gap-2 pt-2">
-                        {teacher.subjects.map(subject => (
+                        {teacher.subjects && teacher.subjects.map(subject => (
                             <Badge key={subject} variant="secondary">{subject}</Badge>
                         ))}
                     </div>
@@ -469,5 +469,6 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
+
 
 
