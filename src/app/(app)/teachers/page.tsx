@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from '@/components/ui/card';
 import {
   DropdownMenu,
@@ -18,14 +19,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { MoreHorizontal, Printer, Search, PlusCircle, Edit, Trash } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -60,12 +53,10 @@ export default function TeachersPage() {
   const [dialogState, setDialogState] = useState<{
     isAddOpen: boolean;
     isEditOpen: boolean;
-    isDeleteOpen: boolean;
     selectedTeacher: Teacher | null;
   }>({
     isAddOpen: false,
     isEditOpen: false,
-    isDeleteOpen: false,
     selectedTeacher: null,
   });
 
@@ -109,13 +100,9 @@ export default function TeachersPage() {
   const handleEditClick = (teacher: Teacher) => {
     setDialogState({ ...dialogState, isEditOpen: true, selectedTeacher: teacher });
   };
-
-  const handleDeleteClick = (teacher: Teacher) => {
-    setDialogState({ ...dialogState, isDeleteOpen: true, selectedTeacher: teacher });
-  };
-
+  
   const closeDialogs = () => {
-    setDialogState({ isAddOpen: false, isEditOpen: false, isDeleteOpen: false, selectedTeacher: null });
+    setDialogState({ isAddOpen: false, isEditOpen: false, selectedTeacher: null });
   };
 
   const onActionComplete = () => {
@@ -123,15 +110,13 @@ export default function TeachersPage() {
     closeDialogs();
   };
 
-  const handleConfirmDelete = async () => {
-    if (!dialogState.selectedTeacher) return;
-    const result = await deleteTeacher(dialogState.selectedTeacher.id);
+  const handleConfirmDelete = async (teacher: Teacher) => {
+    const result = await deleteTeacher(teacher.id);
     if(result.success) {
-      toast({ title: "Teacher Deleted", description: `Record for ${dialogState.selectedTeacher.name} has been removed.`});
-      onActionComplete();
+      toast({ title: "Teacher Deleted", description: `Record for ${teacher.name} has been removed.`});
+      refreshData();
     } else {
       toast({ variant: "destructive", title: "Deletion Failed", description: result.message });
-      closeDialogs();
     }
   }
 
@@ -144,135 +129,125 @@ export default function TeachersPage() {
             View teacher profiles and their earnings.
           </p>
         </div>
-        <Dialog open={dialogState.isAddOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isAddOpen: isOpen })}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2"/>
-              Add Teacher
-            </Button>
-          </DialogTrigger>
-          <AddTeacherDialog onTeacherAdded={onActionComplete} />
-        </Dialog>
+         <div className="flex items-center gap-2">
+             <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search teachers..." 
+                  className="pl-8 w-64" 
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+            <Dialog open={dialogState.isAddOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isAddOpen: isOpen })}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2"/>
+                  Add Teacher
+                </Button>
+              </DialogTrigger>
+              <AddTeacherDialog onTeacherAdded={onActionComplete} />
+            </Dialog>
+         </div>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Teacher List</CardTitle>
-          <CardDescription>
-            A list of all teachers in the academy. Earnings are calculated from paid student fees that have not yet been paid out.
-          </CardDescription>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search teachers..." 
-              className="pl-8" 
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Subject(s)</TableHead>
-                <TableHead>Current Net Earnings (70%)</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <Skeleton className="h-5 w-24" />
-                      </div>
-                    </TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                filteredTeachers.map((teacher) => {
-                  const stats = teacherStats.get(teacher.id) || { gross: 0, net: 0 };
-                  return (
-                  <TableRow key={teacher.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="font-medium">{teacher.name}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {(teacher.subjects || []).map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold text-green-600">
-                      {stats.net.toLocaleString()} PKR
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <AlertDialog>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button aria-haspopup="true" size="icon" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
-                                View Profile & Pay
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditClick(teacher)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                  <Trash className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                           <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the teacher record for <span className="font-bold">{teacher.name}</span>. This will NOT affect past payouts.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel onClick={closeDialogs}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                )})
-              )}
-               {!loading && filteredTeachers.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    No teachers found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {loading ? (
+            Array.from({ length: 8 }).map((_, i) => (
+                <Card key={i}>
+                    <CardHeader className="flex-row gap-4 items-center">
+                        <Skeleton className="w-12 h-12 rounded-full" />
+                        <div className="space-y-2">
+                           <Skeleton className="h-5 w-24" />
+                           <Skeleton className="h-4 w-32" />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Skeleton className="h-5 w-full" />
+                        <Skeleton className="h-8 w-1/2" />
+                    </CardContent>
+                    <CardFooter>
+                         <Skeleton className="h-10 w-full" />
+                    </CardFooter>
+                </Card>
+            ))
+          ) : (
+            filteredTeachers.map((teacher) => {
+              const stats = teacherStats.get(teacher.id) || { gross: 0, net: 0 };
+              return (
+                 <AlertDialog key={teacher.id}>
+                    <Card className="flex flex-col">
+                        <CardHeader className="flex-row gap-4 items-start">
+                            <Avatar className="w-12 h-12 border-2 border-primary">
+                              <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                                <h3 className="font-bold text-lg">{teacher.name}</h3>
+                                <p className="text-sm text-muted-foreground">{teacher.phone}</p>
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                   <DropdownMenuItem onClick={() => router.push(`/teachers/${teacher.id}`)}>
+                                    View Profile & Pay
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditClick(teacher)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                      <Trash className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </CardHeader>
+                        <CardContent className="space-y-4 flex-1">
+                           <div className="flex flex-wrap gap-1">
+                            {(teacher.subjects || []).map(s => <Badge key={s} variant="secondary" className="font-normal">{s}</Badge>)}
+                          </div>
+                           <div>
+                                <p className="text-xs text-muted-foreground">Current Net Earnings (70%)</p>
+                                <p className="text-2xl font-bold text-green-600">{stats.net.toLocaleString()} PKR</p>
+                           </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button className="w-full" onClick={() => router.push(`/teachers/${teacher.id}`)}>
+                                View Profile
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the teacher record for <span className="font-bold">{teacher.name}</span>. This will NOT affect past payouts.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleConfirmDelete(teacher)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                 </AlertDialog>
+              )
+            })
+          )}
+           {!loading && filteredTeachers.length === 0 && (
+            <div className="col-span-full text-center py-10">
+              <p className="text-muted-foreground">No teachers found.</p>
+            </div>
+          )}
+       </div>
         {dialogState.selectedTeacher && (
           <Dialog open={dialogState.isEditOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isEditOpen: isOpen })}>
               <EditTeacherDialog 
