@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useState, useMemo, useEffect } from "react"
-import { type StudentSubject, type Subject, Class, Teacher } from "@/lib/data"
+import { type Student, type StudentSubject, type Subject, Class, Teacher } from "@/lib/data"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -101,9 +102,14 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             fee_share: feeShare,
         }));
 
-        const newStudent = {
+        const newStudent: Omit<Student, 'id'> & { id: string } = {
             id: newStudentId,
             name,
+            fatherName,
+            phone,
+            college,
+            address,
+            gender,
             class: currentClassDetails?.name || '',
             subjects: studentSubjects,
             feeStatus: 'Pending' as const,

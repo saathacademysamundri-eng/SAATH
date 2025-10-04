@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, PlusCircle, Search, Trash } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Search, Trash, Edit } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { useState } from 'react';
@@ -46,7 +47,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { deleteStudent } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -210,6 +210,7 @@ export default function StudentsPage() {
                                 View Details
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditClick(student)}>
+                                <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />

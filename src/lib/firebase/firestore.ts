@@ -1,4 +1,5 @@
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -143,16 +144,10 @@ export async function addStudent(student: Omit<Student, 'id'> & { id: string }) 
     }
 }
 
-export async function updateStudent(studentId: string, studentData: Partial<Omit<Student, 'id'>>) {
+export async function updateStudent(studentId: string, studentData: Partial<Omit<Student, 'id' | 'feeStatus' | 'totalFee'>>) {
     try {
-        const dataToUpdate = { ...studentData };
-        // Ensure monthlyFee is not undefined
-        if (dataToUpdate.monthlyFee === undefined || dataToUpdate.monthlyFee === null || isNaN(dataToUpdate.monthlyFee)) {
-            dataToUpdate.monthlyFee = 0;
-        }
-
         const studentRef = doc(db, 'students', studentId);
-        await updateDoc(studentRef, dataToUpdate);
+        await updateDoc(studentRef, studentData);
         return { success: true, message: "Student updated successfully." };
     } catch (error) {
         console.error("Error updating student: ", error);

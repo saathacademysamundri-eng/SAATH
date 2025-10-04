@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -20,8 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useState, useMemo, useEffect } from "react"
-import { type Student, type StudentSubject, type Subject, Class, Teacher } from "@/lib/data"
+import { useState, useMemo } from "react"
+import { type Student, type StudentSubject, type Subject } from "@/lib/data"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -37,12 +38,11 @@ type SelectedSubjectInfo = {
 export function EditStudentForm({ student, onStudentUpdated }: { student: Student, onStudentUpdated: () => void }) {
     const { classes, teachers } = useAppContext();
     const [name, setName] = useState(student.name);
-    // These fields are not in the provided student type, so I am removing them.
-    // const [fatherName, setFatherName] = useState('');
-    // const [phone, setPhone] = useState('');
-    // const [college, setCollege] = useState('');
-    // const [address, setAddress] = useState('');
-    // const [gender, setGender] = useState('male');
+    const [fatherName, setFatherName] = useState(student.fatherName);
+    const [phone, setPhone] = useState(student.phone);
+    const [college, setCollege] = useState(student.college);
+    const [address, setAddress] = useState(student.address);
+    const [gender, setGender] = useState(student.gender);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(() => {
         return classes.find(c => c.name === student.class)?.id || null
     });
@@ -88,7 +88,7 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
     }, [monthlyFee, selectedSubjects.length]);
 
     const handleSubmit = async () => {
-        const hasMissingInfo = !name || !selectedClassId || monthlyFee <= 0 || selectedSubjects.length === 0;
+        const hasMissingInfo = !name || !fatherName || !phone || !college || !address || !selectedClassId || monthlyFee <= 0 || selectedSubjects.length === 0;
         const hasNullTeacher = selectedSubjects.some(s => s.teacherId === null);
 
         if (hasMissingInfo || hasNullTeacher) {
@@ -111,6 +111,11 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
 
         const updatedStudentData = {
             name,
+            fatherName,
+            phone,
+            college,
+            address,
+            gender,
             class: currentClassDetails?.name || '',
             subjects: studentSubjects,
             monthlyFee: monthlyFee,
@@ -149,6 +154,35 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
                 <div className="grid gap-2">
                     <Label htmlFor="name">Full Name</Label>
                     <Input id="name" placeholder="Enter student's full name" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="fatherName">Father's Name</Label>
+                    <Input id="fatherName" placeholder="Enter father's name" value={fatherName} onChange={(e) => setFatherName(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input id="phone" type="tel" placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="college">School / College Name</Label>
+                    <Input id="college" placeholder="Enter school or college name" value={college} onChange={(e) => setCollege(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label>Gender</Label>
+                    <RadioGroup onValueChange={setGender} value={gender} className="flex items-center gap-4">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="male" id="edit-male" />
+                            <Label htmlFor="edit-male" className="font-normal">Male</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="female" id="edit-female" />
+                            <Label htmlFor="edit-female" className="font-normal">Female</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Textarea id="address" placeholder="Enter student's address" value={address} onChange={(e) => setAddress(e.target.value)} />
                 </div>
             </div>
           
@@ -192,11 +226,11 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
                         return (
                             <div key={subject.id} className="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-3">
                                 <Checkbox 
-                                    id={`subject-${subject.id}`} 
+                                    id={`edit-subject-${subject.id}`} 
                                     onCheckedChange={() => handleSubjectCheckedChange(subject)}
                                     checked={!!selection}
                                 />
-                                <Label htmlFor={`subject-${subject.id}`} className="font-normal">{subject.name}</Label>
+                                <Label htmlFor={`edit-subject-${subject.id}`} className="font-normal">{subject.name}</Label>
                                 
                                 {selection && (
                                   <>

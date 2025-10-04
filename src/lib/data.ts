@@ -5,6 +5,7 @@
 
 
 
+
 export type Subject = {
     id: string;
     name: string;
@@ -25,6 +26,11 @@ export type StudentSubject = {
 export type Student = {
     id: string;
     name: string;
+    fatherName: string;
+    phone: string;
+    college: string;
+    address: string;
+    gender: string;
     class: string;
     subjects: StudentSubject[];
     feeStatus: 'Paid' | 'Pending' | 'Partial' | 'Overdue';
@@ -131,6 +137,11 @@ export let students: Student[] = [
     { 
         id: 'S001', 
         name: 'Ahmed Hassan', 
+        fatherName: 'Hassan Ali',
+        phone: '03001112222',
+        college: 'Govt College',
+        address: 'House 1, Street 1, City',
+        gender: 'male',
         class: '10th', 
         subjects: [
             { subject_name: 'Mathematics', teacher_id: 'T03', fee_share: 1500 },
@@ -143,6 +154,11 @@ export let students: Student[] = [
     { 
         id: 'S002', 
         name: 'Zainab Ali', 
+        fatherName: 'Ali Raza',
+        phone: '03002223333',
+        college: 'KIPS College',
+        address: 'House 2, Street 2, City',
+        gender: 'female',
         class: '9th', 
         subjects: [
             { subject_name: 'Chemistry', teacher_id: 'T02', fee_share: 1250 },
@@ -155,6 +171,11 @@ export let students: Student[] = [
     { 
         id: 'S003', 
         name: 'Bilal Khan', 
+        fatherName: 'Khan Sahab',
+        phone: '03003334444',
+        college: 'Punjab College',
+        address: 'House 3, Street 3, City',
+        gender: 'male',
         class: '10th', 
         subjects: [
              { subject_name: 'English', teacher_id: 'T04', fee_share: 1000 },
@@ -167,6 +188,11 @@ export let students: Student[] = [
     { 
         id: 'S004', 
         name: 'Ayesha Malik', 
+        fatherName: 'Malik Ahmed',
+        phone: '03004445555',
+        college: 'Aspire College',
+        address: 'House 4, Street 4, City',
+        gender: 'female',
         class: '11th', 
         subjects: [
              { subject_name: 'Physics', teacher_id: 'T01', fee_share: 2000 },
@@ -179,6 +205,11 @@ export let students: Student[] = [
     { 
         id: 'S005', 
         name: 'Fahad Iqbal', 
+        fatherName: 'Iqbal Ahmed',
+        phone: '03005556666',
+        college: 'Garrison College',
+        address: 'House 5, Street 5, City',
+        gender: 'male',
         class: '12th', 
         subjects: [
             { subject_name: 'Pre-Eng. Mathematics', teacher_id: 'T03', fee_share: 4500 }
@@ -190,6 +221,11 @@ export let students: Student[] = [
     { 
         id: 'S006', 
         name: 'Sana Javed', 
+        fatherName: 'Javed Iqbal',
+        phone: '03006667777',
+        college: 'Kinnaird College',
+        address: 'House 6, Street 6, City',
+        gender: 'female',
         class: '9th', 
         subjects: [
             { subject_name: 'Biology', teacher_id: 'T05', fee_share: 1250 },
@@ -202,6 +238,11 @@ export let students: Student[] = [
     { 
         id: 'S007', 
         name: 'Imran Syed', 
+        fatherName: 'Syed Ali',
+        phone: '03007778888',
+        college: 'FC College',
+        address: 'House 7, Street 7, City',
+        gender: 'male',
         class: '10th', 
         subjects: [
             { subject_name: 'Computer Science', teacher_id: 'T03', fee_share: 1500 },
