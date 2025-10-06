@@ -4,6 +4,7 @@
 import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSubjects, getAllPayouts } from '@/lib/firebase/firestore';
 import type { Class, Expense, Income, Student, Subject, Teacher, TeacherPayout, Report } from '@/lib/data';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface AppContextType {
   students: Student[];
@@ -85,6 +86,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AppContext.Provider value={value}>
       {children}
+      <FirebaseErrorListener />
     </AppContext.Provider>
   );
 };
