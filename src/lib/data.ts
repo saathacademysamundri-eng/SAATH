@@ -8,6 +8,7 @@
 
 
 
+
 export type Subject = {
     id: string;
     name: string;
@@ -53,6 +54,7 @@ export type Teacher = {
 
 export type Income = {
     id: string;
+    receiptId?: string;
     studentName: string;
     studentId: string;
     amount: number;

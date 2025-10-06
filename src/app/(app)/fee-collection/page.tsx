@@ -1,6 +1,7 @@
 
 
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import QRCode from 'qrcode.react';
 
 export default function FeeCollectionPage() {
   const [search, setSearch] = useState('');
@@ -103,7 +105,7 @@ export default function FeeCollectionPage() {
         amount: paidAmount,
     });
       
-    if (!incomeResult.success) {
+    if (!incomeResult.success || !incomeResult.receiptId) {
         toast({
             variant: "destructive",
             title: "Payment Failed",
@@ -113,6 +115,7 @@ export default function FeeCollectionPage() {
         return;
     }
 
+    const { receiptId } = incomeResult;
 
     const result = await updateStudentFeeStatus(searchedStudent.id, newTotalFee, newFeeStatus);
 
@@ -129,7 +132,7 @@ export default function FeeCollectionPage() {
         description: `Paid ${paidAmount} for ${searchedStudent.name}. New balance is ${newTotalFee}.`,
       });
       
-      handlePrintReceipt(paidAmount, newTotalFee, originalTotal);
+      handlePrintReceipt(paidAmount, newTotalFee, originalTotal, receiptId);
       setPaidAmount(0);
       refreshData(); // Refresh the global context
     } else {
@@ -145,7 +148,7 @@ export default function FeeCollectionPage() {
     setIsProcessingPayment(false);
   };
 
-  const handlePrintReceipt = (currentPaidAmount: number, newBalance: number, originalTotal: number) => {
+  const handlePrintReceipt = (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string) => {
     if (isSettingsLoading || !searchedStudent) {
         toast({ title: "Please wait", description: "Settings are loading."});
         return;
@@ -159,6 +162,11 @@ export default function FeeCollectionPage() {
         });
         return;
     }
+    
+    const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
+    const qrCodeCanvas = document.getElementById('qr-code-canvas') as HTMLCanvasElement;
+    const qrCodeDataUrl = qrCodeCanvas ? qrCodeCanvas.toDataURL() : '';
+
 
     const receiptContent = {
         student: searchedStudent,
@@ -166,8 +174,9 @@ export default function FeeCollectionPage() {
         balance: newBalance,
         totalFee: originalTotal,
         settings: settings,
-        receiptId: `RCPT-${Date.now()}`.substring(0, 15),
+        receiptId: receiptId,
         receiptDate: new Date().toLocaleString(),
+        qrCodeDataUrl: qrCodeDataUrl,
     };
     
     const receiptHtml = `
@@ -272,6 +281,10 @@ export default function FeeCollectionPage() {
                   </div>
 
                   <div class='text-center text-xs mt-4 space-y-1'>
+                      <p class='font-bold'>Scan to Verify</p>
+                      <div class='flex justify-center'>
+                        <img src="${receiptContent.qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
+                      </div>
                       <p>*** Thank you for your payment! ***</p>
                       <p>&copy; ${new Date().getFullYear()} ${receiptContent.settings.name}.</p>
                   </div>
@@ -289,6 +302,7 @@ export default function FeeCollectionPage() {
 };
 
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
+  const verificationUrl = isProcessingPayment && searchedStudent ? `${window.location.origin}/p/receipt/RCPT-GENERATING...` : '';
 
   return (
     <div className="flex flex-col gap-6">
@@ -320,6 +334,9 @@ export default function FeeCollectionPage() {
 
       {searchedStudent && (
         <div className="grid gap-6">
+            <div style={{ display: 'none' }}>
+                <QRCode id="qr-code-canvas" value={verificationUrl} size={128} />
+            </div>
             <Card>
                 <CardHeader>
                     <CardTitle>Fee Details for {searchedStudent.name}</CardTitle>
@@ -378,5 +395,3 @@ export default function FeeCollectionPage() {
     </div>
   );
 }
-
-    

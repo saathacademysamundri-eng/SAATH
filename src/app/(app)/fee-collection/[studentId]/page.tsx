@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -6,17 +7,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { students } from '@/lib/data';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 export default function StudentFeeDetailsPage({ params }: { params: { studentId: string } }) {
   const { studentId } = params;
+  const router = useRouter();
   const student = useMemo(() => students.find(s => s.id === studentId), [studentId]);
   
   const [paidAmount, setPaidAmount] = useState(0);
   
   if (!student) {
     notFound();
+  }
+
+  const handleCollectFee = () => {
+    // This is a simplified navigation. A real implementation would involve
+    // a database transaction and then potentially navigation.
+    router.push('/fee-collection');
   }
 
   const balance = student.totalFee - paidAmount;
@@ -55,11 +63,11 @@ export default function StudentFeeDetailsPage({ params }: { params: { studentId:
                         id="paidAmount" 
                         type="number"
                         placeholder="Enter amount being paid" 
-                        value={paidAmount}
+                        value={paidAmount || ''}
                         onChange={(e) => setPaidAmount(Number(e.target.value))}
                     />
                 </div>
-                <Button>Record Payment</Button>
+                <Button onClick={handleCollectFee}>Go to Fee Collection</Button>
             </CardContent>
         </Card>
     </div>

@@ -1,14 +1,17 @@
+
 'use client';
 
 import { useSettings } from '@/hooks/use-settings';
 import { students } from '@/lib/data';
-import { notFound, useSearchParams } from 'next/navigation';
+import { notFound, useSearchParams, useRouter } from 'next/navigation';
 import { useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 
 export default function FeeReceiptPage({ params }: { params: { studentId: string } }) {
   const { studentId } = params;
   const searchParams = useSearchParams();
+  const router = useRouter();
+
   const { settings, isSettingsLoading } = useSettings();
   const student = useMemo(() => students.find(s => s.id === studentId), [studentId]);
   
@@ -131,13 +134,19 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
                 </body>
             </html>
         `;
-        document.body.innerHTML = receiptHtml;
-        setTimeout(() => {
-          window.print();
-          window.close();
-        }, 250);
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(receiptHtml);
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+                // Optionally navigate back or to a different page
+                router.push('/fee-collection');
+            }, 250);
+        }
     }
-  }, [isSettingsLoading, student, settings, paidAmount, balance, totalFee, receiptDate, receiptId]);
+  }, [isSettingsLoading, student, settings, paidAmount, balance, totalFee, receiptDate, receiptId, router]);
   
   if (isSettingsLoading || !student) {
       return <div className="flex items-center justify-center h-screen">Loading receipt...</div>;

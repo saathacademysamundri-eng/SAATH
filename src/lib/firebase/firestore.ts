@@ -2,6 +2,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -53,6 +54,7 @@ service cloud.firestore {
     }
     match /income/{incomeId} {
        allow read, write: if isAdmin();
+       allow read: if request.auth != null;
     }
      match /teacher_payouts/{payoutId} {
        allow read, write: if isAdmin();
@@ -422,11 +424,13 @@ export async function seedDatabase() {
 // Income Functions
 export async function addIncome(incomeData: Omit<Income, 'id' | 'date'>) {
     try {
+        const receiptId = `RCPT-${Date.now()}`;
         const docRef = await addDoc(collection(db, 'income'), {
             ...incomeData,
+            receiptId: receiptId,
             date: serverTimestamp()
         });
-        return { success: true, message: 'Income record added.', id: docRef.id };
+        return { success: true, message: 'Income record added.', id: docRef.id, receiptId };
     } catch (error) {
         return { success: false, message: (error as Error).message };
     }
@@ -445,6 +449,22 @@ export async function getIncome(): Promise<Income[]> {
         } as Income;
     });
 }
+
+export async function getIncomeByReceiptId(receiptId: string): Promise<Income | null> {
+    const q = query(collection(db, "income"), where("receiptId", "==", receiptId), limit(1));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return null;
+    }
+    const doc = querySnapshot.docs[0];
+    const data = doc.data();
+    return {
+        id: doc.id,
+        ...data,
+        date: data.date.toDate(),
+    } as Income;
+}
+
 
 export async function deleteIncomeRecord(incomeId: string) {
     try {
