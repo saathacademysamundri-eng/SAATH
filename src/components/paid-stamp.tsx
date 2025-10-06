@@ -13,7 +13,7 @@ export function PaidStamp({ academyName, academyPhone, className }: PaidStampPro
   return (
     <div className={cn("pointer-events-none z-10 aspect-square w-[300px] opacity-20", className)}>
       <div className="relative h-full w-full">
-        <img src="/paid-stamp.png" alt="Paid Stamp" className="absolute inset-0 h-full w-full" />
+        <img src="https://storage.googleapis.com/project-spark-341015.appspot.com/generic/paid-stamp-1721932362070.png" alt="Paid Stamp" className="absolute inset-0 h-full w-full" />
 
         <div className="relative h-full w-full">
           <svg viewBox="0 0 100 100" className="h-full w-full -rotate-[15deg] transform">
