@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { CheckCircle2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { PaidStamp } from '@/components/paid-stamp';
 
 function VerificationSkeleton() {
     return (
@@ -119,7 +120,12 @@ export default function ReceiptVerificationPage() {
 
     return (
         <main className="min-h-screen bg-muted/40 p-4 sm:p-6 md:p-8">
-            <div className="mx-auto max-w-md">
+            <div className="mx-auto max-w-md relative">
+                 <PaidStamp
+                    academyName={settings.name}
+                    academyPhone={settings.phone}
+                    className="absolute inset-0 m-auto"
+                />
                 <header className="mb-6">
                     <Card>
                         <CardContent className="p-6 text-center">
@@ -130,7 +136,7 @@ export default function ReceiptVerificationPage() {
                     </Card>
                 </header>
 
-                <Card>
+                <Card className="relative">
                     <CardHeader className="items-center text-center space-y-4">
                         <CheckCircle2 className="w-20 h-20 text-green-500" />
                         <CardTitle className="text-2xl font-bold">Payment Verified</CardTitle>
