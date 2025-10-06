@@ -30,7 +30,7 @@ import {
 import { cn } from '@/lib/utils';
 import { MoreHorizontal, PlusCircle, Search, Trash, Edit } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
-import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -47,6 +47,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { deleteStudent } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -87,7 +88,7 @@ export default function StudentsPage() {
 
   const onStudentAdded = () => {
     refreshData();
-    closeDialogs();
+    setDialogState({ ...dialogState, isAddOpen: false });
   };
 
   const onStudentUpdated = () => {
@@ -254,3 +255,5 @@ export default function StudentsPage() {
     </div>
   );
 }
+
+    

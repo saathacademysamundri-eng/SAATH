@@ -10,6 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -53,11 +54,11 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
 
     const handleSubmit = async () => {
         if (!name.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter the teacher\'s name.' });
+            toast({ variant: 'destructive', title: 'Invalid Input', description: "Please enter the teacher's name." });
             return;
         }
         if (!fatherName.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter the father\'s name.' });
+            toast({ variant: 'destructive', title: 'Invalid Input', description: "Please enter the father's name." });
             return;
         }
         if (!phone.trim()) {
@@ -251,3 +252,5 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
         </DialogContent>
     );
 }
+
+    

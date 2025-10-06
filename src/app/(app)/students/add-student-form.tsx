@@ -9,6 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -260,11 +261,15 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
           )}
         </div>
         <DialogFooter>
+          <DialogClose asChild>
             <Button type="button" onClick={handleSubmit} disabled={isSaving}>
                 {isSaving && <Loader2 className="animate-spin mr-2"/>}
                 {isSaving ? 'Adding Student...' : 'Add Student'}
             </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
   )
 }
+
+    
