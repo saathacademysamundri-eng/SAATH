@@ -19,7 +19,7 @@ export function PaidStamp({ academyName, academyPhone, className }: PaidStampPro
           <svg viewBox="0 0 100 100" className="h-full w-full -rotate-[15deg] transform">
             {/* Top Text Path */}
             <path id="top-curve" d="M10,50 a40,40 0 1,1 80,0" fill="none" />
-            <text width="100" fill="white" className="text-[7px] font-bold uppercase tracking-wider">
+            <text width="100" fill="black" className="text-[7px] font-bold uppercase tracking-wider">
               <textPath href="#top-curve" startOffset="50%" textAnchor="middle">
                 {academyName}
               </textPath>
@@ -27,7 +27,7 @@ export function PaidStamp({ academyName, academyPhone, className }: PaidStampPro
 
             {/* Bottom Text Path */}
             <path id="bottom-curve" d="M10,50 a40,40 0 0,0 80,0" fill="none" />
-             <text width="100" fill="white" className="text-[7px] font-bold uppercase tracking-wider">
+             <text width="100" fill="black" className="text-[7px] font-bold uppercase tracking-wider">
               <textPath href="#bottom-curve" startOffset="50%" textAnchor="middle">
                 {academyPhone}
               </textPath>
