@@ -190,8 +190,8 @@ export default function FeeCollectionPage() {
                           }
                           body { 
                             margin: 0; 
-                            -webkit-print-color-adjust: exact; 
-                            print-color-adjust: exact;
+                            -webkit-print-color-adjust: exact !important; 
+                            print-color-adjust: exact !important;
                           }
                       }
                       body { 
@@ -203,43 +203,19 @@ export default function FeeCollectionPage() {
                       .receipt-container { 
                         width: 76mm; /* Slightly less than 80mm for margin */
                         margin: auto; 
-                        padding: 2mm; 
+                        padding: 1mm 2mm; 
                         position: relative;
                       }
                       .paid-stamp-watermark {
                         position: absolute;
-                        top: 50%;
+                        top: 45%;
                         left: 50%;
                         transform: translate(-50%, -50%);
-                        width: 200px; /* Adjust size as needed */
-                        height: 200px;
+                        width: 180px;
+                        height: 180px;
                         opacity: 0.15;
                         z-index: 1;
                         pointer-events: none;
-                      }
-                      .paid-stamp-watermark .stamp-image-container {
-                        position: relative;
-                        width: 100%;
-                        height: 100%;
-                      }
-                      .paid-stamp-watermark .stamp-image {
-                        position: absolute;
-                        inset: 0;
-                        width: 100%;
-                        height: 100%;
-                      }
-                      .paid-stamp-watermark .stamp-svg {
-                        position: relative;
-                        width: 100%;
-                        height: 100%;
-                        transform: rotate(-15deg);
-                      }
-                      .paid-stamp-watermark .stamp-text {
-                        font-size: 10px;
-                        font-weight: bold;
-                        text-transform: uppercase;
-                        letter-spacing: 0.05em;
-                        fill: black;
                       }
                       .content-wrapper {
                         position: relative;
@@ -275,21 +251,7 @@ export default function FeeCollectionPage() {
               </head>
               <body>
                   <div class="receipt-container">
-                      <div class="paid-stamp-watermark">
-                        <div class="stamp-image-container">
-                            <img src="https://storage.googleapis.com/project-spark-341015.appspot.com/generic/paid-stamp-1721932362070.png" alt="Paid Stamp" class="stamp-image" />
-                            <svg viewBox="0 0 100 100" class="stamp-svg">
-                                <path id="top-curve" d="M10,50 a40,40 0 1,1 80,0" fill="none" />
-                                <text class="stamp-text">
-                                    <textPath href="#top-curve" startOffset="50%" textAnchor="middle">${receiptContent.settings.name}</textPath>
-                                </text>
-                                <path id="bottom-curve" d="M10,50 a40,40 0 0,0 80,0" fill="none" />
-                                <text class="stamp-text">
-                                    <textPath href="#bottom-curve" startOffset="50%" textAnchor="middle">${receiptContent.settings.phone}</textPath>
-                                </text>
-                            </svg>
-                        </div>
-                      </div>
+                      <img src="https://storage.googleapis.com/project-spark-341015.appspot.com/generic/paid-stamp-final-1721997380006.png" alt="Paid" class="paid-stamp-watermark" />
                       <div class="content-wrapper">
                           <div class="text-center space-y-1">
                               <div class="flex justify-center">

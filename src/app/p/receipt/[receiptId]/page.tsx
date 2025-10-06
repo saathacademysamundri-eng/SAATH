@@ -136,9 +136,9 @@ export default function ReceiptVerificationPage() {
                     </Card>
                 </header>
 
-                <Card className="relative">
-                    <CardHeader className="items-center text-center space-y-4">
-                        <CheckCircle2 className="w-20 h-20 text-green-500" />
+                <Card className="relative overflow-hidden">
+                     <CardHeader className="items-center text-center space-y-4 bg-green-50 dark:bg-green-900/20">
+                        <CheckCircle2 className="w-16 h-16 text-green-500" />
                         <CardTitle className="text-2xl font-bold">Payment Verified</CardTitle>
                     </CardHeader>
                     <CardContent className="mt-2 divide-y">
