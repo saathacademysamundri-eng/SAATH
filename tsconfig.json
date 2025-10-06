@@ -20,8 +20,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "events": ["node_modules/events/events.js"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
