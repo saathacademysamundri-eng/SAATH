@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import QRCode from 'qrcode.react';
+import QRCode from 'qrcode';
 
 export default function FeeCollectionPage() {
   const [search, setSearch] = useState('');
@@ -146,7 +146,7 @@ export default function FeeCollectionPage() {
     setIsProcessingPayment(false);
   };
 
-  const handlePrintReceipt = (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string) => {
+  const handlePrintReceipt = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string) => {
     if (isSettingsLoading || !searchedStudent) {
         toast({ title: "Please wait", description: "Settings are loading."});
         return;
@@ -163,17 +163,9 @@ export default function FeeCollectionPage() {
     
     const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
     
-    // Create a temporary canvas to generate the QR code data URL
-    const canvas = document.createElement('canvas');
-    QRCode.render(verificationUrl, canvas, { width: 128 }, (error) => {
-        if (error) {
-            console.error('QR code generation failed:', error);
-            toast({ variant: 'destructive', title: 'QR Code Error', description: 'Could not generate QR code for receipt.' });
-            return;
-        }
-
-        const qrCodeDataUrl = canvas.toDataURL();
-
+    try {
+        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128 });
+        
         const receiptContent = {
             student: searchedStudent,
             paidAmount: currentPaidAmount,
@@ -309,7 +301,10 @@ export default function FeeCollectionPage() {
         } else {
             toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Please allow pop-ups to print the receipt.' });
         }
-    });
+    } catch (error) {
+        console.error('QR code generation failed:', error);
+        toast({ variant: 'destructive', title: 'QR Code Error', description: 'Could not generate QR code for receipt.' });
+    }
 };
 
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
