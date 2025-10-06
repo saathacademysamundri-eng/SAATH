@@ -164,7 +164,7 @@ export default function FeeCollectionPage() {
     const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
     
     try {
-        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128 });
+        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
         
         const receiptContent = {
             student: searchedStudent,
@@ -183,12 +183,27 @@ export default function FeeCollectionPage() {
                   <title>Fee Receipt - ${searchedStudent.name}</title>
                   <style>
                       @media print {
-                          @page { size: 80mm; margin: 0; }
-                          body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                          .receipt-container { padding: 4mm; }
+                          @page { 
+                            size: 80mm; 
+                            margin: 0; 
+                          }
+                          body { 
+                            margin: 0; 
+                            -webkit-print-color-adjust: exact; 
+                            print-color-adjust: exact;
+                          }
                       }
-                      body { font-family: 'PT Sans', sans-serif; background-color: white; color: black; }
-                      .receipt-container { width: 80mm; margin: auto; padding: 4mm; }
+                      body { 
+                        font-family: 'sans-serif'; 
+                        background-color: white; 
+                        color: black; 
+                        font-size: 10pt;
+                      }
+                      .receipt-container { 
+                        width: 76mm; /* Slightly less than 80mm for margin */
+                        margin: auto; 
+                        padding: 2mm; 
+                      }
                       .text-center { text-align: center; }
                       .text-right { text-align: right; }
                       .font-bold { font-weight: bold; }
