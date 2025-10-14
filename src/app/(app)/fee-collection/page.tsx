@@ -187,7 +187,7 @@ export default function FeeCollectionPage() {
                   <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
                   <style>
                       @page { 
-                        size: 80mm; 
+                        size: 76.2mm 152.4mm; /* 3in x 6in */
                         margin: 0; 
                       }
                       body { 
@@ -198,10 +198,13 @@ export default function FeeCollectionPage() {
                         print-color-adjust: exact !important;
                       }
                       .receipt-container { 
-                        width: 76mm;
+                        width: 72.2mm; /* Slightly smaller than page size for padding */
+                        height: 148.4mm;
                         margin: 0; 
                         padding: 2mm; 
                         position: relative;
+                        display: flex;
+                        flex-direction: column;
                       }
                       .text-center { text-align: center; }
                       .text-right { text-align: right; }
@@ -229,22 +232,11 @@ export default function FeeCollectionPage() {
                       .py-0\\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
                       .font-medium { font-weight: 500; }
                       .mt-4 { margin-top: 1rem; }
-                      .paid-stamp {
-                        position: absolute;
-                        top: 45%;
-                        left: 50%;
-                        transform: translate(-50%, -50%) rotate(-15deg);
-                        opacity: 0.15;
-                        width: 60mm;
-                        height: 60mm;
-                        z-index: -1;
-                      }
+                      .footer { margin-top: auto; }
                   </style>
               </head>
               <body>
                   <div class="receipt-container">
-                      <img src="https://storage.googleapis.com/project-spark-341015.appspot.com/generic/paid-stamp-base-1722008893498.png" class="paid-stamp" alt="Paid Stamp" />
-
                       <div class="text-center space-y-1">
                           <div class="flex justify-center">
                               <div class="h-16 w-16">
@@ -304,7 +296,7 @@ export default function FeeCollectionPage() {
                           </table>
                       </div>
 
-                      <div class='text-center text-xs mt-4 space-y-1'>
+                      <div class='text-center text-xs mt-4 footer'>
                           <p class='font-bold'>Scan to Verify</p>
                           <div class='flex justify-center'>
                             <img src="${receiptContent.qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
@@ -423,4 +415,3 @@ export default function FeeCollectionPage() {
     </div>
   );
 }
-
