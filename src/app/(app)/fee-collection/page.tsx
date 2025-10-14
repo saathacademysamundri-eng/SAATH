@@ -184,14 +184,14 @@ export default function FeeCollectionPage() {
                   <title>Fee Receipt - ${searchedStudent.name}</title>
                   <link rel="preconnect" href="https://fonts.googleapis.com">
                   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                  <link href="https://fonts.googleapis.com/css2?family=Calibri:wght@400;700&display=swap" rel="stylesheet">
+                  <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
                   <style>
                       @page { 
                         size: 80mm; 
                         margin: 0; 
                       }
                       body { 
-                        font-family: 'Calibri', sans-serif;
+                        font-family: 'Calibri', 'PT Sans', sans-serif;
                         margin: 0;
                         padding: 0;
                         -webkit-print-color-adjust: exact !important; 
@@ -199,14 +199,15 @@ export default function FeeCollectionPage() {
                       }
                       .receipt-container { 
                         width: 76mm;
-                        margin: auto; 
+                        margin: 0; 
                         padding: 2mm; 
+                        position: relative;
                       }
                       .text-center { text-align: center; }
                       .text-right { text-align: right; }
                       .font-bold { font-weight: bold; }
                       .text-lg { font-size: 1.125rem; }
-                      .text-xs { font-size: 0.75rem; }
+                      .text-xs { font-size: 0.75rem; line-height: 1.4; }
                       .space-y-1 > * + * { margin-top: 0.25rem; }
                       .flex { display: flex; }
                       .justify-center { justify-content: center; }
@@ -228,10 +229,22 @@ export default function FeeCollectionPage() {
                       .py-0\\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
                       .font-medium { font-weight: 500; }
                       .mt-4 { margin-top: 1rem; }
+                      .paid-stamp {
+                        position: absolute;
+                        top: 45%;
+                        left: 50%;
+                        transform: translate(-50%, -50%) rotate(-15deg);
+                        opacity: 0.15;
+                        width: 60mm;
+                        height: 60mm;
+                        z-index: -1;
+                      }
                   </style>
               </head>
               <body>
                   <div class="receipt-container">
+                      <img src="https://storage.googleapis.com/project-spark-341015.appspot.com/generic/paid-stamp-base-1722008893498.png" class="paid-stamp" alt="Paid Stamp" />
+
                       <div class="text-center space-y-1">
                           <div class="flex justify-center">
                               <div class="h-16 w-16">
@@ -410,3 +423,4 @@ export default function FeeCollectionPage() {
     </div>
   );
 }
+
