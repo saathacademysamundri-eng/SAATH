@@ -187,7 +187,7 @@ export default function FeeCollectionPage() {
                   <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
                   <style>
                       @page { 
-                        size: 76.2mm 152.4mm; /* 3in x 6in */
+                        size: 76.2mm 127mm; /* 3in x 5in */
                         margin: 0; 
                       }
                       body { 
@@ -199,7 +199,7 @@ export default function FeeCollectionPage() {
                       }
                       .receipt-container { 
                         width: 72.2mm; /* Slightly smaller than page size for padding */
-                        height: 148.4mm;
+                        height: 123mm;
                         margin: 0; 
                         padding: 2mm; 
                         position: relative;
