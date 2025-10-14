@@ -174,7 +174,7 @@ export default function FeeCollectionPage() {
             totalFee: originalTotal,
             settings: settings,
             receiptId: receiptId,
-            receiptDate: format(new Date(), 'PPP ppp'),
+            receiptDate: format(new Date(), 'PPP'),
             qrCodeDataUrl: qrCodeDataUrl,
         };
         
