@@ -245,7 +245,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent className="mt-auto flex gap-2 pt-4">
                 {isLedger ? (
-                    <Button variant="outline" className="w-full" onClick={() => handleAction(report.id)} disabled={!report.isEnabled}>
+                    <Button className="w-full" onClick={() => handleAction(report.id)} disabled={!report.isEnabled}>
                         <FileText className="mr-2 h-4 w-4" />
                         Generate Report
                     </Button>
