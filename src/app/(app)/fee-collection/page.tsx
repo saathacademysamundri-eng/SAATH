@@ -13,26 +13,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student } from '@/lib/data';
-import { getStudent, updateStudentFeeStatus, addIncome, resetMonthlyFees } from '@/lib/firebase/firestore';
-import { Printer, Search, Loader2, CalendarPlus } from 'lucide-react';
+import { getStudent, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
+import { Printer, Search, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useAppContext } from '@/hooks/use-app-context';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import QRCode from 'qrcode';
 import { format } from 'date-fns';
 import { PaidStamp } from '@/components/paid-stamp';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+type PrintFormat = 'thermal' | 'a4';
 
 export default function FeeCollectionPage() {
   const [search, setSearch] = useState('');
@@ -40,9 +32,11 @@ export default function FeeCollectionPage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
+  
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
-  const { students, refreshData } = useAppContext();
+  const { refreshData } = useAppContext();
 
   const handleSearch = async () => {
     if (!search.trim()) {
@@ -132,12 +126,10 @@ export default function FeeCollectionPage() {
         description: `Paid ${paidAmount} for ${searchedStudent.name}. New balance is ${newTotalFee}.`,
       });
       
-      handlePrintReceipt(paidAmount, newTotalFee, originalTotal, receiptId);
+      handlePrintPaidReceipt(paidAmount, newTotalFee, originalTotal, receiptId);
       setPaidAmount(0);
       refreshData(); // Refresh the global context
     } else {
-        // If student update fails, we should ideally roll back the income record.
-        // For simplicity, we'll just show an error.
         toast({
             variant: "destructive",
             title: "Payment Failed",
@@ -148,187 +140,247 @@ export default function FeeCollectionPage() {
     setIsProcessingPayment(false);
   };
 
-  const handlePrintReceipt = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string) => {
-    if (isSettingsLoading || !searchedStudent) {
-        toast({ title: "Please wait", description: "Settings are loading."});
-        return;
-    }
-
-    if (currentPaidAmount <= 0) {
-        toast({
-            variant: 'destructive',
-            title: 'Cannot Print Receipt',
-            description: 'A payment must be successfully recorded first.',
-        });
-        return;
-    }
+  const handlePrintPaidReceipt = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string) => {
+    if (isSettingsLoading || !searchedStudent) return;
     
     const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
-    
+    let qrCodeDataUrl = '';
     try {
-        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
+        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
+    } catch (error) {
+        console.error('QR code generation failed:', error);
+    }
         
-        const receiptContent = {
-            student: searchedStudent,
-            paidAmount: currentPaidAmount,
-            balance: newBalance,
-            totalFee: originalTotal,
-            settings: settings,
-            receiptId: receiptId,
-            receiptDate: format(new Date(), 'PPP'),
-            qrCodeDataUrl: qrCodeDataUrl,
-        };
-        
-        const receiptHtml = `
-          <html>
+    const receiptHtml = `
+      <html>
+          <head>
+              <title>Fee Receipt - ${searchedStudent.name}</title>
+              <link rel="preconnect" href="https://fonts.googleapis.com">
+              <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+              <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
+              <style>
+                  @page { 
+                    size: 3in 5in;
+                    margin: 0; 
+                  }
+                  body { 
+                    font-family: 'Calibri', sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    -webkit-print-color-adjust: exact !important; 
+                    print-color-adjust: exact !important;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                  }
+                  .receipt-container { 
+                    width: 3in;
+                    height: 5in;
+                    padding: 2mm;
+                    box-sizing: border-box;
+                    display: flex;
+                    flex-direction: column;
+                  }
+                  .text-center { text-align: center; }
+                  .font-bold { font-weight: bold; }
+                  .text-lg { font-size: 1.125rem; }
+                  .text-xs { font-size: 0.75rem; line-height: 1.2; }
+                  .space-y-1 > * + * { margin-top: 0.25rem; }
+                  .flex { display: flex; }
+                  .justify-center { justify-content: center; }
+                  .justify-between { justify-content: space-between; }
+                  .object-contain { object-fit: contain; }
+                  .border-t { border-top: 1px dashed black; }
+                  .border-b { border-bottom: 1px dashed black; }
+                  .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+                  .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+                  .mb-2 { margin-bottom: 0.5rem; }
+                  .w-full { width: 100%; }
+                  .font-semibold { font-weight: 600; }
+                  .text-left { text-align: left; }
+                  .mt-2 { margin-top: 0.5rem; }
+                  .w-1\\/2 { width: 50%; }
+                  .ml-auto { margin-left: auto; }
+                  .py-0\\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+                  .font-medium { font-weight: 500; }
+                  .footer { margin-top: auto; }
+              </style>
+          </head>
+          <body>
+              <div class="receipt-container">
+                  <div class="text-center space-y-1">
+                      <div class="flex justify-center" style="height: 4rem;">
+                          ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" style="height: 100%; object-fit: contain;" />` : ''}
+                      </div>
+                      <div>
+                          <h1 class='text-lg font-bold'>${settings.name}</h1>
+                          <p class='text-xs'>${settings.address}</p>
+                          <p class='text-xs'>Phone: ${settings.phone}</p>
+                      </div>
+                  </div>
+                  
+                  <div class="border-t border-b my-2 py-1 text-xs">
+                      <div class='flex justify-between'>
+                          <span>Receipt #: ${receiptId}</span>
+                          <span>${format(new Date(), 'PPP')}</span>
+                      </div>
+                  </div>
+
+                  <div class='text-xs mb-2'>
+                      <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
+                      <p><strong>Class:</strong> ${searchedStudent.class}</p>
+                  </div>
+
+                  <table class="w-full text-xs">
+                      <thead><tr class='border-t border-b'><th class="py-1 text-left font-semibold">Description</th><th class="py-1 text-right font-semibold">Amount (PKR)</th></tr></thead>
+                      <tbody><tr class='border-b'><td class="py-1">Tuition Fee</td><td class="py-1 text-right">${originalTotal.toLocaleString()}</td></tr></tbody>
+                  </table>
+                  
+                  <div class='flex justify-end mt-2'>
+                      <table class="w-1/2 ml-auto text-xs">
+                          <tbody>
+                              <tr><td class="py-0.5">Total Due:</td><td class="py-0.5 text-right font-medium">${originalTotal.toLocaleString()}</td></tr>
+                              <tr><td class="py-0.5">Amount Paid:</td><td class="py-0.5 text-right font-medium">${currentPaidAmount.toLocaleString()}</td></tr>
+                              <tr class="font-bold border-t"><td class="py-1">Balance:</td><td class="py-1 text-right">${newBalance.toLocaleString()}</td></tr>
+                          </tbody>
+                      </table>
+                  </div>
+
+                  <div class='footer text-center text-xs'>
+                      ${qrCodeDataUrl ? `
+                          <p class='font-bold'>Scan to Verify</p>
+                          <div class='flex justify-center'>
+                            <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
+                          </div>
+                      ` : ''}
+                      <p>*** Thank you for your payment! ***</p>
+                  </div>
+              </div>
+          </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.write(receiptHtml);
+        printWindow.document.close();
+        setTimeout(() => printWindow.print(), 250);
+    }
+  };
+  
+  const handlePrintVoucher = () => {
+    if (isSettingsLoading || !searchedStudent) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const dueDate = format(addDays(new Date(), 10), 'PPP');
+    
+    let voucherHtml = '';
+
+    if (printFormat === 'a4') {
+        voucherHtml = `
+            <html>
+                <head><title>Fee Voucher - ${searchedStudent.name}</title></head>
+                <style>
+                    body { font-family: Calibri, sans-serif; }
+                    .container { width: 800px; margin: auto; padding: 20px; border: 1px solid #ccc; }
+                    .header { text-align: center; margin-bottom: 20px; }
+                    .header img { max-height: 80px; margin-bottom: 10px; }
+                    .header h1 { margin: 0; }
+                    .details, .fee-details { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                    .details td, .fee-details th, .fee-details td { border: 1px solid #ccc; padding: 8px; }
+                    .fee-details th { background-color: #f2f2f2; text-align: left;}
+                    .text-right { text-align: right; }
+                    .total-row td { font-weight: bold; }
+                    .slip-container { display: flex; justify-content: space-between; gap: 20px; margin-top: 30px; }
+                    .slip { border: 1px solid #000; padding: 10px; width: 48%; }
+                </style>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
+                            <h1>${settings.name}</h1>
+                            <p>${settings.address}</p>
+                        </div>
+                        <h2>Fee Voucher</h2>
+                        <table class="details">
+                            <tr><td><strong>Student Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
+                            <tr><td><strong>Father's Name:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
+                            <tr><td><strong>Issue Date:</strong></td><td>${format(new Date(), 'PPP')}</td><td><strong>Due Date:</strong></td><td>${dueDate}</td></tr>
+                        </table>
+                        <table class="fee-details">
+                            <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
+                            <tbody><tr><td>Tuition Fee</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tbody>
+                            <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tfoot>
+                        </table>
+                         <div class="slip-container">
+                            <div class="slip">
+                                <h4>Bank Copy</h4>
+                                <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
+                                <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
+                                <p><strong>Due Date:</strong> ${dueDate}</p>
+                            </div>
+                            <div class="slip">
+                                <h4>Student Copy</h4>
+                                <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
+                                <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
+                                <p><strong>Due Date:</strong> ${dueDate}</p>
+                            </div>
+                        </div>
+                    </div>
+                </body>
+            </html>
+        `;
+    } else { // thermal
+        voucherHtml = `
+           <html>
               <head>
-                  <title>Fee Receipt - ${searchedStudent.name}</title>
-                  <link rel="preconnect" href="https://fonts.googleapis.com">
-                  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                  <title>Fee Voucher - ${searchedStudent.name}</title>
                   <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
                   <style>
-                      @page { 
-                        size: 3in 5in;
-                        margin: 0; 
-                      }
-                      body { 
-                        font-family: 'Calibri', 'PT Sans', sans-serif;
-                        margin: 0;
-                        padding: 0;
-                        -webkit-print-color-adjust: exact !important; 
-                        print-color-adjust: exact !important;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                      }
-                      .receipt-container { 
-                        width: 3in;
-                        height: 5in;
-                        margin: 0; 
-                        padding: 2mm; 
-                        position: relative;
-                        display: flex;
-                        flex-direction: column;
-                        box-sizing: border-box;
-                      }
+                      @page { size: 80mm; margin: 0; }
+                      body { font-family: 'Calibri', sans-serif; margin: 0; padding: 2mm; -webkit-print-color-adjust: exact; }
                       .text-center { text-align: center; }
-                      .text-right { text-align: right; }
                       .font-bold { font-weight: bold; }
                       .text-lg { font-size: 1.125rem; }
-                      .text-xs { font-size: 0.75rem; line-height: 1.4; }
-                      .space-y-1 > * + * { margin-top: 0.25rem; }
+                      .text-xs { font-size: 0.75rem; line-height: 1.2; }
                       .flex { display: flex; }
-                      .justify-center { justify-content: center; }
                       .justify-between { justify-content: space-between; }
-                      .h-16 { height: 4rem; }
-                      .w-16 { width: 4rem; }
-                      .object-contain { object-fit: contain; }
                       .border-t { border-top: 1px dashed black; }
                       .border-b { border-bottom: 1px dashed black; }
                       .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
                       .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-                      .mb-2 { margin-bottom: 0.5rem; }
-                      .w-full { width: 100%; }
-                      .font-semibold { font-weight: 600; }
-                      .text-left { text-align: left; }
-                      .mt-2 { margin-top: 0.5rem; }
-                      .w-1\\/2 { width: 50%; }
-                      .ml-auto { margin-left: auto; }
-                      .py-0\\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
-                      .font-medium { font-weight: 500; }
                       .mt-4 { margin-top: 1rem; }
-                      .footer { margin-top: auto; }
                   </style>
               </head>
               <body>
-                  <div class="receipt-container">
-                      <div class="text-center space-y-1">
-                          <div class="flex justify-center">
-                              <div class="h-16 w-16">
-                                  ${receiptContent.settings.logo ? `<img src="${receiptContent.settings.logo}" alt="Academy Logo" class="h-full w-full object-contain" />` : ''}
-                              </div>
-                          </div>
-                          <div>
-                              <h1 class='text-lg font-bold'>${receiptContent.settings.name}</h1>
-                              <p class='text-xs'>${receiptContent.settings.address}</p>
-                              <p class='text-xs'>Phone: ${receiptContent.settings.phone}</p>
-                          </div>
-                      </div>
-                      
-                      <div class="border-t border-b my-2 py-1 text-xs">
-                          <div class='flex justify-between'>
-                              <span>Receipt #: ${receiptContent.receiptId}</span>
-                              <span>${receiptContent.receiptDate}</span>
-                          </div>
-                      </div>
-
-                      <div class='text-xs mb-2'>
-                          <p><strong>Student:</strong> ${receiptContent.student.name} (${receiptContent.student.id})</p>
-                          <p><strong>Class:</strong> ${receiptContent.student.class}</p>
-                      </div>
-
-                      <table class="w-full text-xs">
-                          <thead>
-                              <tr class='border-t border-b'>
-                                  <th class="py-1 text-left font-semibold">Description</th>
-                                  <th class="py-1 text-right font-semibold">Amount</th>
-                              </tr>
-                          </thead>
-                          <tbody>
-                              <tr class='border-b'>
-                                  <td class="py-1">Tuition Fee</td>
-                                  <td class="py-1 text-right">${originalTotal.toLocaleString()}</td>
-                              </tr>
-                          </tbody>
-                      </table>
-                      
-                      <div class='flex justify-end mt-2'>
-                          <table class="w-1/2 ml-auto text-xs">
-                              <tbody>
-                                  <tr>
-                                      <td class="py-0.5">Total Due:</td>
-                                      <td class="py-0.5 text-right font-medium">${originalTotal.toLocaleString()}</td>
-                                  </tr>
-                                  <tr>
-                                      <td class="py-0.5">Amount Paid:</td>
-                                      <td class="py-0.5 text-right font-medium">${receiptContent.paidAmount.toLocaleString()}</td>
-                                  </tr>
-                                  <tr class="font-bold border-t">
-                                      <td class="py-1">Balance:</td>
-                                      <td class="py-1 text-right">${receiptContent.balance.toLocaleString()}</td>
-                                  </tr>
-                              </tbody>
-                          </table>
-                      </div>
-
-                      <div class='text-center text-xs mt-4 footer'>
-                          <p class='font-bold'>Scan to Verify</p>
-                          <div class='flex justify-center'>
-                            <img src="${receiptContent.qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
-                          </div>
-                          <p>*** Thank you for your payment! ***</p>
-                          <p>&copy; ${new Date().getFullYear()} ${receiptContent.settings.name}.</p>
-                      </div>
+                  <div class="text-center">
+                      ${settings.logo ? `<img src="${settings.logo}" alt="logo" style="height: 4rem; object-fit: contain; margin: auto;">` : ''}
+                      <h1 class='text-lg font-bold'>${settings.name}</h1>
+                      <p class='text-xs'>${settings.address}</p>
                   </div>
+                  <div class="border-t border-b my-2 py-1 text-xs">
+                      <div class='flex justify-between'><span>Voucher</span><span>${format(new Date(), 'PPP')}</span></div>
+                  </div>
+                  <div class='text-xs'>
+                      <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
+                      <p><strong>Class:</strong> ${searchedStudent.class}</p>
+                  </div>
+                  <div class="border-t my-2"></div>
+                  <div class='flex justify-between font-bold text-xs'><span>Total Due:</span><span>${searchedStudent.totalFee.toLocaleString()} PKR</span></div>
+                  <p class='text-center text-xs mt-4'>Please pay by: ${dueDate}</p>
               </body>
-          </html>
+            </html>
         `;
-
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write(receiptHtml);
-            printWindow.document.close();
-            setTimeout(() => {
-                printWindow.print();
-            }, 250);
-        } else {
-            toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Please allow pop-ups to print the receipt.' });
-        }
-    } catch (error) {
-        console.error('QR code generation failed:', error);
-        toast({ variant: 'destructive', title: 'QR Code Error', description: 'Could not generate QR code for receipt.' });
     }
-};
+
+    printWindow.document.write(voucherHtml);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 250);
+  };
+
 
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
   
@@ -382,6 +434,24 @@ export default function FeeCollectionPage() {
                             <p className='text-2xl font-bold'>{searchedStudent.feeStatus}</p>
                         </div>
                     </div>
+                     <div className="flex flex-wrap items-end gap-4">
+                        <div className="space-y-2">
+                            <Label>Print Voucher Format</Label>
+                            <Select value={printFormat} onValueChange={(v) => setPrintFormat(v as PrintFormat)}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Select format" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="thermal">Thermal Voucher</SelectItem>
+                                    <SelectItem value="a4">A4 Voucher</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button variant="outline" onClick={handlePrintVoucher} disabled={isSettingsLoading || searchedStudent.totalFee === 0}>
+                            <Printer className="mr-2"/>
+                            Print Voucher
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -395,11 +465,11 @@ export default function FeeCollectionPage() {
                         <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="paidAmount">Amount Paid (PKR)</Label>
+                        <Label htmlFor="paidAmount">Amount being Paid (PKR)</Label>
                         <Input 
                             id="paidAmount" 
                             type="number"
-                            placeholder="Enter amount being paid" 
+                            placeholder="Enter amount" 
                             value={paidAmount || ''}
                             onChange={(e) => setPaidAmount(Number(e.target.value))}
                             disabled={isProcessingPayment || searchedStudent.totalFee === 0}
@@ -411,9 +481,9 @@ export default function FeeCollectionPage() {
                     </div>
                  </CardContent>
                  <CardContent className='flex gap-2'>
-                    <Button onClick={handlePayment} disabled={isProcessingPayment || searchedStudent.totalFee === 0}>
+                    <Button onClick={handlePayment} disabled={isProcessingPayment || searchedStudent.totalFee === 0 || paidAmount <= 0}>
                         {isProcessingPayment ? <Loader2 className="animate-spin" /> : null}
-                        {isProcessingPayment ? 'Processing...' : 'Collect Fee & Print'}
+                        {isProcessingPayment ? 'Processing...' : 'Collect & Print Receipt'}
                     </Button>
                  </CardContent>
             </Card>
