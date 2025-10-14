@@ -3,6 +3,7 @@
 
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -35,45 +36,50 @@ service cloud.firestore {
       allow read, write: if false;
     }
     
-    // Allow authenticated users to read most collections
+    // Allow public read for students, teachers, and classes for profile pages
     match /students/{studentId} {
-      allow read, write: if isAdmin();
-      allow read: if request.auth != null;
+      allow write: if isAdmin();
+      allow read: if true;
     }
     match /teachers/{teacherId} {
-      allow read, write: if isAdmin();
-      allow read: if request.auth != null;
+      allow write: if isAdmin();
+      allow read: if true;
     }
-     match /classes/{classId} {
-      allow read, write: if isAdmin();
-      allow read: if request.auth != null;
+    match /classes/{classId} {
+      allow write: if isAdmin();
+      allow read: if true;
     }
     match /classes/{classId}/subjects/{subjectId} {
-       allow read, write: if isAdmin();
-       allow read: if request.auth != null;
+       allow write: if isAdmin();
+       allow read: if true;
     }
+
+    // Allow authenticated users to read income data
     match /income/{incomeId} {
-       allow read, write: if isAdmin();
+       allow write: if isAdmin();
        allow read: if request.auth != null;
     }
-     match /teacher_payouts/{payoutId} {
+    
+    // Restrict writes to admin, but allow reads for teacher payouts and reports
+    match /teacher_payouts/{payoutId} {
        allow read, write: if isAdmin();
     }
     match /expenses/{expenseId} {
        allow read, write: if isAdmin();
     }
-     match /reports/{reportId} {
+    match /reports/{reportId} {
        allow read, write: if isAdmin();
     }
+
+    // Settings can be read by any authenticated user, but only written by admin
     match /settings/details {
-       allow read, write: if isAdmin();
+       allow write: if isAdmin();
        allow read: if request.auth != null;
     }
 
     // Rules for new collections
     match /attendance/{attendanceId} {
       allow read, write: if isAdmin();
-      allow read: if request.auth != null;
     }
     match /exams/{examId} {
       allow read, write: if isAdmin();

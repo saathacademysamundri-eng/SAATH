@@ -269,7 +269,7 @@ export default function FeeCollectionPage() {
     }
   };
   
-  const handlePrintVoucher = () => {
+  const handlePrintVoucher = async () => {
     if (isSettingsLoading || !searchedStudent) return;
     
     const printWindow = window.open('', '_blank');
@@ -277,6 +277,14 @@ export default function FeeCollectionPage() {
 
     const dueDate = format(addDays(new Date(), 10), 'PPP');
     
+    const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
+    let qrCodeDataUrl = '';
+    try {
+        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
+    } catch (error) {
+        console.error('QR code generation failed:', error);
+    }
+
     let voucherHtml = '';
 
     if (printFormat === 'a4') {
@@ -296,6 +304,8 @@ export default function FeeCollectionPage() {
                     .total-row td { font-weight: bold; }
                     .slip-container { display: flex; justify-content: space-between; gap: 20px; margin-top: 30px; }
                     .slip { border: 1px solid #000; padding: 10px; width: 48%; }
+                    .qr-section { text-align: center; margin-top: 20px; }
+                    .qr-section img { margin: auto; }
                 </style>
                 <body>
                     <div class="container">
@@ -315,6 +325,12 @@ export default function FeeCollectionPage() {
                             <tbody><tr><td>Tuition Fee</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tbody>
                             <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tfoot>
                         </table>
+                        <div class="qr-section">
+                           ${qrCodeDataUrl ? `
+                                <p><strong>Scan to check status online</strong></p>
+                                <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
+                            ` : ''}
+                        </div>
                          <div class="slip-container">
                             <div class="slip">
                                 <h4>Bank Copy</h4>
@@ -371,6 +387,14 @@ export default function FeeCollectionPage() {
                   <div class="border-t my-2"></div>
                   <div class='flex justify-between font-bold text-xs'><span>Total Due:</span><span>${searchedStudent.totalFee.toLocaleString()} PKR</span></div>
                   <p class='text-center text-xs mt-4'>Please pay by: ${dueDate}</p>
+                   <div class='text-center mt-4'>
+                      ${qrCodeDataUrl ? `
+                          <p class='font-bold text-xs'>Scan to check status</p>
+                          <div style='display:flex; justify-content:center;'>
+                            <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
+                          </div>
+                      ` : ''}
+                  </div>
               </body>
             </html>
         `;
