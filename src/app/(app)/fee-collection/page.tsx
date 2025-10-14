@@ -41,7 +41,7 @@ export default function FeeCollectionPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
-  const { refreshData } = useAppContext();
+  const { students, refreshData } = useAppContext();
 
   const handleSearch = async () => {
     if (!search.trim()) {
@@ -187,7 +187,7 @@ export default function FeeCollectionPage() {
                   <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
                   <style>
                       @page { 
-                        size: 76.2mm 127mm; /* 3in x 5in */
+                        size: 3in 5in; /* 76.2mm x 127mm */
                         margin: 0; 
                       }
                       body { 
@@ -196,15 +196,19 @@ export default function FeeCollectionPage() {
                         padding: 0;
                         -webkit-print-color-adjust: exact !important; 
                         print-color-adjust: exact !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
                       }
                       .receipt-container { 
-                        width: 72.2mm; /* Slightly smaller than page size for padding */
-                        height: 123mm;
+                        width: 3in;
+                        height: 5in;
                         margin: 0; 
                         padding: 2mm; 
                         position: relative;
                         display: flex;
                         flex-direction: column;
+                        box-sizing: border-box;
                       }
                       .text-center { text-align: center; }
                       .text-right { text-align: right; }
@@ -325,6 +329,81 @@ export default function FeeCollectionPage() {
     }
 };
 
+  const handlePrintA4List = () => {
+    if (isSettingsLoading) {
+      toast({ variant: 'destructive', title: 'Please wait', description: 'Settings are loading.' });
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please allow popups for this site.' });
+      return;
+    }
+
+    const reportTitle = 'All Students Fee Status';
+    const tableHeaders = ["Roll #", "Student Name", "Class", "Fee Status"];
+    const tableRows = students.map(student => `
+        <tr>
+          <td>${student.id}</td>
+          <td>${student.name}</td>
+          <td>${student.class}</td>
+          <td>${student.feeStatus}</td>
+        </tr>
+      `).join('');
+    
+    const printHtml = `
+      <html>
+        <head>
+          <title>${reportTitle}</title>
+          <style>
+            @media print {
+              @page { size: A4 portrait; margin: 0.75in; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+            body { font-family: 'Calibri', sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
+            .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+            .academy-details { text-align: center; margin-bottom: 2rem; }
+            .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
+            .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
+            .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
+            .report-title { text-align: center; margin: 2rem 0; }
+            .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0; }
+            table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+            th, td { padding: 8px 10px; border: 1px solid #ddd; }
+            th { font-weight: bold; background-color: #f2f2f2; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+          </style>
+        </head>
+        <body>
+          <div class="report-container">
+            <div class="academy-details">
+              ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+              <h1>${settings.name}</h1>
+              <p>${settings.address}</p>
+              <p>Phone: ${settings.phone}</p>
+            </div>
+            <div class="report-title">
+              <h2>${reportTitle}</h2>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  ${tableHeaders.map(h => `<th>${h}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+  };
+
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
   
   return (
@@ -338,18 +417,24 @@ export default function FeeCollectionPage() {
             </CardDescription>
             </CardHeader>
             <CardContent>
-            <div className="flex w-full max-w-sm items-center space-x-2">
-                <Input
-                type="text"
-                placeholder="Enter student roll number..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                disabled={isSearching}
-                />
+            <div className="flex w-full items-center space-x-2">
+                <div className="flex-grow max-w-sm">
+                    <Input
+                        type="text"
+                        placeholder="Enter student roll number..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        disabled={isSearching}
+                    />
+                </div>
                 <Button onClick={handleSearch} disabled={isSearching}>
-                {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                {isSearching ? 'Searching...' : 'Search'}
+                    {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                    {isSearching ? 'Searching...' : 'Search'}
+                </Button>
+                 <Button onClick={handlePrintA4List} variant="outline" disabled={isSettingsLoading}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print A4 List
                 </Button>
             </div>
             </CardContent>
