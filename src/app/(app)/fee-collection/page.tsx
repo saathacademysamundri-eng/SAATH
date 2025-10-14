@@ -182,44 +182,25 @@ export default function FeeCollectionPage() {
           <html>
               <head>
                   <title>Fee Receipt - ${searchedStudent.name}</title>
+                  <link rel="preconnect" href="https://fonts.googleapis.com">
+                  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                  <link href="https://fonts.googleapis.com/css2?family=Calibri:wght@400;700&display=swap" rel="stylesheet">
                   <style>
-                      @media print {
-                          @page { 
-                            size: 80mm; 
-                            margin: 0; 
-                          }
-                          body { 
-                            margin: 0; 
-                            -webkit-print-color-adjust: exact !important; 
-                            print-color-adjust: exact !important;
-                          }
+                      @page { 
+                        size: 80mm; 
+                        margin: 0; 
                       }
                       body { 
-                        font-family: 'sans-serif'; 
-                        background-color: white; 
-                        color: black; 
-                        font-size: 10pt;
+                        font-family: 'Calibri', sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        -webkit-print-color-adjust: exact !important; 
+                        print-color-adjust: exact !important;
                       }
                       .receipt-container { 
-                        width: 76mm; /* Slightly less than 80mm for margin */
+                        width: 76mm;
                         margin: auto; 
-                        padding: 1mm 2mm; 
-                        position: relative;
-                      }
-                      .paid-stamp-watermark {
-                        position: absolute;
-                        top: 45%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                        width: 180px;
-                        height: 180px;
-                        opacity: 0.15;
-                        z-index: 1;
-                        pointer-events: none;
-                      }
-                      .content-wrapper {
-                        position: relative;
-                        z-index: 2;
+                        padding: 2mm; 
                       }
                       .text-center { text-align: center; }
                       .text-right { text-align: right; }
@@ -251,75 +232,72 @@ export default function FeeCollectionPage() {
               </head>
               <body>
                   <div class="receipt-container">
-                      <img src="https://storage.googleapis.com/project-spark-341015.appspot.com/generic/paid-stamp-final-1721997380006.png" alt="Paid" class="paid-stamp-watermark" />
-                      <div class="content-wrapper">
-                          <div class="text-center space-y-1">
-                              <div class="flex justify-center">
-                                  <div class="h-16 w-16">
-                                      ${receiptContent.settings.logo ? `<img src="${receiptContent.settings.logo}" alt="Academy Logo" class="h-full w-full object-contain" />` : ''}
-                                  </div>
-                              </div>
-                              <div>
-                                  <h1 class='text-lg font-bold'>${receiptContent.settings.name}</h1>
-                                  <p class='text-xs'>${receiptContent.settings.address}</p>
-                                  <p class='text-xs'>Phone: ${receiptContent.settings.phone}</p>
+                      <div class="text-center space-y-1">
+                          <div class="flex justify-center">
+                              <div class="h-16 w-16">
+                                  ${receiptContent.settings.logo ? `<img src="${receiptContent.settings.logo}" alt="Academy Logo" class="h-full w-full object-contain" />` : ''}
                               </div>
                           </div>
-                          
-                          <div class="border-t border-b my-2 py-1 text-xs">
-                              <div class='flex justify-between'>
-                                  <span>Receipt #: ${receiptContent.receiptId}</span>
-                                  <span>Date: ${receiptContent.receiptDate}</span>
-                              </div>
+                          <div>
+                              <h1 class='text-lg font-bold'>${receiptContent.settings.name}</h1>
+                              <p class='text-xs'>${receiptContent.settings.address}</p>
+                              <p class='text-xs'>Phone: ${receiptContent.settings.phone}</p>
                           </div>
+                      </div>
+                      
+                      <div class="border-t border-b my-2 py-1 text-xs">
+                          <div class='flex justify-between'>
+                              <span>Receipt #: ${receiptContent.receiptId}</span>
+                              <span>${receiptContent.receiptDate}</span>
+                          </div>
+                      </div>
 
-                          <div class='text-xs mb-2'>
-                              <p><strong>Student:</strong> ${receiptContent.student.name} (${receiptContent.student.id})</p>
-                              <p><strong>Class:</strong> ${receiptContent.student.class}</p>
-                          </div>
+                      <div class='text-xs mb-2'>
+                          <p><strong>Student:</strong> ${receiptContent.student.name} (${receiptContent.student.id})</p>
+                          <p><strong>Class:</strong> ${receiptContent.student.class}</p>
+                      </div>
 
-                          <table class="w-full text-xs">
-                              <thead>
-                                  <tr class='border-t border-b'>
-                                      <th class="py-1 text-left font-semibold">Description</th>
-                                      <th class="py-1 text-right font-semibold">Amount</th>
-                                  </tr>
-                              </thead>
+                      <table class="w-full text-xs">
+                          <thead>
+                              <tr class='border-t border-b'>
+                                  <th class="py-1 text-left font-semibold">Description</th>
+                                  <th class="py-1 text-right font-semibold">Amount</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <tr class='border-b'>
+                                  <td class="py-1">Tuition Fee</td>
+                                  <td class="py-1 text-right">${originalTotal.toLocaleString()}</td>
+                              </tr>
+                          </tbody>
+                      </table>
+                      
+                      <div class='flex justify-end mt-2'>
+                          <table class="w-1/2 ml-auto text-xs">
                               <tbody>
-                                  <tr class='border-b'>
-                                      <td class="py-1">Tuition Fee</td>
-                                      <td class="py-1 text-right">${originalTotal.toLocaleString()}</td>
+                                  <tr>
+                                      <td class="py-0.5">Total Due:</td>
+                                      <td class="py-0.5 text-right font-medium">${originalTotal.toLocaleString()}</td>
+                                  </tr>
+                                  <tr>
+                                      <td class="py-0.5">Amount Paid:</td>
+                                      <td class="py-0.5 text-right font-medium">${receiptContent.paidAmount.toLocaleString()}</td>
+                                  </tr>
+                                  <tr class="font-bold border-t">
+                                      <td class="py-1">Balance:</td>
+                                      <td class="py-1 text-right">${receiptContent.balance.toLocaleString()}</td>
                                   </tr>
                               </tbody>
                           </table>
-                          
-                          <div class='flex justify-end mt-2'>
-                              <table class="w-1/2 ml-auto text-xs">
-                                  <tbody>
-                                      <tr>
-                                          <td class="py-0.5">Total Due:</td>
-                                          <td class="py-0.5 text-right font-medium">${originalTotal.toLocaleString()}</td>
-                                      </tr>
-                                      <tr>
-                                          <td class="py-0.5">Amount Paid:</td>
-                                          <td class="py-0.5 text-right font-medium">${receiptContent.paidAmount.toLocaleString()}</td>
-                                      </tr>
-                                      <tr class="font-bold border-t">
-                                          <td class="py-1">Balance:</td>
-                                          <td class="py-1 text-right">${receiptContent.balance.toLocaleString()}</td>
-                                      </tr>
-                                  </tbody>
-                              </table>
-                          </div>
+                      </div>
 
-                          <div class='text-center text-xs mt-4 space-y-1'>
-                              <p class='font-bold'>Scan to Verify</p>
-                              <div class='flex justify-center'>
-                                <img src="${receiptContent.qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
-                              </div>
-                              <p>*** Thank you for your payment! ***</p>
-                              <p>&copy; ${new Date().getFullYear()} ${receiptContent.settings.name}.</p>
+                      <div class='text-center text-xs mt-4 space-y-1'>
+                          <p class='font-bold'>Scan to Verify</p>
+                          <div class='flex justify-center'>
+                            <img src="${receiptContent.qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
                           </div>
+                          <p>*** Thank you for your payment! ***</p>
+                          <p>&copy; ${new Date().getFullYear()} ${receiptContent.settings.name}.</p>
                       </div>
                   </div>
               </body>

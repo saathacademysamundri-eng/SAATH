@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +11,6 @@ import { format } from 'date-fns';
 import { CheckCircle2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { PaidStamp } from '@/components/paid-stamp';
 
 function VerificationSkeleton() {
     return (
@@ -121,11 +121,6 @@ export default function ReceiptVerificationPage() {
     return (
         <main className="min-h-screen bg-muted/40 p-4 sm:p-6 md:p-8">
             <div className="mx-auto max-w-md relative">
-                 <PaidStamp
-                    academyName={settings.name}
-                    academyPhone={settings.phone}
-                    className="absolute inset-0 m-auto"
-                />
                 <header className="mb-6">
                     <Card>
                         <CardContent className="p-6 text-center">
