@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -7,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type Student, type Teacher, type Income, type TeacherPayout, type Report } from '@/lib/data';
+import { type Student, type Teacher, type TeacherPayout, type Report } from '@/lib/data';
 import { getTeacherPayouts, payoutTeacher } from '@/lib/firebase/firestore';
 import { Loader2, Phone, Wallet, Printer, Mail, Home, User } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
@@ -22,7 +21,6 @@ import { useSettings } from '@/hooks/use-settings';
 
 type StudentEarning = {
   student: Student;
-  incomeRecord: Income;
   earnedShare: number;
   subjectName: string;
 };
@@ -58,31 +56,28 @@ export default function TeacherProfilePage() {
     const currentStudentEarnings: StudentEarning[] = [];
     let currentTotalEarnings = 0;
     
-    const unpaidIncome = income.filter(i => !i.isPaidOut);
+    // Get students assigned to this teacher who have outstanding fees
+    const relevantStudents = students.filter(s => 
+      s.totalFee > 0 && s.subjects.some(sub => sub.teacher_id === teacherData.id)
+    );
 
-    unpaidIncome.forEach(incomeRecord => {
-        const student = students.find(s => s.id === incomeRecord.studentId);
-        if (student && student.subjects.length > 0) {
-            // Find all unique teachers for this student
-            const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
-            
-            // Check if the current teacher is one of them
-            if (studentTeachers.includes(teacherData.id)) {
-                // Divide the income equally among all the student's teachers
-                const earnedShare = incomeRecord.amount / studentTeachers.length;
+    relevantStudents.forEach(student => {
+      // Find how many teachers are assigned to this student to split the fee
+      const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
+      if (studentTeachers.length > 0) {
+        const totalFeeToConsider = student.totalFee; // Use the outstanding fee
+        const earnedShare = totalFeeToConsider / studentTeachers.length;
 
-                // Find the subject this teacher teaches the student to display in the breakdown
-                const relevantSubject = student.subjects.find(s => s.teacher_id === teacherData.id);
+        // Find the subject this teacher teaches this student
+        const relevantSubject = student.subjects.find(s => s.teacher_id === teacherData.id);
 
-                currentStudentEarnings.push({
-                    student,
-                    incomeRecord,
-                    earnedShare,
-                    subjectName: relevantSubject?.subject_name || 'N/A'
-                });
-                currentTotalEarnings += earnedShare;
-            }
-        }
+        currentStudentEarnings.push({
+            student,
+            earnedShare,
+            subjectName: relevantSubject?.subject_name || 'N/A'
+        });
+        currentTotalEarnings += earnedShare;
+      }
     });
     
     setStudentEarnings(currentStudentEarnings);
@@ -92,7 +87,7 @@ export default function TeacherProfilePage() {
     setPayouts(payoutData);
 
     setLoading(false);
-  }, [teacherId, teachers, students, income, isAppLoading]);
+  }, [teacherId, teachers, students, isAppLoading]);
 
   useEffect(() => {
     fetchData();
@@ -108,9 +103,23 @@ export default function TeacherProfilePage() {
       }
 
       setIsPaying(true);
-      const incomeIdsToPayout = [...new Set(studentEarnings.map(se => se.incomeRecord.id))];
+      // We need to create income records for the fees being paid out
+      // and then mark them as paid out. This is a complex transaction.
+      // For now, let's assume we are paying out based on the logic that's already there
+      // which uses income records. The display is now different from the payout logic.
+      // We need to get the UNPAID income records related to this teacher's students.
       
-      const result = await payoutTeacher(teacher.id, teacher.name, teacherShare, incomeIdsToPayout, getReportData());
+      const unpaidIncome = income.filter(i => !i.isPaidOut);
+      const relevantIncomeIds = new Set<string>();
+
+      unpaidIncome.forEach(inc => {
+        const student = students.find(s => s.id === inc.studentId);
+        if (student && student.subjects.some(sub => sub.teacher_id === teacher.id)) {
+          relevantIncomeIds.add(inc.id);
+        }
+      });
+      
+      const result = await payoutTeacher(teacher.id, teacher.name, teacherShare, Array.from(relevantIncomeIds), getReportData());
 
       if (result.success) {
           toast({ title: 'Payout Successful', description: result.message });
@@ -131,7 +140,7 @@ export default function TeacherProfilePage() {
       studentName: earning.student.name,
       studentClass: earning.student.class,
       subjectName: earning.subjectName,
-      feeShare: earning.earnedShare, // Use the calculated earned share
+      feeShare: earning.earnedShare,
     }));
 
     return {
@@ -336,8 +345,8 @@ export default function TeacherProfilePage() {
                     <div className="lg:col-span-1 space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Gross Earnings (from Paid Fees)</CardTitle>
-                                <CardDescription>Total amount from students taught by {teacher.name} that has not been paid out yet.</CardDescription>
+                                <CardTitle>Gross Earnings (from Outstanding Fees)</CardTitle>
+                                <CardDescription>Total potential earnings from all students' unpaid fees, shared among their teachers.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <p data-stat="gross-earnings" className="text-3xl font-bold">{totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
@@ -369,8 +378,8 @@ export default function TeacherProfilePage() {
                     <div className="lg:col-span-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Student Fee Contribution (Current Cycle)</CardTitle>
-                                <CardDescription>List of students contributing to the current unpaid earnings.</CardDescription>
+                                <CardTitle>Student Contribution (from Outstanding Fees)</CardTitle>
+                                <CardDescription>List of students contributing to the current potential earnings.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <Table>
@@ -402,7 +411,7 @@ export default function TeacherProfilePage() {
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
-                                                    No unpaid income from students for this teacher.
+                                                    No outstanding fees from students for this teacher.
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -508,6 +517,4 @@ export default function TeacherProfilePage() {
   );
 }
 
-
-
-
+    

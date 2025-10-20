@@ -47,7 +47,7 @@ import { QrCodeDialog } from './qr-code-dialog';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
-  const { teachers, students: allStudents, income, loading, refreshData } = useAppContext();
+  const { teachers, students: allStudents, loading, refreshData } = useAppContext();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -70,23 +70,19 @@ export default function TeachersPage() {
         stats.set(teacher.id, { gross: 0, net: 0 });
     });
 
-    const unpaidIncome = income.filter(i => !i.isPaidOut);
-
-    unpaidIncome.forEach(inc => {
-        const student = allStudents.find(s => s.id === inc.studentId);
-        if (student && student.subjects.length > 0) {
-            const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
-            if (studentTeachers.length > 0) {
-                const sharePerTeacher = inc.amount / studentTeachers.length;
-
-                studentTeachers.forEach(teacherId => {
-                    if (stats.has(teacherId)) {
-                        const currentStats = stats.get(teacherId)!;
-                        currentStats.gross += sharePerTeacher;
-                    }
-                });
+    // Calculate earnings from students' outstanding fees
+    allStudents.forEach(student => {
+      if (student.totalFee > 0) {
+        const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
+        if (studentTeachers.length > 0) {
+          const sharePerTeacher = student.totalFee / studentTeachers.length;
+          studentTeachers.forEach(teacherId => {
+            if (stats.has(teacherId)) {
+              stats.get(teacherId)!.gross += sharePerTeacher;
             }
+          });
         }
+      }
     });
 
     stats.forEach(stat => {
@@ -94,7 +90,7 @@ export default function TeachersPage() {
     });
 
     return stats;
-  }, [teachers, allStudents, income]);
+  }, [teachers, allStudents]);
 
   const filteredTeachers = teachers.filter(teacher =>
     teacher.name.toLowerCase().includes(search.toLowerCase())
@@ -229,7 +225,7 @@ export default function TeachersPage() {
                           </div>
                            <div>
                                 <p className="text-xs text-muted-foreground">Current Net Earnings (70%)</p>
-                                <p className="text-2xl font-bold text-green-600">{stats.net.toLocaleString()} PKR</p>
+                                <p className="text-2xl font-bold text-green-600">{stats.net.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
                            </div>
                         </CardContent>
                         <CardFooter className="flex gap-2">
@@ -280,3 +276,5 @@ export default function TeachersPage() {
     </div>
   );
 }
+
+    
