@@ -78,10 +78,6 @@ export default function StudentsPage() {
     setDialogState({ ...dialogState, isEditOpen: true, selectedStudent: student });
   };
 
-  const handleDeleteClick = (student: Student) => {
-    setDialogState({ ...dialogState, isDeleteOpen: true, selectedStudent: student });
-  };
-
   const closeDialogs = () => {
     setDialogState({ isAddOpen: false, isEditOpen: false, isDeleteOpen: false, selectedStudent: null });
   };
@@ -96,11 +92,11 @@ export default function StudentsPage() {
     closeDialogs();
   };
   
-  const handleConfirmDelete = async () => {
-    if (!dialogState.selectedStudent) return;
-    const result = await deleteStudent(dialogState.selectedStudent.id);
+  const handleConfirmDelete = async (student: Student | null) => {
+    if (!student) return;
+    const result = await deleteStudent(student.id);
     if(result.success) {
-      toast({ title: "Student Deleted", description: `Record for ${dialogState.selectedStudent.name} has been removed.`});
+      toast({ title: "Student Deleted", description: `Record for ${student.name} has been removed.`});
       refreshData();
     } else {
       toast({ variant: "destructive", title: "Deletion Failed", description: result.message });
@@ -232,7 +228,7 @@ export default function StudentsPage() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                              <AlertDialogAction onClick={() => handleConfirmDelete(student)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                       </AlertDialog>
@@ -255,5 +251,3 @@ export default function StudentsPage() {
     </div>
   );
 }
-
-    
