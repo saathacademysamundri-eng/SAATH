@@ -9,7 +9,7 @@ import { ai } from '@/ai/genkit';
 import { sendWhatsappMessage as sendWhatsappMessageSvc } from '@/lib/whatsapp';
 import { z } from 'genkit';
 
-export const SendWhatsappMessageInputSchema = z.object({
+const SendWhatsappMessageInputSchema = z.object({
   to: z.string().describe('The recipient phone number.'),
   body: z.string().describe('The message content.'),
   apiUrl: z.string().describe('The WhatsApp API URL.'),
@@ -17,7 +17,7 @@ export const SendWhatsappMessageInputSchema = z.object({
 });
 export type SendWhatsappMessageInput = z.infer<typeof SendWhatsappMessageInputSchema>;
 
-export const SendWhatsappMessageOutputSchema = z.object({
+const SendWhatsappMessageOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
 });
