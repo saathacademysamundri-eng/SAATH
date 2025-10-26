@@ -43,7 +43,7 @@ export default function SettingsPage() {
   // WhatsApp State
   const [ultraMsgEnabled, setUltraMsgEnabled] = useState(false);
   const [officialApiEnabled, setOfficialApiEnabled] = useState(false);
-  const [ultraMsgInstance, setUltraMsgInstance] = useState('');
+  const [ultraMsgApiUrl, setUltraMsgApiUrl] = useState('');
   const [ultraMsgToken, setUltraMsgToken] = useState('');
   const [officialApiNumberId, setOfficialApiNumberId] = useState('');
   const [officialApiToken, setOfficialApiToken] = useState('');
@@ -77,7 +77,7 @@ export default function SettingsPage() {
       // WhatsApp settings
       setUltraMsgEnabled(settings.ultraMsgEnabled);
       setOfficialApiEnabled(settings.officialApiEnabled);
-      setUltraMsgInstance(settings.ultraMsgInstance);
+      setUltraMsgApiUrl(settings.ultraMsgApiUrl);
       setUltraMsgToken(settings.ultraMsgToken);
       setOfficialApiNumberId(settings.officialApiNumberId);
       setOfficialApiToken(settings.officialApiToken);
@@ -126,7 +126,7 @@ export default function SettingsPage() {
     await updateSettings({
         ultraMsgEnabled,
         officialApiEnabled,
-        ultraMsgInstance,
+        ultraMsgApiUrl,
         ultraMsgToken,
         officialApiNumberId,
         officialApiToken,
@@ -168,7 +168,7 @@ export default function SettingsPage() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    if (api === 'ultra' && ultraMsgInstance && ultraMsgToken) {
+    if (api === 'ultra' && ultraMsgApiUrl && ultraMsgToken) {
         setTestResult({ status: 'success', message: 'UltraMSG API connected successfully!'});
         toast({ title: 'API Test', description: 'Connection to UltraMSG was successful.' });
     } else if (api === 'official' && officialApiNumberId && officialApiToken) {
@@ -335,8 +335,8 @@ export default function SettingsPage() {
                         {ultraMsgEnabled && (
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="ultra-instance">Instance ID</Label>
-                                    <Input id="ultra-instance" value={ultraMsgInstance} onChange={e => setUltraMsgInstance(e.target.value)} placeholder="e.g., instance12345" />
+                                    <Label htmlFor="ultra-api-url">API Url</Label>
+                                    <Input id="ultra-api-url" value={ultraMsgApiUrl} onChange={e => setUltraMsgApiUrl(e.target.value)} placeholder="e.g., https://api.ultramsg.com/instance12345" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="ultra-token">Token</Label>

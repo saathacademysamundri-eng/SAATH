@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
@@ -13,7 +14,7 @@ export interface Settings {
   preloaderStyle: string;
   ultraMsgEnabled: boolean;
   officialApiEnabled: boolean;
-  ultraMsgInstance: string;
+  ultraMsgApiUrl: string;
   ultraMsgToken: string;
   officialApiNumberId: string;
   officialApiToken: string;
@@ -40,7 +41,7 @@ const defaultSettings: Settings = {
   preloaderStyle: 'style-1',
   ultraMsgEnabled: false,
   officialApiEnabled: false,
-  ultraMsgInstance: '',
+  ultraMsgApiUrl: '',
   ultraMsgToken: '',
   officialApiNumberId: '',
   officialApiToken: '',
