@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -16,9 +17,11 @@ import { seedDatabase } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAppContext } from '@/hooks/use-app-context';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
+  const { classes, students, teachers, loading: appLoading } = useAppContext();
   const { toast } = useToast();
 
   const [name, setName] = useState('');
@@ -51,6 +54,8 @@ export default function SettingsPage() {
 
   const [customMessage, setCustomMessage] = useState('');
   const [customMessageAudience, setCustomMessageAudience] = useState('all_students');
+  const [specificSearch, setSpecificSearch] = useState('');
+  const [customNumbers, setCustomNumbers] = useState('');
 
 
   useEffect(() => {
@@ -359,25 +364,58 @@ export default function SettingsPage() {
                     </CardTitle>
                     <CardDescription>Send a one-time message to a specific group of users.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2 md:col-span-1">
-                            <Label htmlFor="custom-audience">Audience</Label>
-                            <Select value={customMessageAudience} onValueChange={setCustomMessageAudience}>
-                                <SelectTrigger id="custom-audience">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all_students">All Students</SelectItem>
-                                    <SelectItem value="all_teachers">All Teachers</SelectItem>
-                                    {/* TODO: Add specific classes */}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
+                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-1">
+                        <Label>Send To</Label>
+                        <Tabs defaultValue="all_students" orientation="vertical" className="mt-2">
+                            <TabsList className="grid grid-cols-2 md:grid-cols-1 h-full">
+                                <TabsTrigger value="all_students">All Students</TabsTrigger>
+                                <TabsTrigger value="all_teachers">All Teachers</TabsTrigger>
+                                <TabsTrigger value="specific_class">Specific Class</TabsTrigger>
+                                <TabsTrigger value="specific_student">Specific Student</TabsTrigger>
+                                <TabsTrigger value="specific_teacher">Specific Teacher</TabsTrigger>
+                                <TabsTrigger value="custom_numbers">Custom Numbers</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    </div>
+                    <div className="md:col-span-2 space-y-4">
+                        <div>
                             <Label htmlFor="custom-message">Message</Label>
-                            <Textarea id="custom-message" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} placeholder="Type your message here..." />
+                            <Textarea id="custom-message" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} placeholder="Type your message here..." className="min-h-[150px]"/>
                         </div>
+                        <Tabs defaultValue="all_students" className="w-full">
+                            <TabsContent value="specific_class">
+                                <div className="space-y-2">
+                                    <Label>Select Class</Label>
+                                    <Select disabled={appLoading}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a class..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </TabsContent>
+                            <TabsContent value="specific_student">
+                                <div className="space-y-2">
+                                    <Label>Search Student</Label>
+                                    <Input value={specificSearch} onChange={e => setSpecificSearch(e.target.value)} placeholder="Enter student name or roll #..." />
+                                </div>
+                            </TabsContent>
+                             <TabsContent value="specific_teacher">
+                                <div className="space-y-2">
+                                    <Label>Search Teacher</Label>
+                                    <Input value={specificSearch} onChange={e => setSpecificSearch(e.target.value)} placeholder="Enter teacher name or ID..." />
+                                </div>
+                            </TabsContent>
+                             <TabsContent value="custom_numbers">
+                                <div className="space-y-2">
+                                    <Label>Custom Numbers</Label>
+                                    <Textarea value={customNumbers} onChange={e => setCustomNumbers(e.target.value)} placeholder="Enter numbers separated by commas, e.g., 923001234567,923017654321" />
+                                </div>
+                            </TabsContent>
+                        </Tabs>
                     </div>
                 </CardContent>
                 <CardFooter>
@@ -387,6 +425,7 @@ export default function SettingsPage() {
                     </Button>
                 </CardFooter>
               </Card>
+
             </div>
           </TabsContent>
           <TabsContent value="admin">
@@ -445,5 +484,3 @@ export default function SettingsPage() {
     </div>
   )
 }
-
-    
