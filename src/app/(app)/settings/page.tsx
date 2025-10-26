@@ -399,20 +399,6 @@ export default function SettingsPage() {
                             ))}
                         </div>
                     </div>
-
-                     <div>
-                        <h3 className="text-base font-semibold flex items-center gap-2 mb-4">
-                            <Palette />
-                            Sidebar Theme
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            <ColorPicker label="Background" color={sidebarBg} onChange={setSidebarBg} />
-                            <ColorPicker label="Foreground" color={sidebarFg} onChange={setSidebarFg} />
-                            <ColorPicker label="Accent" color={sidebarAccent} onChange={setSidebarAccent} />
-                            <ColorPicker label="Accent Foreground" color={sidebarAccentFg} onChange={setSidebarAccentFg} />
-                        </div>
-                    </div>
-
                 </CardContent>
                 <CardFooter>
                     <Button onClick={handleSaveAppearance} disabled={isSaving || isSettingsLoading}>
