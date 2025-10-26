@@ -99,23 +99,39 @@ const db = getFirestore(app);
 // Settings Functions
 export async function getSettings(): Promise<Settings | null> {
     const docRef = doc(db, 'settings', 'details');
-    const docSnap = await getDoc(docRef);
+    const docSnap = await getDoc(docRef).catch(err => {
+        // This catch block is for network errors etc., not permission errors on the client
+        // because client-side getDoc doesn't throw for permission denied, it just returns an empty snapshot.
+        console.error("Error fetching settings:", err);
+        throw err; // Re-throw to be handled by the caller.
+    });
+
     if (docSnap.exists()) {
         return docSnap.data() as Settings;
     }
+    
+    // If the client gets an empty snapshot due to permissions, it will seem like the doc doesn't exist.
+    // The security rules should allow reads for authenticated users. 
+    // A failure here likely points to a rules issue or the user not being authenticated.
     return null;
 }
 
 export async function updateSettings(settings: Partial<Settings>) {
     const docRef = doc(db, 'settings', 'details');
-    setDoc(docRef, settings, { merge: true }).catch(async (serverError) => {
+    // No try-catch, chain a .catch() to handle permission errors specifically
+    return setDoc(docRef, settings, { merge: true })
+      .catch(async (serverError) => {
+        // This block will be triggered by security rule violations.
+        console.error("Caught Firestore error in updateSettings:", serverError);
         const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'write',
             requestResourceData: settings,
         });
         errorEmitter.emit('permission-error', permissionError);
-    });
+        // Also re-throw or return a specific error object if the caller needs to know about the failure.
+        throw permissionError; 
+      });
 }
 
 

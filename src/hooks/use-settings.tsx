@@ -4,6 +4,8 @@
 
 import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export interface Settings {
   name: string;
@@ -33,7 +35,7 @@ interface SettingsContextType {
 }
 
 const defaultSettings: Settings = {
-  name: 'SAATH Academy Samundri',
+  name: 'My Academy',
   address: 'Housing Colony 2, Samundri Faisalabad',
   phone: '0333 9114333',
   logo: '/logo.png',
@@ -91,10 +93,19 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const updatedSettings = { ...settings, ...newSettings };
     setSettingsState(updatedSettings); 
     try {
-      await updateDBSettings(updatedSettings);
-      localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
+        const docRef = doc(getFirestore(), 'settings', 'details');
+        await setDoc(docRef, updatedSettings, { merge: true });
+        localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
     } catch (error) {
-      console.error("Failed to save settings:", error);
+        console.error("Failed to save settings:", error);
+        if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: 'settings/details',
+                operation: 'write',
+                requestResourceData: updatedSettings,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        }
     }
   }, [settings]);
 
