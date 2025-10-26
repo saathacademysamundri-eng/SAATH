@@ -1,3 +1,4 @@
+
 'use client';
 
 import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
@@ -9,6 +10,19 @@ export interface Settings {
   phone: string;
   logo: string;
   academicSession: string;
+  preloaderStyle: string;
+  ultraMsgEnabled: boolean;
+  officialApiEnabled: boolean;
+  ultraMsgInstance: string;
+  ultraMsgToken: string;
+  officialApiNumberId: string;
+  officialApiToken: string;
+  newAdmissionMsg: boolean;
+  absentMsg: boolean;
+  paymentReceiptMsg: boolean;
+  newAdmissionTemplate: string;
+  absentTemplate: string;
+  paymentReceiptTemplate: string;
 }
 
 interface SettingsContextType {
@@ -23,6 +37,19 @@ const defaultSettings: Settings = {
   phone: '0333 9114333',
   logo: '/logo.png',
   academicSession: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
+  preloaderStyle: 'style-1',
+  ultraMsgEnabled: false,
+  officialApiEnabled: false,
+  ultraMsgInstance: '',
+  ultraMsgToken: '',
+  officialApiNumberId: '',
+  officialApiToken: '',
+  newAdmissionMsg: true,
+  absentMsg: true,
+  paymentReceiptMsg: true,
+  newAdmissionTemplate: 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.',
+  absentTemplate: 'Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.',
+  paymentReceiptTemplate: 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -35,24 +62,21 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const loadSettings = async () => {
       setIsSettingsLoading(true);
       try {
-        // First, try to load from localStorage for speed
         const cachedSettings = localStorage.getItem('academySettings');
         if (cachedSettings) {
-          setSettingsState(JSON.parse(cachedSettings));
+          setSettingsState(prev => ({...prev, ...JSON.parse(cachedSettings)}));
         }
 
-        // Then, fetch from Firestore to get the latest version
         const dbSettings = await getDBSettings();
         if (dbSettings) {
-          setSettingsState(dbSettings);
-          localStorage.setItem('academySettings', JSON.stringify(dbSettings));
+          const mergedSettings = { ...defaultSettings, ...dbSettings };
+          setSettingsState(mergedSettings);
+          localStorage.setItem('academySettings', JSON.stringify(mergedSettings));
         } else {
-          // If nothing in DB, initialize it with defaults
           await updateDBSettings(defaultSettings);
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
-        // Fallback to defaults if DB fails
         setSettingsState(defaultSettings);
       } finally {
         setIsSettingsLoading(false);
@@ -64,13 +88,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
     const updatedSettings = { ...settings, ...newSettings };
-    setSettingsState(updatedSettings); // Optimistic UI update
+    setSettingsState(updatedSettings); 
     try {
       await updateDBSettings(updatedSettings);
       localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
     } catch (error) {
       console.error("Failed to save settings:", error);
-      // Optionally, revert the UI update
     }
   }, [settings]);
 

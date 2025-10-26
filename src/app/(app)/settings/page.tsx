@@ -22,18 +22,19 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
-  const { classes, students, teachers, loading: appLoading } = useAppContext();
+  const { classes, loading: appLoading } = useAppContext();
   const { toast } = useToast();
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  // General State
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [logo, setLogo] = useState('');
   const [academicSession, setAcademicSession] = useState('');
-  const [preloaderStyle, setPreloaderStyle] = useState('default');
-  
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
+  const [preloaderStyle, setPreloaderStyle] = useState('');
 
   // WhatsApp State
   const [ultraMsgEnabled, setUltraMsgEnabled] = useState(false);
@@ -49,14 +50,10 @@ export default function SettingsPage() {
   const [absentMsg, setAbsentMsg] = useState(true);
   const [paymentReceiptMsg, setPaymentReceiptMsg] = useState(true);
 
-  const initialAdmissionTemplate = 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.';
-  const initialAbsentTemplate = 'Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.';
-  const initialPaymentReceiptTemplate = 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!';
-
-  const [newAdmissionTemplate, setNewAdmissionTemplate] = useState(initialAdmissionTemplate);
-  const [absentTemplate, setAbsentTemplate] = useState(initialAbsentTemplate);
-  const [paymentReceiptTemplate, setPaymentReceiptTemplate] = useState(initialPaymentReceiptTemplate);
-
+  const [newAdmissionTemplate, setNewAdmissionTemplate] = useState('');
+  const [absentTemplate, setAbsentTemplate] = useState('');
+  const [paymentReceiptTemplate, setPaymentReceiptTemplate] = useState('');
+  
   const [customMessage, setCustomMessage] = useState('');
   const [customMessageAudience, setCustomMessageAudience] = useState('all_students');
   const [specificSearch, setSpecificSearch] = useState('');
@@ -71,6 +68,21 @@ export default function SettingsPage() {
       setPhone(settings.phone);
       setLogo(settings.logo);
       setAcademicSession(settings.academicSession);
+      setPreloaderStyle(settings.preloaderStyle);
+      
+      // WhatsApp settings
+      setUltraMsgEnabled(settings.ultraMsgEnabled);
+      setOfficialApiEnabled(settings.officialApiEnabled);
+      setUltraMsgInstance(settings.ultraMsgInstance);
+      setUltraMsgToken(settings.ultraMsgToken);
+      setOfficialApiNumberId(settings.officialApiNumberId);
+      setOfficialApiToken(settings.officialApiToken);
+      setNewAdmissionMsg(settings.newAdmissionMsg);
+      setAbsentMsg(settings.absentMsg);
+      setPaymentReceiptMsg(settings.paymentReceiptMsg);
+      setNewAdmissionTemplate(settings.newAdmissionTemplate);
+      setAbsentTemplate(settings.absentTemplate);
+      setPaymentReceiptTemplate(settings.paymentReceiptTemplate);
     }
   }, [isSettingsLoading, settings]);
 
@@ -85,13 +97,36 @@ export default function SettingsPage() {
     return years;
   }, []);
 
-  const handleSaveChanges = async () => {
+  const handleSaveGeneral = async () => {
     setIsSaving(true);
-    await updateSettings({ name, address, phone, logo, academicSession });
+    await updateSettings({ name, address, phone, logo, academicSession, preloaderStyle });
     setIsSaving(false);
     toast({
       title: 'Settings Saved',
-      description: 'Your academy details have been updated.',
+      description: 'Your general settings have been updated.',
+    });
+  };
+
+  const handleSaveWhatsApp = async () => {
+    setIsSaving(true);
+    await updateSettings({
+        ultraMsgEnabled,
+        officialApiEnabled,
+        ultraMsgInstance,
+        ultraMsgToken,
+        officialApiNumberId,
+        officialApiToken,
+        newAdmissionMsg,
+        absentMsg,
+        paymentReceiptMsg,
+        newAdmissionTemplate,
+        absentTemplate,
+        paymentReceiptTemplate,
+    });
+    setIsSaving(false);
+    toast({
+      title: 'Settings Saved',
+      description: 'Your WhatsApp settings have been updated.',
     });
   };
   
@@ -133,6 +168,10 @@ export default function SettingsPage() {
     setIsTestingApi(false);
   }
   
+  const initialAdmissionTemplate = 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.';
+  const initialAbsentTemplate = 'Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.';
+  const initialPaymentReceiptTemplate = 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!';
+
   const quickTemplates = {
     'Absentee Notice': initialAbsentTemplate,
     'Fee Payment Receipt': initialPaymentReceiptTemplate,
@@ -228,7 +267,7 @@ export default function SettingsPage() {
                               </SelectTrigger>
                               <SelectContent>
                                   {Array.from({length: 10}, (_, i) => `Style ${i + 1}`).map(style => (
-                                      <SelectItem key={style} value={style.toLowerCase().replace(' ', '-')}>{style}</SelectItem>
+                                      <SelectItem key={style} value={`style-${i + 1}`}>{style}</SelectItem>
                                   ))}
                               </SelectContent>
                           </Select>
@@ -237,9 +276,9 @@ export default function SettingsPage() {
                   )}
                 </CardContent>
                 <CardFooter>
-                    <Button onClick={handleSaveChanges} disabled={isSaving || isSettingsLoading}>
+                    <Button onClick={handleSaveGeneral} disabled={isSaving || isSettingsLoading}>
                       {isSaving && <Loader2 className="mr-2 animate-spin" />}
-                      {isSaving ? 'Saving...' : 'Save Changes'}
+                      {isSaving ? 'Saving...' : 'Save General Settings'}
                     </Button>
                 </CardFooter>
             </Card>
@@ -309,6 +348,12 @@ export default function SettingsPage() {
                         </Alert>
                     )}
                 </CardContent>
+                <CardFooter>
+                    <Button onClick={handleSaveWhatsApp} disabled={isSaving}>
+                      {isSaving && <Loader2 className="mr-2 animate-spin" />}
+                      {isSaving ? 'Saving...' : 'Save API Settings'}
+                    </Button>
+                </CardFooter>
               </Card>
 
               <Card>
@@ -364,7 +409,10 @@ export default function SettingsPage() {
                     </div>
                 </CardContent>
                  <CardFooter>
-                    <Button disabled={isSaving}>Save WhatsApp Settings</Button>
+                    <Button onClick={handleSaveWhatsApp} disabled={isSaving}>
+                      {isSaving && <Loader2 className="mr-2 animate-spin" />}
+                      {isSaving ? 'Saving...' : 'Save Notification Settings'}
+                    </Button>
                 </CardFooter>
               </Card>
 
