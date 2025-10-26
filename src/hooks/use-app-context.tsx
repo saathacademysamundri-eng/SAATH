@@ -5,6 +5,7 @@ import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSub
 import type { Class, Expense, Income, Student, Subject, Teacher, TeacherPayout, Report } from '@/lib/data';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import { GlobalPreloader } from '@/components/global-preloader';
 
 interface AppContextType {
   students: Student[];
@@ -82,6 +83,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     loading,
     refreshData: fetchData,
   };
+
+  if (loading) {
+    return <GlobalPreloader />;
+  }
 
   return (
     <AppContext.Provider value={value}>

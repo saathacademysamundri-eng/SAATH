@@ -155,26 +155,7 @@ export default function TeachersPage() {
       </div>
       
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {loading ? (
-            Array.from({ length: 8 }).map((_, i) => (
-                <Card key={i}>
-                    <CardHeader className="flex-row gap-4 items-center">
-                        <Skeleton className="w-12 h-12 rounded-full" />
-                        <div className="space-y-2">
-                           <Skeleton className="h-5 w-24" />
-                           <Skeleton className="h-4 w-32" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <Skeleton className="h-5 w-full" />
-                        <Skeleton className="h-8 w-1/2" />
-                    </CardContent>
-                    <CardFooter>
-                         <Skeleton className="h-10 w-full" />
-                    </CardFooter>
-                </Card>
-            ))
-          ) : (
+          {loading ? null : (
             filteredTeachers.map((teacher) => {
               const stats = teacherStats.get(teacher.id) || { gross: 0, net: 0 };
               return (
@@ -276,5 +257,3 @@ export default function TeachersPage() {
     </div>
   );
 }
-
-    

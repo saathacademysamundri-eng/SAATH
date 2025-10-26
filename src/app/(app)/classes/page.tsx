@@ -53,13 +53,7 @@ export default function ClassesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-             <div className="space-y-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          ) : (
+          
             <Accordion type="single" collapsible className="w-full">
               {classes.map((c) => (
                 <AccordionItem key={c.id} value={c.id}>
@@ -105,7 +99,7 @@ export default function ClassesPage() {
                 </AccordionItem>
               ))}
             </Accordion>
-          )}
+          
         </CardContent>
       </Card>
     </div>
