@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -33,7 +34,7 @@ export function WelcomeDialog() {
             <Logo noText />
           </div>
           <DialogTitle className="text-2xl font-bold">
-            Welcome to {settings.name}
+            Welcome to {settings.name || 'My Academy'}
           </DialogTitle>
           <DialogDescription>Developed by Mian Mudassar.</DialogDescription>
         </DialogHeader>

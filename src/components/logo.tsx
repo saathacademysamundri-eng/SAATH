@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSettings } from "@/hooks/use-settings";
@@ -13,7 +14,7 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
   }, []);
 
   const logoSrc = settings.logo || '/logo.png';
-  const academyName = settings.name || 'AcademiaLite';
+  const academyName = settings.name || 'My Academy';
 
   if (isSettingsLoading && !isClient) {
     return (

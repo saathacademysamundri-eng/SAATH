@@ -1,12 +1,13 @@
-import type {Metadata} from 'next';
+
+import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SettingsProvider } from '@/hooks/use-settings';
 
 export const metadata: Metadata = {
-    title: 'My Academy',
-    description: 'An Academy Management System',
+  title: 'My Academy',
+  description: 'An Academy Management System',
 };
 
 export default function RootLayout({

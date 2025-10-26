@@ -17,9 +17,7 @@ export function Header() {
   const [openSearch, setOpenSearch] = useState(false);
 
   useEffect(() => {
-    if (settings.name) {
-      document.title = settings.name;
-    }
+    document.title = settings.name || 'My Academy';
   }, [settings.name]);
 
   return (

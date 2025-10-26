@@ -1,11 +1,9 @@
 
 'use client';
 
-import { getSettings as getDBSettings } from '@/lib/firebase/firestore';
+import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { doc, getFirestore, setDoc } from 'firebase/firestore';
 
 export interface Settings {
   name: string;
@@ -35,7 +33,7 @@ interface SettingsContextType {
 }
 
 const defaultSettings: Settings = {
-  name: 'My Academy',
+  name: '', // Default to empty to allow fallback to 'My Academy'
   address: 'Housing Colony 2, Samundri Faisalabad',
   phone: '0333 9114333',
   logo: '/logo.png',
@@ -77,8 +75,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem('academySettings', JSON.stringify(mergedSettings));
         } else {
           // If no settings in DB, let's try to save the default ones.
-          const docRef = doc(getFirestore(), 'settings', 'details');
-          await setDoc(docRef, defaultSettings, { merge: true });
+          await updateDBSettings(defaultSettings);
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -94,21 +91,8 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
     const updatedSettings = { ...settings, ...newSettings };
     setSettingsState(updatedSettings); 
-    try {
-        const docRef = doc(getFirestore(), 'settings', 'details');
-        await setDoc(docRef, updatedSettings, { merge: true });
-        localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
-    } catch (error) {
-        console.error("Failed to save settings:", error);
-        if ((error as any).code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: 'settings/details',
-                operation: 'write',
-                requestResourceData: updatedSettings,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        }
-    }
+    await updateDBSettings(updatedSettings);
+    localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
   }, [settings]);
 
   return (
