@@ -288,31 +288,37 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
-               <Card>
+              <Card>
                 <CardHeader>
-                    <CardTitle>Automated Messages</CardTitle>
-                    <CardDescription>Enable and customize automated messages sent via WhatsApp. Use placeholders like {"{student_name}"}.</CardDescription>
+                    <CardTitle>Automated Notifications</CardTitle>
+                    <CardDescription>Enable/disable automated messages for specific events. Use placeholders like {"{student_name}"}.</CardDescription>
                 </CardHeader>
-                 <CardContent className="space-y-6">
-                    <div className="space-y-4 p-4 border rounded-lg">
+                <CardContent className="space-y-4">
+                    <div className="space-y-4 rounded-lg border p-4">
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="new-admission-switch" className="text-base font-medium">New Student Admission</Label>
+                            <div>
+                                <Label htmlFor="new-admission-switch" className="font-medium">Admission Confirmation</Label>
+                                <p className="text-sm text-muted-foreground">Sent on new admission.</p>
+                            </div>
                             <Switch id="new-admission-switch" checked={newAdmissionMsg} onCheckedChange={setNewAdmissionMsg} />
                         </div>
                         {newAdmissionMsg && (
-                            <div className="space-y-2">
+                            <div className="space-y-2 pt-2 border-t">
                                 <Label htmlFor="new-admission-template">Message Template</Label>
                                 <Textarea id="new-admission-template" value={newAdmissionTemplate} onChange={e => setNewAdmissionTemplate(e.target.value)} />
                             </div>
                         )}
                     </div>
-                     <div className="space-y-4 p-4 border rounded-lg">
+                     <div className="space-y-4 rounded-lg border p-4">
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="absent-switch" className="text-base font-medium">Absent Student Notification</Label>
+                            <div>
+                                <Label htmlFor="absent-switch" className="font-medium">Absentee Notice</Label>
+                                <p className="text-sm text-muted-foreground">Sent on notifying absentees.</p>
+                            </div>
                             <Switch id="absent-switch" checked={absentMsg} onCheckedChange={setAbsentMsg} />
                         </div>
                         {absentMsg && (
-                            <div className="space-y-2">
+                            <div className="space-y-2 pt-2 border-t">
                                 <Label htmlFor="absent-template">Message Template</Label>
                                 <Textarea id="absent-template" value={absentTemplate} onChange={e => setAbsentTemplate(e.target.value)} />
                             </div>
