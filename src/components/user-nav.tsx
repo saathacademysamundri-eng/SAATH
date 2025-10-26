@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { auth } from '@/lib/firebase/config';
 import { signOut } from 'firebase/auth';
-import { CreditCard, LifeBuoy, LogOut, Settings, User } from 'lucide-react';
+import { CreditCard, LifeBuoy, LogOut, Settings, User, MessageCircleQuestion } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -32,7 +32,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://picsum.photos/seed/101/100/100" alt="@shadcn" data-ai-hint="male portrait" />
+            <AvatarImage src="https://i.pravatar.cc/100" alt="Admin" data-ai-hint="male portrait" />
             <AvatarFallback>SA</AvatarFallback>
           </Avatar>
         </Button>
@@ -69,7 +69,7 @@ export function UserNav() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <LifeBuoy className="mr-2 h-4 w-4" />
+          <MessageCircleQuestion className="mr-2 h-4 w-4" />
           <span>Support</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

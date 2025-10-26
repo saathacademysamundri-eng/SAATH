@@ -31,7 +31,7 @@ export function WelcomeDialog() {
       <DialogContent className="sm:max-w-md text-center">
         <DialogHeader className="space-y-4">
           <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-muted">
-            <Logo noText />
+            <Logo noText onLogin/>
           </div>
           <DialogTitle className="text-2xl font-bold">
             Welcome to {settings.name || 'My Academy'}

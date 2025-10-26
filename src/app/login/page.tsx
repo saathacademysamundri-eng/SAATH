@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-svh w-full items-center justify-center bg-background px-4">
+    <main className="flex min-h-svh w-full items-center justify-center bg-muted/40 px-4">
       <div className="w-full max-w-sm">
         <Card className="shadow-2xl">
           <CardHeader>

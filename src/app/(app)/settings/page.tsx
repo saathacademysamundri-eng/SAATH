@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, TestTube2, Wifi, MessageSquarePlus, Send } from 'lucide-react';
+import { Database, Loader2, TestTube2, Wifi, MessageSquarePlus, Send, Palette } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { seedDatabase } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,6 +22,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Preloader } from '@/components/ui/preloader';
 import { cn } from '@/lib/utils';
 import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
+import { ColorPicker } from '@/components/color-picker';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
@@ -40,6 +41,11 @@ export default function SettingsPage() {
   
   // Appearance State
   const [preloaderStyle, setPreloaderStyle] = useState('style-1');
+  const [sidebarBg, setSidebarBg] = useState('');
+  const [sidebarFg, setSidebarFg] = useState('');
+  const [sidebarAccent, setSidebarAccent] = useState('');
+  const [sidebarAccentFg, setSidebarAccentFg] = useState('');
+
 
   // WhatsApp State
   const [ultraMsgEnabled, setUltraMsgEnabled] = useState(false);
@@ -76,6 +82,12 @@ export default function SettingsPage() {
       setLogo(settings.logo);
       setAcademicSession(settings.academicSession);
       setPreloaderStyle(settings.preloaderStyle);
+
+      // Appearance
+      setSidebarBg(settings.sidebarBg || '240 10% 10%');
+      setSidebarFg(settings.sidebarFg || '0 0% 98%');
+      setSidebarAccent(settings.sidebarAccent || '240 10% 20%');
+      setSidebarAccentFg(settings.sidebarAccentFg || '0 0% 98%');
       
       // WhatsApp settings
       setUltraMsgEnabled(settings.ultraMsgEnabled);
@@ -116,7 +128,19 @@ export default function SettingsPage() {
 
   const handleSaveAppearance = async () => {
     setIsSaving(true);
-    await updateSettings({ preloaderStyle });
+
+    document.documentElement.style.setProperty('--sidebar-background', sidebarBg);
+    document.documentElement.style.setProperty('--sidebar-foreground', sidebarFg);
+    document.documentElement.style.setProperty('--sidebar-accent', sidebarAccent);
+    document.documentElement.style.setProperty('--sidebar-accent-foreground', sidebarAccentFg);
+
+    await updateSettings({ 
+        preloaderStyle,
+        sidebarBg,
+        sidebarFg,
+        sidebarAccent,
+        sidebarAccentFg
+    });
     setIsSaving(false);
     toast({
       title: 'Appearance Saved',
@@ -353,7 +377,7 @@ export default function SettingsPage() {
                     <CardTitle>Application Appearance</CardTitle>
                     <CardDescription>Customize the look and feel of the application.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-8">
                     <div>
                         <Label className="text-base font-semibold">Preloader Style</Label>
                         <p className="text-sm text-muted-foreground mb-4">Select the loading animation that appears when the application is loading data.</p>
@@ -374,6 +398,20 @@ export default function SettingsPage() {
                             ))}
                         </div>
                     </div>
+
+                     <div>
+                        <h3 className="text-base font-semibold flex items-center gap-2 mb-4">
+                            <Palette />
+                            Sidebar Theme
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <ColorPicker label="Background" color={sidebarBg} onChange={setSidebarBg} />
+                            <ColorPicker label="Foreground" color={sidebarFg} onChange={setSidebarFg} />
+                            <ColorPicker label="Accent" color={sidebarAccent} onChange={setSidebarAccent} />
+                            <ColorPicker label="Accent Foreground" color={sidebarAccentFg} onChange={setSidebarAccentFg} />
+                        </div>
+                    </div>
+
                 </CardContent>
                 <CardFooter>
                     <Button onClick={handleSaveAppearance} disabled={isSaving || isSettingsLoading}>
@@ -628,25 +666,13 @@ export default function SettingsPage() {
               <Card className='max-w-2xl'>
                 <CardHeader>
                     <CardTitle>Admin Settings</CardTitle>
-                    <CardDescription>Manage administrator credentials.</CardDescription>
+                    <CardDescription>This section is for managing administrator credentials. For enhanced security, these actions should be performed directly in your Firebase Authentication console.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="current-password">Current Password</Label>
-                        <Input id="current-password" type="password" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="new-password">New Password</Label>
-                        <Input id="new-password" type="password" />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Confirm New Password</Label>
-                        <Input id="confirm-password" type="password" />
-                    </div>
+                <CardContent>
+                     <Button asChild variant="outline">
+                        <Link href="/profile">Change Admin Password</Link>
+                    </Button>
                 </CardContent>
-                 <CardFooter>
-                    <Button>Update Password</Button>
-                </CardFooter>
             </Card>
           </TabsContent>
           <TabsContent value="api">
@@ -656,14 +682,10 @@ export default function SettingsPage() {
                     <CardDescription>Manage API keys and database settings.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="api-key">Your API Key</Label>
-                        <Input id="api-key" defaultValue="******************" readOnly />
-                    </div>
                      <div className="space-y-2">
                         <Label>Database</Label>
                         <div className="flex items-center justify-between rounded-md border p-3">
-                           <p className="text-sm">Seed your Firestore database with the initial dummy data.</p>
+                           <p className="text-sm">Seed your Firestore database with initial dummy data. This is useful for first-time setup or for testing.</p>
                             <Button variant="secondary" onClick={handleSeedDatabase} disabled={isSeeding}>
                                 <Database className='mr-2'/>
                                 {isSeeding ? 'Seeding...' : 'Seed Database'}
@@ -671,14 +693,9 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 </CardContent>
-                 <CardFooter>
-                    <Button>Generate New API Key</Button>
-                </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
     </div>
   )
 }
-
-    

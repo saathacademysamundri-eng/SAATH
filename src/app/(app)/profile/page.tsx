@@ -55,7 +55,7 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col gap-6">
        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Admin Profile</h1>
           <p className="text-muted-foreground">
             Manage your Super Admin profile and security settings.
           </p>
@@ -63,12 +63,12 @@ export default function ProfilePage() {
       <form onSubmit={handlePasswordUpdate}>
         <Card className='max-w-2xl'>
             <CardHeader>
-                <CardTitle>Admin Credentials</CardTitle>
-                <CardDescription>Update your password here.</CardDescription>
+                <CardTitle>Admin Security</CardTitle>
+                <CardDescription>Update the master password for the admin account.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">Admin Email</Label>
                     <Input id="email" type="email" value="admin@example.com" disabled />
                 </div>
                 <div className="space-y-2">

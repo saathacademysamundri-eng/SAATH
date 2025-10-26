@@ -38,7 +38,7 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
 
   return (
     <div className="flex items-center justify-center gap-2 font-headline text-2xl font-bold text-primary w-full h-full">
-      <img src={logoSrc} alt="logo" className="h-full w-full object-cover" />
+      <img src={logoSrc} alt="logo" className="h-full w-auto object-contain" />
       {!noText && <span className="font-bold tracking-tighter">{academyName}</span>}
     </div>
   );

@@ -3,7 +3,6 @@
 
 import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { doc, getFirestore, setDoc } from 'firebase/firestore';
 
 export interface Settings {
   name: string;
@@ -12,6 +11,10 @@ export interface Settings {
   logo: string;
   academicSession: string;
   preloaderStyle: string;
+  sidebarBg: string;
+  sidebarFg: string;
+  sidebarAccent: string;
+  sidebarAccentFg: string;
   ultraMsgEnabled: boolean;
   officialApiEnabled: boolean;
   ultraMsgApiUrl: string;
@@ -39,6 +42,10 @@ const defaultSettings: Settings = {
   logo: '/logo.png',
   academicSession: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
   preloaderStyle: 'style-1',
+  sidebarBg: '240 10% 10%',
+  sidebarFg: '0 0% 98%',
+  sidebarAccent: '240 10% 20%',
+  sidebarAccentFg: '0 0% 98%',
   ultraMsgEnabled: false,
   officialApiEnabled: false,
   ultraMsgApiUrl: '',
@@ -59,13 +66,23 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettingsState] = useState<Settings>(defaultSettings);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
 
+  const applyTheme = (settingsToApply: Settings) => {
+    document.documentElement.style.setProperty('--sidebar-background', settingsToApply.sidebarBg);
+    document.documentElement.style.setProperty('--sidebar-foreground', settingsToApply.sidebarFg);
+    document.documentElement.style.setProperty('--sidebar-accent', settingsToApply.sidebarAccent);
+    document.documentElement.style.setProperty('--sidebar-accent-foreground', settingsToApply.sidebarAccentFg);
+  }
+
   useEffect(() => {
     const loadSettings = async () => {
       setIsSettingsLoading(true);
       try {
         const cachedSettings = localStorage.getItem('academySettings');
+        let currentSettings = defaultSettings;
         if (cachedSettings) {
-          setSettingsState(prev => ({...prev, ...JSON.parse(cachedSettings)}));
+           currentSettings = { ...defaultSettings, ...JSON.parse(cachedSettings) };
+           setSettingsState(currentSettings);
+           applyTheme(currentSettings);
         }
 
         const dbSettings = await getDBSettings();
@@ -73,6 +90,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           const mergedSettings = { ...defaultSettings, ...dbSettings };
           setSettingsState(mergedSettings);
           localStorage.setItem('academySettings', JSON.stringify(mergedSettings));
+          applyTheme(mergedSettings);
         } else {
           // If no settings in DB, let's try to save the default ones.
           await updateDBSettings(defaultSettings);
@@ -93,6 +111,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     setSettingsState(updatedSettings); 
     await updateDBSettings(updatedSettings);
     localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
+    applyTheme(updatedSettings);
   }, [settings]);
 
   return (

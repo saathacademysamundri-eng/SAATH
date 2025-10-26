@@ -11,6 +11,7 @@ import { Search } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { SearchCommand } from './search-command';
 import { useState, useEffect } from 'react';
+import { Logo } from './logo';
 
 export function Header() {
   const { settings } = useSettings();
@@ -25,6 +26,9 @@ export function Header() {
     <header className="sticky top-0 z-10 flex h-20 w-full items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 print:hidden">
       <div className="flex items-center gap-4">
         <SidebarTrigger className="md:hidden" />
+        <div className="h-10 w-auto md:hidden">
+            <Logo />
+        </div>
       </div>
       <div className='flex items-center gap-4'>
         <div className="relative hidden md:block">

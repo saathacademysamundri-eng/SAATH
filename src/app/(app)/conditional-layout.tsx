@@ -38,6 +38,7 @@ import {
   BookCopy,
   CreditCard,
   User as UserIcon,
+  MessageCircleQuestion,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -97,11 +98,11 @@ function MainSidebar() {
       <SidebarHeader>
         <div className="flex items-center justify-center p-2 relative group-data-[collapsible=icon]:justify-center">
           <div className="flex flex-col items-center gap-2">
-              <div className='h-12 w-12 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
+              <div className='h-12 w-12 bg-sidebar-primary text-sidebar-primary-foreground rounded-full flex items-center justify-center overflow-hidden shrink-0'>
                   <Logo noText={true} />
               </div>
               <div className="transition-opacity group-data-[collapsible=icon]:opacity-0">
-                  <Badge variant="secondary" className="font-mono text-xs">{settings.academicSession}</Badge>
+                  <Badge variant="outline" className="font-mono text-xs border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground">{settings.academicSession}</Badge>
               </div>
           </div>
           <SidebarPin />
@@ -135,7 +136,7 @@ function MainSidebar() {
           <SidebarMenuItem>
               <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center">
                 <Link href="#">
-                    <LifeBuoy className={cn("h-6 w-6")} />
+                    <MessageCircleQuestion className={cn("h-6 w-6")} />
                     <span className='group-data-[collapsible=icon]:hidden'>Support</span>
                 </Link>
              </Button>
