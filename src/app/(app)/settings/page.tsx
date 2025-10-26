@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, TestTube2, Wifi } from 'lucide-react';
+import { Database, Loader2, TestTube2, Wifi, MessageSquarePlus, Send } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { seedDatabase } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,8 +43,14 @@ export default function SettingsPage() {
 
   const [newAdmissionMsg, setNewAdmissionMsg] = useState(true);
   const [absentMsg, setAbsentMsg] = useState(true);
+  const [paymentReceiptMsg, setPaymentReceiptMsg] = useState(true);
+
   const [newAdmissionTemplate, setNewAdmissionTemplate] = useState('Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.');
   const [absentTemplate, setAbsentTemplate] = useState('Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.');
+  const [paymentReceiptTemplate, setPaymentReceiptTemplate] = useState('Dear parent, we have received a payment of {amount} for {student_name}. Thank you!');
+
+  const [customMessage, setCustomMessage] = useState('');
+  const [customMessageAudience, setCustomMessageAudience] = useState('all_students');
 
 
   useEffect(() => {
@@ -280,7 +286,7 @@ export default function SettingsPage() {
 
                     {testResult && (
                         <Alert variant={testResult.status === 'error' ? 'destructive' : 'default'}>
-                            <Wifi />
+                            <Wifi className="h-4 w-4" />
                             <AlertTitle>{testResult.status === 'success' ? 'Connection Successful' : 'Connection Failed'}</AlertTitle>
                             <AlertDescription>{testResult.message}</AlertDescription>
                         </Alert>
@@ -303,7 +309,7 @@ export default function SettingsPage() {
                             <Switch id="new-admission-switch" checked={newAdmissionMsg} onCheckedChange={setNewAdmissionMsg} />
                         </div>
                         {newAdmissionMsg && (
-                            <div className="space-y-2 pt-2 border-t">
+                            <div className="space-y-2 pt-4 border-t">
                                 <Label htmlFor="new-admission-template">Message Template</Label>
                                 <Textarea id="new-admission-template" value={newAdmissionTemplate} onChange={e => setNewAdmissionTemplate(e.target.value)} />
                             </div>
@@ -313,20 +319,72 @@ export default function SettingsPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <Label htmlFor="absent-switch" className="font-medium">Absentee Notice</Label>
-                                <p className="text-sm text-muted-foreground">Sent on notifying absentees.</p>
+                                <p className="text-sm text-muted-foreground">Sent when a student is marked absent.</p>
                             </div>
                             <Switch id="absent-switch" checked={absentMsg} onCheckedChange={setAbsentMsg} />
                         </div>
                         {absentMsg && (
-                            <div className="space-y-2 pt-2 border-t">
+                            <div className="space-y-2 pt-4 border-t">
                                 <Label htmlFor="absent-template">Message Template</Label>
                                 <Textarea id="absent-template" value={absentTemplate} onChange={e => setAbsentTemplate(e.target.value)} />
+                            </div>
+                        )}
+                    </div>
+                     <div className="space-y-4 rounded-lg border p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <Label htmlFor="payment-receipt-switch" className="font-medium">Payment Receipt</Label>
+                                <p className="text-sm text-muted-foreground">Sent after a fee payment is recorded.</p>
+                            </div>
+                            <Switch id="payment-receipt-switch" checked={paymentReceiptMsg} onCheckedChange={setPaymentReceiptMsg} />
+                        </div>
+                        {paymentReceiptMsg && (
+                            <div className="space-y-2 pt-4 border-t">
+                                <Label htmlFor="payment-receipt-template">Message Template</Label>
+                                <Textarea id="payment-receipt-template" value={paymentReceiptTemplate} onChange={e => setPaymentReceiptTemplate(e.target.value)} />
                             </div>
                         )}
                     </div>
                 </CardContent>
                  <CardFooter>
                     <Button disabled={isSaving}>Save WhatsApp Settings</Button>
+                </CardFooter>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <MessageSquarePlus />
+                        Send Custom Message
+                    </CardTitle>
+                    <CardDescription>Send a one-time message to a specific group of users.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2 md:col-span-1">
+                            <Label htmlFor="custom-audience">Audience</Label>
+                            <Select value={customMessageAudience} onValueChange={setCustomMessageAudience}>
+                                <SelectTrigger id="custom-audience">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all_students">All Students</SelectItem>
+                                    <SelectItem value="all_teachers">All Teachers</SelectItem>
+                                    {/* TODO: Add specific classes */}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="custom-message">Message</Label>
+                            <Textarea id="custom-message" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} placeholder="Type your message here..." />
+                        </div>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button>
+                        <Send className="mr-2" />
+                        Send Message
+                    </Button>
                 </CardFooter>
               </Card>
             </div>
@@ -387,3 +445,5 @@ export default function SettingsPage() {
     </div>
   )
 }
+
+    
