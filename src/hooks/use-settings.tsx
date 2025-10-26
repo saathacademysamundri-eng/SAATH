@@ -1,11 +1,11 @@
 
-
 'use client';
 
-import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
+import { getSettings as getDBSettings } from '@/lib/firebase/firestore';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
 export interface Settings {
   name: string;
@@ -76,7 +76,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           setSettingsState(mergedSettings);
           localStorage.setItem('academySettings', JSON.stringify(mergedSettings));
         } else {
-          await updateDBSettings(defaultSettings);
+          // If no settings in DB, let's try to save the default ones.
+          const docRef = doc(getFirestore(), 'settings', 'details');
+          await setDoc(docRef, defaultSettings, { merge: true });
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -98,7 +100,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
     } catch (error) {
         console.error("Failed to save settings:", error);
-        if (error.code === 'permission-denied') {
+        if ((error as any).code === 'permission-denied') {
             const permissionError = new FirestorePermissionError({
                 path: 'settings/details',
                 operation: 'write',
