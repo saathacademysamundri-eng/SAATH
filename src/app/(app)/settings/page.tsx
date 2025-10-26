@@ -21,6 +21,7 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Preloader } from '@/components/ui/preloader';
 import { cn } from '@/lib/utils';
+import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
@@ -64,6 +65,7 @@ export default function SettingsPage() {
   const [specificSearch, setSpecificSearch] = useState('');
   const [customNumbers, setCustomNumbers] = useState('');
   const [selectedClassForCustomMessage, setSelectedClassForCustomMessage] = useState('');
+  const [isSendingCustom, setIsSendingCustom] = useState(false);
 
 
   useEffect(() => {
@@ -171,23 +173,78 @@ export default function SettingsPage() {
 
     setIsTestingApi(true);
     setTestResult(null);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const credentialsValid = 
-        (api === 'ultra' && ultraMsgApiUrl && ultraMsgToken) ||
-        (api === 'official' && officialApiNumberId && officialApiToken);
 
-    if (credentialsValid) {
-        setTestResult({ status: 'success', message: `Test message sent to ${testPhoneNumber}. API connected successfully!`});
-        toast({ title: 'API Test Successful', description: `A test message has been sent to ${testPhoneNumber}.` });
-    } else {
-        setTestResult({ status: 'error', message: 'Connection failed. Please check your credentials.'});
-        toast({ variant: 'destructive', title: 'API Test Failed', description: 'Please check your credentials and try again.' });
+    const apiUrl = api === 'ultra' ? ultraMsgApiUrl : ''; // Official API URL is not needed for this simplified logic
+    const token = api === 'ultra' ? ultraMsgToken : officialApiToken;
+    
+    try {
+        const result = await sendWhatsappMessage({
+            to: testPhoneNumber,
+            body: 'This is a test message from your AcademiaLite setup.',
+            apiUrl,
+            token
+        });
+
+        if (result.success) {
+            setTestResult({ status: 'success', message: `Test message sent to ${testPhoneNumber}. API connected successfully!`});
+            toast({ title: 'API Test Successful', description: `A test message has been sent to ${testPhoneNumber}.` });
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        const errorMessage = (error as Error).message || 'An unknown error occurred.';
+        setTestResult({ status: 'error', message: `Connection failed: ${errorMessage}`});
+        toast({ variant: 'destructive', title: 'API Test Failed', description: errorMessage });
     }
 
     setIsTestingApi(false);
+  }
+
+  const handleSendCustomMessage = async () => {
+    if (!customMessage.trim()) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Message cannot be empty.' });
+      return;
+    }
+    
+    // For now, only implementing for "Custom Numbers" to prove the concept.
+    if (customMessageAudience !== 'custom_numbers' || !customNumbers.trim()) {
+      toast({ variant: 'destructive', title: 'Not Implemented', description: 'Custom messaging is currently only implemented for the "Custom Numbers" option.' });
+      return;
+    }
+
+    setIsSendingCustom(true);
+    
+    const numbers = customNumbers.split(',').map(n => n.trim()).filter(n => n);
+    let successCount = 0;
+    let errorCount = 0;
+
+    const apiUrl = ultraMsgEnabled ? ultraMsgApiUrl : '';
+    const token = ultraMsgEnabled ? ultraMsgToken : officialApiToken;
+
+    for (const number of numbers) {
+      try {
+        const result = await sendWhatsappMessage({
+            to: number,
+            body: customMessage,
+            apiUrl,
+            token
+        });
+        if (result.success) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch (error) {
+        errorCount++;
+      }
+    }
+
+    toast({
+      title: "Bulk Message Sent",
+      description: `Successfully sent ${successCount} messages. Failed to send ${errorCount} messages.`,
+    });
+
+    setIsSendingCustom(false);
   }
   
   const initialAdmissionTemplate = 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.';
@@ -557,9 +614,9 @@ export default function SettingsPage() {
                     </div>
                 </CardContent>
                 <CardFooter className="justify-end">
-                    <Button>
-                        <Send className="mr-2 h-4 w-4" />
-                        Send Message
+                    <Button onClick={handleSendCustomMessage} disabled={isSendingCustom}>
+                        {isSendingCustom ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                        {isSendingCustom ? 'Sending...' : 'Send Message'}
                     </Button>
                 </CardFooter>
               </Card>
