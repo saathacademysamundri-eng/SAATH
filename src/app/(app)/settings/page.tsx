@@ -137,8 +137,6 @@ export default function SettingsPage() {
     'Absentee Notice': initialAbsentTemplate,
     'Fee Payment Receipt': initialPaymentReceiptTemplate,
     'Admission Confirmation': initialAdmissionTemplate,
-    'Student Deactivation Notice': 'Dear parent, the profile for {student_name} has been deactivated.',
-    'Teacher Deactivation Notice': 'Dear {teacher_name}, your profile has been deactivated.'
   }
 
   return (
