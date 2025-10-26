@@ -23,6 +23,7 @@ import { Preloader } from '@/components/ui/preloader';
 import { cn } from '@/lib/utils';
 import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
 import { ColorPicker } from '@/components/color-picker';
+import Link from 'next/link';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
