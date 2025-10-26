@@ -1,9 +1,4 @@
 
-
-
-
-
-
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -96,6 +91,8 @@ import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, 
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const db = getFirestore(app);
 
@@ -111,7 +108,14 @@ export async function getSettings(): Promise<Settings | null> {
 
 export async function updateSettings(settings: Partial<Settings>) {
     const docRef = doc(db, 'settings', 'details');
-    await setDoc(docRef, settings, { merge: true });
+    setDoc(docRef, settings, { merge: true }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'write',
+            requestResourceData: settings,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
 }
 
 
