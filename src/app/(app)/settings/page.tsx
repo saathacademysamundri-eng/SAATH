@@ -176,11 +176,12 @@ export default function SettingsPage() {
 
     const apiUrl = api === 'ultra' ? ultraMsgApiUrl : ''; // Official API URL is not needed for this simplified logic
     const token = api === 'ultra' ? ultraMsgToken : officialApiToken;
+    const academyName = settings.name || 'My Academy';
     
     try {
         const result = await sendWhatsappMessage({
             to: testPhoneNumber,
-            body: 'This is a test message from your AcademiaLite setup.',
+            body: `This is a test message from your ${academyName} setup.`,
             apiUrl,
             token
         });
