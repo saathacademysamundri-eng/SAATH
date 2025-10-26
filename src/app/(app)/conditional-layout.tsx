@@ -124,14 +124,6 @@ function MainSidebar() {
       <SidebarFooter>
         <SidebarMenu>
            <SidebarMenuItem>
-                <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" isActive={pathname.startsWith('/profile')}>
-                    <Link href="/profile">
-                        <UserIcon className={cn("h-6 w-6")} />
-                        <span className='group-data-[collapsible=icon]:hidden'>Profile</span>
-                    </Link>
-                </Button>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
                 <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" isActive={pathname.startsWith('/settings')}>
                     <Link href="/settings">
                         <Settings className={cn("h-6 w-6")} />
