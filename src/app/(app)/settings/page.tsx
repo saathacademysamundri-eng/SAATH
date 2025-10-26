@@ -49,6 +49,7 @@ export default function SettingsPage() {
   const [officialApiToken, setOfficialApiToken] = useState('');
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [testResult, setTestResult] = useState<{status: 'success' | 'error', message: string} | null>(null);
+  const [testPhoneNumber, setTestPhoneNumber] = useState('');
 
   const [newAdmissionMsg, setNewAdmissionMsg] = useState(true);
   const [absentMsg, setAbsentMsg] = useState(true);
@@ -163,17 +164,24 @@ export default function SettingsPage() {
   }
 
   const handleTestApi = async (api: 'ultra' | 'official') => {
+    if (!testPhoneNumber.trim()) {
+        toast({ variant: 'destructive', title: 'API Test Failed', description: 'Please enter a phone number to send a test message to.' });
+        return;
+    }
+
     setIsTestingApi(true);
     setTestResult(null);
+    
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    if (api === 'ultra' && ultraMsgApiUrl && ultraMsgToken) {
-        setTestResult({ status: 'success', message: 'UltraMSG API connected successfully!'});
-        toast({ title: 'API Test', description: 'Connection to UltraMSG was successful.' });
-    } else if (api === 'official' && officialApiNumberId && officialApiToken) {
-        setTestResult({ status: 'success', message: 'Official WhatsApp API connected successfully!'});
-        toast({ title: 'API Test', description: 'Connection to Official WhatsApp API was successful.' });
+    const credentialsValid = 
+        (api === 'ultra' && ultraMsgApiUrl && ultraMsgToken) ||
+        (api === 'official' && officialApiNumberId && officialApiToken);
+
+    if (credentialsValid) {
+        setTestResult({ status: 'success', message: `Test message sent to ${testPhoneNumber}. API connected successfully!`});
+        toast({ title: 'API Test Successful', description: `A test message has been sent to ${testPhoneNumber}.` });
     } else {
         setTestResult({ status: 'error', message: 'Connection failed. Please check your credentials.'});
         toast({ variant: 'destructive', title: 'API Test Failed', description: 'Please check your credentials and try again.' });
@@ -342,6 +350,10 @@ export default function SettingsPage() {
                                     <Label htmlFor="ultra-token">Token</Label>
                                     <Input id="ultra-token" type="password" value={ultraMsgToken} onChange={e => setUltraMsgToken(e.target.value)} placeholder="Enter your UltraMSG token" />
                                 </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="test-phone-ultra">Test Phone Number</Label>
+                                    <Input id="test-phone-ultra" value={testPhoneNumber} onChange={e => setTestPhoneNumber(e.target.value)} placeholder="e.g., 923001234567" />
+                                </div>
                                 <Button onClick={() => handleTestApi('ultra')} disabled={isTestingApi}>
                                     {isTestingApi ? <Loader2 className="mr-2 animate-spin" /> : <TestTube2 className='mr-2'/>}
                                     Test API
@@ -365,6 +377,10 @@ export default function SettingsPage() {
                                 <div className="space-y-2">
                                     <Label htmlFor="official-token">Permanent Access Token</Label>
                                     <Input id="official-token" type="password" value={officialApiToken} onChange={e => setOfficialApiToken(e.target.value)} placeholder="Enter your permanent access token" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="test-phone-official">Test Phone Number</Label>
+                                    <Input id="test-phone-official" value={testPhoneNumber} onChange={e => setTestPhoneNumber(e.target.value)} placeholder="e.g., 923001234567" />
                                 </div>
                                 <Button onClick={() => handleTestApi('official')} disabled={isTestingApi}>
                                      {isTestingApi ? <Loader2 className="mr-2 animate-spin" /> : <TestTube2 className='mr-2'/>}
