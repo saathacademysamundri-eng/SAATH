@@ -19,6 +19,8 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAppContext } from '@/hooks/use-app-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Preloader } from '@/components/ui/preloader';
+import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
@@ -34,7 +36,9 @@ export default function SettingsPage() {
   const [phone, setPhone] = useState('');
   const [logo, setLogo] = useState('');
   const [academicSession, setAcademicSession] = useState('');
-  const [preloaderStyle, setPreloaderStyle] = useState('');
+  
+  // Appearance State
+  const [preloaderStyle, setPreloaderStyle] = useState('style-1');
 
   // WhatsApp State
   const [ultraMsgEnabled, setUltraMsgEnabled] = useState(false);
@@ -99,13 +103,23 @@ export default function SettingsPage() {
 
   const handleSaveGeneral = async () => {
     setIsSaving(true);
-    await updateSettings({ name, address, phone, logo, academicSession, preloaderStyle });
+    await updateSettings({ name, address, phone, logo, academicSession });
     setIsSaving(false);
     toast({
       title: 'Settings Saved',
       description: 'Your general settings have been updated.',
     });
   };
+
+  const handleSaveAppearance = async () => {
+    setIsSaving(true);
+    await updateSettings({ preloaderStyle });
+    setIsSaving(false);
+    toast({
+      title: 'Appearance Saved',
+      description: 'Your appearance settings have been updated.',
+    });
+  }
 
   const handleSaveWhatsApp = async () => {
     setIsSaving(true);
@@ -187,8 +201,9 @@ export default function SettingsPage() {
           </p>
         </div>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-4">
+          <TabsList className="grid w-full max-w-lg grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
             <TabsTrigger value="api">API & Database</TabsTrigger>
@@ -213,10 +228,6 @@ export default function SettingsPage() {
                       <div className="space-y-2">
                         <Skeleton className="h-4 w-20" />
                         <Skeleton className="h-20 w-full" />
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-10 w-full" />
                       </div>
                       <div className="space-y-2">
                         <Skeleton className="h-4 w-20" />
@@ -259,19 +270,6 @@ export default function SettingsPage() {
                               <Input id="logo-url" placeholder="https://example.com/logo.png" value={logo} onChange={(e) => setLogo(e.target.value)} />
                           </div>
                       </div>
-                       <div className="space-y-2">
-                          <Label>Application Preloader Style</Label>
-                          <Select value={preloaderStyle} onValueChange={setPreloaderStyle}>
-                              <SelectTrigger>
-                                  <SelectValue placeholder="Select preloader" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  {Array.from({length: 10}, (_, i) => `Style ${i + 1}`).map((style, i) => (
-                                      <SelectItem key={style} value={`style-${i + 1}`}>{style}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                      </div>
                     </>
                   )}
                 </CardContent>
@@ -279,6 +277,42 @@ export default function SettingsPage() {
                     <Button onClick={handleSaveGeneral} disabled={isSaving || isSettingsLoading}>
                       {isSaving && <Loader2 className="mr-2 animate-spin" />}
                       {isSaving ? 'Saving...' : 'Save General Settings'}
+                    </Button>
+                </CardFooter>
+            </Card>
+          </TabsContent>
+           <TabsContent value="appearance">
+            <Card className='max-w-4xl'>
+                <CardHeader>
+                    <CardTitle>Application Appearance</CardTitle>
+                    <CardDescription>Customize the look and feel of the application.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div>
+                        <Label className="text-base font-semibold">Preloader Style</Label>
+                        <p className="text-sm text-muted-foreground mb-4">Select the loading animation that appears when the application is loading data.</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {Array.from({ length: 15 }, (_, i) => `style-${i + 1}`).map(style => (
+                                <Card 
+                                    key={style} 
+                                    className={cn(
+                                        "cursor-pointer hover:border-primary",
+                                        preloaderStyle === style && "border-primary border-2"
+                                    )}
+                                    onClick={() => setPreloaderStyle(style)}
+                                >
+                                    <CardContent className="flex items-center justify-center p-6 h-32">
+                                        <Preloader style={style as any} />
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button onClick={handleSaveAppearance} disabled={isSaving || isSettingsLoading}>
+                        {isSaving && <Loader2 className="mr-2 animate-spin" />}
+                        Save Appearance Settings
                     </Button>
                 </CardFooter>
             </Card>
