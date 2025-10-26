@@ -3,17 +3,11 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SettingsProvider } from '@/hooks/use-settings';
-import { getSettings } from '@/lib/firebase/firestore';
 
-export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSettings();
-  const title = settings?.name || 'My Academy';
-
-  return {
-    title,
+export const metadata: Metadata = {
+    title: 'My Academy',
     description: 'An Academy Management System',
-  };
-}
+};
 
 export default function RootLayout({
   children,

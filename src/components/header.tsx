@@ -10,11 +10,17 @@ import { Input } from './ui/input';
 import { Search } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { SearchCommand } from './search-command';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export function Header() {
   const { settings } = useSettings();
   const [openSearch, setOpenSearch] = useState(false);
+
+  useEffect(() => {
+    if (settings.name) {
+      document.title = settings.name;
+    }
+  }, [settings.name]);
 
   return (
     <>
