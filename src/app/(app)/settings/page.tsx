@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAppContext } from '@/hooks/use-app-context';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
@@ -48,14 +49,19 @@ export default function SettingsPage() {
   const [absentMsg, setAbsentMsg] = useState(true);
   const [paymentReceiptMsg, setPaymentReceiptMsg] = useState(true);
 
-  const [newAdmissionTemplate, setNewAdmissionTemplate] = useState('Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.');
-  const [absentTemplate, setAbsentTemplate] = useState('Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.');
-  const [paymentReceiptTemplate, setPaymentReceiptTemplate] = useState('Dear parent, we have received a payment of {amount} for {student_name}. Thank you!');
+  const initialAdmissionTemplate = 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.';
+  const initialAbsentTemplate = 'Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.';
+  const initialPaymentReceiptTemplate = 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!';
+
+  const [newAdmissionTemplate, setNewAdmissionTemplate] = useState(initialAdmissionTemplate);
+  const [absentTemplate, setAbsentTemplate] = useState(initialAbsentTemplate);
+  const [paymentReceiptTemplate, setPaymentReceiptTemplate] = useState(initialPaymentReceiptTemplate);
 
   const [customMessage, setCustomMessage] = useState('');
   const [customMessageAudience, setCustomMessageAudience] = useState('all_students');
   const [specificSearch, setSpecificSearch] = useState('');
   const [customNumbers, setCustomNumbers] = useState('');
+  const [selectedClassForCustomMessage, setSelectedClassForCustomMessage] = useState('');
 
 
   useEffect(() => {
@@ -125,6 +131,14 @@ export default function SettingsPage() {
     }
 
     setIsTestingApi(false);
+  }
+  
+  const quickTemplates = {
+    'Absentee Notice': initialAbsentTemplate,
+    'Fee Payment Receipt': initialPaymentReceiptTemplate,
+    'Admission Confirmation': initialAdmissionTemplate,
+    'Student Deactivation Notice': 'Dear parent, the profile for {student_name} has been deactivated.',
+    'Teacher Deactivation Notice': 'Dear {teacher_name}, your profile has been deactivated.'
   }
 
   return (
@@ -360,67 +374,95 @@ export default function SettingsPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <MessageSquarePlus />
-                        Send Custom Message
+                        Custom Messaging
                     </CardTitle>
                     <CardDescription>Send a one-time message to a specific group of users.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="md:col-span-1">
-                        <Label>Send To</Label>
-                        <Tabs defaultValue="all_students" orientation="vertical" className="mt-2">
-                            <TabsList className="grid grid-cols-2 md:grid-cols-1 h-full">
-                                <TabsTrigger value="all_students">All Students</TabsTrigger>
-                                <TabsTrigger value="all_teachers">All Teachers</TabsTrigger>
-                                <TabsTrigger value="specific_class">Specific Class</TabsTrigger>
-                                <TabsTrigger value="specific_student">Specific Student</TabsTrigger>
-                                <TabsTrigger value="specific_teacher">Specific Teacher</TabsTrigger>
-                                <TabsTrigger value="custom_numbers">Custom Numbers</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
+                <CardContent className="space-y-6">
+                    <div>
+                        <Label className="mb-2 block">Send To:</Label>
+                        <RadioGroup value={customMessageAudience} onValueChange={setCustomMessageAudience} className="flex flex-wrap gap-x-6 gap-y-2">
+                             <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="all_students" id="all_students" />
+                                <Label htmlFor="all_students" className="font-normal">All Students</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="specific_class" id="specific_class" />
+                                <Label htmlFor="specific_class" className="font-normal">Specific Class</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="specific_student" id="specific_student" />
+                                <Label htmlFor="specific_student" className="font-normal">Specific Student</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="all_teachers" id="all_teachers" />
+                                <Label htmlFor="all_teachers" className="font-normal">All Teachers</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="specific_teacher" id="specific_teacher" />
+                                <Label htmlFor="specific_teacher" className="font-normal">Specific Teacher</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="custom_numbers" id="custom_numbers" />
+                                <Label htmlFor="custom_numbers" className="font-normal">Custom Numbers</Label>
+                            </div>
+                        </RadioGroup>
                     </div>
-                    <div className="md:col-span-2 space-y-4">
-                        <div>
-                            <Label htmlFor="custom-message">Message</Label>
-                            <Textarea id="custom-message" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} placeholder="Type your message here..." className="min-h-[150px]"/>
+
+                    {customMessageAudience === 'specific_class' && (
+                        <div className="space-y-2">
+                            <Label>Select Class</Label>
+                            <Select onValueChange={setSelectedClassForCustomMessage} disabled={appLoading}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a class..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
                         </div>
-                        <Tabs defaultValue="all_students" className="w-full">
-                            <TabsContent value="specific_class">
-                                <div className="space-y-2">
-                                    <Label>Select Class</Label>
-                                    <Select disabled={appLoading}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a class..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </TabsContent>
-                            <TabsContent value="specific_student">
-                                <div className="space-y-2">
-                                    <Label>Search Student</Label>
-                                    <Input value={specificSearch} onChange={e => setSpecificSearch(e.target.value)} placeholder="Enter student name or roll #..." />
-                                </div>
-                            </TabsContent>
-                             <TabsContent value="specific_teacher">
-                                <div className="space-y-2">
-                                    <Label>Search Teacher</Label>
-                                    <Input value={specificSearch} onChange={e => setSpecificSearch(e.target.value)} placeholder="Enter teacher name or ID..." />
-                                </div>
-                            </TabsContent>
-                             <TabsContent value="custom_numbers">
-                                <div className="space-y-2">
-                                    <Label>Custom Numbers</Label>
-                                    <Textarea value={customNumbers} onChange={e => setCustomNumbers(e.target.value)} placeholder="Enter numbers separated by commas, e.g., 923001234567,923017654321" />
-                                </div>
-                            </TabsContent>
-                        </Tabs>
+                    )}
+                    {customMessageAudience === 'specific_student' && (
+                        <div className="space-y-2">
+                            <Label>Search Student</Label>
+                            <Input value={specificSearch} onChange={e => setSpecificSearch(e.target.value)} placeholder="Enter student name or roll #..." />
+                        </div>
+                    )}
+                    {customMessageAudience === 'specific_teacher' && (
+                        <div className="space-y-2">
+                            <Label>Search Teacher</Label>
+                            <Input value={specificSearch} onChange={e => setSpecificSearch(e.target.value)} placeholder="Enter teacher name or ID..." />
+                        </div>
+                    )}
+                    {customMessageAudience === 'custom_numbers' && (
+                        <div className="space-y-2">
+                            <Label>Custom Numbers</Label>
+                            <Textarea value={customNumbers} onChange={e => setCustomNumbers(e.target.value)} placeholder="Enter numbers separated by commas, e.g., 923001234567,923017654321" />
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        <Label htmlFor="custom-message">Message</Label>
+                        <Textarea id="custom-message" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} placeholder="Type your message here..." className="min-h-[150px]"/>
+                         <p className="text-xs text-muted-foreground">
+                            Variables: {"{student_name}, {father_name}, {teacher_name}, {class}, {academy_name}"}
+                        </p>
+                    </div>
+
+                    <div>
+                        <Label>Quick Templates</Label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {Object.entries(quickTemplates).map(([name, template]) => (
+                                <Button key={name} variant="outline" size="sm" onClick={() => setCustomMessage(template)}>
+                                    {name}
+                                </Button>
+                            ))}
+                        </div>
                     </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="justify-end">
                     <Button>
-                        <Send className="mr-2" />
+                        <Send className="mr-2 h-4 w-4" />
                         Send Message
                     </Button>
                 </CardFooter>
