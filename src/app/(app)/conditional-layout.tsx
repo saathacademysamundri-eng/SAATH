@@ -50,6 +50,7 @@ import { auth } from '@/lib/firebase/config';
 import { signOut } from 'firebase/auth';
 import { AppProvider } from '@/hooks/use-app-context';
 import { WelcomeDialog } from '@/components/welcome-dialog';
+import { GlobalPreloader } from '@/components/global-preloader';
 
 function SidebarPin() {
     const { isPinned, setPinned } = useSidebar();
@@ -164,11 +165,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
 
 
   if (loading) {
-      return (
-        <div className="flex h-screen items-center justify-center">
-            <p>Loading...</p>
-        </div>
-      )
+      return <GlobalPreloader />;
   }
 
   if (!user) {
