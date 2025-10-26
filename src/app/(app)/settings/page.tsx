@@ -266,7 +266,7 @@ export default function SettingsPage() {
                                   <SelectValue placeholder="Select preloader" />
                               </SelectTrigger>
                               <SelectContent>
-                                  {Array.from({length: 10}, (_, i) => `Style ${i + 1}`).map(style => (
+                                  {Array.from({length: 10}, (_, i) => `Style ${i + 1}`).map((style, i) => (
                                       <SelectItem key={style} value={`style-${i + 1}`}>{style}</SelectItem>
                                   ))}
                               </SelectContent>
