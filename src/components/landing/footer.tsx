@@ -26,8 +26,8 @@ export function Footer() {
 
   return (
     <footer className="bg-background py-12">
-      <div className="container grid grid-cols-1 gap-8 text-center md:grid-cols-5 md:text-left">
-        <div className="space-y-4 col-span-2">
+      <div className="container grid grid-cols-1 gap-8 md:grid-cols-5 md:text-left">
+        <div className="space-y-4 col-span-2 md:col-span-1">
           <div className="flex justify-center md:justify-start">
             <div className="h-10 w-auto">
               <Logo />
@@ -48,52 +48,54 @@ export function Footer() {
           </div>
         </div>
         
-        <div>
-          <h4 className="mb-4 font-semibold">Subject</h4>
-          <ul className="space-y-2">
-            {subjectLinks.map((link) => (
-              <li key={link}>
-                <Link
-                  href="#"
-                  className="text-sm text-muted-foreground hover:text-orange-500"
-                >
-                  {link}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <div className='col-span-1 md:col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8'>
+            <div>
+              <h4 className="mb-4 font-semibold text-center md:text-left">Subject</h4>
+              <ul className="space-y-2 text-center md:text-left">
+                {subjectLinks.map((link) => (
+                  <li key={link}>
+                    <Link
+                      href="#"
+                      className="text-sm text-muted-foreground hover:text-orange-500"
+                    >
+                      {link}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-        <div>
-          <h4 className="mb-4 font-semibold">Company</h4>
-          <ul className="space-y-2">
-            {companyLinks.map((link) => (
-              <li key={link}>
-                <Link
-                  href="#"
-                  className="text-sm text-muted-foreground hover:text-orange-500"
-                >
-                  {link}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+            <div>
+              <h4 className="mb-4 font-semibold text-center md:text-left">Company</h4>
+              <ul className="space-y-2 text-center md:text-left">
+                {companyLinks.map((link) => (
+                  <li key={link}>
+                    <Link
+                      href="#"
+                      className="text-sm text-muted-foreground hover:text-orange-500"
+                    >
+                      {link}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-        <div>
-          <h4 className="mb-4 font-semibold">Utility Page</h4>
-          <ul className="space-y-2">
-            {utilityLinks.map((link) => (
-              <li key={link}>
-                <Link
-                  href="#"
-                  className="text-sm text-muted-foreground hover:text-orange-500"
-                >
-                  {link}
-                </Link>
-              </li>
-            ))}
-          </ul>
+            <div>
+              <h4 className="mb-4 font-semibold text-center md:text-left">Utility Page</h4>
+              <ul className="space-y-2 text-center md:text-left">
+                {utilityLinks.map((link) => (
+                  <li key={link}>
+                    <Link
+                      href="#"
+                      className="text-sm text-muted-foreground hover:text-orange-500"
+                    >
+                      {link}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
         </div>
 
       </div>

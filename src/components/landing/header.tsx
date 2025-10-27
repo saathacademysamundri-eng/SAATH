@@ -25,7 +25,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-20 items-center">
-        <div className="mr-4 hidden md:flex">
+        <div className="mr-auto md:mr-4">
           <div className="h-12 w-auto">
             <Logo />
           </div>
@@ -75,9 +75,14 @@ export function Header() {
                 <Link href="/dashboard">Dashboard</Link>
             </Button>
           ) : (
-            <Button asChild>
-              <Link href="/login">Sign In</Link>
-            </Button>
+            <>
+                <Button asChild variant="outline">
+                    <Link href="/login">Sign In</Link>
+                </Button>
+                 <Button asChild>
+                    <Link href="#">Register</Link>
+                </Button>
+            </>
           )}
         </div>
       </div>
