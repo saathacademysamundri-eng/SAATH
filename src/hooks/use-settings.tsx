@@ -1,8 +1,10 @@
 
+
 'use client';
 
 import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import { doc, setDoc, getFirestore } from 'firebase/firestore';
 
 export interface Settings {
   name: string;
@@ -27,6 +29,22 @@ export interface Settings {
   newAdmissionTemplate: string;
   absentTemplate: string;
   paymentReceiptTemplate: string;
+  heroTitle1: string;
+  heroSubtitle1: string;
+  heroButtonText1: string;
+  heroTitle2: string;
+  heroSubtitle2: string;
+  heroButtonText2: string;
+  feature1Title: string;
+  feature1Value: string;
+  feature2Title: string;
+  feature2Value: string;
+  feature3Title: string;
+  feature3Value: string;
+  socialFacebook: string;
+  socialInstagram: string;
+  socialYoutube: string;
+  socialTwitter: string;
 }
 
 interface SettingsContextType {
@@ -58,6 +76,22 @@ const defaultSettings: Settings = {
   newAdmissionTemplate: 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.',
   absentTemplate: 'Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.',
   paymentReceiptTemplate: 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!',
+  heroTitle1: 'Get The Best Education',
+  heroSubtitle1: 'We have a team of professionals who are always ready to help you.',
+  heroButtonText1: 'Get Started',
+  heroTitle2: 'Boost Your Skills With Us',
+  heroSubtitle2: 'Our certified tutors provide the best, experienced and certified tutors across a series of strings.',
+  heroButtonText2: 'Our Courses',
+  feature1Title: 'Years of Experience',
+  feature1Value: '12+',
+  feature2Title: 'Professional Tutors',
+  feature2Value: '25+',
+  feature3Title: 'Satisfied Students',
+  feature3Value: '1.5k+',
+  socialFacebook: '#',
+  socialInstagram: '#',
+  socialYoutube: '#',
+  socialTwitter: '#',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -67,10 +101,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
 
   const applyTheme = (settingsToApply: Settings) => {
-    document.documentElement.style.setProperty('--sidebar-background', settingsToApply.sidebarBg);
-    document.documentElement.style.setProperty('--sidebar-foreground', settingsToApply.sidebarFg);
-    document.documentElement.style.setProperty('--sidebar-accent', settingsToApply.sidebarAccent);
-    document.documentElement.style.setProperty('--sidebar-accent-foreground', settingsToApply.sidebarAccentFg);
+    // This function is now empty as we are not applying sidebar theme from here
   }
 
   useEffect(() => {
@@ -108,10 +139,13 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
     const updatedSettings = { ...settings, ...newSettings };
-    setSettingsState(updatedSettings); 
-    await updateDBSettings(updatedSettings);
-    localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
-    applyTheme(updatedSettings);
+    setSettingsState(updatedSettings);
+    try {
+        await updateDBSettings(updatedSettings);
+        localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
+    } catch (error) {
+        console.error("Failed to save settings:", error);
+    }
   }, [settings]);
 
   return (

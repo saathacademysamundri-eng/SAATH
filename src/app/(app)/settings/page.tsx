@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, TestTube2, Wifi, MessageSquarePlus, Send, Palette } from 'lucide-react';
+import { Database, Loader2, TestTube2, Wifi, MessageSquarePlus, Send, Palette, Globe } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { seedDatabase } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,6 +39,24 @@ export default function SettingsPage() {
   const [logo, setLogo] = useState('');
   const [academicSession, setAcademicSession] = useState('');
   
+  // Website State
+  const [heroTitle1, setHeroTitle1] = useState('');
+  const [heroSubtitle1, setHeroSubtitle1] = useState('');
+  const [heroButtonText1, setHeroButtonText1] = useState('');
+  const [heroTitle2, setHeroTitle2] = useState('');
+  const [heroSubtitle2, setHeroSubtitle2] = useState('');
+  const [heroButtonText2, setHeroButtonText2] = useState('');
+  const [feature1Title, setFeature1Title] = useState('');
+  const [feature1Value, setFeature1Value] = useState('');
+  const [feature2Title, setFeature2Title] = useState('');
+  const [feature2Value, setFeature2Value] = useState('');
+  const [feature3Title, setFeature3Title] = useState('');
+  const [feature3Value, setFeature3Value] = useState('');
+  const [socialFacebook, setSocialFacebook] = useState('');
+  const [socialInstagram, setSocialInstagram] = useState('');
+  const [socialYoutube, setSocialYoutube] = useState('');
+  const [socialTwitter, setSocialTwitter] = useState('');
+
   // Appearance State
   const [preloaderStyle, setPreloaderStyle] = useState('style-1');
 
@@ -78,6 +96,24 @@ export default function SettingsPage() {
       setAcademicSession(settings.academicSession);
       setPreloaderStyle(settings.preloaderStyle);
 
+      // Website settings
+      setHeroTitle1(settings.heroTitle1);
+      setHeroSubtitle1(settings.heroSubtitle1);
+      setHeroButtonText1(settings.heroButtonText1);
+      setHeroTitle2(settings.heroTitle2);
+      setHeroSubtitle2(settings.heroSubtitle2);
+      setHeroButtonText2(settings.heroButtonText2);
+      setFeature1Title(settings.feature1Title);
+      setFeature1Value(settings.feature1Value);
+      setFeature2Title(settings.feature2Title);
+      setFeature2Value(settings.feature2Value);
+      setFeature3Title(settings.feature3Title);
+      setFeature3Value(settings.feature3Value);
+      setSocialFacebook(settings.socialFacebook);
+      setSocialInstagram(settings.socialInstagram);
+      setSocialYoutube(settings.socialYoutube);
+      setSocialTwitter(settings.socialTwitter);
+
       // WhatsApp settings
       setUltraMsgEnabled(settings.ultraMsgEnabled);
       setOfficialApiEnabled(settings.officialApiEnabled);
@@ -112,6 +148,23 @@ export default function SettingsPage() {
     toast({
       title: 'Settings Saved',
       description: 'Your general settings have been updated.',
+    });
+  };
+
+  const handleSaveWebsite = async () => {
+    setIsSaving(true);
+    await updateSettings({
+        heroTitle1, heroSubtitle1, heroButtonText1,
+        heroTitle2, heroSubtitle2, heroButtonText2,
+        feature1Title, feature1Value,
+        feature2Title, feature2Value,
+        feature3Title, feature3Value,
+        socialFacebook, socialInstagram, socialYoutube, socialTwitter,
+    });
+    setIsSaving(false);
+    toast({
+      title: 'Website Settings Saved',
+      description: 'Your landing page content has been updated.',
     });
   };
 
@@ -268,10 +321,10 @@ export default function SettingsPage() {
           </p>
         </div>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-5">
+          <TabsList className="grid w-full max-w-xl grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            <TabsTrigger value="website">Website</TabsTrigger>
+            <TabsTrigger value="website"> <Globe className="mr-2 h-4 w-4"/> Website</TabsTrigger>
+            <TabsTrigger value="appearance"> <Palette className="mr-2 h-4 w-4"/> Appearance</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
             <TabsTrigger value="api">API & Database</TabsTrigger>
@@ -349,6 +402,100 @@ export default function SettingsPage() {
                 </CardFooter>
             </Card>
           </TabsContent>
+           <TabsContent value="website">
+            <Card className='max-w-2xl'>
+                <CardHeader>
+                    <CardTitle>Landing Page Content</CardTitle>
+                    <CardDescription>Manage the content displayed on your public-facing homepage.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                   <div className="space-y-4 rounded-lg border p-4">
+                        <h3 className="font-semibold text-lg">Hero Slider - Slide 1</h3>
+                        <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Input value={heroTitle1} onChange={(e) => setHeroTitle1(e.target.value)} placeholder="e.g., Get The Best Education" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Subtitle</Label>
+                            <Textarea value={heroSubtitle1} onChange={(e) => setHeroSubtitle1(e.target.value)} placeholder="e.g., We have a team of professionals..." />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Button Text</Label>
+                            <Input value={heroButtonText1} onChange={(e) => setHeroButtonText1(e.target.value)} placeholder="e.g., Get Started" />
+                        </div>
+                   </div>
+                    <div className="space-y-4 rounded-lg border p-4">
+                        <h3 className="font-semibold text-lg">Hero Slider - Slide 2</h3>
+                        <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Input value={heroTitle2} onChange={(e) => setHeroTitle2(e.target.value)} placeholder="e.g., Boost Your Skills" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Subtitle</Label>
+                            <Textarea value={heroSubtitle2} onChange={(e) => setHeroSubtitle2(e.target.value)} placeholder="e.g., Join our community and learn..." />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Button Text</Label>
+                            <Input value={heroButtonText2} onChange={(e) => setHeroButtonText2(e.target.value)} placeholder="e.g., Our Courses" />
+                        </div>
+                   </div>
+                   <div className="space-y-4 rounded-lg border p-4">
+                        <h3 className="font-semibold text-lg">Features Section</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Feature 1 Title</Label>
+                                <Input value={feature1Title} onChange={(e) => setFeature1Title(e.target.value)} placeholder="e.g., Years of Experience" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Feature 1 Value</Label>
+                                <Input value={feature1Value} onChange={(e) => setFeature1Value(e.target.value)} placeholder="e.g., 12+" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label>Feature 2 Title</Label>
+                                <Input value={feature2Title} onChange={(e) => setFeature2Title(e.target.value)} placeholder="e.g., Professional Tutors" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Feature 2 Value</Label>
+                                <Input value={feature2Value} onChange={(e) => setFeature2Value(e.target.value)} placeholder="e.g., 25" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label>Feature 3 Title</Label>
+                                <Input value={feature3Title} onChange={(e) => setFeature3Title(e.target.value)} placeholder="e.g., Satisfied Students" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Feature 3 Value</Label>
+                                <Input value={feature3Value} onChange={(e) => setFeature3Value(e.target.value)} placeholder="e.g., 1.5k" />
+                            </div>
+                        </div>
+                   </div>
+                    <div className="space-y-4 rounded-lg border p-4">
+                        <h3 className="font-semibold text-lg">Footer Social Media Links</h3>
+                        <div className="space-y-2">
+                            <Label>Facebook URL</Label>
+                            <Input value={socialFacebook} onChange={(e) => setSocialFacebook(e.target.value)} placeholder="https://facebook.com/your-page" />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Instagram URL</Label>
+                            <Input value={socialInstagram} onChange={(e) => setSocialInstagram(e.target.value)} placeholder="https://instagram.com/your-profile" />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>YouTube URL</Label>
+                            <Input value={socialYoutube} onChange={(e) => setSocialYoutube(e.target.value)} placeholder="https://youtube.com/your-channel" />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Twitter URL</Label>
+                            <Input value={socialTwitter} onChange={(e) => setSocialTwitter(e.target.value)} placeholder="https://twitter.com/your-handle" />
+                        </div>
+                    </div>
+                </CardContent>
+                 <CardFooter>
+                    <Button onClick={handleSaveWebsite} disabled={isSaving || isSettingsLoading}>
+                      {isSaving && <Loader2 className="mr-2 animate-spin" />}
+                      Save Website Settings
+                    </Button>
+                </CardFooter>
+            </Card>
+           </TabsContent>
            <TabsContent value="appearance">
             <Card className='max-w-4xl'>
                 <CardHeader>
@@ -383,17 +530,6 @@ export default function SettingsPage() {
                         Save Appearance Settings
                     </Button>
                 </CardFooter>
-            </Card>
-          </TabsContent>
-          <TabsContent value="website">
-            <Card>
-              <CardHeader>
-                <CardTitle>Website Content</CardTitle>
-                <CardDescription>Manage the content displayed on your public-facing landing page. This section is under construction.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Editing options for the header menu, hero slider, notice board, and other landing page sections will be available here soon.</p>
-              </CardContent>
             </Card>
           </TabsContent>
           <TabsContent value="whatsapp">

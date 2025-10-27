@@ -5,14 +5,6 @@ import { Facebook, Instagram, Youtube, Twitter, Send } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '../logo';
 
-const socialLinks = [
-  { icon: Facebook, href: '#' },
-  { icon: Instagram, href: '#' },
-  { icon: Youtube, href: '#' },
-  { icon: Twitter, href: '#' },
-];
-
-const subjectLinks = ['Web Design', 'UX/UI Design', 'Branding Identity', 'Simple Design', 'Strategy', 'Digital Marketing'];
 const companyLinks = ['About', 'Services', 'News', 'Career', 'Team', 'Expert Teachers'];
 const utilityLinks = ['Style Guide', 'Get a Quote', 'Privacy Policy', 'Licenses', 'Changelog', 'Emergency'];
 
@@ -21,6 +13,15 @@ export function Footer() {
   const { settings } = useSettings();
   const year = new Date().getFullYear();
   const academyName = settings.name || 'My Academy';
+  
+  const socialLinks = [
+    { icon: Facebook, href: settings.socialFacebook || '#' },
+    { icon: Instagram, href: settings.socialInstagram || '#' },
+    { icon: Youtube, href: settings.socialYoutube || '#' },
+    { icon: Twitter, href: settings.socialTwitter || '#' },
+  ];
+  
+  const subjectLinks = ['Web Design', 'UX/UI Design', 'Branding Identity', 'Simple Design', 'Strategy', 'Digital Marketing'];
 
   return (
     <footer className="bg-background py-12">
