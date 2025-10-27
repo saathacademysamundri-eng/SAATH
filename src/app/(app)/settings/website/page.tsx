@@ -99,6 +99,29 @@ function SectionEditor({ section, onSectionChange }: { section: Section, onSecti
                 groupedLinks.push({ text: textEl, url: urlEl });
             }
         }
+        
+        const handleAddLink = () => {
+            const newIndex = groupedLinks.length + 1;
+            const newLinkText: TextElement = {
+                id: `${section.id}Link${newIndex}Text`,
+                type: 'text',
+                text: 'New Link'
+            };
+            const newLinkUrl: TextElement = {
+                id: `${section.id}Link${newIndex}Url`,
+                type: 'text',
+                text: '#'
+            };
+            const updatedElements = [...section.elements, newLinkText, newLinkUrl];
+            onSectionChange({ ...section, elements: updatedElements });
+        };
+        
+        const handleRemoveLink = (indexToRemove: number) => {
+            const linkToRemove = groupedLinks[indexToRemove];
+            const updatedElements = section.elements.filter(el => el.id !== linkToRemove.text.id && el.id !== linkToRemove.url.id);
+            onSectionChange({ ...section, elements: updatedElements });
+        }
+
 
         return (
             <AccordionItem value={section.id}>
@@ -109,14 +132,18 @@ function SectionEditor({ section, onSectionChange }: { section: Section, onSecti
                         <Input value={titleElement.text} onChange={(e) => handleElementChange(titleElement.id, { ...titleElement, text: e.target.value })} />
                     </div>
                      {groupedLinks.map((linkGroup, index) => (
-                        <div key={index} className="space-y-2 rounded-md border p-3">
+                        <div key={index} className="space-y-2 rounded-md border p-3 relative">
                             <Label>Link {index + 1}</Label>
                             <div className="flex gap-2">
                                 <Input placeholder="Link Text" value={linkGroup.text.text} onChange={(e) => handleElementChange(linkGroup.text.id, { ...linkGroup.text, text: e.target.value })} />
                                 <Input placeholder="URL" value={linkGroup.url.text} onChange={(e) => handleElementChange(linkGroup.url.id, { ...linkGroup.url, text: e.target.value })} />
+                                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => handleRemoveLink(index)}>
+                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                </Button>
                             </div>
                         </div>
                     ))}
+                    <Button variant="outline" size="sm" onClick={handleAddLink}><PlusCircle className="mr-2 h-4 w-4" /> Create New Link</Button>
                 </AccordionContent>
             </AccordionItem>
         )
@@ -226,5 +253,4 @@ export default function WebsiteEditorPage() {
         </div>
     );
 }
-
 
