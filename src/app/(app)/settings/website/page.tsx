@@ -2,23 +2,106 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { useSettings, type Settings } from '@/hooks/use-settings';
+import { useSettings, type Settings, type Section, type TextElement, type ImageElement, type StyleProps } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Loader2, Monitor } from 'lucide-react';
+import { ArrowLeft, Loader2, Monitor, Type } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type SettingsKey = keyof Settings;
 
+function StyleEditor({ element, onStyleChange }: { element: TextElement | ImageElement, onStyleChange: (style: StyleProps) => void }) {
+    const isTextElement = 'text' in element;
+
+    return (
+        <div className="space-y-2 border-t pt-2 mt-2">
+            <Label className="text-xs text-muted-foreground">Styles</Label>
+            {isTextElement && (
+                 <div className="space-y-1">
+                    <Label htmlFor={`${element.id}-align`} className="text-xs">Alignment</Label>
+                    <Select value={element.style?.textAlign} onValueChange={(value) => onStyleChange({ ...element.style, textAlign: value as any })}>
+                        <SelectTrigger id={`${element.id}-align`} className="h-8 text-xs">
+                            <SelectValue placeholder="Alignment" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="left">Left</SelectItem>
+                            <SelectItem value="center">Center</SelectItem>
+                            <SelectItem value="right">Right</SelectItem>
+                        </SelectContent>
+                    </Select>
+                 </div>
+            )}
+        </div>
+    );
+}
+
+function ElementEditor({ element, onElementChange }: { element: TextElement | ImageElement, onElementChange: (element: TextElement | ImageElement) => void }) {
+    const isTextElement = 'text' in element;
+
+    const handleContentChange = (value: string) => {
+        if (isTextElement) {
+            onElementChange({ ...element, text: value });
+        } else {
+            onElementChange({ ...element, src: value });
+        }
+    };
+    
+    const handleStyleChange = (style: StyleProps) => {
+        onElementChange({ ...element, style });
+    };
+
+    return (
+        <div className="space-y-2 rounded-md border p-3">
+             <Label htmlFor={element.id} className="text-sm font-medium capitalize">{element.id.replace(/([A-Z])/g, ' $1').trim()}</Label>
+            {isTextElement ? (
+                 element.id.toLowerCase().includes('description') || element.id.toLowerCase().includes('subtitle') || element.id.toLowerCase().includes('quote') || element.id.toLowerCase().includes('answer') ? (
+                    <Textarea id={element.id} value={element.text} onChange={(e) => handleContentChange(e.target.value)} placeholder="Enter text..." />
+                 ) : (
+                    <Input id={element.id} value={element.text} onChange={(e) => handleContentChange(e.target.value)} placeholder="Enter text..." />
+                 )
+            ) : (
+                 <Input id={element.id} value={element.src} onChange={(e) => handleContentChange(e.target.value)} placeholder="https://example.com/image.png" />
+            )}
+            <StyleEditor element={element} onStyleChange={handleStyleChange} />
+        </div>
+    )
+}
+
+function SectionEditor({ section, onSectionChange }: { section: Section, onSectionChange: (section: Section) => void }) {
+    
+    const handleElementChange = (elementId: string, updatedElement: TextElement | ImageElement) => {
+        const updatedElements = section.elements.map(el => el.id === elementId ? updatedElement : el);
+        onSectionChange({ ...section, elements: updatedElements });
+    };
+
+    return (
+        <AccordionItem value={section.id}>
+            <AccordionTrigger>{section.name}</AccordionTrigger>
+            <AccordionContent className="space-y-3">
+                 {section.elements.map(element => (
+                    <ElementEditor 
+                        key={element.id} 
+                        element={element}
+                        onElementChange={(updatedElement) => handleElementChange(element.id, updatedElement)}
+                    />
+                ))}
+            </AccordionContent>
+        </AccordionItem>
+    );
+}
+
+
 export default function WebsiteEditorPage() {
-    const { settings: initialSettings, updateSettings, isSettingsLoading } = useSettings();
+    const { settings: initialSettings, updateSettings: saveSettings, isSettingsLoading } = useSettings();
     const router = useRouter();
     const { toast } = useToast();
+    const iframeRef = useRef<HTMLIFrameElement>(null);
 
     const [settings, setSettings] = useState<Partial<Settings>>(initialSettings);
     const [isSaving, setIsSaving] = useState(false);
@@ -28,14 +111,24 @@ export default function WebsiteEditorPage() {
             setSettings(initialSettings);
         }
     }, [initialSettings, isSettingsLoading]);
+    
+     useEffect(() => {
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+            iframeRef.current.contentWindow.postMessage({ type: 'settingsUpdate', payload: settings }, '*');
+        }
+    }, [settings]);
 
-    const handleSettingChange = (key: SettingsKey, value: string) => {
-        setSettings(prev => ({ ...prev, [key]: value }));
+
+    const handleSectionChange = (sectionId: string, updatedSection: Section) => {
+        const updatedSections = settings.landingPage?.sections?.map(sec => sec.id === sectionId ? updatedSection : sec);
+        setSettings(prev => ({ ...prev, landingPage: { sections: updatedSections! } }));
     };
+
 
     const handleSave = async () => {
         setIsSaving(true);
-        await updateSettings(settings);
+        // We only save the landingPage part of the settings from this editor
+        await saveSettings({ landingPage: settings.landingPage });
         setIsSaving(false);
         toast({
             title: 'Website Content Saved',
@@ -67,45 +160,24 @@ export default function WebsiteEditorPage() {
                     </Button>
                 </div>
             </header>
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-px bg-border">
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-px bg-border">
                 <ScrollArea className="col-span-1 h-full bg-background">
-                    <div className="p-4 space-y-4">
-                         {Object.entries(initialSettings).filter(([key]) => key.includes('hero') || key.includes('feature') || key.includes('service') || key.includes('benefit') || key.includes('option') || key.includes('testimonial') || key.includes('faq') || key.includes('cta') || key.includes('newsletter') || key.includes('social'))
-                         .map(([key, value]) => (
-                            <div key={key} className="space-y-2">
-                                <Label htmlFor={key} className="capitalize">{key.replace(/([A-Z])/g, ' $1').replace(/(\d)/g, ' $1').trim()}</Label>
-                                {key.toLowerCase().includes('url') || key.toLowerCase().includes('link') ? (
-                                    <Input
-                                        id={key}
-                                        value={settings[key as SettingsKey] as string || ''}
-                                        onChange={(e) => handleSettingChange(key as SettingsKey, e.target.value)}
-                                        placeholder={`URL for ${key}`}
-                                    />
-                                ) : key.toLowerCase().includes('description') || key.toLowerCase().includes('subtitle') || key.toLowerCase().includes('quote') || key.toLowerCase().includes('answer') ? (
-                                    <Textarea
-                                        id={key}
-                                        value={settings[key as SettingsKey] as string || ''}
-                                        onChange={(e) => handleSettingChange(key as SettingsKey, e.target.value)}
-                                        placeholder={`Content for ${key}`}
-                                    />
-                                ) : (
-                                    <Input
-                                        id={key}
-                                        value={settings[key as SettingsKey] as string || ''}
-                                        onChange={(e) => handleSettingChange(key as SettingsKey, e.target.value)}
-                                        placeholder={`Value for ${key}`}
-                                    />
-                                )}
-                            </div>
-                         ))}
-                    </div>
+                    <Accordion type="multiple" className="w-full p-4">
+                        {settings.landingPage?.sections?.map(section => (
+                            <SectionEditor 
+                                key={section.id} 
+                                section={section}
+                                onSectionChange={(updatedSection) => handleSectionChange(section.id, updatedSection)}
+                            />
+                        ))}
+                    </Accordion>
                 </ScrollArea>
-                <div className="col-span-1 lg:col-span-2 bg-background h-full">
+                <div className="col-span-1 bg-background h-full">
                     <iframe 
+                        ref={iframeRef}
                         src="/"
                         className="w-full h-full border-0"
                         title="Live Preview"
-                        key={JSON.stringify(settings)} // Force re-render on setting change
                     />
                 </div>
             </div>

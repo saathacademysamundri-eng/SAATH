@@ -3,44 +3,48 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Award, Users, Heart } from 'lucide-react';
-import { useSettings } from '@/hooks/use-settings';
+import { useLandingPageContent } from '@/hooks/use-settings';
 
 export function TeachingServices() {
-  const { settings } = useSettings();
+  const content = useLandingPageContent();
+  const section = content.getSection('services');
+  if (!section) return null;
 
   const services = [
     {
-      title: settings.service1Title,
-      description: settings.service1Description,
+      title: content.getElement('service1Title')?.text,
+      description: content.getElement('service1Description')?.text,
       icon: <Award className="h-8 w-8" />,
       color: 'bg-pink-100 text-pink-600',
     },
     {
-      title: settings.service2Title,
-      description: settings.service2Description,
+      title: content.getElement('service2Title')?.text,
+      description: content.getElement('service2Description')?.text,
       icon: <Users className="h-8 w-8" />,
       color: 'bg-blue-100 text-blue-600',
     },
     {
-      title: settings.service3Title,
-      description: settings.service3Description,
+      title: content.getElement('service3Title')?.text,
+      description: content.getElement('service3Description')?.text,
       icon: <Heart className="h-8 w-8" />,
       color: 'bg-yellow-100 text-yellow-600',
     },
   ];
-
+  
+  const title = content.getElement('servicesTitle');
+  const subtitle = content.getElement('servicesSubtitle');
 
   return (
     <section className="bg-orange-50 py-12 md:py-24 dark:bg-muted/20">
       <div className="container">
-        <div className="mb-12 text-center">
-          <h2 className="text-3xl font-bold md:text-4xl">{settings.servicesTitle}</h2>
-          <p className="mt-2 text-muted-foreground">
-            {settings.servicesSubtitle}
+        <div className="mb-12 text-center" style={{textAlign: title?.style?.textAlign || 'center'}}>
+          <h2 className="text-3xl font-bold md:text-4xl">{title?.text}</h2>
+          <p className="mt-2 text-muted-foreground" style={{textAlign: subtitle?.style?.textAlign}}>
+            {subtitle?.text}
           </p>
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {services.map((service) => (
+          {services.map((service) => service.title && (
             <Card key={service.title} className="text-center shadow-lg">
               <CardContent className="p-8">
                 <div
