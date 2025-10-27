@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -11,23 +10,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, TestTube2, Wifi, MessageSquarePlus, Send, Palette, Globe } from 'lucide-react';
+import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { seedDatabase } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAppContext } from '@/hooks/use-app-context';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Preloader } from '@/components/ui/preloader';
 import { cn } from '@/lib/utils';
 import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
   const { classes, loading: appLoading } = useAppContext();
   const { toast } = useToast();
+  const router = useRouter();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
@@ -38,53 +38,17 @@ export default function SettingsPage() {
   const [phone, setPhone] = useState('');
   const [logo, setLogo] = useState('');
   const [academicSession, setAcademicSession] = useState('');
-  
-  // Website State
-  const [heroTitle1, setHeroTitle1] = useState('');
-  const [heroSubtitle1, setHeroSubtitle1] = useState('');
-  const [heroButtonText1, setHeroButtonText1] = useState('');
-  const [heroTitle2, setHeroTitle2] = useState('');
-  const [heroSubtitle2, setHeroSubtitle2] = useState('');
-  const [heroButtonText2, setHeroButtonText2] = useState('');
-  const [feature1Title, setFeature1Title] = useState('');
-  const [feature1Value, setFeature1Value] = useState('');
-  const [feature2Title, setFeature2Title] = useState('');
-  const [feature2Value, setFeature2Value] = useState('');
-  const [feature3Title, setFeature3Title] = useState('');
-  const [feature3Value, setFeature3Value] = useState('');
-  const [socialFacebook, setSocialFacebook] = useState('');
-  const [socialInstagram, setSocialInstagram] = useState('');
-  const [socialYoutube, setSocialYoutube] = useState('');
-  const [socialTwitter, setSocialTwitter] = useState('');
 
   // Appearance State
   const [preloaderStyle, setPreloaderStyle] = useState('style-1');
 
   // WhatsApp State
   const [ultraMsgEnabled, setUltraMsgEnabled] = useState(false);
-  const [officialApiEnabled, setOfficialApiEnabled] = useState(false);
   const [ultraMsgApiUrl, setUltraMsgApiUrl] = useState('');
   const [ultraMsgToken, setUltraMsgToken] = useState('');
-  const [officialApiNumberId, setOfficialApiNumberId] = useState('');
-  const [officialApiToken, setOfficialApiToken] = useState('');
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [testResult, setTestResult] = useState<{status: 'success' | 'error', message: string} | null>(null);
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
-
-  const [newAdmissionMsg, setNewAdmissionMsg] = useState(true);
-  const [absentMsg, setAbsentMsg] = useState(true);
-  const [paymentReceiptMsg, setPaymentReceiptMsg] = useState(true);
-
-  const [newAdmissionTemplate, setNewAdmissionTemplate] = useState('');
-  const [absentTemplate, setAbsentTemplate] = useState('');
-  const [paymentReceiptTemplate, setPaymentReceiptTemplate] = useState('');
-  
-  const [customMessage, setCustomMessage] = useState('');
-  const [customMessageAudience, setCustomMessageAudience] = useState('all_students');
-  const [specificSearch, setSpecificSearch] = useState('');
-  const [customNumbers, setCustomNumbers] = useState('');
-  const [selectedClassForCustomMessage, setSelectedClassForCustomMessage] = useState('');
-  const [isSendingCustom, setIsSendingCustom] = useState(false);
 
 
   useEffect(() => {
@@ -96,37 +60,10 @@ export default function SettingsPage() {
       setAcademicSession(settings.academicSession);
       setPreloaderStyle(settings.preloaderStyle);
 
-      // Website settings
-      setHeroTitle1(settings.heroTitle1);
-      setHeroSubtitle1(settings.heroSubtitle1);
-      setHeroButtonText1(settings.heroButtonText1);
-      setHeroTitle2(settings.heroTitle2);
-      setHeroSubtitle2(settings.heroSubtitle2);
-      setHeroButtonText2(settings.heroButtonText2);
-      setFeature1Title(settings.feature1Title);
-      setFeature1Value(settings.feature1Value);
-      setFeature2Title(settings.feature2Title);
-      setFeature2Value(settings.feature2Value);
-      setFeature3Title(settings.feature3Title);
-      setFeature3Value(settings.feature3Value);
-      setSocialFacebook(settings.socialFacebook);
-      setSocialInstagram(settings.socialInstagram);
-      setSocialYoutube(settings.socialYoutube);
-      setSocialTwitter(settings.socialTwitter);
-
       // WhatsApp settings
       setUltraMsgEnabled(settings.ultraMsgEnabled);
-      setOfficialApiEnabled(settings.officialApiEnabled);
       setUltraMsgApiUrl(settings.ultraMsgApiUrl);
       setUltraMsgToken(settings.ultraMsgToken);
-      setOfficialApiNumberId(settings.officialApiNumberId);
-      setOfficialApiToken(settings.officialApiToken);
-      setNewAdmissionMsg(settings.newAdmissionMsg);
-      setAbsentMsg(settings.absentMsg);
-      setPaymentReceiptMsg(settings.paymentReceiptMsg);
-      setNewAdmissionTemplate(settings.newAdmissionTemplate);
-      setAbsentTemplate(settings.absentTemplate);
-      setPaymentReceiptTemplate(settings.paymentReceiptTemplate);
     }
   }, [isSettingsLoading, settings]);
 
@@ -151,23 +88,6 @@ export default function SettingsPage() {
     });
   };
 
-  const handleSaveWebsite = async () => {
-    setIsSaving(true);
-    await updateSettings({
-        heroTitle1, heroSubtitle1, heroButtonText1,
-        heroTitle2, heroSubtitle2, heroButtonText2,
-        feature1Title, feature1Value,
-        feature2Title, feature2Value,
-        feature3Title, feature3Value,
-        socialFacebook, socialInstagram, socialYoutube, socialTwitter,
-    });
-    setIsSaving(false);
-    toast({
-      title: 'Website Settings Saved',
-      description: 'Your landing page content has been updated.',
-    });
-  };
-
   const handleSaveAppearance = async () => {
     setIsSaving(true);
     await updateSettings({ preloaderStyle });
@@ -182,17 +102,8 @@ export default function SettingsPage() {
     setIsSaving(true);
     await updateSettings({
         ultraMsgEnabled,
-        officialApiEnabled,
         ultraMsgApiUrl,
         ultraMsgToken,
-        officialApiNumberId,
-        officialApiToken,
-        newAdmissionMsg,
-        absentMsg,
-        paymentReceiptMsg,
-        newAdmissionTemplate,
-        absentTemplate,
-        paymentReceiptTemplate,
     });
     setIsSaving(false);
     toast({
@@ -219,7 +130,7 @@ export default function SettingsPage() {
       setIsSeeding(false);
   }
 
-  const handleTestApi = async (api: 'ultra' | 'official') => {
+  const handleTestApi = async () => {
     if (!testPhoneNumber.trim()) {
         toast({ variant: 'destructive', title: 'API Test Failed', description: 'Please enter a phone number to send a test message to.' });
         return;
@@ -228,16 +139,14 @@ export default function SettingsPage() {
     setIsTestingApi(true);
     setTestResult(null);
 
-    const apiUrl = api === 'ultra' ? ultraMsgApiUrl : ''; // Official API URL is not needed for this simplified logic
-    const token = api === 'ultra' ? ultraMsgToken : officialApiToken;
     const academyName = settings.name || 'My Academy';
     
     try {
         const result = await sendWhatsappMessage({
             to: testPhoneNumber,
             body: `This is a test message from your ${academyName} setup.`,
-            apiUrl,
-            token
+            apiUrl: ultraMsgApiUrl,
+            token: ultraMsgToken
         });
 
         if (result.success) {
@@ -254,64 +163,7 @@ export default function SettingsPage() {
 
     setIsTestingApi(false);
   }
-
-  const handleSendCustomMessage = async () => {
-    if (!customMessage.trim()) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Message cannot be empty.' });
-      return;
-    }
-    
-    // For now, only implementing for "Custom Numbers" to prove the concept.
-    if (customMessageAudience !== 'custom_numbers' || !customNumbers.trim()) {
-      toast({ variant: 'destructive', title: 'Not Implemented', description: 'Custom messaging is currently only implemented for the "Custom Numbers" option.' });
-      return;
-    }
-
-    setIsSendingCustom(true);
-    
-    const numbers = customNumbers.split(',').map(n => n.trim()).filter(n => n);
-    let successCount = 0;
-    let errorCount = 0;
-
-    const apiUrl = ultraMsgEnabled ? ultraMsgApiUrl : '';
-    const token = ultraMsgEnabled ? ultraMsgToken : officialApiToken;
-
-    for (const number of numbers) {
-      try {
-        const result = await sendWhatsappMessage({
-            to: number,
-            body: customMessage,
-            apiUrl,
-            token
-        });
-        if (result.success) {
-          successCount++;
-        } else {
-          errorCount++;
-        }
-      } catch (error) {
-        errorCount++;
-      }
-    }
-
-    toast({
-      title: "Bulk Message Sent",
-      description: `Successfully sent ${successCount} messages. Failed to send ${errorCount} messages.`,
-    });
-
-    setIsSendingCustom(false);
-  }
   
-  const initialAdmissionTemplate = 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.';
-  const initialAbsentTemplate = 'Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.';
-  const initialPaymentReceiptTemplate = 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!';
-
-  const quickTemplates = {
-    'Absentee Notice': initialAbsentTemplate,
-    'Fee Payment Receipt': initialPaymentReceiptTemplate,
-    'Admission Confirmation': initialAdmissionTemplate,
-  }
-
   return (
     <div className="flex flex-col gap-6">
         <div>
@@ -321,13 +173,11 @@ export default function SettingsPage() {
           </p>
         </div>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full max-w-xl grid-cols-5">
+          <TabsList className="grid w-full max-w-xl grid-cols-4">
             <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="website"> <Globe className="mr-2 h-4 w-4"/> Website</TabsTrigger>
+            <TabsTrigger value="website"> <LayoutTemplate className="mr-2 h-4 w-4"/> Website Editor</TabsTrigger>
             <TabsTrigger value="appearance"> <Palette className="mr-2 h-4 w-4"/> Appearance</TabsTrigger>
-            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-            <TabsTrigger value="admin">Admin</TabsTrigger>
-            <TabsTrigger value="api">API & Database</TabsTrigger>
+            <TabsTrigger value="integrations">Integrations</TabsTrigger>
           </TabsList>
           <TabsContent value="general">
             <Card className='max-w-2xl'>
@@ -403,98 +253,18 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
            <TabsContent value="website">
-            <Card className='max-w-2xl'>
-                <CardHeader>
-                    <CardTitle>Landing Page Content</CardTitle>
-                    <CardDescription>Manage the content displayed on your public-facing homepage.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-8">
-                   <div className="space-y-4 rounded-lg border p-4">
-                        <h3 className="font-semibold text-lg">Hero Slider - Slide 1</h3>
-                        <div className="space-y-2">
-                            <Label>Title</Label>
-                            <Input value={heroTitle1} onChange={(e) => setHeroTitle1(e.target.value)} placeholder="e.g., Get The Best Education" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Subtitle</Label>
-                            <Textarea value={heroSubtitle1} onChange={(e) => setHeroSubtitle1(e.target.value)} placeholder="e.g., We have a team of professionals..." />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Button Text</Label>
-                            <Input value={heroButtonText1} onChange={(e) => setHeroButtonText1(e.target.value)} placeholder="e.g., Get Started" />
-                        </div>
-                   </div>
-                    <div className="space-y-4 rounded-lg border p-4">
-                        <h3 className="font-semibold text-lg">Hero Slider - Slide 2</h3>
-                        <div className="space-y-2">
-                            <Label>Title</Label>
-                            <Input value={heroTitle2} onChange={(e) => setHeroTitle2(e.target.value)} placeholder="e.g., Boost Your Skills" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Subtitle</Label>
-                            <Textarea value={heroSubtitle2} onChange={(e) => setHeroSubtitle2(e.target.value)} placeholder="e.g., Join our community and learn..." />
-                        </div>
-                         <div className="space-y-2">
-                            <Label>Button Text</Label>
-                            <Input value={heroButtonText2} onChange={(e) => setHeroButtonText2(e.target.value)} placeholder="e.g., Our Courses" />
-                        </div>
-                   </div>
-                   <div className="space-y-4 rounded-lg border p-4">
-                        <h3 className="font-semibold text-lg">Features Section</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Feature 1 Title</Label>
-                                <Input value={feature1Title} onChange={(e) => setFeature1Title(e.target.value)} placeholder="e.g., Years of Experience" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Feature 1 Value</Label>
-                                <Input value={feature1Value} onChange={(e) => setFeature1Value(e.target.value)} placeholder="e.g., 12+" />
-                            </div>
-                             <div className="space-y-2">
-                                <Label>Feature 2 Title</Label>
-                                <Input value={feature2Title} onChange={(e) => setFeature2Title(e.target.value)} placeholder="e.g., Professional Tutors" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Feature 2 Value</Label>
-                                <Input value={feature2Value} onChange={(e) => setFeature2Value(e.target.value)} placeholder="e.g., 25" />
-                            </div>
-                             <div className="space-y-2">
-                                <Label>Feature 3 Title</Label>
-                                <Input value={feature3Title} onChange={(e) => setFeature3Title(e.target.value)} placeholder="e.g., Satisfied Students" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Feature 3 Value</Label>
-                                <Input value={feature3Value} onChange={(e) => setFeature3Value(e.target.value)} placeholder="e.g., 1.5k" />
-                            </div>
-                        </div>
-                   </div>
-                    <div className="space-y-4 rounded-lg border p-4">
-                        <h3 className="font-semibold text-lg">Footer Social Media Links</h3>
-                        <div className="space-y-2">
-                            <Label>Facebook URL</Label>
-                            <Input value={socialFacebook} onChange={(e) => setSocialFacebook(e.target.value)} placeholder="https://facebook.com/your-page" />
-                        </div>
-                         <div className="space-y-2">
-                            <Label>Instagram URL</Label>
-                            <Input value={socialInstagram} onChange={(e) => setSocialInstagram(e.target.value)} placeholder="https://instagram.com/your-profile" />
-                        </div>
-                         <div className="space-y-2">
-                            <Label>YouTube URL</Label>
-                            <Input value={socialYoutube} onChange={(e) => setSocialYoutube(e.target.value)} placeholder="https://youtube.com/your-channel" />
-                        </div>
-                         <div className="space-y-2">
-                            <Label>Twitter URL</Label>
-                            <Input value={socialTwitter} onChange={(e) => setSocialTwitter(e.target.value)} placeholder="https://twitter.com/your-handle" />
-                        </div>
-                    </div>
-                </CardContent>
-                 <CardFooter>
-                    <Button onClick={handleSaveWebsite} disabled={isSaving || isSettingsLoading}>
-                      {isSaving && <Loader2 className="mr-2 animate-spin" />}
-                      Save Website Settings
-                    </Button>
-                </CardFooter>
-            </Card>
+                <Card className='max-w-2xl'>
+                    <CardHeader>
+                        <CardTitle>Website Content Editor</CardTitle>
+                        <CardDescription>Click the button below to open the live visual editor for your public-facing landing page.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={() => router.push('/settings/website')}>
+                            <LayoutTemplate className="mr-2 h-4 w-4" />
+                            Open Website Editor
+                        </Button>
+                    </CardContent>
+                </Card>
            </TabsContent>
            <TabsContent value="appearance">
             <Card className='max-w-4xl'>
@@ -532,7 +302,7 @@ export default function SettingsPage() {
                 </CardFooter>
             </Card>
           </TabsContent>
-          <TabsContent value="whatsapp">
+          <TabsContent value="integrations">
             <div className="grid gap-6 max-w-4xl">
               <Card>
                 <CardHeader>
@@ -544,7 +314,7 @@ export default function SettingsPage() {
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle>UltraMSG API</CardTitle>
-                                <Switch checked={ultraMsgEnabled} onCheckedChange={(checked) => { setUltraMsgEnabled(checked); if(checked) setOfficialApiEnabled(false); }} />
+                                <Switch checked={ultraMsgEnabled} onCheckedChange={setUltraMsgEnabled} />
                             </div>
                         </CardHeader>
                         {ultraMsgEnabled && (
@@ -561,42 +331,14 @@ export default function SettingsPage() {
                                     <Label htmlFor="test-phone-ultra">Test Phone Number</Label>
                                     <Input id="test-phone-ultra" value={testPhoneNumber} onChange={e => setTestPhoneNumber(e.target.value)} placeholder="e.g., 923001234567" />
                                 </div>
-                                <Button onClick={() => handleTestApi('ultra')} disabled={isTestingApi}>
-                                    {isTestingApi ? <Loader2 className="mr-2 animate-spin" /> : <TestTube2 className='mr-2'/>}
+                                <Button onClick={handleTestApi} disabled={isTestingApi}>
+                                    {isTestingApi ? <Loader2 className="mr-2 animate-spin" /> : <Wifi className='mr-2'/>}
                                     Test API
                                 </Button>
                             </CardContent>
                         )}
                     </Card>
-                     <Card className={officialApiEnabled ? 'border-primary' : ''}>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Official WhatsApp API</CardTitle>
-                                <Switch checked={officialApiEnabled} onCheckedChange={(checked) => { setOfficialApiEnabled(checked); if(checked) setUltraMsgEnabled(false); }} />
-                            </div>
-                        </CardHeader>
-                        {officialApiEnabled && (
-                             <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="official-number-id">Phone Number ID</Label>
-                                    <Input id="official-number-id" value={officialApiNumberId} onChange={e => setOfficialApiNumberId(e.target.value)} placeholder="e.g., 1029384756" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="official-token">Permanent Access Token</Label>
-                                    <Input id="official-token" type="password" value={officialApiToken} onChange={e => setOfficialApiToken(e.target.value)} placeholder="Enter your permanent access token" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="test-phone-official">Test Phone Number</Label>
-                                    <Input id="test-phone-official" value={testPhoneNumber} onChange={e => setTestPhoneNumber(e.target.value)} placeholder="e.g., 923001234567" />
-                                </div>
-                                <Button onClick={() => handleTestApi('official')} disabled={isTestingApi}>
-                                     {isTestingApi ? <Loader2 className="mr-2 animate-spin" /> : <TestTube2 className='mr-2'/>}
-                                    Test API
-                                </Button>
-                            </CardContent>
-                        )}
-                    </Card>
-
+                    
                     {testResult && (
                         <Alert variant={testResult.status === 'error' ? 'destructive' : 'default'}>
                             <Wifi className="h-4 w-4" />
@@ -615,188 +357,14 @@ export default function SettingsPage() {
 
               <Card>
                 <CardHeader>
-                    <CardTitle>Automated Notifications</CardTitle>
-                    <CardDescription>Enable/disable automated messages for specific events. Use placeholders like {"{student_name}"}.</CardDescription>
+                    <CardTitle>Database Management</CardTitle>
+                    <CardDescription>Handle database-related administrative tasks.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-4 rounded-lg border p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <Label htmlFor="new-admission-switch" className="font-medium">Admission Confirmation</Label>
-                                <p className="text-sm text-muted-foreground">Sent on new admission.</p>
-                            </div>
-                            <Switch id="new-admission-switch" checked={newAdmissionMsg} onCheckedChange={setNewAdmissionMsg} />
-                        </div>
-                        {newAdmissionMsg && (
-                            <div className="space-y-2 pt-4 border-t">
-                                <Label htmlFor="new-admission-template">Message Template</Label>
-                                <Textarea id="new-admission-template" value={newAdmissionTemplate} onChange={e => setNewAdmissionTemplate(e.target.value)} />
-                            </div>
-                        )}
-                    </div>
-                     <div className="space-y-4 rounded-lg border p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <Label htmlFor="absent-switch" className="font-medium">Absentee Notice</Label>
-                                <p className="text-sm text-muted-foreground">Sent when a student is marked absent.</p>
-                            </div>
-                            <Switch id="absent-switch" checked={absentMsg} onCheckedChange={setAbsentMsg} />
-                        </div>
-                        {absentMsg && (
-                            <div className="space-y-2 pt-4 border-t">
-                                <Label htmlFor="absent-template">Message Template</Label>
-                                <Textarea id="absent-template" value={absentTemplate} onChange={e => setAbsentTemplate(e.target.value)} />
-                            </div>
-                        )}
-                    </div>
-                     <div className="space-y-4 rounded-lg border p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <Label htmlFor="payment-receipt-switch" className="font-medium">Payment Receipt</Label>
-                                <p className="text-sm text-muted-foreground">Sent after a fee payment is recorded.</p>
-                            </div>
-                            <Switch id="payment-receipt-switch" checked={paymentReceiptMsg} onCheckedChange={setPaymentReceiptMsg} />
-                        </div>
-                        {paymentReceiptMsg && (
-                            <div className="space-y-2 pt-4 border-t">
-                                <Label htmlFor="payment-receipt-template">Message Template</Label>
-                                <Textarea id="payment-receipt-template" value={paymentReceiptTemplate} onChange={e => setPaymentReceiptTemplate(e.target.value)} />
-                            </div>
-                        )}
-                    </div>
-                </CardContent>
-                 <CardFooter>
-                    <Button onClick={handleSaveWhatsApp} disabled={isSaving}>
-                      {isSaving && <Loader2 className="mr-2 animate-spin" />}
-                      {isSaving ? 'Saving...' : 'Save Notification Settings'}
-                    </Button>
-                </CardFooter>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <MessageSquarePlus />
-                        Custom Messaging
-                    </CardTitle>
-                    <CardDescription>Send a one-time message to a specific group of users.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div>
-                        <Label className="mb-2 block">Send To:</Label>
-                        <RadioGroup value={customMessageAudience} onValueChange={setCustomMessageAudience} className="flex flex-wrap gap-x-6 gap-y-2">
-                             <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="all_students" id="all_students" />
-                                <Label htmlFor="all_students" className="font-normal">All Students</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="specific_class" id="specific_class" />
-                                <Label htmlFor="specific_class" className="font-normal">Specific Class</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="specific_student" id="specific_student" />
-                                <Label htmlFor="specific_student" className="font-normal">Specific Student</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="all_teachers" id="all_teachers" />
-                                <Label htmlFor="all_teachers" className="font-normal">All Teachers</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="specific_teacher" id="specific_teacher" />
-                                <Label htmlFor="specific_teacher" className="font-normal">Specific Teacher</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="custom_numbers" id="custom_numbers" />
-                                <Label htmlFor="custom_numbers" className="font-normal">Custom Numbers</Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
-
-                    {customMessageAudience === 'specific_class' && (
-                        <div className="space-y-2">
-                            <Label>Select Class</Label>
-                            <Select onValueChange={setSelectedClassForCustomMessage} disabled={appLoading}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a class..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-                    {customMessageAudience === 'specific_student' && (
-                        <div className="space-y-2">
-                            <Label>Search Student</Label>
-                            <Input value={specificSearch} onChange={e => setSpecificSearch(e.target.value)} placeholder="Enter student name or roll #..." />
-                        </div>
-                    )}
-                    {customMessageAudience === 'specific_teacher' && (
-                        <div className="space-y-2">
-                            <Label>Search Teacher</Label>
-                            <Input value={specificSearch} onChange={e => setSpecificSearch(e.target.value)} placeholder="Enter teacher name or ID..." />
-                        </div>
-                    )}
-                    {customMessageAudience === 'custom_numbers' && (
-                        <div className="space-y-2">
-                            <Label>Custom Numbers</Label>
-                            <Textarea value={customNumbers} onChange={e => setCustomNumbers(e.target.value)} placeholder="Enter numbers separated by commas, e.g., 923001234567,923017654321" />
-                        </div>
-                    )}
-
-                    <div className="space-y-2">
-                        <Label htmlFor="custom-message">Message</Label>
-                        <Textarea id="custom-message" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} placeholder="Type your message here..." className="min-h-[150px]"/>
-                         <p className="text-xs text-muted-foreground">
-                            Variables: {"{student_name}, {father_name}, {teacher_name}, {class}, {academy_name}"}
-                        </p>
-                    </div>
-
-                    <div>
-                        <Label>Quick Templates</Label>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                            {Object.entries(quickTemplates).map(([name, template]) => (
-                                <Button key={name} variant="outline" size="sm" onClick={() => setCustomMessage(template)}>
-                                    {name}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
-                </CardContent>
-                <CardFooter className="justify-end">
-                    <Button onClick={handleSendCustomMessage} disabled={isSendingCustom}>
-                        {isSendingCustom ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                        {isSendingCustom ? 'Sending...' : 'Send Message'}
-                    </Button>
-                </CardFooter>
-              </Card>
-
-            </div>
-          </TabsContent>
-          <TabsContent value="admin">
-              <Card className='max-w-2xl'>
-                <CardHeader>
-                    <CardTitle>Admin Settings</CardTitle>
-                    <CardDescription>This section is for managing administrator credentials. For enhanced security, these actions should be performed directly in your Firebase Authentication console.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     <Button asChild variant="outline">
-                        <Link href="/profile">Change Admin Password</Link>
-                    </Button>
-                </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="api">
-             <Card className='max-w-2xl'>
-                <CardHeader>
-                    <CardTitle>API & Database</CardTitle>
-                    <CardDescription>Manage API keys and database settings.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                 <CardContent>
                      <div className="space-y-2">
-                        <Label>Database</Label>
+                        <Label className="font-semibold">Seed Database</Label>
                         <div className="flex items-center justify-between rounded-md border p-3">
-                           <p className="text-sm">Seed your Firestore database with initial dummy data. This is useful for first-time setup or for testing.</p>
+                           <p className="text-sm text-muted-foreground">Populate your Firestore database with initial dummy data. This is useful for first-time setup or for testing purposes. This action is not reversible.</p>
                             <Button variant="secondary" onClick={handleSeedDatabase} disabled={isSeeding}>
                                 <Database className='mr-2'/>
                                 {isSeeding ? 'Seeding...' : 'Seed Database'}
@@ -804,7 +372,8 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 </CardContent>
-            </Card>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
     </div>
