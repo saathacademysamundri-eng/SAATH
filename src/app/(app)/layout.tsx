@@ -1,10 +1,14 @@
+
 import React, { Suspense } from 'react';
 import { ConditionalLayout } from './conditional-layout';
+import { AppProvider } from '@/hooks/use-app-context';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <ConditionalLayout>{children}</ConditionalLayout>
+       <AppProvider>
+        <ConditionalLayout>{children}</ConditionalLayout>
+      </AppProvider>
     </Suspense>
   );
 }

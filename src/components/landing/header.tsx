@@ -1,10 +1,13 @@
+
 'use client';
 
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
+import { auth } from '@/lib/firebase/config';
+import { Menu, Search } from 'lucide-react';
 import Link from 'next/link';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 const menuItems = [
   { label: 'Home', href: '#' },
@@ -17,6 +20,8 @@ const menuItems = [
 ];
 
 export function Header() {
+  const [user, loading] = useAuthState(auth);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-20 items-center">
@@ -62,12 +67,18 @@ export function Header() {
           ))}
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <Button variant="ghost" asChild>
-             <Link href="/login">Sign In</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/login">Register</Link>
-          </Button>
+            <Button variant="ghost" size="icon">
+                <Search />
+            </Button>
+          {!loading && user ? (
+            <Button asChild>
+                <Link href="/dashboard">Dashboard</Link>
+            </Button>
+          ) : (
+            <Button asChild>
+              <Link href="/login">Sign In</Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>

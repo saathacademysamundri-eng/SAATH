@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Header } from '@/components/header';
@@ -40,6 +39,7 @@ import {
   User as UserIcon,
   MessageCircleQuestion,
   Palette,
+  Globe,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -175,7 +175,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AppProvider>
+    <>
         <WelcomeDialog />
         <SidebarProvider>
             <MainSidebar />
@@ -184,6 +184,6 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
                 <main className="flex-1 p-4 sm:p-6">{children}</main>
             </SidebarInset>
         </SidebarProvider>
-    </AppProvider>
+    </>
   );
 }
