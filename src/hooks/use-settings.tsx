@@ -211,11 +211,71 @@ const defaultSettings: Settings = {
             { id: 'footerSocialYoutube', type: 'text', text: '#' },
             { id: 'footerSocialTwitter', type: 'text', text: '#' },
         ]
+      },
+       {
+        id: 'footerLinks1', name: 'Footer Links: Column 1',
+        elements: [
+            { id: 'footerLinks1Title', type: 'text', text: 'Subject' },
+            { id: 'footerLinks1Link1Text', type: 'text', text: 'Web Design' },
+            { id: 'footerLinks1Link1Url', type: 'text', text: '#' },
+            { id: 'footerLinks1Link2Text', type: 'text', text: 'UX/UI Design' },
+            { id: 'footerLinks1Link2Url', type: 'text', text: '#' },
+            { id: 'footerLinks1Link3Text', type: 'text', text: 'Branding Identity' },
+            { id: 'footerLinks1Link3Url', type: 'text', text: '#' },
+            { id: 'footerLinks1Link4Text', type: 'text', text: 'Simple Design' },
+            { id: 'footerLinks1Link4Url', type: 'text', text: '#' },
+            { id: 'footerLinks1Link5Text', type: 'text', text: 'Strategy' },
+            { id: 'footerLinks1Link5Url', type: 'text', text: '#' },
+            { id: 'footerLinks1Link6Text', type: 'text', text: 'Digital Marketing' },
+            { id: 'footerLinks1Link6Url', type: 'text', text: '#' },
+        ]
+      },
+       {
+        id: 'footerLinks2', name: 'Footer Links: Column 2',
+        elements: [
+            { id: 'footerLinks2Title', type: 'text', text: 'Company' },
+            { id: 'footerLinks2Link1Text', type: 'text', text: 'About' },
+            { id: 'footerLinks2Link1Url', type: 'text', text: '#' },
+            { id: 'footerLinks2Link2Text', type: 'text', text: 'Services' },
+            { id: 'footerLinks2Link2Url', type: 'text', text: '#' },
+            { id: 'footerLinks2Link3Text', type: 'text', text: 'News' },
+            { id: 'footerLinks2Link3Url', type: 'text', text: '#' },
+            { id: 'footerLinks2Link4Text', type: 'text', text: 'Career' },
+            { id: 'footerLinks2Link4Url', type: 'text', text: '#' },
+            { id: 'footerLinks2Link5Text', type: 'text', text: 'Team' },
+            { id: 'footerLinks2Link5Url', type: 'text', text: '#' },
+            { id: 'footerLinks2Link6Text', type: 'text', text: 'Expert Teachers' },
+            { id: 'footerLinks2Link6Url', type: 'text', text: '#' },
+        ]
+      },
+      {
+        id: 'footerLinks3', name: 'Footer Links: Column 3',
+        elements: [
+            { id: 'footerLinks3Title', type: 'text', text: 'Utility Page' },
+            { id: 'footerLinks3Link1Text', type: 'text', text: 'Style Guide' },
+            { id: 'footerLinks3Link1Url', type: 'text', text: '#' },
+            { id: 'footerLinks3Link2Text', type: 'text', text: 'Get a Quote' },
+            { id: 'footerLinks3Link2Url', type: 'text', text: '#' },
+            { id: 'footerLinks3Link3Text', type: 'text', text: 'Privacy Policy' },
+            { id: 'footerLinks3Link3Url', type: 'text', text: '#' },
+            { id: 'footerLinks3Link4Text', type: 'text', text: 'Licenses' },
+            { id: 'footerLinks3Link4Url', type: 'text', text: '#' },
+            { id: 'footerLinks3Link5Text', type: 'text', text: 'Changelog' },
+            { id: 'footerLinks3Link5Url', type: 'text', text: '#' },
+            { id: 'footerLinks3Link6Text', type: 'text', text: 'Emergency' },
+            { id: 'footerLinks3Link6Url', type: 'text', text: '#' },
+        ]
       }
     ]
   },
 };
 
+
+interface SettingsContextType {
+    settings: Settings;
+    updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
+    isSettingsLoading: boolean;
+}
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 

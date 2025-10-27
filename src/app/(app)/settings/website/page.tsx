@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings, type Settings, type Section, type TextElement, type ImageElement, type StyleProps } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Loader2, Monitor, Type } from 'lucide-react';
+import { ArrowLeft, Loader2, Monitor, Type, PlusCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -56,9 +57,15 @@ function ElementEditor({ element, onElementChange }: { element: TextElement | Im
         onElementChange({ ...element, style });
     };
 
+    if (element.id.endsWith('Url') && element.type === 'text') {
+        // Hide URL fields from the generic editor as they are paired with text fields.
+        return null;
+    }
+
+
     return (
         <div className="space-y-2 rounded-md border p-3">
-             <Label htmlFor={element.id} className="text-sm font-medium capitalize">{element.id.replace(/([A-Z])/g, ' $1').trim()}</Label>
+             <Label htmlFor={element.id} className="text-sm font-medium capitalize">{element.id.replace(/([A-Z])/g, ' $1').replace(/Url/g, '').replace(/Text/g, '').trim()}</Label>
             {isTextElement ? (
                  element.id.toLowerCase().includes('description') || element.id.toLowerCase().includes('subtitle') || element.id.toLowerCase().includes('quote') || element.id.toLowerCase().includes('answer') ? (
                     <Textarea id={element.id} value={element.text} onChange={(e) => handleContentChange(e.target.value)} placeholder="Enter text..." />
@@ -79,6 +86,41 @@ function SectionEditor({ section, onSectionChange }: { section: Section, onSecti
         const updatedElements = section.elements.map(el => el.id === elementId ? updatedElement : el);
         onSectionChange({ ...section, elements: updatedElements });
     };
+
+    if (section.id.startsWith('footerLinks')) {
+        const titleElement = section.elements.find(el => el.id === `${section.id}Title`) as TextElement;
+        const links = section.elements.filter(el => el.id.includes('Link'));
+
+        const groupedLinks: { text: TextElement, url: TextElement }[] = [];
+        for(let i = 0; i < links.length / 2; i++) {
+            const textEl = links.find(l => l.id === `${section.id}Link${i + 1}Text`) as TextElement;
+            const urlEl = links.find(l => l.id === `${section.id}Link${i + 1}Url`) as TextElement;
+            if (textEl && urlEl) {
+                groupedLinks.push({ text: textEl, url: urlEl });
+            }
+        }
+
+        return (
+            <AccordionItem value={section.id}>
+                <AccordionTrigger>{section.name}</AccordionTrigger>
+                <AccordionContent className="space-y-3">
+                    <div className="space-y-2 rounded-md border p-3">
+                        <Label>Column Title</Label>
+                        <Input value={titleElement.text} onChange={(e) => handleElementChange(titleElement.id, { ...titleElement, text: e.target.value })} />
+                    </div>
+                     {groupedLinks.map((linkGroup, index) => (
+                        <div key={index} className="space-y-2 rounded-md border p-3">
+                            <Label>Link {index + 1}</Label>
+                            <div className="flex gap-2">
+                                <Input placeholder="Link Text" value={linkGroup.text.text} onChange={(e) => handleElementChange(linkGroup.text.id, { ...linkGroup.text, text: e.target.value })} />
+                                <Input placeholder="URL" value={linkGroup.url.text} onChange={(e) => handleElementChange(linkGroup.url.id, { ...linkGroup.url, text: e.target.value })} />
+                            </div>
+                        </div>
+                    ))}
+                </AccordionContent>
+            </AccordionItem>
+        )
+    }
 
     return (
         <AccordionItem value={section.id}>
@@ -184,4 +226,5 @@ export default function WebsiteEditorPage() {
         </div>
     );
 }
+
 

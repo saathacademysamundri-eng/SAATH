@@ -6,9 +6,6 @@ import { Facebook, Instagram, Youtube, Twitter, Send } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '../logo';
 
-const companyLinks = ['About', 'Services', 'News', 'Career', 'Team', 'Expert Teachers'];
-const utilityLinks = ['Style Guide', 'Get a Quote', 'Privacy Policy', 'Licenses', 'Changelog', 'Emergency'];
-
 export function Footer() {
   const content = useLandingPageContent();
   const year = new Date().getFullYear();
@@ -20,9 +17,13 @@ export function Footer() {
     { icon: Youtube, href: content.getElement('footerSocialYoutube')?.text || '#' },
     { icon: Twitter, href: content.getElement('footerSocialTwitter')?.text || '#' },
   ];
-  
-  const subjectLinks = ['Web Design', 'UX/UI Design', 'Branding Identity', 'Simple Design', 'Strategy', 'Digital Marketing'];
 
+  const footerLinkSections = [
+      content.getSection('footerLinks1'),
+      content.getSection('footerLinks2'),
+      content.getSection('footerLinks3'),
+  ];
+  
   return (
     <footer className="bg-background py-12">
       <div className="container grid grid-cols-1 gap-8 md:grid-cols-5 text-center md:text-left">
@@ -48,53 +49,38 @@ export function Footer() {
         </div>
         
         <div className='col-span-full md:col-span-4 grid grid-cols-1 sm:grid-cols-3 gap-8'>
-            <div>
-              <h4 className="mb-4 font-semibold">Subject</h4>
-              <ul className="space-y-2">
-                {subjectLinks.map((link) => (
-                  <li key={link}>
-                    <Link
-                      href="#"
-                      className="text-sm text-muted-foreground hover:text-orange-500"
-                    >
-                      {link}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {footerLinkSections.map(section => {
+              if (!section) return null;
+              const title = content.getElement(`${section.id}Title`)?.text;
+              const links = section.elements.filter(el => el.type === 'text' && el.id.includes('Link'));
+              
+              const groupedLinks: { text: string, url: string }[] = [];
+              for (let i = 0; i < links.length; i += 2) {
+                  const textEl = links.find(l => l.id === `${section.id}Link${i/2 + 1}Text`);
+                  const urlEl = links.find(l => l.id === `${section.id}Link${i/2 + 1}Url`);
+                  if (textEl && urlEl && 'text' in textEl && 'text' in urlEl) {
+                      groupedLinks.push({ text: textEl.text, url: urlEl.text });
+                  }
+              }
 
-            <div>
-              <h4 className="mb-4 font-semibold">Company</h4>
-              <ul className="space-y-2">
-                {companyLinks.map((link) => (
-                  <li key={link}>
-                    <Link
-                      href="#"
-                      className="text-sm text-muted-foreground hover:text-orange-500"
-                    >
-                      {link}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="mb-4 font-semibold">Utility Page</h4>
-              <ul className="space-y-2">
-                {utilityLinks.map((link) => (
-                  <li key={link}>
-                    <Link
-                      href="#"
-                      className="text-sm text-muted-foreground hover:text-orange-500"
-                    >
-                      {link}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              return (
+                  <div key={section.id}>
+                      <h4 className="mb-4 font-semibold">{title}</h4>
+                      <ul className="space-y-2">
+                          {groupedLinks.map((link, index) => (
+                              <li key={index}>
+                                  <Link
+                                      href={link.url || '#'}
+                                      className="text-sm text-muted-foreground hover:text-orange-500"
+                                  >
+                                      {link.text}
+                                  </Link>
+                              </li>
+                          ))}
+                      </ul>
+                  </div>
+              );
+          })}
         </div>
 
       </div>
