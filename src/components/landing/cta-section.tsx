@@ -12,7 +12,7 @@ export function CtaSection() {
     <section className="container py-12 md:py-24">
       <div className="rounded-2xl bg-blue-100 p-8 dark:bg-blue-900/20 md:p-12">
         <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
-          <div className="space-y-6">
+          <div className="space-y-6 text-center md:text-left">
             <h2 className="text-3xl font-bold text-blue-900 dark:text-blue-200">
               {settings.ctaTitle}
             </h2>

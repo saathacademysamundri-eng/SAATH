@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
@@ -34,18 +33,7 @@ export interface Settings {
   heroTitle2: string;
   heroSubtitle2: string;
   heroButtonText2: string;
-  feature1Title: string;
-  feature1Value: string;
-  feature2Title: string;
-  feature2Value: string;
-  feature3Title: string;
-  feature3Value: string;
-  socialFacebook: string;
-  socialInstagram: string;
-  socialYoutube: string;
-  socialTwitter: string;
-
-  // New detailed content settings
+  
   heroTutor1Name: string;
   heroTutor1Experience: string;
   heroTutor1ImageUrl: string;
@@ -125,6 +113,11 @@ export interface Settings {
 
   newsletterTitle: string;
   newsletterSubtitle: string;
+
+  socialFacebook: string;
+  socialInstagram: string;
+  socialYoutube: string;
+  socialTwitter: string;
 }
 
 interface SettingsContextType {
@@ -160,13 +153,6 @@ const defaultSettings: Settings = {
   heroSubtitle2: 'Our certified tutors provide the best, experienced and certified tutors across a series of strings.',
   heroButtonText2: 'Our Courses',
   
-  feature1Title: 'Years of Experience',
-  feature1Value: '12+',
-  feature2Title: 'Professional Tutors',
-  feature2Value: '25+',
-  feature3Title: 'Satisfied Students',
-  feature3Value: '1.5k+',
-
   socialFacebook: '#',
   socialInstagram: '#',
   socialYoutube: '#',
@@ -252,6 +238,14 @@ const defaultSettings: Settings = {
 
   newsletterTitle: "Join Our Newsletter",
   newsletterSubtitle: "Subscribe to our newsletter to get the latest updates.",
+
+  // Remove old feature values
+  feature1Title: "",
+  feature1Value: "",
+  feature2Title: "",
+  feature2Value: "",
+  feature3Title: "",
+  feature3Value: "",
 };
 
 

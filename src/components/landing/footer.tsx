@@ -26,14 +26,14 @@ export function Footer() {
 
   return (
     <footer className="bg-background py-12">
-      <div className="container grid grid-cols-1 gap-8 md:grid-cols-5 md:text-left">
+      <div className="container grid grid-cols-1 gap-8 md:grid-cols-5 text-center md:text-left">
         <div className="space-y-4 col-span-2 md:col-span-1">
           <div className="flex justify-center md:justify-start">
             <div className="h-10 w-auto">
               <Logo />
             </div>
           </div>
-          <p className="text-sm text-muted-foreground pr-8">
+          <p className="text-sm text-muted-foreground pr-0 md:pr-8">
             Become a part of our community and let us help you grow. We are committed to providing the best education possible.
           </p>
            <div className="flex justify-center md:justify-start gap-4 pt-4">
@@ -50,8 +50,8 @@ export function Footer() {
         
         <div className='col-span-1 md:col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8'>
             <div>
-              <h4 className="mb-4 font-semibold text-center md:text-left">Subject</h4>
-              <ul className="space-y-2 text-center md:text-left">
+              <h4 className="mb-4 font-semibold">Subject</h4>
+              <ul className="space-y-2">
                 {subjectLinks.map((link) => (
                   <li key={link}>
                     <Link
@@ -66,8 +66,8 @@ export function Footer() {
             </div>
 
             <div>
-              <h4 className="mb-4 font-semibold text-center md:text-left">Company</h4>
-              <ul className="space-y-2 text-center md:text-left">
+              <h4 className="mb-4 font-semibold">Company</h4>
+              <ul className="space-y-2">
                 {companyLinks.map((link) => (
                   <li key={link}>
                     <Link
@@ -82,8 +82,8 @@ export function Footer() {
             </div>
 
             <div>
-              <h4 className="mb-4 font-semibold text-center md:text-left">Utility Page</h4>
-              <ul className="space-y-2 text-center md:text-left">
+              <h4 className="mb-4 font-semibold">Utility Page</h4>
+              <ul className="space-y-2">
                 {utilityLinks.map((link) => (
                   <li key={link}>
                     <Link

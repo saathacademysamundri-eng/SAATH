@@ -28,7 +28,7 @@ export function Testimonials() {
   return (
     <section id="testimonials" className="container py-12 md:py-24">
       <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
-        <div>
+        <div className='text-center md:text-left'>
           <h2 className="text-3xl font-bold leading-[1.1] md:text-4xl">
              {settings.testimonialsTitle.split(' ').map((word, i) => 
                 word.toLowerCase() === 'saying!' ? <span key={i} className="text-orange-500">Saying! </span> : `${word} `

@@ -2,7 +2,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { PlayCircle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -44,7 +43,7 @@ export function HeroSection() {
   return (
     <section className="container py-12 md:py-24">
       <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
-        <div className="space-y-6">
+        <div className="space-y-6 text-center lg:text-left">
           <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
             {settings.heroMainTitle.split(' ').map((word, i) => 
                 word.toLowerCase() === 'tutor' ? <span key={i} className="text-orange-500">Tutor </span> : `${word} `
@@ -53,7 +52,7 @@ export function HeroSection() {
           <p className="text-lg text-muted-foreground">
             {settings.heroMainSubtitle}
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 justify-center lg:justify-start">
             <Button size="lg" asChild>
               <Link href="#">{settings.heroMainButton1Text}</Link>
             </Button>

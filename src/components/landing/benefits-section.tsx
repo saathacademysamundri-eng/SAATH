@@ -46,7 +46,7 @@ export function BenefitsSection() {
             </div>
           </div>
         </div>
-        <div className="space-y-8">
+        <div className="space-y-8 text-center md:text-left">
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
             {settings.benefitsTitle.split(" ").map((word, i) => (
                 word === 'Benefits' ? <span key={i} className="text-orange-500">Benefits </span> : `${word} `
