@@ -39,7 +39,6 @@ export interface Settings {
   preloaderStyle: string;
   
   ultraMsgEnabled: boolean;
-  officialApiEnabled: boolean;
   ultraMsgApiUrl: string;
   ultraMsgToken: string;
   newAdmissionMsg: boolean;
@@ -49,20 +48,9 @@ export interface Settings {
   absentTemplate: string;
   paymentReceiptTemplate: string;
 
-  socialFacebook: string;
-  socialInstagram: string;
-  socialYoutube: string;
-  socialTwitter: string;
-
   landingPage: {
     sections: Section[];
   }
-}
-
-interface SettingsContextType {
-  settings: Settings;
-  updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
-  isSettingsLoading: boolean;
 }
 
 const defaultSettings: Settings = {
@@ -73,23 +61,35 @@ const defaultSettings: Settings = {
   academicSession: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
   preloaderStyle: 'style-1',
   ultraMsgEnabled: false,
-  officialApiEnabled: false,
   ultraMsgApiUrl: '',
   ultraMsgToken: '',
-  officialApiNumberId: '',
-  officialApiToken: '',
   newAdmissionMsg: true,
   absentMsg: true,
   paymentReceiptMsg: true,
   newAdmissionTemplate: 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.',
   absentTemplate: 'Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.',
   paymentReceiptTemplate: 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!',
-  socialFacebook: '#',
-  socialInstagram: '#',
-  socialYoutube: '#',
-  socialTwitter: '#',
   landingPage: {
     sections: [
+      {
+        id: 'header', name: 'Header',
+        elements: [
+          { id: 'headerLink1Text', type: 'text', text: 'Home' },
+          { id: 'headerLink1Url', type: 'text', text: '#' },
+          { id: 'headerLink2Text', type: 'text', text: 'About' },
+          { id: 'headerLink2Url', type: 'text', text: '#' },
+          { id: 'headerLink3Text', type: 'text', text: 'Gallery' },
+          { id: 'headerLink3Url', type: 'text', text: '#' },
+          { id: 'headerLink4Text', type: 'text', text: 'Results' },
+          { id: 'headerLink4Url', type: 'text', text: '#' },
+          { id: 'headerLink5Text', type: 'text', text: 'Teachers' },
+          { id: 'headerLink5Url', type: 'text', text: '#' },
+          { id: 'headerLink6Text', type: 'text', text: 'Notice Board' },
+          { id: 'headerLink6Url', type: 'text', text: '#' },
+          { id: 'headerLink7Text', type: 'text', text: 'Contact Us' },
+          { id: 'headerLink7Url', type: 'text', text: '#' },
+        ]
+      },
       {
         id: 'hero', name: 'Hero Section',
         elements: [
@@ -202,6 +202,15 @@ const defaultSettings: Settings = {
             { id: 'newsletterSubtitle', type: 'text', text: 'Subscribe to our newsletter to get the latest updates.', style: { textAlign: 'center' } },
             { id: 'newsletterButton', type: 'text', text: 'Subscribe' },
         ]
+      },
+      {
+        id: 'footer', name: 'Footer',
+        elements: [
+            { id: 'footerSocialFacebook', type: 'text', text: '#' },
+            { id: 'footerSocialInstagram', type: 'text', text: '#' },
+            { id: 'footerSocialYoutube', type: 'text', text: '#' },
+            { id: 'footerSocialTwitter', type: 'text', text: '#' },
+        ]
       }
     ]
   },
@@ -217,46 +226,36 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const loadSettings = useCallback(async () => {
     setIsSettingsLoading(true);
     try {
-      const cachedSettings = localStorage.getItem('academySettings');
-      let currentSettings = defaultSettings;
-      if (cachedSettings) {
-         const parsedCache = JSON.parse(cachedSettings);
-         // Deep merge landingPage to preserve defaults for newly added sections/elements
-         currentSettings = { 
-           ...defaultSettings, 
-           ...parsedCache,
-           landingPage: {
-             ...defaultSettings.landingPage,
-             ...parsedCache.landingPage,
-             sections: defaultSettings.landingPage.sections.map(defaultSection => {
-               const cachedSection = parsedCache.landingPage?.sections?.find((s: Section) => s.id === defaultSection.id);
-               return cachedSection ? { ...defaultSection, ...cachedSection } : defaultSection;
-             })
-           }
-         };
-         setSettingsState(currentSettings);
-      }
+      const detailsSnap = await getDBSettings('details');
+      const landingPageSnap = await getDBSettings('landing-page');
+      
+      const dbSettings = { ...detailsSnap, landingPage: landingPageSnap };
 
-      const dbSettings = await getDBSettings();
-      if (dbSettings) {
-        // Deep merge again with DB settings
-        const mergedSettings = { 
-           ...defaultSettings, 
-           ...dbSettings,
-           landingPage: {
-             ...defaultSettings.landingPage,
-             ...dbSettings.landingPage,
-             sections: defaultSettings.landingPage.sections.map(defaultSection => {
-               const dbSection = dbSettings.landingPage?.sections?.find((s: Section) => s.id === defaultSection.id);
-               return dbSection ? { ...defaultSection, ...dbSection } : defaultSection;
-             })
-           }
-         };
-        setSettingsState(mergedSettings);
-        localStorage.setItem('academySettings', JSON.stringify(mergedSettings));
-      } else {
-        await updateDBSettings(defaultSettings);
-      }
+      const mergedSettings = { 
+          ...defaultSettings, 
+          ...dbSettings,
+          landingPage: {
+            ...defaultSettings.landingPage,
+            ...dbSettings.landingPage,
+            sections: defaultSettings.landingPage.sections.map(defaultSection => {
+              const dbSection = dbSettings.landingPage?.sections?.find((s: Section) => s.id === defaultSection.id);
+              if (dbSection) {
+                  return {
+                      ...defaultSection,
+                      ...dbSection,
+                      elements: defaultSection.elements.map(defaultElement => {
+                          const dbElement = dbSection.elements.find(el => el.id === defaultElement.id);
+                          return dbElement ? { ...defaultElement, ...dbElement } : defaultElement;
+                      })
+                  }
+              }
+              return defaultSection;
+            })
+          }
+        };
+
+      setSettingsState(mergedSettings);
+
     } catch (error) {
       console.error("Failed to load settings:", error);
       setSettingsState(defaultSettings);
@@ -270,10 +269,21 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [loadSettings]);
 
   const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
-    const updatedSettings = { ...settings, ...newSettings };
+    const { landingPage, ...otherSettings } = newSettings;
+    const updatedSettings: Settings = { 
+      ...settings, 
+      ...otherSettings,
+      landingPage: landingPage ? { sections: landingPage.sections } : settings.landingPage,
+    };
     setSettingsState(updatedSettings);
-    await updateDBSettings(newSettings); // only save the changed part
-    localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
+
+    if (Object.keys(otherSettings).length > 0) {
+        await updateDBSettings('details', otherSettings);
+    }
+    if (landingPage) {
+        await updateDBSettings('landing-page', { sections: landingPage.sections });
+    }
+
   }, [settings]);
 
   return (

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useSettings } from '@/hooks/use-settings';
+import { useLandingPageContent } from '@/hooks/use-settings';
 import { Facebook, Instagram, Youtube, Twitter, Send } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '../logo';
@@ -9,17 +9,16 @@ import { Logo } from '../logo';
 const companyLinks = ['About', 'Services', 'News', 'Career', 'Team', 'Expert Teachers'];
 const utilityLinks = ['Style Guide', 'Get a Quote', 'Privacy Policy', 'Licenses', 'Changelog', 'Emergency'];
 
-
 export function Footer() {
-  const { settings } = useSettings();
+  const content = useLandingPageContent();
   const year = new Date().getFullYear();
-  const academyName = settings.name || 'My Academy';
+  const academyName = content.getElement('name')?.text || 'My Academy';
   
   const socialLinks = [
-    { icon: Facebook, href: settings.socialFacebook || '#' },
-    { icon: Instagram, href: settings.socialInstagram || '#' },
-    { icon: Youtube, href: settings.socialYoutube || '#' },
-    { icon: Twitter, href: settings.socialTwitter || '#' },
+    { icon: Facebook, href: content.getElement('footerSocialFacebook')?.text || '#' },
+    { icon: Instagram, href: content.getElement('footerSocialInstagram')?.text || '#' },
+    { icon: Youtube, href: content.getElement('footerSocialYoutube')?.text || '#' },
+    { icon: Twitter, href: content.getElement('footerSocialTwitter')?.text || '#' },
   ];
   
   const subjectLinks = ['Web Design', 'UX/UI Design', 'Branding Identity', 'Simple Design', 'Strategy', 'Digital Marketing'];

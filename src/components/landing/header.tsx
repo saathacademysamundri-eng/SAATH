@@ -8,19 +8,16 @@ import { auth } from '@/lib/firebase/config';
 import { Menu, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthState } from 'react-firebase-hooks/auth';
-
-const menuItems = [
-  { label: 'Home', href: '#' },
-  { label: 'About', href: '#' },
-  { label: 'Gallery', href: '#' },
-  { label: 'Results', href: '#' },
-  { label: 'Teachers', href: '#' },
-  { label: 'Notice Board', href: '#' },
-  { label: 'Contact Us', href: '#' },
-];
+import { useLandingPageContent } from '@/hooks/use-settings';
 
 export function Header() {
   const [user, loading] = useAuthState(auth);
+  const content = useLandingPageContent();
+
+  const menuItems = Array.from({ length: 7 }, (_, i) => ({
+    label: content.getElement(`headerLink${i + 1}Text`)?.text || '',
+    href: content.getElement(`headerLink${i + 1}Url`)?.text || '#',
+  }));
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60">
@@ -42,7 +39,7 @@ export function Header() {
                 <Logo />
               </div>
               <nav className="flex flex-col gap-4">
-                {menuItems.map((item) => (
+                {menuItems.map((item) => item.label && (
                   <Link
                     key={item.label}
                     href={item.href}
@@ -56,7 +53,7 @@ export function Header() {
           </Sheet>
         </div>
         <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
-          {menuItems.map((item) => (
+          {menuItems.map((item) => item.label && (
             <Link
               key={item.label}
               href={item.href}
