@@ -1,42 +1,42 @@
+
 'use client';
 
 import { CheckCircle, Zap, TrendingUp, BookOpen } from 'lucide-react';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-
-const benefits = [
-  {
-    title: 'Accelerate Your Learning',
-    description: 'Experience personalized instruction and achieve your academic goals faster.',
-    icon: <TrendingUp className="h-6 w-6 text-green-500" />,
-  },
-  {
-    title: 'Flexibility',
-    description: 'Choose your own schedule and learn at a pace that suits you.',
-    icon: <Zap className="h-6 w-6 text-blue-500" />,
-  },
-  {
-    title: 'Practical Skills',
-    description: 'Acquire practical skills that you can immediately apply in real-world situations.',
-    icon: <BookOpen className="h-6 w-6 text-purple-500" />,
-  },
-];
+import { useSettings } from '@/hooks/use-settings';
 
 export function BenefitsSection() {
-  const image = PlaceHolderImages.find((img) => img.id === 'benefit-explore');
+  const { settings } = useSettings();
+
+  const benefits = [
+    {
+      title: settings.benefit1Title,
+      description: settings.benefit1Description,
+      icon: <TrendingUp className="h-6 w-6 text-green-500" />,
+    },
+    {
+      title: settings.benefit2Title,
+      description: settings.benefit2Description,
+      icon: <Zap className="h-6 w-6 text-blue-500" />,
+    },
+    {
+      title: settings.benefit3Title,
+      description: settings.benefit3Description,
+      icon: <BookOpen className="h-6 w-6 text-purple-500" />,
+    },
+  ];
+  
   return (
     <section className="container py-12 md:py-24">
       <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
         <div className="relative h-[500px] w-full">
-          {image && (
-            <Image
-              src={image.imageUrl}
+          <Image
+              src={settings.benefitsImageUrl}
               alt="Benefits of learning"
               className="rounded-2xl object-cover"
               fill
-              data-ai-hint={image.imageHint}
+              data-ai-hint="student learning"
             />
-          )}
           <div className="absolute -bottom-4 -left-4 w-fit rounded-lg bg-white p-4 shadow-lg dark:bg-card">
             <div className="flex items-center gap-2">
               <div className="rounded-full bg-orange-100 p-2 text-orange-500 dark:bg-orange-900/50">
@@ -48,11 +48,12 @@ export function BenefitsSection() {
         </div>
         <div className="space-y-8">
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Explore the <span className="text-orange-500">Benefits</span>
+            {settings.benefitsTitle.split(" ").map((word, i) => (
+                word === 'Benefits' ? <span key={i} className="text-orange-500">Benefits </span> : `${word} `
+            ))}
           </h2>
           <p className="text-muted-foreground">
-            Our team of certified teachers are dedicated to help students achieve their goals and
-            personal growth.
+            {settings.benefitsSubtitle}
           </p>
           <ul className="space-y-6">
             {benefits.map((benefit) => (

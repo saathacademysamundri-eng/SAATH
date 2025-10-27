@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -6,44 +7,26 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-
-const faqs = [
-  {
-    question: 'What types of courses are available?',
-    answer:
-      'We offer a wide range of courses, from performance-based skills to personal development and future-focused learning.',
-  },
-  {
-    question: 'How do I track my progress in a course?',
-    answer:
-      'You can track your progress through your student dashboard, which shows completed lessons, grades, and feedback from instructors.',
-  },
-  {
-    question: 'How do I sign up for courses?',
-    answer:
-      'You can sign up for courses directly through our website. Simply browse our course catalog and click the "Enroll Now" button on the course page.',
-  },
-  {
-    question: 'Can I get a certificate after completing a course?',
-    answer: 'Yes, upon successful completion of any course, you will receive a verifiable digital certificate to showcase your achievement.',
-  },
-  {
-    question: 'What types of courses are available?',
-    answer:
-      'We offer a wide range of courses, from performance-based skills to personal development and future-focused learning.',
-  },
-  {
-    question: 'Can I access the platform on mobile?',
-    answer: 'Absolutely! Our platform is fully responsive and works seamlessly on desktops, tablets, and mobile devices for learning on the go.',
-  },
-];
+import { useSettings } from '@/hooks/use-settings';
 
 export function FaqSection() {
+  const { settings } = useSettings();
+  const faqs = [
+    { question: settings.faq1Question, answer: settings.faq1Answer },
+    { question: settings.faq2Question, answer: settings.faq2Answer },
+    { question: settings.faq3Question, answer: settings.faq3Answer },
+    { question: settings.faq4Question, answer: settings.faq4Answer },
+    { question: settings.faq5Question, answer: settings.faq5Answer },
+    { question: settings.faq6Question, answer: settings.faq6Answer },
+  ];
+
   return (
     <section className="container py-12 md:py-24">
       <div className="mb-12 text-center">
         <h2 className="text-3xl font-bold md:text-4xl">
-          General <span className="text-orange-500">Question</span>
+            {settings.faqTitle.split(' ').map((word, i) => 
+                word.toLowerCase() === 'question' ? <span key={i} className="text-orange-500">Question </span> : `${word} `
+            )}
         </h2>
       </div>
       <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 md:grid-cols-2">
