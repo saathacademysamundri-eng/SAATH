@@ -295,12 +295,8 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
     const updatedSettings = { ...settings, ...newSettings };
     setSettingsState(updatedSettings);
-    try {
-        await updateDBSettings(updatedSettings);
-        localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
-    } catch (error) {
-        console.error("Failed to save settings:", error);
-    }
+    await updateDBSettings(updatedSettings);
+    localStorage.setItem('academySettings', JSON.stringify(updatedSettings));
   }, [settings]);
 
   return (

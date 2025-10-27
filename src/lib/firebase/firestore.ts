@@ -1,4 +1,5 @@
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -113,18 +114,15 @@ export async function getSettings(): Promise<Settings | null> {
 
 export async function updateSettings(settings: Partial<Settings>): Promise<{success: boolean, message?: string}> {
     const docRef = doc(db, 'settings', 'details');
-    try {
-        await setDoc(docRef, settings, { merge: true });
-        return { success: true };
-    } catch (serverError) {
+    setDoc(docRef, settings, { merge: true }).catch(serverError => {
         const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'write',
             requestResourceData: settings,
         });
         errorEmitter.emit('permission-error', permissionError);
-        return { success: false, message: permissionError.message };
-    }
+    });
+    return { success: true };
 }
 
 
