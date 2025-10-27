@@ -68,7 +68,7 @@ service cloud.firestore {
     }
 
     // Settings can be read by any authenticated user, but only written by admin
-    match /settings/details {
+    match /settings/{docId} {
        allow write: if isAdmin();
        allow read: if request.auth != null;
     }
@@ -99,30 +99,55 @@ const db = getFirestore(app);
 
 // Settings Functions
 export async function getSettings(): Promise<Settings | null> {
-    const docRef = doc(db, 'settings', 'details');
+    const detailsRef = doc(db, 'settings', 'details');
+    const landingPageRef = doc(db, 'settings', 'landing-page');
     try {
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return docSnap.data() as Settings;
-        }
-        return null;
+        const detailsSnap = await getDoc(detailsRef);
+        const landingPageSnap = await getDoc(landingPageRef);
+
+        const detailsData = detailsSnap.exists() ? detailsSnap.data() : {};
+        const landingPageData = landingPageSnap.exists() ? landingPageSnap.data() : {};
+        
+        // Merge the two settings documents
+        return { ...detailsData, ...landingPageData } as Settings;
+
     } catch (err) {
         console.error("Error fetching settings:", err);
-        return null; // Don't throw, let the UI handle null settings
+        return null;
     }
 }
 
 export async function updateSettings(settings: Partial<Settings>): Promise<{success: boolean, message?: string}> {
-    const docRef = doc(db, 'settings', 'details');
-    setDoc(docRef, settings, { merge: true }).catch(serverError => {
+    const { landingPage, ...otherSettings } = settings;
+    
+    try {
+      const batch = writeBatch(db);
+
+      // If there are general settings, update the 'details' document
+      if (Object.keys(otherSettings).length > 0) {
+        const detailsRef = doc(db, 'settings', 'details');
+        batch.set(detailsRef, otherSettings, { merge: true });
+      }
+
+      // If there are landing page settings, update the 'landing-page' document
+      if (landingPage) {
+        const landingPageRef = doc(db, 'settings', 'landing-page');
+        batch.set(landingPageRef, { landingPage }, { merge: true });
+      }
+
+      await batch.commit();
+      return { success: true };
+
+    } catch (serverError) {
+        console.error("Error updating settings:", serverError);
         const permissionError = new FirestorePermissionError({
-            path: docRef.path,
+            path: 'settings/[details|landing-page]',
             operation: 'write',
             requestResourceData: settings,
         });
         errorEmitter.emit('permission-error', permissionError);
-    });
-    return { success: true };
+        return { success: false, message: (serverError as Error).message };
+    }
 }
 
 

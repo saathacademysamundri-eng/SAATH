@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
@@ -213,35 +214,60 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettingsState] = useState<Settings>(defaultSettings);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadSettings = async () => {
-      setIsSettingsLoading(true);
-      try {
-        const cachedSettings = localStorage.getItem('academySettings');
-        let currentSettings = defaultSettings;
-        if (cachedSettings) {
-           currentSettings = { ...defaultSettings, landingPage: { ...defaultSettings.landingPage, ...JSON.parse(cachedSettings).landingPage }, ...JSON.parse(cachedSettings) };
-           setSettingsState(currentSettings);
-        }
-
-        const dbSettings = await getDBSettings();
-        if (dbSettings) {
-          const mergedSettings = { ...defaultSettings, ...dbSettings, landingPage: { ...defaultSettings.landingPage, ...dbSettings.landingPage } };
-          setSettingsState(mergedSettings);
-          localStorage.setItem('academySettings', JSON.stringify(mergedSettings));
-        } else {
-          await updateDBSettings(defaultSettings);
-        }
-      } catch (error) {
-        console.error("Failed to load settings:", error);
-        setSettingsState(defaultSettings);
-      } finally {
-        setIsSettingsLoading(false);
+  const loadSettings = useCallback(async () => {
+    setIsSettingsLoading(true);
+    try {
+      const cachedSettings = localStorage.getItem('academySettings');
+      let currentSettings = defaultSettings;
+      if (cachedSettings) {
+         const parsedCache = JSON.parse(cachedSettings);
+         // Deep merge landingPage to preserve defaults for newly added sections/elements
+         currentSettings = { 
+           ...defaultSettings, 
+           ...parsedCache,
+           landingPage: {
+             ...defaultSettings.landingPage,
+             ...parsedCache.landingPage,
+             sections: defaultSettings.landingPage.sections.map(defaultSection => {
+               const cachedSection = parsedCache.landingPage?.sections?.find((s: Section) => s.id === defaultSection.id);
+               return cachedSection ? { ...defaultSection, ...cachedSection } : defaultSection;
+             })
+           }
+         };
+         setSettingsState(currentSettings);
       }
-    };
 
-    loadSettings();
+      const dbSettings = await getDBSettings();
+      if (dbSettings) {
+        // Deep merge again with DB settings
+        const mergedSettings = { 
+           ...defaultSettings, 
+           ...dbSettings,
+           landingPage: {
+             ...defaultSettings.landingPage,
+             ...dbSettings.landingPage,
+             sections: defaultSettings.landingPage.sections.map(defaultSection => {
+               const dbSection = dbSettings.landingPage?.sections?.find((s: Section) => s.id === defaultSection.id);
+               return dbSection ? { ...defaultSection, ...dbSection } : defaultSection;
+             })
+           }
+         };
+        setSettingsState(mergedSettings);
+        localStorage.setItem('academySettings', JSON.stringify(mergedSettings));
+      } else {
+        await updateDBSettings(defaultSettings);
+      }
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+      setSettingsState(defaultSettings);
+    } finally {
+      setIsSettingsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
     const updatedSettings = { ...settings, ...newSettings };
