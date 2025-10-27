@@ -24,10 +24,16 @@ export type ImageElement = {
   style?: StyleProps;
 }
 
+export type IconElement = {
+    id: string;
+    type: 'icon';
+    icon: string; // e.g., 'Award', 'Users', 'Heart'
+}
+
 export type Section = {
   id: string;
   name: string;
-  elements: (TextElement | ImageElement)[];
+  elements: (TextElement | ImageElement | IconElement)[];
 }
 
 export interface Settings {
@@ -112,10 +118,13 @@ const defaultSettings: Settings = {
           { id: 'servicesSubtitle', type: 'text', text: 'Our team of certified teachers are dedicated to help students achieve their goals.', style: { textAlign: 'center' } },
           { id: 'service1Title', type: 'text', text: '12 years of experience' },
           { id: 'service1Description', type: 'text', text: 'We have a huge experience in this field, we have a bunch of satisfied users. Our strategies for education are proven to be working.' },
+          { id: 'service1Icon', type: 'icon', icon: 'Award' },
           { id: 'service2Title', type: 'text', text: 'Team of professionals' },
           { id: 'service2Description', type: 'text', text: 'We have a team of professionals who are always ready to help you. Our team is a bunch of certified teachers.' },
+          { id: 'service2Icon', type: 'icon', icon: 'Users' },
           { id: 'service3Title', type: 'text', text: 'Dedicated Work' },
-          { id: 'service3Description', type: 'text', text: 'We are dedicated to our work. We provide quality education. Our students are our first priority. We provide quality education.' },
+          { id: 'service3Description', type: 'text', text: 'We are dedicated to our work. We provide quality education. Our students are our first priority.' },
+          { id: 'service3Icon', type: 'icon', icon: 'Heart' },
         ]
       },
        {
@@ -126,10 +135,13 @@ const defaultSettings: Settings = {
             { id: 'benefitsImageUrl', type: 'image', src: 'https://images.unsplash.com/photo-1571260899304-425eee4c7efc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwbGVhcm5pbmd8ZW58MHx8fHwxNzYxNDU1NTU2fDA&ixlib=rb-4.1.0&q=80&w=1080', alt: 'Student learning' },
             { id: 'benefit1Title', type: 'text', text: 'Accelerate Your Learning' },
             { id: 'benefit1Description', type: 'text', text: 'Experience personalized instruction and achieve your academic goals faster.' },
+            { id: 'benefit1Icon', type: 'icon', icon: 'TrendingUp' },
             { id: 'benefit2Title', type: 'text', text: 'Flexibility' },
             { id: 'benefit2Description', type: 'text', text: 'Choose your own schedule and learn at a pace that suits you.' },
+            { id: 'benefit2Icon', type: 'icon', icon: 'Zap' },
             { id: 'benefit3Title', type: 'text', text: 'Practical Skills' },
             { id: 'benefit3Description', type: 'text', text: 'Acquire practical skills that you can immediately apply in real-world situations.' },
+            { id: 'benefit3Icon', type: 'icon', icon: 'BookOpen' },
         ]
       },
        {
@@ -177,12 +189,6 @@ const defaultSettings: Settings = {
             { id: 'faq2Answer', type: 'text', text: 'You can track your progress through your student dashboard, which shows completed lessons, grades, and feedback from instructors.' },
             { id: 'faq3Question', type: 'text', text: 'How do I sign up for courses?' },
             { id: 'faq3Answer', type: 'text', text: 'You can sign up for courses directly through our website. Simply browse our course catalog and click the "Enroll Now" button on the course page.' },
-            { id: 'faq4Question', type: 'text', text: 'Can I get a certificate after completing a course?' },
-            { id: 'faq4Answer', type: 'text', text: 'Yes, upon successful completion of any course, you will receive a verifiable digital certificate to showcase your achievement.' },
-            { id: 'faq5Question', type: 'text', text: 'What types of payment do you accept?' },
-            { id: 'faq5Answer', type: 'text', text: 'We accept all major credit cards, as well as payments through PayPal and direct bank transfer.' },
-            { id: 'faq6Question', type: 'text', text: 'Can I access the platform on mobile?' },
-            { id: 'faq6Answer', type: 'text', text: 'Absolutely! Our platform is fully responsive and works seamlessly on desktops, tablets, and mobile devices for learning on the go.' },
         ]
       },
       {
@@ -220,14 +226,6 @@ const defaultSettings: Settings = {
             { id: 'footerLinks1Link1Url', type: 'text', text: '#' },
             { id: 'footerLinks1Link2Text', type: 'text', text: 'UX/UI Design' },
             { id: 'footerLinks1Link2Url', type: 'text', text: '#' },
-            { id: 'footerLinks1Link3Text', type: 'text', text: 'Branding Identity' },
-            { id: 'footerLinks1Link3Url', type: 'text', text: '#' },
-            { id: 'footerLinks1Link4Text', type: 'text', text: 'Simple Design' },
-            { id: 'footerLinks1Link4Url', type: 'text', text: '#' },
-            { id: 'footerLinks1Link5Text', type: 'text', text: 'Strategy' },
-            { id: 'footerLinks1Link5Url', type: 'text', text: '#' },
-            { id: 'footerLinks1Link6Text', type: 'text', text: 'Digital Marketing' },
-            { id: 'footerLinks1Link6Url', type: 'text', text: '#' },
         ]
       },
        {
@@ -238,14 +236,6 @@ const defaultSettings: Settings = {
             { id: 'footerLinks2Link1Url', type: 'text', text: '#' },
             { id: 'footerLinks2Link2Text', type: 'text', text: 'Services' },
             { id: 'footerLinks2Link2Url', type: 'text', text: '#' },
-            { id: 'footerLinks2Link3Text', type: 'text', text: 'News' },
-            { id: 'footerLinks2Link3Url', type: 'text', text: '#' },
-            { id: 'footerLinks2Link4Text', type: 'text', text: 'Career' },
-            { id: 'footerLinks2Link4Url', type: 'text', text: '#' },
-            { id: 'footerLinks2Link5Text', type: 'text', text: 'Team' },
-            { id: 'footerLinks2Link5Url', type: 'text', text: '#' },
-            { id: 'footerLinks2Link6Text', type: 'text', text: 'Expert Teachers' },
-            { id: 'footerLinks2Link6Url', type: 'text', text: '#' },
         ]
       },
       {
@@ -256,14 +246,6 @@ const defaultSettings: Settings = {
             { id: 'footerLinks3Link1Url', type: 'text', text: '#' },
             { id: 'footerLinks3Link2Text', type: 'text', text: 'Get a Quote' },
             { id: 'footerLinks3Link2Url', type: 'text', text: '#' },
-            { id: 'footerLinks3Link3Text', type: 'text', text: 'Privacy Policy' },
-            { id: 'footerLinks3Link3Url', type: 'text', text: '#' },
-            { id: 'footerLinks3Link4Text', type: 'text', text: 'Licenses' },
-            { id: 'footerLinks3Link4Url', type: 'text', text: '#' },
-            { id: 'footerLinks3Link5Text', type: 'text', text: 'Changelog' },
-            { id: 'footerLinks3Link5Url', type: 'text', text: '#' },
-            { id: 'footerLinks3Link6Text', type: 'text', text: 'Emergency' },
-            { id: 'footerLinks3Link6Url', type: 'text', text: '#' },
         ]
       }
     ]
@@ -385,7 +367,7 @@ export const useLandingPageContent = () => {
         return content.sections.find(s => s.id === id);
     }
     
-    const getElement = (id: string): TextElement | ImageElement | undefined => {
+    const getElement = (id: string): TextElement | ImageElement | IconElement | undefined => {
         for (const section of content.sections) {
             const element = section.elements.find(el => el.id === id);
             if (element) return element;

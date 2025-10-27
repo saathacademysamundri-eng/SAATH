@@ -1,9 +1,18 @@
 
+
 'use client';
 
 import { CheckCircle, Zap, TrendingUp, BookOpen } from 'lucide-react';
 import Image from 'next/image';
-import { useLandingPageContent } from '@/hooks/use-settings';
+import { useLandingPageContent, type IconElement } from '@/hooks/use-settings';
+
+const icons: { [key: string]: React.ReactNode } = {
+  TrendingUp: <TrendingUp className="h-6 w-6 text-green-500" />,
+  Zap: <Zap className="h-6 w-6 text-blue-500" />,
+  BookOpen: <BookOpen className="h-6 w-6 text-purple-500" />,
+  CheckCircle: <CheckCircle className="h-6 w-6 text-green-500" />,
+};
+
 
 export function BenefitsSection() {
   const content = useLandingPageContent();
@@ -11,23 +20,16 @@ export function BenefitsSection() {
 
   if (!section) return null;
 
-  const benefits = [
-    {
-      title: content.getElement('benefit1Title')?.text,
-      description: content.getElement('benefit1Description')?.text,
-      icon: <TrendingUp className="h-6 w-6 text-green-500" />,
-    },
-    {
-      title: content.getElement('benefit2Title')?.text,
-      description: content.getElement('benefit2Description')?.text,
-      icon: <Zap className="h-6 w-6 text-blue-500" />,
-    },
-    {
-      title: content.getElement('benefit3Title')?.text,
-      description: content.getElement('benefit3Description')?.text,
-      icon: <BookOpen className="h-6 w-6 text-purple-500" />,
-    },
-  ];
+  const benefits = [];
+  for (let i = 1; ; i++) {
+    const title = content.getElement(`benefit${i}Title`)?.text;
+    if (!title) break;
+    benefits.push({
+      title,
+      description: content.getElement(`benefit${i}Description`)?.text,
+      icon: (content.getElement(`benefit${i}Icon`) as IconElement)?.icon || 'CheckCircle',
+    });
+  }
 
   const title = content.getElement('benefitsTitle');
   const subtitle = content.getElement('benefitsSubtitle');
@@ -38,8 +40,8 @@ export function BenefitsSection() {
       <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
         <div className="relative h-[500px] w-full">
           <Image
-              src={image?.src || '/placeholder.svg'}
-              alt={image?.alt || 'Benefits of learning'}
+              src={(image as any)?.src || '/placeholder.svg'}
+              alt={(image as any)?.alt || 'Benefits of learning'}
               className="rounded-2xl object-cover"
               fill
               data-ai-hint="student learning"
@@ -66,7 +68,7 @@ export function BenefitsSection() {
             {benefits.map((benefit, index) => benefit.title && (
               <li key={index} className="flex items-start gap-4">
                 <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-orange-500">
-                  {benefit.icon}
+                  {icons[benefit.icon]}
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">{benefit.title}</h3>

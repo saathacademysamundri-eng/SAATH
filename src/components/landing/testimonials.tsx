@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useLandingPageContent } from '@/hooks/use-settings';
@@ -10,22 +11,17 @@ export function Testimonials() {
   const section = content.getSection('testimonials');
   if (!section) return null;
 
-  const testimonials = [
-    {
-      name: content.getElement('testimonial1Name')?.text,
-      role: content.getElement('testimonial1Role')?.text,
-      quote: content.getElement('testimonial1Quote')?.text,
-      avatar: content.getElement('testimonial1AvatarUrl')?.src,
-      color: 'bg-green-100',
-    },
-    {
-      name: content.getElement('testimonial2Name')?.text,
-      role: content.getElement('testimonial2Role')?.text,
-      quote: content.getElement('testimonial2Quote')?.text,
-      avatar: content.getElement('testimonial2AvatarUrl')?.src,
-      color: 'bg-orange-100',
-    },
-  ];
+  const testimonials = [];
+  for (let i = 1; ; i++) {
+    const name = content.getElement(`testimonial${i}Name`)?.text;
+    if (!name) break;
+    testimonials.push({
+      name,
+      role: content.getElement(`testimonial${i}Role`)?.text,
+      quote: content.getElement(`testimonial${i}Quote`)?.text,
+      avatar: (content.getElement(`testimonial${i}AvatarUrl`) as any)?.src,
+    });
+  }
 
   const title = content.getElement('testimonialsTitle');
   const subtitle = content.getElement('testimonialsSubtitle');
@@ -44,8 +40,8 @@ export function Testimonials() {
             {subtitle?.text}
           </p>
           <div className="mt-8 space-y-6">
-            {testimonials.map((testimonial) => testimonial.name && (
-              <Card key={testimonial.name} className={`${testimonial.color} dark:bg-muted/30`}>
+            {testimonials.map((testimonial, index) => testimonial.name && (
+              <Card key={testimonial.name} className={`${index % 2 === 0 ? 'bg-green-100' : 'bg-orange-100'} dark:bg-muted/30`}>
                 <CardContent className="p-6">
                   <blockquote className="text-foreground">"{testimonial.quote}"</blockquote>
                   <div className="mt-4 flex items-center gap-4">
@@ -69,8 +65,8 @@ export function Testimonials() {
         </div>
         <div className="relative min-h-[400px]">
           <Image
-            src={image?.src || '/placeholder.svg'}
-            alt={image?.alt || 'Testimonial student'}
+            src={(image as any)?.src || '/placeholder.svg'}
+            alt={(image as any)?.alt || 'Testimonial student'}
             fill
             className="rounded-2xl object-cover"
             data-ai-hint="smiling student"

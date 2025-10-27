@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { useSettings, type Settings, type Section, type TextElement, type ImageElement, type StyleProps } from '@/hooks/use-settings';
+import { useSettings, type Settings, type Section, type TextElement, type ImageElement, type StyleProps, type IconElement } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, Monitor, Type, PlusCircle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -42,14 +42,15 @@ function StyleEditor({ element, onStyleChange }: { element: TextElement | ImageE
     );
 }
 
-function ElementEditor({ element, onElementChange }: { element: TextElement | ImageElement, onElementChange: (element: TextElement | ImageElement) => void }) {
-    const isTextElement = 'text' in element;
-
+function ElementEditor({ element, onElementChange }: { element: TextElement | ImageElement | IconElement, onElementChange: (element: TextElement | ImageElement | IconElement) => void }) {
+    
     const handleContentChange = (value: string) => {
-        if (isTextElement) {
+       if ('text' in element) {
             onElementChange({ ...element, text: value });
-        } else {
+        } else if ('src' in element) {
             onElementChange({ ...element, src: value });
+        } else if ('icon' in element) {
+            onElementChange({ ...element, icon: value });
         }
     };
     
@@ -58,60 +59,59 @@ function ElementEditor({ element, onElementChange }: { element: TextElement | Im
     };
 
     if (element.id.endsWith('Url') && element.type === 'text') {
-        // Hide URL fields from the generic editor as they are paired with text fields.
         return null;
     }
-
+    
+    const isIconElement = element.type === 'icon';
 
     return (
         <div className="space-y-2 rounded-md border p-3">
              <Label htmlFor={element.id} className="text-sm font-medium capitalize">{element.id.replace(/([A-Z])/g, ' $1').replace(/Url/g, '').replace(/Text/g, '').trim()}</Label>
-            {isTextElement ? (
+             {isIconElement ? (
+                 <Input id={element.id} value={(element as IconElement).icon} onChange={(e) => handleContentChange(e.target.value)} placeholder="Enter Lucide icon name..." />
+             ) : 'text' in element ? (
                  element.id.toLowerCase().includes('description') || element.id.toLowerCase().includes('subtitle') || element.id.toLowerCase().includes('quote') || element.id.toLowerCase().includes('answer') ? (
                     <Textarea id={element.id} value={element.text} onChange={(e) => handleContentChange(e.target.value)} placeholder="Enter text..." />
                  ) : (
                     <Input id={element.id} value={element.text} onChange={(e) => handleContentChange(e.target.value)} placeholder="Enter text..." />
                  )
             ) : (
-                 <Input id={element.id} value={element.src} onChange={(e) => handleContentChange(e.target.value)} placeholder="https://example.com/image.png" />
+                 <Input id={element.id} value={(element as ImageElement).src} onChange={(e) => handleContentChange(e.target.value)} placeholder="https://example.com/image.png" />
             )}
-            <StyleEditor element={element} onStyleChange={handleStyleChange} />
+            {'style' in element && <StyleEditor element={element as TextElement | ImageElement} onStyleChange={handleStyleChange} />}
         </div>
     )
 }
 
 function SectionEditor({ section, onSectionChange }: { section: Section, onSectionChange: (section: Section) => void }) {
     
-    const handleElementChange = (elementId: string, updatedElement: TextElement | ImageElement) => {
+    const handleElementChange = (elementId: string, updatedElement: TextElement | ImageElement | IconElement) => {
         const updatedElements = section.elements.map(el => el.id === elementId ? updatedElement : el);
         onSectionChange({ ...section, elements: updatedElements });
     };
 
-    if (section.id.startsWith('footerLinks')) {
+    const isDynamicSection = ['faq', 'testimonials', 'services', 'benefits'].includes(section.id);
+    const hasGroupedItems = ['footerLinks1', 'footerLinks2', 'footerLinks3'].includes(section.id);
+
+    if (hasGroupedItems) {
         const titleElement = section.elements.find(el => el.id === `${section.id}Title`) as TextElement;
         const links = section.elements.filter(el => el.id.includes('Link'));
 
         const groupedLinks: { text: TextElement, url: TextElement }[] = [];
-        for(let i = 0; i < links.length / 2; i++) {
+        for(let i = 0; ; i++) {
             const textEl = links.find(l => l.id === `${section.id}Link${i + 1}Text`) as TextElement;
             const urlEl = links.find(l => l.id === `${section.id}Link${i + 1}Url`) as TextElement;
             if (textEl && urlEl) {
                 groupedLinks.push({ text: textEl, url: urlEl });
+            } else {
+                break;
             }
         }
         
         const handleAddLink = () => {
             const newIndex = groupedLinks.length + 1;
-            const newLinkText: TextElement = {
-                id: `${section.id}Link${newIndex}Text`,
-                type: 'text',
-                text: 'New Link'
-            };
-            const newLinkUrl: TextElement = {
-                id: `${section.id}Link${newIndex}Url`,
-                type: 'text',
-                text: '#'
-            };
+            const newLinkText: TextElement = { id: `${section.id}Link${newIndex}Text`, type: 'text', text: 'New Link' };
+            const newLinkUrl: TextElement = { id: `${section.id}Link${newIndex}Url`, type: 'text', text: '#' };
             const updatedElements = [...section.elements, newLinkText, newLinkUrl];
             onSectionChange({ ...section, elements: updatedElements });
         };
@@ -127,10 +127,7 @@ function SectionEditor({ section, onSectionChange }: { section: Section, onSecti
             <AccordionItem value={section.id}>
                 <AccordionTrigger>{section.name}</AccordionTrigger>
                 <AccordionContent className="space-y-3">
-                    <div className="space-y-2 rounded-md border p-3">
-                        <Label>Column Title</Label>
-                        <Input value={titleElement.text} onChange={(e) => handleElementChange(titleElement.id, { ...titleElement, text: e.target.value })} />
-                    </div>
+                    {titleElement && <ElementEditor element={titleElement} onElementChange={(updatedEl) => handleElementChange(titleElement.id, updatedEl)} />}
                      {groupedLinks.map((linkGroup, index) => (
                         <div key={index} className="space-y-2 rounded-md border p-3 relative">
                             <Label>Link {index + 1}</Label>
@@ -143,7 +140,78 @@ function SectionEditor({ section, onSectionChange }: { section: Section, onSecti
                             </div>
                         </div>
                     ))}
-                    <Button variant="outline" size="sm" onClick={handleAddLink}><PlusCircle className="mr-2 h-4 w-4" /> Create New Link</Button>
+                    <Button variant="outline" size="sm" onClick={handleAddLink}><PlusCircle className="mr-2 h-4 w-4" /> Add Link</Button>
+                </AccordionContent>
+            </AccordionItem>
+        )
+    }
+
+    if (isDynamicSection) {
+        const sectionPrefix = section.id.slice(0, -1); // faq -> faq, testimonials -> testimonial
+        const titleElement = section.elements.find(el => el.id === `${section.id}Title`);
+        const subtitleElement = section.elements.find(el => el.id === `${section.id}Subtitle`);
+        const mainImageElement = section.elements.find(el => el.id === `${section.id}ImageUrl`);
+
+        const itemKeys: {[key: string]: string[]} = {
+            faq: ['Question', 'Answer'],
+            testimonials: ['Quote', 'Name', 'Role', 'AvatarUrl'],
+            services: ['Title', 'Description', 'Icon'],
+            benefits: ['Title', 'Description', 'Icon'],
+        }
+
+        const items: any[] = [];
+        for (let i = 1; ; i++) {
+            const firstKey = `${sectionPrefix}${i}${itemKeys[section.id][0]}`;
+            const firstElement = section.elements.find(el => el.id === firstKey);
+            if (!firstElement) break;
+            
+            const item: any = { index: i };
+            itemKeys[section.id].forEach(key => {
+                const element = section.elements.find(el => el.id === `${sectionPrefix}${i}${key}`);
+                item[key] = element;
+            });
+            items.push(item);
+        }
+
+        const handleAddItem = () => {
+            const newIndex = items.length + 1;
+            const newElements = itemKeys[section.id].map(key => {
+                const id = `${sectionPrefix}${newIndex}${key}`;
+                if (key.includes('Url')) return { id, type: 'image', src: '/placeholder.svg', alt: 'placeholder' };
+                if (key.includes('Icon')) return { id, type: 'icon', icon: 'Award' };
+                return { id, type: 'text', text: `New ${key}` };
+            });
+            onSectionChange({ ...section, elements: [...section.elements, ...newElements] });
+        }
+        
+        const handleRemoveItem = (index: number) => {
+            const idsToRemove = itemKeys[section.id].map(key => `${sectionPrefix}${index}${key}`);
+            const updatedElements = section.elements.filter(el => !idsToRemove.includes(el.id));
+            onSectionChange({ ...section, elements: updatedElements });
+        }
+        
+        return (
+            <AccordionItem value={section.id}>
+                <AccordionTrigger>{section.name}</AccordionTrigger>
+                <AccordionContent className="space-y-4">
+                    {titleElement && <ElementEditor element={titleElement} onElementChange={(updatedEl) => handleElementChange(titleElement.id, updatedEl)} />}
+                    {subtitleElement && <ElementEditor element={subtitleElement} onElementChange={(updatedEl) => handleElementChange(subtitleElement.id, updatedEl)} />}
+                    {mainImageElement && <ElementEditor element={mainImageElement} onElementChange={(updatedEl) => handleElementChange(mainImageElement.id, updatedEl)} />}
+                    
+                    {items.map((item, index) => (
+                        <div key={index} className="space-y-3 rounded-md border p-3 relative">
+                            <div className="flex justify-between items-center">
+                                <Label>Item {index + 1}</Label>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveItem(item.index)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </div>
+                            {itemKeys[section.id].map(key => (
+                                item[key] && <ElementEditor key={item[key].id} element={item[key]} onElementChange={(updatedEl) => handleElementChange(item[key].id, updatedEl)} />
+                            ))}
+                        </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={handleAddItem}><PlusCircle className="mr-2 h-4 w-4" /> Add Item</Button>
                 </AccordionContent>
             </AccordionItem>
         )
@@ -253,4 +321,3 @@ export default function WebsiteEditorPage() {
         </div>
     );
 }
-

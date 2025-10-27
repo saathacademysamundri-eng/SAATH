@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -15,10 +16,15 @@ export function FaqSection() {
 
   if (!section) return null;
 
-  const faqs = Array.from({ length: 6 }, (_, i) => ({
-    question: content.getElement(`faq${i + 1}Question`)?.text,
-    answer: content.getElement(`faq${i + 1}Answer`)?.text,
-  }));
+  const faqs = [];
+  for (let i = 1; ; i++) {
+    const question = content.getElement(`faq${i}Question`)?.text;
+    if (!question) break;
+    faqs.push({
+      question,
+      answer: content.getElement(`faq${i}Answer`)?.text,
+    });
+  }
   
   const title = content.getElement('faqTitle');
 
