@@ -2,13 +2,12 @@
 
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Search } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Link from 'next/link';
 
 const menuItems = [
-  { label: 'Home', href: '/' },
+  { label: 'Home', href: '#' },
   { label: 'About', href: '#' },
   { label: 'Gallery', href: '#' },
   { label: 'Results', href: '#' },
@@ -20,7 +19,7 @@ const menuItems = [
 export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
+      <div className="container flex h-20 items-center">
         <div className="mr-4 hidden md:flex">
           <div className="h-12 w-auto">
             <Logo />
@@ -62,13 +61,12 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <div className="flex flex-1 items-center justify-end space-x-4">
-          <div className="relative hidden lg:block">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search..." className="w-64 rounded-full pl-8" />
-          </div>
+        <div className="flex flex-1 items-center justify-end space-x-2">
+          <Button variant="ghost" asChild>
+             <Link href="/login">Sign In</Link>
+          </Button>
           <Button asChild>
-            <Link href="/login">Login</Link>
+            <Link href="/login">Register</Link>
           </Button>
         </div>
       </div>

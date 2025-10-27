@@ -1,52 +1,76 @@
 {
   "placeholderImages": [
     {
-      "id": "user-1",
-      "description": "Avatar for a male user",
-      "imageUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxtYWxlJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzYxNDY3Mjc0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "male portrait"
+      "id": "tutor-female",
+      "description": "A friendly female tutor",
+      "imageUrl": "https://images.unsplash.com/photo-1746513399803-e988cc54e812?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxmZW1hbGUlMjB0dXRvcnxlbnwwfHx8fDE3NjE1NDAyMDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "female tutor"
     },
     {
-      "id": "user-2",
-      "description": "Avatar for a female user",
-      "imageUrl": "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmZW1hbGUlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjE0MTA4NTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "female portrait"
+      "id": "tutor-male",
+      "description": "A friendly male tutor",
+      "imageUrl": "https://images.unsplash.com/photo-1642439986788-825f9075691e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxtYWxlJTIwdHV0b3J8ZW58MHx8fHwxNzYxNTQwMjA5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "male tutor"
     },
     {
-      "id": "user-3",
-      "description": "Avatar for another male user",
-      "imageUrl": "https://images.unsplash.com/photo-1684549742130-c2083354da35?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtYWxlJTIwcGVyc29ufGVufDB8fHx8MTc2MTQ4NjA5OXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "male person"
+      "id": "benefit-explore",
+      "description": "A student exploring benefits of learning",
+      "imageUrl": "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwbGVhcm5pbmd8ZW58MHx8fHwxNzYxNDU1NTU2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "student learning"
     },
     {
-      "id": "slide-1",
-      "description": "Hero slider image 1",
-      "imageUrl": "https://images.unsplash.com/photo-1752564291723-bb816a3dfb33?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjbGFzc3Jvb20lMjBzdHVkZW50c3xlbnwwfHx8fDE3NjE0MDc4MTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "classroom students"
+      "id": "group-classes",
+      "description": "Students in a group class",
+      "imageUrl": "https://images.unsplash.com/photo-1756314355692-56276a5b7bdf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxncm91cCUyMGNsYXNzfGVufDB8fHx8MTc2MTU0MDIwOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "group class"
     },
     {
-      "id": "slide-2",
-      "description": "Hero slider image 2",
-      "imageUrl": "https://images.unsplash.com/photo-1758270704587-43339a801396?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx0ZWFjaGVyJTIwbGVjdHVyZXxlbnwwfHx8fDE3NjE0MTEwNjF8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "teacher lecture"
+      "id": "online-classes",
+      "description": "A student in an online class",
+      "imageUrl": "https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxvbmxpbmUlMjBjbGFzc3xlbnwwfHx8fDE3NjE1NDAyMDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "online class"
     },
     {
-      "id": "slide-3",
-      "description": "Hero slider image 3",
-      "imageUrl": "https://images.unsplash.com/photo-1528820995593-07129c727b2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxtb2Rlcm4lMjBsaWJyYXJ5fGVufDB8fHx8MTc2MTQ1MzA2NHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "modern library"
+      "id": "workshop-classes",
+      "description": "Students in a workshop",
+      "imageUrl": "https://images.unsplash.com/photo-1623652554515-91c833e3080e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3b3Jrc2hvcHxlbnwwfHx8fDE3NjE1NDAyMDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "workshop"
     },
     {
-      "id": "about-section",
-      "description": "Image for the about section",
-      "imageUrl": "https://images.unsplash.com/photo-1758270705172-07b53627dfcb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzdHVkZW50cyUyMGNvbGxhYm9yYXRpbmd8ZW58MHx8fHwxNzYxNDI2MDI4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "students collaborating"
+      "id": "testimonial-student",
+      "description": "A smiling student giving a testimonial",
+      "imageUrl": "https://images.unsplash.com/photo-1660794485891-26ef783fa993?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzbWlsaW5nJTIwc3R1ZGVudHxlbnwwfHx8fDE3NjE0NjUyNTB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smiling student"
     },
     {
-      "id": "motivational-quote",
-      "description": "Background for motivational quote",
-      "imageUrl": "https://images.unsplash.com/photo-1474524955719-b9f87c50ce47?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c3Vuc2V0JTIwbGFuZHNjYXBlfGVufDB8fHx8MTc2MTQyNTE1Nnww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "sunset landscape"
+      "id": "testimonial-avatar-1",
+      "description": "Avatar for a testimonial",
+      "imageUrl": "https://images.unsplash.com/photo-1640951613773-54706e06851d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cGVyc29uJTIwYXZhdGFyfGVufDB8fHx8MTc2MTQ2NzkzNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person avatar"
+    },
+    {
+      "id": "testimonial-avatar-2",
+      "description": "Avatar for a testimonial",
+      "imageUrl": "https://images.unsplash.com/photo-1594616838951-c155f8d978a0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwZXJzb24lMjBhdmF0YXJ8ZW58MHx8fHwxNzYxNDY3OTM1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person avatar"
+    },
+    {
+      "id": "elevate-experience",
+      "description": "Students in a learning environment",
+      "imageUrl": "https://images.unsplash.com/photo-1758270704113-9fb2ac81788f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxsZWFybmluZyUyMGVudmlyb25tZW50fGVufDB8fHx8MTc2MTU0MDIwOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "learning environment"
+    },
+    {
+      "id": "cta-image-1",
+      "description": "A person learning online",
+      "imageUrl": "https://images.unsplash.com/photo-1610484826967-09c5720778c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxvbmxpbmUlMjBsZWFybmluZ3xlbnwwfHx8fDE3NjE0NzgyODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "online learning"
+    },
+    {
+      "id": "cta-image-2",
+      "description": "A person writing notes",
+      "imageUrl": "https://images.unsplash.com/photo-1588338949401-8fd705bca823?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx3cml0aW5nJTIwbm90ZXN8ZW58MHx8fHwxNzYxNTEzMzIwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "writing notes"
     }
   ]
 }
