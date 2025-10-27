@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Carousel,
@@ -12,40 +13,27 @@ import { Button } from '../ui/button';
 import Link from 'next/link';
 import { useSettings } from '@/hooks/use-settings';
 
-const heroSlides = [
-  {
-    id: 1,
-    image: 'https://picsum.photos/seed/1/1920/1080',
-    imageHint: 'education students',
-  },
-  {
-    id: 2,
-    image: 'https://picsum.photos/seed/2/1920/1080',
-    imageHint: 'modern classroom',
-  },
-];
-
 export function HeroSlider() {
-  const { settings, isSettingsLoading } = useSettings();
+  const { settings } = useSettings();
   
   const slides = [
       {
           id: 1,
-          image: heroSlides[0].image,
-          imageHint: heroSlides[0].imageHint,
-          title: settings.heroTitle1 || "Get The Best Education",
-          subtitle: settings.heroSubtitle1 || "We have a team of professionals who are always ready to help you.",
-          buttonText: settings.heroButtonText1 || "Get Started",
-          buttonLink: "#"
+          image: settings.heroImageUrl1,
+          imageHint: 'education students',
+          title: settings.heroTitle1,
+          subtitle: settings.heroSubtitle1,
+          buttonText: settings.heroButtonText1,
+          buttonLink: settings.heroButtonLink1
       },
        {
           id: 2,
-          image: heroSlides[1].image,
-          imageHint: heroSlides[1].imageHint,
-          title: settings.heroTitle2 || "Boost Your Skills With Us",
-          subtitle: settings.heroSubtitle2 || "Our certified tutors provide the best, experienced and certified tutors across a series of strings.",
-          buttonText: settings.heroButtonText2 || "Our Courses",
-          buttonLink: "#"
+          image: settings.heroImageUrl2,
+          imageHint: 'modern classroom',
+          title: settings.heroTitle2,
+          subtitle: settings.heroSubtitle2,
+          buttonText: settings.heroButtonText2,
+          buttonLink: settings.heroButtonLink2
       }
   ]
 
@@ -53,7 +41,7 @@ export function HeroSlider() {
     <section>
       <Carousel
         opts={{ loop: true }}
-        plugins={[Autoplay({ delay: 5000, stopOnInteraction: false })]}
+        plugins={[Autoplay({ delay: 5000, stopOnInteraction: true })]}
         className="w-full"
       >
         <CarouselContent>
@@ -73,7 +61,7 @@ export function HeroSlider() {
                     <h1 className="text-4xl font-bold md:text-6xl">{slide.title}</h1>
                     <p className="text-lg md:text-xl">{slide.subtitle}</p>
                     <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600 text-white">
-                      <Link href={slide.buttonLink}>{slide.buttonText}</Link>
+                      <Link href={slide.buttonLink || '#'}>{slide.buttonText}</Link>
                     </Button>
                   </div>
                 </div>

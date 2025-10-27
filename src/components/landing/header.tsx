@@ -25,10 +25,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-20 items-center justify-between">
-        <div className="mr-auto md:mr-4">
-          <div className="h-12 w-auto">
+        <div className="mr-4 flex">
+          <Link href="/" className="h-12 w-auto">
             <Logo />
-          </div>
+          </Link>
         </div>
         <div className="md:hidden">
           <Sheet>
@@ -38,7 +38,7 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left">
-              <div className="flex h-12 w-auto mb-4">
+              <div className="mb-4 flex h-12 w-auto">
                 <Logo />
               </div>
               <nav className="flex flex-col gap-4">
@@ -55,7 +55,7 @@ export function Header() {
             </SheetContent>
           </Sheet>
         </div>
-        <nav className="ml-6 hidden items-center space-x-6 text-sm font-medium md:flex">
+        <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
           {menuItems.map((item) => (
             <Link
               key={item.label}
@@ -75,14 +75,9 @@ export function Header() {
                 <Link href="/dashboard">Dashboard</Link>
             </Button>
           ) : (
-            <>
-                <Button asChild variant="outline">
-                    <Link href="/login">Sign In</Link>
-                </Button>
-                 <Button asChild>
-                    <Link href="#">Register</Link>
-                </Button>
-            </>
+             <Button asChild variant="outline">
+                <Link href="/login">Sign In</Link>
+            </Button>
           )}
         </div>
       </div>
