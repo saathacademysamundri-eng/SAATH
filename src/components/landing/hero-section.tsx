@@ -48,7 +48,7 @@ export function HeroSection() {
       <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
         <div className="space-y-6">
           <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-            Achieve Your Goals with the <span className="text-primary">Right Tutor</span>
+            Achieve Your Goals with the <span className="text-orange-500">Right Tutor</span>
           </h1>
           <p className="text-lg text-muted-foreground">
             Our certified tutors provide the best, experienced and certified tutors across a series

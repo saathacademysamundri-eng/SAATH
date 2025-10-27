@@ -42,7 +42,7 @@ export function OptionsSection() {
       <div className="container">
         <div className="mb-12 text-center">
           <h2 className="text-3xl font-bold md:text-4xl">
-            Explore the <span className="text-primary">Options</span>
+            Explore the <span className="text-orange-500">Options</span>
           </h2>
           <p className="mt-2 text-muted-foreground">
             Our team of certified teachers are dedicated to help students achieve their goals and
@@ -69,7 +69,7 @@ export function OptionsSection() {
                   <h3 className="mb-2 text-xl font-bold">{option.title}</h3>
                   <p className="mb-4 text-muted-foreground">{option.description}</p>
                   <div className="flex items-center justify-between">
-                    <p className="text-2xl font-bold text-primary">${option.price.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-orange-500">${option.price.toFixed(2)}</p>
                     <Button variant="outline" asChild>
                       <Link href="#">View Details</Link>
                     </Button>

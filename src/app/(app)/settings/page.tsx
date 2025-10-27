@@ -22,7 +22,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Preloader } from '@/components/ui/preloader';
 import { cn } from '@/lib/utils';
 import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
-import { ColorPicker } from '@/components/color-picker';
 import Link from 'next/link';
 
 export default function SettingsPage() {
@@ -42,11 +41,6 @@ export default function SettingsPage() {
   
   // Appearance State
   const [preloaderStyle, setPreloaderStyle] = useState('style-1');
-  const [sidebarBg, setSidebarBg] = useState('');
-  const [sidebarFg, setSidebarFg] = useState('');
-  const [sidebarAccent, setSidebarAccent] = useState('');
-  const [sidebarAccentFg, setSidebarAccentFg] = useState('');
-
 
   // WhatsApp State
   const [ultraMsgEnabled, setUltraMsgEnabled] = useState(false);
@@ -84,12 +78,6 @@ export default function SettingsPage() {
       setAcademicSession(settings.academicSession);
       setPreloaderStyle(settings.preloaderStyle);
 
-      // Appearance
-      setSidebarBg(settings.sidebarBg || '240 10% 10%');
-      setSidebarFg(settings.sidebarFg || '0 0% 98%');
-      setSidebarAccent(settings.sidebarAccent || '240 10% 20%');
-      setSidebarAccentFg(settings.sidebarAccentFg || '0 0% 98%');
-      
       // WhatsApp settings
       setUltraMsgEnabled(settings.ultraMsgEnabled);
       setOfficialApiEnabled(settings.officialApiEnabled);
@@ -129,19 +117,7 @@ export default function SettingsPage() {
 
   const handleSaveAppearance = async () => {
     setIsSaving(true);
-
-    document.documentElement.style.setProperty('--sidebar-background', sidebarBg);
-    document.documentElement.style.setProperty('--sidebar-foreground', sidebarFg);
-    document.documentElement.style.setProperty('--sidebar-accent', sidebarAccent);
-    document.documentElement.style.setProperty('--sidebar-accent-foreground', sidebarAccentFg);
-
-    await updateSettings({ 
-        preloaderStyle,
-        sidebarBg,
-        sidebarFg,
-        sidebarAccent,
-        sidebarAccentFg
-    });
+    await updateSettings({ preloaderStyle });
     setIsSaving(false);
     toast({
       title: 'Appearance Saved',
@@ -295,6 +271,7 @@ export default function SettingsPage() {
           <TabsList className="grid w-full max-w-lg grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            <TabsTrigger value="website">Website</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
             <TabsTrigger value="api">API & Database</TabsTrigger>
@@ -406,6 +383,17 @@ export default function SettingsPage() {
                         Save Appearance Settings
                     </Button>
                 </CardFooter>
+            </Card>
+          </TabsContent>
+          <TabsContent value="website">
+            <Card>
+              <CardHeader>
+                <CardTitle>Website Content</CardTitle>
+                <CardDescription>Manage the content displayed on your public-facing landing page. This section is under construction.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Editing options for the header menu, hero slider, notice board, and other landing page sections will be available here soon.</p>
+              </CardContent>
             </Card>
           </TabsContent>
           <TabsContent value="whatsapp">

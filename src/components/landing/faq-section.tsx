@@ -43,7 +43,7 @@ export function FaqSection() {
     <section className="container py-12 md:py-24">
       <div className="mb-12 text-center">
         <h2 className="text-3xl font-bold md:text-4xl">
-          General <span className="text-primary">Question</span>
+          General <span className="text-orange-500">Question</span>
         </h2>
       </div>
       <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 md:grid-cols-2">

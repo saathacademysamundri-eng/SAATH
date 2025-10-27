@@ -38,7 +38,7 @@ export function Footer() {
             {socialLinks.map((link, index) => {
               const Icon = link.icon;
               return (
-                <Link key={index} href={link.href} target="_blank" rel="noopener noreferrer" className="bg-primary/10 p-2 rounded-full text-primary hover:bg-primary hover:text-primary-foreground transition-colors">
+                <Link key={index} href={link.href} target="_blank" rel="noopener noreferrer" className="bg-orange-500/10 p-2 rounded-full text-orange-500 hover:bg-orange-500 hover:text-white transition-colors">
                   <Icon className="h-5 w-5" />
                 </Link>
               );
@@ -53,7 +53,7 @@ export function Footer() {
               <li key={link}>
                 <Link
                   href="#"
-                  className="text-sm text-muted-foreground hover:text-primary"
+                  className="text-sm text-muted-foreground hover:text-orange-500"
                 >
                   {link}
                 </Link>
@@ -69,7 +69,7 @@ export function Footer() {
               <li key={link}>
                 <Link
                   href="#"
-                  className="text-sm text-muted-foreground hover:text-primary"
+                  className="text-sm text-muted-foreground hover:text-orange-500"
                 >
                   {link}
                 </Link>
@@ -85,7 +85,7 @@ export function Footer() {
               <li key={link}>
                 <Link
                   href="#"
-                  className="text-sm text-muted-foreground hover:text-primary"
+                  className="text-sm text-muted-foreground hover:text-orange-500"
                 >
                   {link}
                 </Link>
@@ -97,7 +97,7 @@ export function Footer() {
       </div>
       <div className="container mt-8 border-t pt-6 text-center text-sm text-muted-foreground">
         <p>
-          Copyright {year} | Designed by <a href="#" className="text-primary hover:underline">Mian Mudassar</a> | Powered by <a href="#" className="text-primary hover:underline">Firebase</a>
+          Copyright {year} | Designed by <a href="#" className="text-orange-500 hover:underline">Mian Mudassar</a> | Powered by <a href="#" className="text-orange-500 hover:underline">Firebase</a>
         </p>
       </div>
     </footer>

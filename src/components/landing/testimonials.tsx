@@ -30,7 +30,7 @@ export function Testimonials() {
       <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
         <div>
           <h2 className="text-3xl font-bold leading-[1.1] md:text-4xl">
-            What other Students are <span className="text-primary">Saying!</span>
+            What other Students are <span className="text-orange-500">Saying!</span>
           </h2>
           <p className="mt-4 text-muted-foreground">
             Our team of certified teachers are dedicated to help students achieve their goals and

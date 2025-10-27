@@ -39,7 +39,7 @@ export function BenefitsSection() {
           )}
           <div className="absolute -bottom-4 -left-4 w-fit rounded-lg bg-white p-4 shadow-lg dark:bg-card">
             <div className="flex items-center gap-2">
-              <div className="rounded-full bg-orange-100 p-2 text-primary dark:bg-orange-900/50">
+              <div className="rounded-full bg-orange-100 p-2 text-orange-500 dark:bg-orange-900/50">
                 <Zap />
               </div>
               <p className="font-semibold">1k+ students are successful</p>
@@ -48,7 +48,7 @@ export function BenefitsSection() {
         </div>
         <div className="space-y-8">
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Explore the <span className="text-primary">Benefits</span>
+            Explore the <span className="text-orange-500">Benefits</span>
           </h2>
           <p className="text-muted-foreground">
             Our team of certified teachers are dedicated to help students achieve their goals and
@@ -57,7 +57,7 @@ export function BenefitsSection() {
           <ul className="space-y-6">
             {benefits.map((benefit) => (
               <li key={benefit.title} className="flex items-start gap-4">
-                <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-orange-500">
                   {benefit.icon}
                 </div>
                 <div>
