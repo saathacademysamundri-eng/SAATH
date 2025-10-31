@@ -24,7 +24,7 @@ export function Header() {
       <div className="container flex h-20 items-center justify-between">
         <div className="mr-4 flex">
           <Link href="/" className="h-12 w-auto">
-            <Logo />
+            <Logo noText />
           </Link>
         </div>
         <div className="md:hidden">
@@ -36,7 +36,7 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="left">
               <div className="mb-4 flex h-12 w-auto">
-                <Logo />
+                <Logo noText />
               </div>
               <nav className="flex flex-col gap-4">
                 {menuItems.map((item) => item.label && (
