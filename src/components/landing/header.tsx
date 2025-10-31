@@ -22,11 +22,6 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-20 items-center justify-between">
-        <div className="mr-4 flex">
-          <Link href="/" className="h-12 w-auto">
-            <Logo noText />
-          </Link>
-        </div>
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -52,18 +47,36 @@ export function Header() {
             </SheetContent>
           </Sheet>
         </div>
-        <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
-          {menuItems.map((item) => item.label && (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        <div className="hidden md:flex flex-1 items-center justify-center">
+            <nav className="flex items-center space-x-6 text-sm font-medium">
+                {menuItems.slice(0,3).map((item) => item.label && (
+                <Link
+                    key={item.label}
+                    href={item.href}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    {item.label}
+                </Link>
+                ))}
+            </nav>
+            <div className="mx-8">
+              <Link href="/" className="h-12 w-auto">
+                <Logo noText />
+              </Link>
+            </div>
+             <nav className="flex items-center space-x-6 text-sm font-medium">
+                {menuItems.slice(3).map((item) => item.label && (
+                <Link
+                    key={item.label}
+                    href={item.href}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    {item.label}
+                </Link>
+                ))}
+            </nav>
+        </div>
+        <div className="flex items-center justify-end space-x-2 w-1/4">
             <Button variant="ghost" size="icon">
                 <Search />
             </Button>
