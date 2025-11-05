@@ -23,7 +23,6 @@ import { cn } from '@/lib/utils';
 import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { InputOTP } from '@/components/ui/input-otp';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
@@ -110,7 +109,7 @@ export default function SettingsPage() {
   }
   
   const handleSaveSecurity = async () => {
-    if (securityPin.length > 0 && securityPin.length < 4) {
+    if (securityPin && securityPin.length !== 4) {
       toast({
         variant: 'destructive',
         title: 'Invalid PIN',
@@ -350,13 +349,20 @@ export default function SettingsPage() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="security-pin">Security PIN (4 digits)</Label>
-                          <InputOTP maxLength={4} value={securityPin} onChange={setSecurityPin}>
-                            <div className="flex gap-2">
-                              {Array.from({ length: 4 }).map((_, index) => (
-                                <Input key={index} className="w-12 text-center text-lg" />
-                              ))}
-                            </div>
-                          </InputOTP>
+                          <Input
+                            id="security-pin"
+                            type="password"
+                            maxLength={4}
+                            value={securityPin}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (/^\d*$/.test(val) && val.length <= 4) {
+                                    setSecurityPin(val);
+                                }
+                            }}
+                            placeholder="Enter 4-digit PIN"
+                            className="w-48 text-lg tracking-[0.5em]"
+                          />
                           <p className="text-xs text-muted-foreground">This PIN will be required to unlock the application.</p>
                         </div>
                         <div className="space-y-2">
