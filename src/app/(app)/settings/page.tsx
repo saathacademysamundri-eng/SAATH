@@ -483,13 +483,72 @@ export default function SettingsPage() {
                 </CardFooter>
               </Card>
 
+               <Card>
+                <CardHeader>
+                  <CardTitle>Custom Messaging</CardTitle>
+                  <CardDescription>Send bulk custom messages to selected groups.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                        <Label>Send To:</Label>
+                        <RadioGroup defaultValue="all_families" className="flex flex-wrap items-center gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="all_families" id="all_families" />
+                                <Label htmlFor="all_families">All Families</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="specific_class" id="specific_class" />
+                                <Label htmlFor="specific_class">Specific Class</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="specific_family" id="specific_family" />
+                                <Label htmlFor="specific_family">Specific Family</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="all_teachers" id="all_teachers" />
+                                <Label htmlFor="all_teachers">All Teachers</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="specific_teacher" id="specific_teacher" />
+                                <Label htmlFor="specific_teacher">Specific Teacher</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="custom_numbers" id="custom_numbers" />
+                                <Label htmlFor="custom_numbers">Custom Numbers</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="custom-message">Message</Label>
+                        <Textarea id="custom-message" placeholder="Type your message here..." className="min-h-[120px]" />
+                        <p className="text-xs text-muted-foreground">Variables: {'{student_name}'}, {'{father_name}'}, {'{teacher_name}'}, {'{class}'}, {'{school_name}'}</p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Quick Templates</Label>
+                        <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" size="sm">Absentee Notice</Button>
+                            <Button variant="outline" size="sm">Fee Payment Receipt</Button>
+                            <Button variant="outline" size="sm">Admission Confirmation</Button>
+                            <Button variant="outline" size="sm">Student Deactivation Notice</Button>
+                            <Button variant="outline" size="sm">Teacher Deactivation Notice</Button>
+                        </div>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button>
+                        <Send className="mr-2 h-4 w-4" />
+                        Send Message
+                    </Button>
+                </CardFooter>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Automated Notifications</CardTitle>
                   <CardDescription>Enable/disable and customize automated messages for specific events.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-4 rounded-lg border p-4">
+                <CardContent className="space-y-2">
+                   <div className="space-y-4 rounded-lg border p-4">
                         <div className="flex items-center justify-between">
                             <div>
                                 <Label className="text-base font-semibold">Admission Confirmation</Label>
@@ -497,12 +556,7 @@ export default function SettingsPage() {
                             </div>
                             <Switch checked={newAdmissionMsg} onCheckedChange={setNewAdmissionMsg} />
                         </div>
-                        <Textarea 
-                            value={newAdmissionTemplate} 
-                            onChange={e => setNewAdmissionTemplate(e.target.value)} 
-                            disabled={!newAdmissionMsg}
-                            placeholder="e.g. Welcome {student_name} to {academy_name}! Your Roll No is {student_id}."
-                        />
+                        {newAdmissionMsg && <Textarea value={newAdmissionTemplate} onChange={e => setNewAdmissionTemplate(e.target.value)} placeholder="e.g. Welcome {student_name} to {academy_name}! Your Roll No is {student_id}." />}
                     </div>
 
                     <div className="space-y-4 rounded-lg border p-4">
@@ -513,12 +567,7 @@ export default function SettingsPage() {
                             </div>
                             <Switch checked={absentMsg} onCheckedChange={setAbsentMsg} />
                         </div>
-                        <Textarea 
-                            value={absentTemplate} 
-                            onChange={e => setAbsentTemplate(e.target.value)} 
-                            disabled={!absentMsg}
-                            placeholder="e.g. Dear parent, your child {student_name} (Roll No: {student_id}) was absent today."
-                        />
+                        {absentMsg && <Textarea value={absentTemplate} onChange={e => setAbsentTemplate(e.target.value)} placeholder="e.g. Dear parent, your child {student_name} (Roll No: {student_id}) was absent today." />}
                     </div>
                     
                     <div className="space-y-4 rounded-lg border p-4">
@@ -529,12 +578,7 @@ export default function SettingsPage() {
                             </div>
                             <Switch checked={paymentReceiptMsg} onCheckedChange={setPaymentReceiptMsg} />
                         </div>
-                        <Textarea 
-                            value={paymentReceiptTemplate} 
-                            onChange={e => setPaymentReceiptTemplate(e.target.value)} 
-                            disabled={!paymentReceiptMsg}
-                            placeholder="e.g. Dear parent, we have received a payment of {amount} for {student_name}. Thank you!"
-                        />
+                        {paymentReceiptMsg && <Textarea value={paymentReceiptTemplate} onChange={e => setPaymentReceiptTemplate(e.target.value)} placeholder="e.g. Dear parent, we have received a payment of {amount} for {student_name}. Thank you!" />}
                     </div>
                 </CardContent>
                  <CardFooter>
