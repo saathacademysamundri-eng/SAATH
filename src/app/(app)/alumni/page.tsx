@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -5,14 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { getInactiveStudents, reactivateStudent } from '@/lib/firebase/firestore';
+import { getInactiveStudents, reactivateStudent, deleteStudentPermanently } from '@/lib/firebase/firestore';
 import { Student } from '@/lib/data';
-import { Search, UserCheck } from 'lucide-react';
+import { Search, UserCheck, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAppContext } from '@/hooks/use-app-context';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 export default function AlumniPage() {
   const [alumni, setAlumni] = useState<Student[]>([]);
@@ -49,6 +51,24 @@ export default function AlumniPage() {
       });
     }
   };
+  
+  const handlePermanentDelete = async (student: Student) => {
+    const result = await deleteStudentPermanently(student.id);
+    if (result.success) {
+      toast({
+        title: 'Student Deleted',
+        description: `${student.name} has been permanently removed.`,
+      });
+      fetchAlumni(); // Refresh the alumni list
+      refreshData();
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Deletion Failed',
+        description: result.message,
+      });
+    }
+  };
 
   const filteredAlumni = alumni.filter(
     (student) =>
@@ -66,7 +86,7 @@ export default function AlumniPage() {
         <CardHeader>
           <CardTitle>Alumni List</CardTitle>
           <CardDescription>
-            Search for past students and view their details. You can reactivate them from here.
+            Search for past students. You can reactivate them or delete their records permanently.
           </CardDescription>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -125,11 +145,33 @@ export default function AlumniPage() {
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm" onClick={() => handleReactivate(student)}>
                         <UserCheck className="mr-2 h-4 w-4" />
                         Reactivate
                       </Button>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                             <Button variant="destructive" size="sm">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete the record for <span className="font-bold">{student.name}</span>.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handlePermanentDelete(student)}>
+                                      Confirm Delete
+                                  </AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))

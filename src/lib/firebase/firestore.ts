@@ -1,43 +1,4 @@
 
-
-/*
-================================================================================
-IMPORTANT: FIREBASE SECURITY RULES
-================================================================================
-
-Please copy and paste the following security rules into your Firebase project's
-Firestore rules editor to ensure the application functions correctly.
-
-1. Go to your Firebase Console.
-2. Select your project.
-3. Go to "Firestore Database" from the left menu.
-4. Click on the "Rules" tab.
-5. Replace the entire content of the rules editor with the rules below.
-6. Click "Publish".
-
---- START OF RULES TO COPY ---
-
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    
-    // Allow admin full access to everything.
-    function isAdmin() {
-      return request.auth.uid == "rSwt0U3gwxNrYzS2ky6P5TnYXtj2";
-    }
-
-    // Default deny all reads and writes, but allow admin full access.
-    match /{document=**} {
-      allow read, write: if isAdmin();
-    }
-  }
-}
-
---- END OF RULES TO COPY ---
-
-*/
-
-
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity } from '@/lib/data';
@@ -131,21 +92,21 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
 
 export async function getStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');
-  const q = query(studentsCollection, where("isActive", "==", true));
-  const studentsSnap = await getDocs(q);
-  const studentData = studentsSnap.docs.map(doc => doc.data() as Student);
+  const studentsSnap = await getDocs(studentsCollection);
+  const studentData = studentsSnap.docs
+    .map(doc => doc.data() as Student)
+    .filter(student => student.isActive === true);
   return studentData.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function getInactiveStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');
-  const q = query(studentsCollection, where("isActive", "==", false));
-  const studentsSnap = await getDocs(q);
-  const studentData = studentsSnap.docs.map(doc => doc.data() as Student);
+  const studentsSnap = await getDocs(studentsCollection);
+  const studentData = studentsSnap.docs
+    .map(doc => doc.data() as Student)
+    .filter(student => student.isActive === false);
   return studentData.sort((a, b) => a.id.localeCompare(b.id));
 }
-
-
 
 export async function getStudentsByClass(className: string): Promise<Student[]> {
     const q = query(collection(db, 'students'), where('class', '==', className), where("isActive", "!=", false));
@@ -232,7 +193,23 @@ export async function reactivateStudent(studentId: string) {
     }
 }
 
-
+export async function deleteStudentPermanently(studentId: string) {
+    const studentRef = doc(db, 'students', studentId);
+    try {
+        const studentDoc = await getDoc(studentRef);
+        if (studentDoc.exists()) {
+            const student = studentDoc.data() as Student;
+            await deleteDoc(studentRef);
+            await logActivity('student_deleted', `Permanently deleted student record for ${student.name} (ID: ${studentId}).`);
+            return { success: true, message: 'Student record permanently deleted.' };
+        }
+        return { success: false, message: "Student not found." };
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
+        return { success: false, message: (serverError as Error).message };
+    }
+}
 
 export async function getNextStudentId(): Promise<string> {
     const q = query(collection(db, "students"), orderBy("id", "desc"), limit(1));
