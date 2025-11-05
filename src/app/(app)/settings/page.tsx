@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -26,9 +25,18 @@ import { useRouter } from 'next/navigation';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+type CustomMessageTarget = 
+  | 'all_families' 
+  | 'specific_class' 
+  | 'specific_student' 
+  | 'all_teachers' 
+  | 'specific_teacher' 
+  | 'custom_numbers';
+
+
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
-  const { classes, loading: appLoading } = useAppContext();
+  const { classes, teachers, loading: appLoading } = useAppContext();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -60,13 +68,22 @@ export default function SettingsPage() {
   const [newAdmissionMsg, setNewAdmissionMsg] = useState(false);
   const [absentMsg, setAbsentMsg] = useState(false);
   const [paymentReceiptMsg, setPaymentReceiptMsg] = useState(false);
+  const [teacherAbsentMsg, setTeacherAbsentMsg] = useState(false);
   const [newAdmissionTemplate, setNewAdmissionTemplate] = useState('');
   const [absentTemplate, setAbsentTemplate] = useState('');
   const [paymentReceiptTemplate, setPaymentReceiptTemplate] = useState('');
+  const [teacherAbsentTemplate, setTeacherAbsentTemplate] = useState('');
+
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [testResult, setTestResult] = useState<{status: 'success' | 'error', message: string} | null>(null);
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
 
+  const [customMessageTarget, setCustomMessageTarget] = useState<CustomMessageTarget>('all_families');
+  const [customMessage, setCustomMessage] = useState('');
+  const [specificClass, setSpecificClass] = useState('');
+  const [specificStudent, setSpecificStudent] = useState('');
+  const [specificTeacher, setSpecificTeacher] = useState('');
+  const [customNumbers, setCustomNumbers] = useState('');
 
   useEffect(() => {
     if (!isSettingsLoading) {
@@ -91,9 +108,11 @@ export default function SettingsPage() {
       setNewAdmissionMsg(settings.newAdmissionMsg);
       setAbsentMsg(settings.absentMsg);
       setPaymentReceiptMsg(settings.paymentReceiptMsg);
+      setTeacherAbsentMsg(settings.teacherAbsentMsg || false);
       setNewAdmissionTemplate(settings.newAdmissionTemplate);
       setAbsentTemplate(settings.absentTemplate);
       setPaymentReceiptTemplate(settings.paymentReceiptTemplate);
+      setTeacherAbsentTemplate(settings.teacherAbsentTemplate || 'Dear {teacher_name}, you were marked absent today. Please contact administration if this is an error.');
     }
   }, [isSettingsLoading, settings]);
 
@@ -157,9 +176,11 @@ export default function SettingsPage() {
         newAdmissionMsg,
         absentMsg,
         paymentReceiptMsg,
+        teacherAbsentMsg,
         newAdmissionTemplate,
         absentTemplate,
         paymentReceiptTemplate,
+        teacherAbsentTemplate,
     });
     setIsSaving(false);
     toast({
@@ -491,7 +512,7 @@ export default function SettingsPage() {
                 <CardContent className="space-y-6">
                     <div className="space-y-2">
                         <Label>Send To:</Label>
-                        <RadioGroup defaultValue="all_families" className="flex flex-wrap items-center gap-4">
+                        <RadioGroup value={customMessageTarget} onValueChange={(v) => setCustomMessageTarget(v as CustomMessageTarget)} className="flex flex-wrap items-center gap-4">
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="all_families" id="all_families" />
                                 <Label htmlFor="all_families">All Families</Label>
@@ -501,8 +522,8 @@ export default function SettingsPage() {
                                 <Label htmlFor="specific_class">Specific Class</Label>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="specific_family" id="specific_family" />
-                                <Label htmlFor="specific_family">Specific Family</Label>
+                                <RadioGroupItem value="specific_student" id="specific_student" />
+                                <Label htmlFor="specific_student">Specific Student</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="all_teachers" id="all_teachers" />
@@ -518,19 +539,59 @@ export default function SettingsPage() {
                             </div>
                         </RadioGroup>
                     </div>
+
+                    {customMessageTarget === 'specific_class' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="specific-class-select">Select Class</Label>
+                            <Select value={specificClass} onValueChange={setSpecificClass}>
+                                <SelectTrigger id="specific-class-select">
+                                    <SelectValue placeholder="Select a class..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                    {customMessageTarget === 'specific_student' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="specific-student-input">Student Roll Number</Label>
+                            <Input id="specific-student-input" value={specificStudent} onChange={(e) => setSpecificStudent(e.target.value)} placeholder="Enter student roll number..." />
+                        </div>
+                    )}
+                    {customMessageTarget === 'specific_teacher' && (
+                         <div className="space-y-2">
+                            <Label htmlFor="specific-teacher-select">Select Teacher</Label>
+                            <Select value={specificTeacher} onValueChange={setSpecificTeacher}>
+                                <SelectTrigger id="specific-teacher-select">
+                                    <SelectValue placeholder="Select a teacher..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                     {customMessageTarget === 'custom_numbers' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="custom-numbers-input">Custom Phone Numbers</Label>
+                             <Textarea id="custom-numbers-input" value={customNumbers} onChange={(e) => setCustomNumbers(e.target.value)} placeholder="Enter phone numbers, separated by commas..."/>
+                        </div>
+                    )}
+
                     <div className="space-y-2">
                         <Label htmlFor="custom-message">Message</Label>
-                        <Textarea id="custom-message" placeholder="Type your message here..." className="min-h-[120px]" />
+                        <Textarea id="custom-message" value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} placeholder="Type your message here..." className="min-h-[120px]" />
                         <p className="text-xs text-muted-foreground">Variables: {'{student_name}'}, {'{father_name}'}, {'{teacher_name}'}, {'{class}'}, {'{school_name}'}</p>
                     </div>
                     <div className="space-y-2">
                         <Label>Quick Templates</Label>
                         <div className="flex flex-wrap gap-2">
-                            <Button variant="outline" size="sm">Absentee Notice</Button>
-                            <Button variant="outline" size="sm">Fee Payment Receipt</Button>
-                            <Button variant="outline" size="sm">Admission Confirmation</Button>
-                            <Button variant="outline" size="sm">Student Deactivation Notice</Button>
-                            <Button variant="outline" size="sm">Teacher Deactivation Notice</Button>
+                            <Button variant="outline" size="sm" onClick={() => setCustomMessage(absentTemplate)}>Absentee Notice</Button>
+                            <Button variant="outline" size="sm" onClick={() => setCustomMessage(paymentReceiptTemplate)}>Fee Payment Receipt</Button>
+                            <Button variant="outline" size="sm" onClick={() => setCustomMessage(newAdmissionTemplate)}>Admission Confirmation</Button>
+                            <Button variant="outline" size="sm" onClick={() => setCustomMessage('Your child {student_name} has been marked inactive.')}>Student Deactivation Notice</Button>
+                            <Button variant="outline" size="sm" onClick={() => setCustomMessage('Dear {teacher_name}, your account has been deactivated.')}>Teacher Deactivation Notice</Button>
                         </div>
                     </div>
                 </CardContent>
@@ -547,7 +608,7 @@ export default function SettingsPage() {
                   <CardTitle>Automated Notifications</CardTitle>
                   <CardDescription>Enable/disable and customize automated messages for specific events.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-6">
                    <div className="space-y-4 rounded-lg border p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -562,7 +623,7 @@ export default function SettingsPage() {
                     <div className="space-y-4 rounded-lg border p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <Label className="text-base font-semibold">Absentee Notice</Label>
+                                <Label className="text-base font-semibold">Student Absentee Notice</Label>
                                 <p className="text-sm text-muted-foreground">Sent when a student is marked absent.</p>
                             </div>
                             <Switch checked={absentMsg} onCheckedChange={setAbsentMsg} />
@@ -570,6 +631,17 @@ export default function SettingsPage() {
                         {absentMsg && <Textarea value={absentTemplate} onChange={e => setAbsentTemplate(e.target.value)} placeholder="e.g. Dear parent, your child {student_name} (Roll No: {student_id}) was absent today." />}
                     </div>
                     
+                    <div className="space-y-4 rounded-lg border p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <Label className="text-base font-semibold">Teacher Absentee Notice</Label>
+                                <p className="text-sm text-muted-foreground">Sent when a teacher is marked absent.</p>
+                            </div>
+                            <Switch checked={teacherAbsentMsg} onCheckedChange={setTeacherAbsentMsg} />
+                        </div>
+                        {teacherAbsentMsg && <Textarea value={teacherAbsentTemplate} onChange={e => setTeacherAbsentTemplate(e.target.value)} placeholder="e.g. Dear {teacher_name}, you were marked absent today. Please contact administration if this is an error." />}
+                    </div>
+
                     <div className="space-y-4 rounded-lg border p-4">
                         <div className="flex items-center justify-between">
                             <div>

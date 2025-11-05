@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
@@ -57,9 +56,11 @@ export interface Settings {
   newAdmissionMsg: boolean;
   absentMsg: boolean;
   paymentReceiptMsg: boolean;
+  teacherAbsentMsg: boolean;
   newAdmissionTemplate: string;
   absentTemplate: string;
   paymentReceiptTemplate: string;
+  teacherAbsentTemplate: string;
 
   landingPage: {
     sections: Section[];
@@ -86,8 +87,10 @@ const defaultSettings: Settings = {
   newAdmissionMsg: true,
   absentMsg: true,
   paymentReceiptMsg: true,
+  teacherAbsentMsg: false,
   newAdmissionTemplate: 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.',
   absentTemplate: 'Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.',
+  teacherAbsentTemplate: 'Dear {teacher_name}, you were marked absent today. Please contact administration if this is an error.',
   paymentReceiptTemplate: 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!',
   landingPage: {
     sections: [
