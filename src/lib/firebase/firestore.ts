@@ -1,4 +1,5 @@
 
+
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity } from '@/lib/data';
@@ -249,7 +250,8 @@ export async function updateStudentFeeStatus(studentId: string, newBalance: numb
 export async function resetMonthlyFees() {
     try {
         const studentsCollection = collection(db, 'students');
-        const studentsSnap = await getDocs(studentsCollection);
+        const q = query(studentsCollection, where("status", "==", "active"));
+        const studentsSnap = await getDocs(q);
         const batch = writeBatch(db);
 
         studentsSnap.forEach(studentDoc => {

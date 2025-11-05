@@ -11,9 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History, Archive, GraduationCap } from 'lucide-react';
+import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History, Archive, GraduationCap, DollarSign } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { seedDatabase, clearActivityHistory, getRecentActivities } from '@/lib/firebase/firestore';
+import { seedDatabase, clearActivityHistory, getRecentActivities, resetMonthlyFees } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -187,6 +187,7 @@ export default function SettingsPage() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isGeneratingFees, setIsGeneratingFees] = useState(false);
 
   // General State
   const [name, setName] = useState('');
@@ -352,6 +353,25 @@ export default function SettingsPage() {
       }
       setIsSeeding(false);
   }
+
+  const handleGenerateFees = async () => {
+    setIsGeneratingFees(true);
+    const result = await resetMonthlyFees();
+    if (result.success) {
+        toast({
+            title: "Monthly Fees Generated",
+            description: result.message,
+        });
+        refreshData();
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Fee Generation Failed",
+            description: result.message,
+        });
+    }
+    setIsGeneratingFees(false);
+  };
 
   const handleTestApi = async () => {
     if (!testPhoneNumber.trim()) {
@@ -657,7 +677,7 @@ export default function SettingsPage() {
             <Card className="max-w-2xl">
               <CardHeader>
                 <CardTitle>Data Management</CardTitle>
-                <CardDescription>Access and manage historical student data.</CardDescription>
+                <CardDescription>Access and manage historical student data and other data-related tasks.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
                 <Link href="/alumni" className="block">
@@ -686,6 +706,23 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </Link>
+                <div className="rounded-lg border p-4">
+                    <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-3">
+                          <div className="bg-primary/10 text-primary p-2 rounded-md">
+                            <DollarSign className="h-6 w-6"/>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">Generate Monthly Fees</h3>
+                            <p className="text-sm text-muted-foreground">Add monthly fee to all active students' balances.</p>
+                          </div>
+                        </div>
+                        <Button onClick={handleGenerateFees} disabled={isGeneratingFees}>
+                            {isGeneratingFees && <Loader2 className="mr-2 animate-spin" />}
+                            Generate Fees
+                        </Button>
+                    </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
