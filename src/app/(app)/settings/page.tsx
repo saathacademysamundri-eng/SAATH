@@ -24,6 +24,7 @@ import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
@@ -50,9 +51,12 @@ export default function SettingsPage() {
   const [securityPin, setSecurityPin] = useState('');
 
   // WhatsApp State
-  const [ultraMsgEnabled, setUltraMsgEnabled] = useState(false);
+  const [whatsappProvider, setWhatsappProvider] = useState('none');
   const [ultraMsgApiUrl, setUltraMsgApiUrl] = useState('');
   const [ultraMsgToken, setUltraMsgToken] = useState('');
+  const [officialApiUrl, setOfficialApiUrl] = useState('');
+  const [officialApiToken, setOfficialApiToken] = useState('');
+  
   const [newAdmissionMsg, setNewAdmissionMsg] = useState(false);
   const [absentMsg, setAbsentMsg] = useState(false);
   const [paymentReceiptMsg, setPaymentReceiptMsg] = useState(false);
@@ -78,9 +82,12 @@ export default function SettingsPage() {
       setSecurityPin(settings.securityPin);
 
       // WhatsApp settings
-      setUltraMsgEnabled(settings.ultraMsgEnabled);
+      setWhatsappProvider(settings.whatsappProvider);
       setUltraMsgApiUrl(settings.ultraMsgApiUrl);
       setUltraMsgToken(settings.ultraMsgToken);
+      setOfficialApiUrl(settings.officialApiUrl);
+      setOfficialApiToken(settings.officialApiToken);
+      
       setNewAdmissionMsg(settings.newAdmissionMsg);
       setAbsentMsg(settings.absentMsg);
       setPaymentReceiptMsg(settings.paymentReceiptMsg);
@@ -142,9 +149,11 @@ export default function SettingsPage() {
   const handleSaveWhatsApp = async () => {
     setIsSaving(true);
     await updateSettings({
-        ultraMsgEnabled,
+        whatsappProvider,
         ultraMsgApiUrl,
         ultraMsgToken,
+        officialApiUrl,
+        officialApiToken,
         newAdmissionMsg,
         absentMsg,
         paymentReceiptMsg,
@@ -187,13 +196,15 @@ export default function SettingsPage() {
     setTestResult(null);
 
     const academyName = settings.name || 'My Academy';
+    const apiUrl = whatsappProvider === 'ultramsg' ? ultraMsgApiUrl : officialApiUrl;
+    const token = whatsappProvider === 'ultramsg' ? ultraMsgToken : officialApiToken;
     
     try {
         const result = await sendWhatsappMessage({
             to: testPhoneNumber,
             body: `This is a test message from your ${academyName} setup.`,
-            apiUrl: ultraMsgApiUrl,
-            token: ultraMsgToken
+            apiUrl: apiUrl,
+            token: token
         });
 
         if (result.success) {
@@ -396,14 +407,24 @@ export default function SettingsPage() {
                     <CardDescription>Connect to a WhatsApp provider to send automated messages. Choose one provider to be active at a time.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <Card className={ultraMsgEnabled ? 'border-primary' : ''}>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle>UltraMSG API</CardTitle>
-                                <Switch checked={ultraMsgEnabled} onCheckedChange={setUltraMsgEnabled} />
-                            </div>
-                        </CardHeader>
-                        {ultraMsgEnabled && (
+                    <RadioGroup value={whatsappProvider} onValueChange={setWhatsappProvider} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Label htmlFor="provider-ultramsg" className={cn("rounded-lg border p-4 cursor-pointer", whatsappProvider === 'ultramsg' && 'border-primary ring-2 ring-primary')}>
+                          <div className="flex items-center justify-between">
+                              <span className="font-bold">UltraMSG API</span>
+                              <RadioGroupItem value="ultramsg" id="provider-ultramsg" />
+                          </div>
+                      </Label>
+                      <Label htmlFor="provider-official" className={cn("rounded-lg border p-4 cursor-pointer", whatsappProvider === 'official' && 'border-primary ring-2 ring-primary')}>
+                          <div className="flex items-center justify-between">
+                               <span className="font-bold">Official WhatsApp API</span>
+                              <RadioGroupItem value="official" id="provider-official" />
+                          </div>
+                      </Label>
+                    </RadioGroup>
+
+                    {whatsappProvider === 'ultramsg' && (
+                        <Card>
+                            <CardHeader><CardTitle>UltraMSG API Settings</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="ultra-api-url">API Url</Label>
@@ -413,17 +434,42 @@ export default function SettingsPage() {
                                     <Label htmlFor="ultra-token">Token</Label>
                                     <Input id="ultra-token" type="password" value={ultraMsgToken} onChange={e => setUltraMsgToken(e.target.value)} placeholder="Enter your UltraMSG token" />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="test-phone-ultra">Test Phone Number</Label>
-                                    <Input id="test-phone-ultra" value={testPhoneNumber} onChange={e => setTestPhoneNumber(e.target.value)} placeholder="e.g., 923001234567" />
-                                </div>
-                                <Button onClick={handleTestApi} disabled={isTestingApi}>
-                                    {isTestingApi ? <Loader2 className="mr-2 animate-spin" /> : <Wifi className='mr-2'/>}
-                                    Test API
-                                </Button>
                             </CardContent>
-                        )}
-                    </Card>
+                        </Card>
+                    )}
+                    
+                    {whatsappProvider === 'official' && (
+                         <Card>
+                            <CardHeader><CardTitle>Official WhatsApp API Settings</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="official-api-url">API URL / Account SID</Label>
+                                    <Input id="official-api-url" value={officialApiUrl} onChange={e => setOfficialApiUrl(e.target.value)} placeholder="Enter Account SID or API endpoint" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="official-token">Auth Token</Label>
+                                    <Input id="official-token" type="password" value={officialApiToken} onChange={e => setOfficialApiToken(e.target.value)} placeholder="Enter your Auth Token" />
+                                </div>
+                                <Alert variant="destructive">
+                                    <AlertTitle>Coming Soon</AlertTitle>
+                                    <AlertDescription>This provider is not yet fully implemented. Configuration can be saved, but messages may not send.</AlertDescription>
+                                </Alert>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {whatsappProvider !== 'none' && (
+                      <>
+                        <div className="space-y-2">
+                            <Label htmlFor="test-phone-ultra">Test Phone Number</Label>
+                            <Input id="test-phone-ultra" value={testPhoneNumber} onChange={e => setTestPhoneNumber(e.target.value)} placeholder="e.g., 923001234567" />
+                        </div>
+                        <Button onClick={handleTestApi} disabled={isTestingApi}>
+                            {isTestingApi ? <Loader2 className="mr-2 animate-spin" /> : <Wifi className='mr-2'/>}
+                            Test API
+                        </Button>
+                      </>
+                    )}
                     
                     {testResult && (
                         <Alert variant={testResult.status === 'error' ? 'destructive' : 'default'}>
@@ -432,37 +478,36 @@ export default function SettingsPage() {
                             <AlertDescription>{testResult.message}</AlertDescription>
                         </Alert>
                     )}
-                     {(ultraMsgEnabled) && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Automated Message Templates</CardTitle>
-                                <CardDescription>Enable or disable automatic messages and customize their content. Use placeholders like {"{student_name}"}.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="flex items-start justify-between rounded-lg border p-4">
-                                    <div>
-                                        <Label htmlFor="new-admission-switch" className="font-semibold">New Admission Message</Label>
-                                        <Textarea className="mt-2" value={newAdmissionTemplate} onChange={e => setNewAdmissionTemplate(e.target.value)} disabled={!newAdmissionMsg} />
-                                    </div>
-                                    <Switch id="new-admission-switch" checked={newAdmissionMsg} onCheckedChange={setNewAdmissionMsg} />
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Automated Message Templates</CardTitle>
+                            <CardDescription>Enable or disable automatic messages and customize their content. Use placeholders like {"{student_name}"}.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="flex items-start justify-between rounded-lg border p-4">
+                                <div>
+                                    <Label htmlFor="new-admission-switch" className="font-semibold">New Admission Message</Label>
+                                    <Textarea className="mt-2" value={newAdmissionTemplate} onChange={e => setNewAdmissionTemplate(e.target.value)} disabled={!newAdmissionMsg} />
                                 </div>
-                                <div className="flex items-start justify-between rounded-lg border p-4">
-                                    <div>
-                                        <Label htmlFor="absent-switch" className="font-semibold">Student Absent Message</Label>
-                                        <Textarea className="mt-2" value={absentTemplate} onChange={e => setAbsentTemplate(e.target.value)} disabled={!absentMsg} />
-                                    </div>
-                                    <Switch id="absent-switch" checked={absentMsg} onCheckedChange={setAbsentMsg} />
+                                <Switch id="new-admission-switch" checked={newAdmissionMsg} onCheckedChange={setNewAdmissionMsg} />
+                            </div>
+                            <div className="flex items-start justify-between rounded-lg border p-4">
+                                <div>
+                                    <Label htmlFor="absent-switch" className="font-semibold">Student Absent Message</Label>
+                                    <Textarea className="mt-2" value={absentTemplate} onChange={e => setAbsentTemplate(e.target.value)} disabled={!absentMsg} />
                                 </div>
-                                <div className="flex items-start justify-between rounded-lg border p-4">
-                                    <div>
-                                        <Label htmlFor="payment-switch" className="font-semibold">Payment Receipt Message</Label>
-                                        <Textarea className="mt-2" value={paymentReceiptTemplate} onChange={e => setPaymentReceiptTemplate(e.target.value)} disabled={!paymentReceiptMsg} />
-                                    </div>
-                                    <Switch id="payment-switch" checked={paymentReceiptMsg} onCheckedChange={setPaymentReceiptMsg} />
+                                <Switch id="absent-switch" checked={absentMsg} onCheckedChange={setAbsentMsg} />
+                            </div>
+                            <div className="flex items-start justify-between rounded-lg border p-4">
+                                <div>
+                                    <Label htmlFor="payment-switch" className="font-semibold">Payment Receipt Message</Label>
+                                    <Textarea className="mt-2" value={paymentReceiptTemplate} onChange={e => setPaymentReceiptTemplate(e.target.value)} disabled={!paymentReceiptMsg} />
                                 </div>
-                            </CardContent>
-                        </Card>
-                    )}
+                                <Switch id="payment-switch" checked={paymentReceiptMsg} onCheckedChange={setPaymentReceiptMsg} />
+                            </div>
+                        </CardContent>
+                    </Card>
                 </CardContent>
                 <CardFooter>
                     <Button onClick={handleSaveWhatsApp} disabled={isSaving}>

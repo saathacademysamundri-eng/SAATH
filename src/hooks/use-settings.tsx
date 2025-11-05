@@ -48,9 +48,12 @@ export interface Settings {
   autoLockTimeout: number; // in seconds
   securityPin: string;
 
-  ultraMsgEnabled: boolean;
+  whatsappProvider: 'none' | 'ultramsg' | 'official';
   ultraMsgApiUrl: string;
   ultraMsgToken: string;
+  officialApiUrl: string;
+  officialApiToken: string;
+
   newAdmissionMsg: boolean;
   absentMsg: boolean;
   paymentReceiptMsg: boolean;
@@ -73,9 +76,13 @@ const defaultSettings: Settings = {
   autoLockEnabled: false,
   autoLockTimeout: 300,
   securityPin: '',
-  ultraMsgEnabled: false,
+  
+  whatsappProvider: 'none',
   ultraMsgApiUrl: '',
   ultraMsgToken: '',
+  officialApiUrl: '',
+  officialApiToken: '',
+
   newAdmissionMsg: true,
   absentMsg: true,
   paymentReceiptMsg: true,
