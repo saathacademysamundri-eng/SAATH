@@ -30,11 +30,11 @@ export function WelcomeDialog() {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md text-center">
         <DialogHeader className="space-y-4">
-          <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-muted">
-            <Logo noText onLogin/>
+          <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-muted overflow-hidden">
+            <img src={settings.logo} alt="logo" className="object-cover w-full h-full" />
           </div>
           <DialogTitle className="text-2xl font-bold">
-            Welcome to SAATH Academy Samundri
+            Welcome to {settings.name}
           </DialogTitle>
           <DialogDescription>Developed by Mian Mudassar.</DialogDescription>
         </DialogHeader>

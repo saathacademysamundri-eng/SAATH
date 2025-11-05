@@ -31,7 +31,7 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
             <div className='h-24 w-24 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
                 <img src={logoSrc} alt="logo" className="object-cover w-full h-full" />
             </div>
-            <span className="font-bold tracking-tighter text-3xl">SAATH Academy</span>
+            <span className="font-bold tracking-tighter text-3xl">{academyName}</span>
         </div>
     )
   }
