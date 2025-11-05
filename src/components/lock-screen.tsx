@@ -4,6 +4,7 @@
 import {
   InputOTP,
   InputOTPGroup,
+  InputOTPSeparator,
   InputOTPSlot,
 } from '@/components/ui/input-otp';
 import { LiveDate, LiveTime } from './live-date-time';
@@ -50,22 +51,22 @@ export function LockScreen() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-lg">
       <div className="flex w-full max-w-sm flex-col items-center rounded-2xl bg-card p-8 text-card-foreground shadow-2xl">
         <div className="mb-4 text-center">
-          <div className="text-muted-foreground flex items-center gap-2">
+          <div className="text-muted-foreground flex items-center justify-center gap-2">
             <LiveDate /> | <LiveTime />
           </div>
         </div>
         <div className="mb-4 h-20 w-20">
           <Logo noText />
         </div>
-        <h1 className="mb-2 text-3xl font-bold">{settings.name}</h1>
+        <h1 className="mb-2 animate-breathe text-3xl font-bold">{settings.name}</h1>
         <p className="mb-6 text-muted-foreground">Enter Security PIN to Unlock</p>
 
         <InputOTP maxLength={4} value={pin} onChange={handlePinChange}>
           <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-            <InputOTPSlot index={3} />
+            <InputOTPSlot index={0} isPin />
+            <InputOTPSlot index={1} isPin />
+            <InputOTPSlot index={2} isPin />
+            <InputOTPSlot index={3} isPin />
           </InputOTPGroup>
         </InputOTP>
 
