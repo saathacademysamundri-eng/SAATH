@@ -24,9 +24,9 @@ export async function logActivity(type: Activity['type'], message: string, link?
     }
 }
 
-export async function getRecentActivities(): Promise<Activity[]> {
+export async function getRecentActivities(count = 20): Promise<Activity[]> {
     try {
-        const q = query(collection(db, 'activities'), orderBy('date', 'desc'), limit(20));
+        const q = query(collection(db, 'activities'), orderBy('date', 'desc'), limit(count));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => {
             const data = doc.data();
@@ -95,7 +95,7 @@ export async function getStudents(): Promise<Student[]> {
   const studentsSnap = await getDocs(studentsCollection);
   const studentData = studentsSnap.docs
     .map(doc => doc.data() as Student)
-    .filter(student => student.isActive === true);
+    .filter(student => student.isActive !== false); // Keep active and undefined
   return studentData.sort((a, b) => a.id.localeCompare(b.id));
 }
 

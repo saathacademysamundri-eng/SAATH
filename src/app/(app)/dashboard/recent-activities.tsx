@@ -48,7 +48,7 @@ export function RecentActivities() {
                         <div className="absolute top-0 animate-scroll-up-slow">
                             <div className="space-y-4">
                                 {duplicatedActivities.map((activity, index) => (
-                                    <div key={index} className="flex items-start gap-4">
+                                    <div key={`${activity.id}-${index}`} className="flex items-start gap-4">
                                         <div className="flex-1">
                                             <p className="font-medium text-sm leading-tight">
                                                 {activity.message}
@@ -65,7 +65,7 @@ export function RecentActivities() {
                             </div>
                              <div className="space-y-4 mt-4">
                                 {duplicatedActivities.map((activity, index) => (
-                                    <div key={index + duplicatedActivities.length} className="flex items-start gap-4">
+                                    <div key={`${activity.id}-${index}-clone`} className="flex items-start gap-4">
                                         <div className="flex-1">
                                             <p className="font-medium text-sm leading-tight">
                                                 {activity.message}

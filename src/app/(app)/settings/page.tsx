@@ -11,9 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2 } from 'lucide-react';
+import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { seedDatabase, clearActivityHistory } from '@/lib/firebase/firestore';
+import { seedDatabase, clearActivityHistory, getRecentActivities } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -26,15 +26,9 @@ import { useRouter } from 'next/navigation';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogClose, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-
-type CustomMessageTarget = 
-  | 'all_classes' 
-  | 'specific_class' 
-  | 'specific_student' 
-  | 'all_teachers' 
-  | 'specific_teacher' 
-  | 'custom_numbers';
-
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Activity } from '@/lib/data';
+import { format } from 'date-fns';
 
 function ClearHistoryDialog({ onConfirm }: { onConfirm: (pin: string) => Promise<boolean> }) {
   const [pin, setPin] = useState('');
@@ -88,6 +82,103 @@ function ClearHistoryDialog({ onConfirm }: { onConfirm: (pin: string) => Promise
   )
 }
 
+function HistoryTab() {
+    const { settings } = useSettings();
+    const { toast } = useToast();
+    const [activities, setActivities] = useState<Activity[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+
+    const fetchActivities = async () => {
+        setLoading(true);
+        const data = await getRecentActivities(50); // Fetch more activities
+        setActivities(data);
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        fetchActivities();
+    }, []);
+
+    const handleClearHistory = async (pin: string) => {
+        if (pin !== settings.securityPin) {
+            toast({ variant: 'destructive', title: 'Invalid PIN', description: 'The provided PIN is incorrect.' });
+            return false;
+        }
+        const result = await clearActivityHistory();
+        if (result.success) {
+            toast({ title: 'History Cleared', description: 'All activity logs have been deleted.' });
+            fetchActivities(); // Refresh the list
+            return true;
+        } else {
+            toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
+            return false;
+        }
+    };
+    
+    const filteredActivities = activities.filter(activity =>
+        activity.message.toLowerCase().includes(search.toLowerCase()) ||
+        activity.type.toLowerCase().includes(search.toLowerCase())
+    );
+
+    return (
+         <Card>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Activity Log</CardTitle>
+                        <CardDescription>A complete log of all actions performed in the application.</CardDescription>
+                    </div>
+                     <ClearHistoryDialog onConfirm={handleClearHistory} />
+                </div>
+                 <div className="relative pt-4">
+                    <Input 
+                        placeholder="Search activity log..." 
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Date & Time</TableHead>
+                            <TableHead>Activity Type</TableHead>
+                            <TableHead>Description</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {loading ? (
+                             Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : filteredActivities.length > 0 ? (
+                             filteredActivities.map(activity => (
+                                <TableRow key={activity.id}>
+                                    <TableCell>{format(activity.date, 'Pp')}</TableCell>
+                                    <TableCell className="capitalize">{activity.type.replace(/_/g, ' ')}</TableCell>
+                                    <TableCell>{activity.message}</TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
+                                    No activities found.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
   const { classes, teachers, students, loading: appLoading, refreshData } = useAppContext();
@@ -133,7 +224,7 @@ export default function SettingsPage() {
   const [testResult, setTestResult] = useState<{status: 'success' | 'error', message: string} | null>(null);
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
 
-  const [customMessageTarget, setCustomMessageTarget] = useState<CustomMessageTarget>('all_classes');
+  const [customMessageTarget, setCustomMessageTarget] = useState<any>('all_classes');
   const [customMessage, setCustomMessage] = useState('');
   const [specificClass, setSpecificClass] = useState('');
   const [specificStudent, setSpecificStudent] = useState('');
@@ -260,22 +351,6 @@ export default function SettingsPage() {
           });
       }
       setIsSeeding(false);
-  }
-
-  const handleClearHistory = async (pin: string) => {
-    if (pin !== settings.securityPin) {
-      toast({ variant: 'destructive', title: 'Invalid PIN', description: 'The provided PIN is incorrect.' });
-      return false;
-    }
-    const result = await clearActivityHistory();
-    if (result.success) {
-      toast({ title: 'History Cleared', description: 'All activity logs have been deleted.' });
-      refreshData();
-      return true;
-    } else {
-      toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
-      return false;
-    }
   }
 
   const handleTestApi = async () => {
@@ -408,11 +483,12 @@ export default function SettingsPage() {
           </p>
         </div>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full max-w-xl grid-cols-5">
+          <TabsList className="grid w-full max-w-2xl grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="appearance"> <Palette className="mr-2 h-4 w-4"/> Appearance</TabsTrigger>
             <TabsTrigger value="security"> <ShieldCheck className="mr-2 h-4 w-4"/> Security</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+            <TabsTrigger value="history"> <History className="mr-2 h-4 w-4"/> History</TabsTrigger>
             <TabsTrigger value="database">Database</TabsTrigger>
           </TabsList>
           <TabsContent value="general">
@@ -668,7 +744,7 @@ export default function SettingsPage() {
                 <CardContent className="space-y-6">
                     <div className="space-y-2">
                         <Label>Send To:</Label>
-                        <RadioGroup value={customMessageTarget} onValueChange={(v) => setCustomMessageTarget(v as CustomMessageTarget)} className="flex flex-wrap items-center gap-4">
+                        <RadioGroup value={customMessageTarget} onValueChange={(v) => setCustomMessageTarget(v as any)} className="flex flex-wrap items-center gap-4">
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="all_classes" id="all_classes" />
                                 <Label htmlFor="all_classes">All Classes</Label>
@@ -819,6 +895,9 @@ export default function SettingsPage() {
               </Card>
             </div>
           </TabsContent>
+          <TabsContent value="history">
+            <HistoryTab />
+          </TabsContent>
            <TabsContent value="database">
              <Card className="max-w-2xl">
                 <CardHeader>
@@ -834,13 +913,6 @@ export default function SettingsPage() {
                                 <Database className='mr-2'/>
                                 {isSeeding ? 'Seeding...' : 'Seed Database'}
                             </Button>
-                        </div>
-                    </div>
-                     <div className="space-y-2">
-                        <Label className="font-semibold text-destructive">Danger Zone</Label>
-                        <div className="flex items-center justify-between rounded-md border border-destructive/50 p-3">
-                           <p className="text-sm text-muted-foreground">Permanently delete all activity logs. This action is not reversible and requires your security PIN.</p>
-                            <ClearHistoryDialog onConfirm={handleClearHistory} />
                         </div>
                     </div>
                 </CardContent>
