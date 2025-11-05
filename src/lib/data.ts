@@ -1,7 +1,7 @@
 
 export type Activity = {
     id: string;
-    type: 'new_admission' | 'fee_payment' | 'exam_created' | 'teacher_payout' | 'settings_updated' | 'student_deactivated' | 'student_reactivated' | 'teacher_deleted' | 'class_added' | 'class_updated' | 'database_seeded' | 'fee_reversal' | 'fee_updated' | 'expense_added' | 'expense_updated' | 'expense_deleted' | 'teacher_added' | 'teacher_updated' | 'attendance_marked' | 'exam_updated' | 'exam_deleted' | 'exam_results_saved' | 'student_deleted';
+    type: 'new_admission' | 'fee_payment' | 'exam_created' | 'teacher_payout' | 'settings_updated' | 'student_deactivated' | 'student_reactivated' | 'teacher_deleted' | 'class_added' | 'class_updated' | 'database_seeded' | 'fee_reversal' | 'fee_updated' | 'expense_added' | 'expense_updated' | 'expense_deleted' | 'teacher_added' | 'teacher_updated' | 'attendance_marked' | 'exam_updated' | 'exam_deleted' | 'exam_results_saved' | 'student_deleted' | 'student_archived' | 'student_graduated';
     message: string;
     date: Date;
     link?: string;
@@ -37,7 +37,7 @@ export type Student = {
     feeStatus: 'Paid' | 'Pending' | 'Partial' | 'Overdue';
     totalFee: number; // This represents the outstanding balance
     monthlyFee: number; // This is the base fee charged each month
-    isActive: boolean; // to manage alumni
+    status: 'active' | 'graduated' | 'archived'; 
 };
 
 export type Teacher = {
@@ -140,7 +140,7 @@ export let students: Student[] = [
         feeStatus: 'Paid', 
         totalFee: 0,
         monthlyFee: 3000,
-        isActive: true,
+        status: 'active',
     },
     { 
         id: 'S002', 
@@ -158,7 +158,7 @@ export let students: Student[] = [
         feeStatus: 'Pending', 
         totalFee: 2500,
         monthlyFee: 2500,
-        isActive: true,
+        status: 'active',
     },
     { 
         id: 'S003', 
@@ -176,7 +176,7 @@ export let students: Student[] = [
         feeStatus: 'Partial', 
         totalFee: 1000,
         monthlyFee: 2000,
-        isActive: true,
+        status: 'active',
     },
     { 
         id: 'S004', 
@@ -194,7 +194,7 @@ export let students: Student[] = [
         feeStatus: 'Paid', 
         totalFee: 0,
         monthlyFee: 4000,
-        isActive: true,
+        status: 'active',
     },
     { 
         id: 'S005', 
@@ -211,7 +211,7 @@ export let students: Student[] = [
         feeStatus: 'Overdue', 
         totalFee: 4500,
         monthlyFee: 4500,
-        isActive: true,
+        status: 'active',
     },
     { 
         id: 'S006', 
@@ -229,7 +229,7 @@ export let students: Student[] = [
         feeStatus: 'Paid', 
         totalFee: 0,
         monthlyFee: 2500,
-        isActive: true,
+        status: 'active',
     },
     { 
         id: 'S007', 
@@ -247,7 +247,7 @@ export let students: Student[] = [
         feeStatus: 'Pending', 
         totalFee: 3000,
         monthlyFee: 3000,
-        isActive: true,
+        status: 'active',
     },
 ];
 

@@ -6,15 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { getInactiveStudents, reactivateStudent, deleteStudentPermanently } from '@/lib/firebase/firestore';
+import { getAlumni } from '@/lib/firebase/firestore';
 import { Student } from '@/lib/data';
-import { Search, UserCheck, Trash2 } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAppContext } from '@/hooks/use-app-context';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 export default function AlumniPage() {
   const [alumni, setAlumni] = useState<Student[]>([]);
@@ -25,7 +24,7 @@ export default function AlumniPage() {
 
   const fetchAlumni = async () => {
     setLoading(true);
-    const alumniData = await getInactiveStudents();
+    const alumniData = await getAlumni();
     setAlumni(alumniData);
     setLoading(false);
   };
@@ -33,42 +32,6 @@ export default function AlumniPage() {
   useEffect(() => {
     fetchAlumni();
   }, []);
-
-  const handleReactivate = async (student: Student) => {
-    const result = await reactivateStudent(student.id);
-    if (result.success) {
-      toast({
-        title: 'Student Reactivated',
-        description: `${student.name} is now an active student again.`,
-      });
-      fetchAlumni(); // Refresh the alumni list
-      refreshData(); // Refresh the main app context
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Reactivation Failed',
-        description: result.message,
-      });
-    }
-  };
-  
-  const handlePermanentDelete = async (student: Student) => {
-    const result = await deleteStudentPermanently(student.id);
-    if (result.success) {
-      toast({
-        title: 'Student Deleted',
-        description: `${student.name} has been permanently removed.`,
-      });
-      fetchAlumni(); // Refresh the alumni list
-      refreshData();
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Deletion Failed',
-        description: result.message,
-      });
-    }
-  };
 
   const filteredAlumni = alumni.filter(
     (student) =>
@@ -80,13 +43,13 @@ export default function AlumniPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Alumni Students</h1>
-        <p className="text-muted-foreground">A record of students who have left the academy.</p>
+        <p className="text-muted-foreground">A record of students who have graduated from the academy.</p>
       </div>
       <Card>
         <CardHeader>
           <CardTitle>Alumni List</CardTitle>
           <CardDescription>
-            Search for past students. You can reactivate them or delete their records permanently.
+            Search for past students who have successfully completed their studies.
           </CardDescription>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -104,9 +67,8 @@ export default function AlumniPage() {
               <TableRow>
                 <TableHead>Roll #</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Class</TableHead>
+                <TableHead>Class at Graduation</TableHead>
                 <TableHead>Subjects</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -125,9 +87,6 @@ export default function AlumniPage() {
                     <TableCell>
                       <Skeleton className="h-5 w-40" />
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-8 w-24 ml-auto" />
-                    </TableCell>
                   </TableRow>
                 ))
               ) : filteredAlumni.length > 0 ? (
@@ -145,39 +104,11 @@ export default function AlumniPage() {
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleReactivate(student)}>
-                        <UserCheck className="mr-2 h-4 w-4" />
-                        Reactivate
-                      </Button>
-                      <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                             <Button variant="destructive" size="sm">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete the record for <span className="font-bold">{student.name}</span>.
-                                  </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handlePermanentDelete(student)}>
-                                      Confirm Delete
-                                  </AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                     No alumni students found.
                   </TableCell>
                 </TableRow>

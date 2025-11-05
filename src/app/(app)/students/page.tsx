@@ -28,7 +28,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, PlusCircle, Search, Trash, Edit } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Search, Trash, Edit, Archive, GraduationCap } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
 import { Dialog, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { useState } from 'react';
@@ -49,7 +49,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deactivateStudent } from '@/lib/firebase/firestore';
+import { updateStudentStatus } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 export default function StudentsPage() {
@@ -61,12 +61,14 @@ export default function StudentsPage() {
   const [dialogState, setDialogState] = useState<{
     isAddOpen: boolean;
     isEditOpen: boolean;
-    isDeleteOpen: boolean;
+    isArchiveOpen: boolean;
+    isGraduateOpen: boolean;
     selectedStudent: Student | null;
   }>({
     isAddOpen: false,
     isEditOpen: false,
-    isDeleteOpen: false,
+    isArchiveOpen: false,
+    isGraduateOpen: false,
     selectedStudent: null,
   });
 
@@ -77,9 +79,17 @@ export default function StudentsPage() {
   const handleEditClick = (student: Student) => {
     setDialogState({ ...dialogState, isEditOpen: true, selectedStudent: student });
   };
+  
+  const handleArchiveAction = (student: Student, open: boolean) => {
+    setDialogState({ ...dialogState, isArchiveOpen: open, selectedStudent: student });
+  }
+  
+  const handleGraduateAction = (student: Student, open: boolean) => {
+     setDialogState({ ...dialogState, isGraduateOpen: open, selectedStudent: student });
+  }
 
   const closeDialogs = () => {
-    setDialogState({ isAddOpen: false, isEditOpen: false, isDeleteOpen: false, selectedStudent: null });
+    setDialogState({ isAddOpen: false, isEditOpen: false, isArchiveOpen: false, isGraduateOpen: false, selectedStudent: null });
   };
 
   const onStudentAdded = () => {
@@ -92,11 +102,11 @@ export default function StudentsPage() {
     closeDialogs();
   };
   
-  const handleConfirmDeactivate = async (student: Student | null) => {
+  const handleConfirmAction = async (student: Student | null, status: 'archived' | 'graduated') => {
     if (!student) return;
-    const result = await deactivateStudent(student.id);
+    const result = await updateStudentStatus(student.id, status);
     if(result.success) {
-      toast({ title: "Student Moved to Alumni", description: `${student.name} has been marked as inactive.`});
+      toast({ title: `Student ${status}`, description: `${student.name} has been moved.`});
       refreshData();
     } else {
       toast({ variant: "destructive", title: "Action Failed", description: result.message });
@@ -193,7 +203,6 @@ export default function StudentsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <AlertDialog>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -211,27 +220,18 @@ export default function StudentsPage() {
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
+                               <DropdownMenuItem onSelect={() => handleGraduateAction(student, true)}>
+                                <GraduationCap className="mr-2 h-4 w-4" />
+                                Mark as Graduated
+                              </DropdownMenuItem>
                               <AlertDialogTrigger asChild>
                                 <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                  <Trash className="mr-2 h-4 w-4" />
-                                  Move to Alumni
+                                  <Archive className="mr-2 h-4 w-4" />
+                                  Archive
                                 </DropdownMenuItem>
                               </AlertDialogTrigger>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will mark the student <span className="font-bold">{student.name}</span> as inactive and move them to the Alumni list. Their data will be preserved.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleConfirmDeactivate(student)} className="bg-destructive hover:bg-destructive/90">Move to Alumni</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))
@@ -240,6 +240,37 @@ export default function StudentsPage() {
           </Table>
         </CardContent>
       </Card>
+      
+       <AlertDialog open={dialogState.isArchiveOpen} onOpenChange={(open) => setDialogState(prev => ({...prev, isArchiveOpen: open, selectedStudent: open ? prev.selectedStudent : null}))}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will move <span className="font-bold">{dialogState.selectedStudent?.name}</span> to the Archive. You can permanently delete them from there.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => handleConfirmAction(dialogState.selectedStudent, 'archived')} className="bg-destructive hover:bg-destructive/90">Archive</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={dialogState.isGraduateOpen} onOpenChange={(open) => setDialogState(prev => ({...prev, isGraduateOpen: open, selectedStudent: open ? prev.selectedStudent : null}))}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Mark as Graduated?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will move <span className="font-bold">{dialogState.selectedStudent?.name}</span> to the Alumni list to preserve their record as a passed-out student.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => handleConfirmAction(dialogState.selectedStudent, 'graduated')}>Confirm</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
       {dialogState.selectedStudent && (
           <Dialog open={dialogState.isEditOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isEditOpen: isOpen })}>
               <EditStudentForm 

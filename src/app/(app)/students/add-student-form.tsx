@@ -102,7 +102,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             fee_share: feeShare,
         }));
 
-        const newStudent: Omit<Student, 'id'> & { id: string } = {
+        const newStudent: Omit<Student, 'id'| 'status'> & { id: string } = {
             id: newStudentId,
             name,
             fatherName,
@@ -271,5 +271,3 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
       </DialogContent>
   )
 }
-
-    

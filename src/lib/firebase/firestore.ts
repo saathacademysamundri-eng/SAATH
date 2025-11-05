@@ -92,22 +92,28 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
 
 export async function getStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');
-  const q = query(studentsCollection, where("isActive", "!=", false));
+  const q = query(studentsCollection, where("status", "==", "active"));
   const studentsSnap = await getDocs(q);
-  const studentData = studentsSnap.docs.map(doc => doc.data() as Student)
+  const studentData = studentsSnap.docs.map(doc => doc.data() as Student);
   return studentData.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-export async function getInactiveStudents(): Promise<Student[]> {
-  const studentsCollection = collection(db, 'students');
-  const q = query(studentsCollection, where("isActive", "==", false));
-  const studentsSnap = await getDocs(q);
-  const studentData = studentsSnap.docs.map(doc => doc.data() as Student)
-  return studentData.sort((a, b) => a.id.localeCompare(b.id));
+export async function getAlumni(): Promise<Student[]> {
+    const q = query(collection(db, 'students'), where('status', '==', 'graduated'));
+    const studentsSnap = await getDocs(q);
+    const studentData = studentsSnap.docs.map(doc => doc.data() as Student);
+    return studentData.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export async function getArchivedStudents(): Promise<Student[]> {
+    const q = query(collection(db, 'students'), where('status', '==', 'archived'));
+    const studentsSnap = await getDocs(q);
+    const studentData = studentsSnap.docs.map(doc => doc.data() as Student);
+    return studentData.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function getStudentsByClass(className: string): Promise<Student[]> {
-    const q = query(collection(db, 'students'), where('class', '==', className), where("isActive", "!=", false));
+    const q = query(collection(db, 'students'), where('class', '==', className), where("status", "==", "active"));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => doc.data() as Student);
 }
@@ -130,13 +136,13 @@ export async function getStudent(id: string): Promise<Student | null> {
 
 export async function addStudent(student: Omit<Student, 'id'> & { id: string }) {
     const docRef = doc(db, 'students', student.id);
-    const studentWithActive = { ...student, isActive: true };
+    const studentWithStatus = { ...student, status: 'active' as const };
     try {
-        await setDoc(docRef, studentWithActive);
+        await setDoc(docRef, studentWithStatus);
         await logActivity('new_admission', `New admission: ${student.name} (ID: ${student.id}) in class ${student.class}.`, `/students/${student.id}`);
         return { success: true, message: "Student added successfully." };
     } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: studentWithActive });
+        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: studentWithStatus });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }
@@ -155,33 +161,21 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
     }
 }
 
-export async function deactivateStudent(studentId: string) {
+export async function updateStudentStatus(studentId: string, status: 'active' | 'graduated' | 'archived') {
     const studentRef = doc(db, 'students', studentId);
     try {
         const studentDoc = await getDoc(studentRef);
         if (studentDoc.exists()) {
-            await updateDoc(studentRef, { isActive: false });
+            await updateDoc(studentRef, { status });
             const student = studentDoc.data() as Student;
-            await logActivity('student_deactivated', `Deactivated student: ${student.name} (ID: ${studentId}) and moved to Alumni.`);
-            return { success: true, message: "Student moved to Alumni." };
-        }
-        return { success: false, message: "Student not found." };
-    } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'update' });
-        errorEmitter.emit('permission-error', permissionError);
-        return { success: false, message: (serverError as Error).message };
-    }
-}
-
-export async function reactivateStudent(studentId: string) {
-    const studentRef = doc(db, 'students', studentId);
-    try {
-        const studentDoc = await getDoc(studentRef);
-        if (studentDoc.exists()) {
-            await updateDoc(studentRef, { isActive: true });
-            const student = studentDoc.data() as Student;
-            await logActivity('student_reactivated', `Reactivated student: ${student.name} (ID: ${studentId}) from Alumni.`);
-            return { success: true, message: "Student reactivated successfully." };
+            if (status === 'graduated') {
+                 await logActivity('student_graduated', `Marked student as graduated: ${student.name} (ID: ${studentId}).`);
+            } else if (status === 'archived') {
+                await logActivity('student_archived', `Archived student: ${student.name} (ID: ${studentId}).`);
+            } else if (status === 'active') {
+                await logActivity('student_reactivated', `Reactivated student: ${student.name} (ID: ${studentId}).`);
+            }
+            return { success: true, message: `Student status updated to ${status}.` };
         }
         return { success: false, message: "Student not found." };
     } catch (serverError) {
@@ -201,6 +195,9 @@ export async function deleteStudentPermanently(studentId: string) {
             }
 
             const student = studentDoc.data() as Student;
+            if (student.status !== 'archived') {
+                throw new Error("Only archived students can be permanently deleted.");
+            }
 
             // Find and delete all income records for this student
             const incomeQuery = query(collection(db, 'income'), where('studentId', '==', studentId));
@@ -520,7 +517,7 @@ export async function deleteIncomeRecord(incomeId: string) {
             if (studentDoc.exists()) {
                  const studentData = studentDoc.data() as Student;
                 const newTotalFee = studentData.totalFee + incomeData.amount;
-                const newFeeStatus: Student['feeStatus'] = newTotalFee > 0 ? 'Partial' : 'Paid';
+                const newFeeStatus: Student['feeStatus'] = newTotalFee > 0 ? (newTotalFee < studentData.totalFee ? 'Partial' : 'Pending') : 'Paid';
                 transaction.update(studentRef, { totalFee: newTotalFee, feeStatus: newFeeStatus });
             }
             transaction.delete(incomeRef);
