@@ -424,15 +424,6 @@ export default function SettingsPage() {
                             </CardContent>
                         )}
                     </Card>
-                     <Card className={'border-dashed'} disabled>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-muted-foreground">Official WhatsApp API</CardTitle>
-                                <Switch disabled />
-                            </div>
-                             <CardDescription>Coming Soon</CardDescription>
-                        </CardHeader>
-                    </Card>
                     
                     {testResult && (
                         <Alert variant={testResult.status === 'error' ? 'destructive' : 'default'}>
