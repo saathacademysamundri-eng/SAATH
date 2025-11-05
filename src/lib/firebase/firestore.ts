@@ -819,7 +819,6 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
         const q = query(
             collection(db, 'teacher_attendance'),
             where('teacherId', '==', teacherId),
-            orderBy('date')
         );
 
         const querySnapshot = await getDocs(q);
