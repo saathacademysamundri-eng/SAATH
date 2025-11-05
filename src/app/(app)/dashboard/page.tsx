@@ -3,7 +3,6 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { OverviewChart } from './overview-chart';
 import { useAppContext } from '@/hooks/use-app-context';
 import {
   Users,
@@ -156,17 +155,6 @@ export default function DashboardPage() {
             <ClassDistribution />
           </div>
        </div>
-
-       <div className="grid grid-cols-1 gap-6">
-        <Card className="col-span-1 shadow-sm lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Fee Collection Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <OverviewChart />
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
