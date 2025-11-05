@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
@@ -52,6 +53,12 @@ export default function SettingsPage() {
   const [ultraMsgEnabled, setUltraMsgEnabled] = useState(false);
   const [ultraMsgApiUrl, setUltraMsgApiUrl] = useState('');
   const [ultraMsgToken, setUltraMsgToken] = useState('');
+  const [newAdmissionMsg, setNewAdmissionMsg] = useState(false);
+  const [absentMsg, setAbsentMsg] = useState(false);
+  const [paymentReceiptMsg, setPaymentReceiptMsg] = useState(false);
+  const [newAdmissionTemplate, setNewAdmissionTemplate] = useState('');
+  const [absentTemplate, setAbsentTemplate] = useState('');
+  const [paymentReceiptTemplate, setPaymentReceiptTemplate] = useState('');
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [testResult, setTestResult] = useState<{status: 'success' | 'error', message: string} | null>(null);
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
@@ -74,6 +81,12 @@ export default function SettingsPage() {
       setUltraMsgEnabled(settings.ultraMsgEnabled);
       setUltraMsgApiUrl(settings.ultraMsgApiUrl);
       setUltraMsgToken(settings.ultraMsgToken);
+      setNewAdmissionMsg(settings.newAdmissionMsg);
+      setAbsentMsg(settings.absentMsg);
+      setPaymentReceiptMsg(settings.paymentReceiptMsg);
+      setNewAdmissionTemplate(settings.newAdmissionTemplate);
+      setAbsentTemplate(settings.absentTemplate);
+      setPaymentReceiptTemplate(settings.paymentReceiptTemplate);
     }
   }, [isSettingsLoading, settings]);
 
@@ -132,6 +145,12 @@ export default function SettingsPage() {
         ultraMsgEnabled,
         ultraMsgApiUrl,
         ultraMsgToken,
+        newAdmissionMsg,
+        absentMsg,
+        paymentReceiptMsg,
+        newAdmissionTemplate,
+        absentTemplate,
+        paymentReceiptTemplate,
     });
     setIsSaving(false);
     toast({
@@ -201,9 +220,8 @@ export default function SettingsPage() {
           </p>
         </div>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-5">
+          <TabsList className="grid w-full max-w-lg grid-cols-4">
             <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="website"> <LayoutTemplate className="mr-2 h-4 w-4"/> Website Editor</TabsTrigger>
             <TabsTrigger value="appearance"> <Palette className="mr-2 h-4 w-4"/> Appearance</TabsTrigger>
             <TabsTrigger value="security"> <ShieldCheck className="mr-2 h-4 w-4"/> Security</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
@@ -281,20 +299,6 @@ export default function SettingsPage() {
                 </CardFooter>
             </Card>
           </TabsContent>
-           <TabsContent value="website">
-                <Card className='max-w-2xl'>
-                    <CardHeader>
-                        <CardTitle>Website Content Editor</CardTitle>
-                        <CardDescription>Click the button below to open the live visual editor for your public-facing landing page.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button onClick={() => router.push('/settings/website')}>
-                            <LayoutTemplate className="mr-2 h-4 w-4" />
-                            Open Website Editor
-                        </Button>
-                    </CardContent>
-                </Card>
-           </TabsContent>
            <TabsContent value="appearance">
             <Card className='max-w-4xl'>
                 <CardHeader>
@@ -349,20 +353,22 @@ export default function SettingsPage() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="security-pin">Security PIN (4 digits)</Label>
-                          <Input
-                            id="security-pin"
-                            type="password"
+                          <InputOTP
                             maxLength={4}
                             value={securityPin}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (/^\d*$/.test(val) && val.length <= 4) {
-                                    setSecurityPin(val);
+                            onChange={(value) => {
+                                if (/^\d*$/.test(value) && value.length <= 4) {
+                                    setSecurityPin(value);
                                 }
                             }}
-                            placeholder="Enter 4-digit PIN"
-                            className="w-48 text-lg tracking-[0.5em]"
-                          />
+                           >
+                            <InputOTPGroup>
+                                <InputOTPSlot index={0} />
+                                <InputOTPSlot index={1} />
+                                <InputOTPSlot index={2} />
+                                <InputOTPSlot index={3} />
+                            </InputOTPGroup>
+                          </InputOTP>
                           <p className="text-xs text-muted-foreground">This PIN will be required to unlock the application.</p>
                         </div>
                         <div className="space-y-2">
@@ -424,6 +430,37 @@ export default function SettingsPage() {
                             <AlertTitle>{testResult.status === 'success' ? 'Connection Successful' : 'Connection Failed'}</AlertTitle>
                             <AlertDescription>{testResult.message}</AlertDescription>
                         </Alert>
+                    )}
+                     {ultraMsgEnabled && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Automated Message Templates</CardTitle>
+                                <CardDescription>Enable or disable automatic messages and customize their content. Use placeholders like {"{student_name}"}.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="flex items-start justify-between rounded-lg border p-4">
+                                    <div>
+                                        <Label htmlFor="new-admission-switch" className="font-semibold">New Admission Message</Label>
+                                        <Textarea className="mt-2" value={newAdmissionTemplate} onChange={e => setNewAdmissionTemplate(e.target.value)} disabled={!newAdmissionMsg} />
+                                    </div>
+                                    <Switch id="new-admission-switch" checked={newAdmissionMsg} onCheckedChange={setNewAdmissionMsg} />
+                                </div>
+                                <div className="flex items-start justify-between rounded-lg border p-4">
+                                    <div>
+                                        <Label htmlFor="absent-switch" className="font-semibold">Student Absent Message</Label>
+                                        <Textarea className="mt-2" value={absentTemplate} onChange={e => setAbsentTemplate(e.target.value)} disabled={!absentMsg} />
+                                    </div>
+                                    <Switch id="absent-switch" checked={absentMsg} onCheckedChange={setAbsentMsg} />
+                                </div>
+                                <div className="flex items-start justify-between rounded-lg border p-4">
+                                    <div>
+                                        <Label htmlFor="payment-switch" className="font-semibold">Payment Receipt Message</Label>
+                                        <Textarea className="mt-2" value={paymentReceiptTemplate} onChange={e => setPaymentReceiptTemplate(e.target.value)} disabled={!paymentReceiptMsg} />
+                                    </div>
+                                    <Switch id="payment-switch" checked={paymentReceiptMsg} onCheckedChange={setPaymentReceiptMsg} />
+                                </div>
+                            </CardContent>
+                        </Card>
                     )}
                 </CardContent>
                 <CardFooter>
