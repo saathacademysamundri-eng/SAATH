@@ -220,11 +220,12 @@ export default function SettingsPage() {
           </p>
         </div>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-4">
+          <TabsList className="grid w-full max-w-xl grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="appearance"> <Palette className="mr-2 h-4 w-4"/> Appearance</TabsTrigger>
             <TabsTrigger value="security"> <ShieldCheck className="mr-2 h-4 w-4"/> Security</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+            <TabsTrigger value="database">Database</TabsTrigger>
           </TabsList>
           <TabsContent value="general">
             <Card className='max-w-2xl'>
@@ -392,7 +393,7 @@ export default function SettingsPage() {
               <Card>
                 <CardHeader>
                     <CardTitle>WhatsApp API Integration</CardTitle>
-                    <CardDescription>Connect to a WhatsApp provider to send automated messages.</CardDescription>
+                    <CardDescription>Connect to a WhatsApp provider to send automated messages. Choose one provider to be active at a time.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <Card className={ultraMsgEnabled ? 'border-primary' : ''}>
@@ -423,6 +424,15 @@ export default function SettingsPage() {
                             </CardContent>
                         )}
                     </Card>
+                     <Card className={'border-dashed'} disabled>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-muted-foreground">Official WhatsApp API</CardTitle>
+                                <Switch disabled />
+                            </div>
+                             <CardDescription>Coming Soon</CardDescription>
+                        </CardHeader>
+                    </Card>
                     
                     {testResult && (
                         <Alert variant={testResult.status === 'error' ? 'destructive' : 'default'}>
@@ -431,7 +441,7 @@ export default function SettingsPage() {
                             <AlertDescription>{testResult.message}</AlertDescription>
                         </Alert>
                     )}
-                     {ultraMsgEnabled && (
+                     {(ultraMsgEnabled) && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Automated Message Templates</CardTitle>
@@ -470,8 +480,10 @@ export default function SettingsPage() {
                     </Button>
                 </CardFooter>
               </Card>
-
-              <Card>
+            </div>
+          </TabsContent>
+           <TabsContent value="database">
+             <Card className="max-w-2xl">
                 <CardHeader>
                     <CardTitle>Database Management</CardTitle>
                     <CardDescription>Handle database-related administrative tasks.</CardDescription>
@@ -489,7 +501,6 @@ export default function SettingsPage() {
                     </div>
                 </CardContent>
               </Card>
-            </div>
           </TabsContent>
         </Tabs>
     </div>
