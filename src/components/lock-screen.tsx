@@ -50,9 +50,9 @@ export function LockScreen() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-lg">
       <div className="flex w-full max-w-sm flex-col items-center rounded-2xl bg-card p-8 text-card-foreground shadow-2xl">
         <div className="mb-4 text-center">
-          <p className="text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-2">
             <LiveDate /> | <LiveTime />
-          </p>
+          </div>
         </div>
         <div className="mb-4 h-20 w-20">
           <Logo noText />
