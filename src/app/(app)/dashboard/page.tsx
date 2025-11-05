@@ -63,16 +63,20 @@ export default function DashboardPage() {
     
     const netProfit = totalIncome - totalExpenses;
     
-    // Mock data for new cards, as the logic is not yet implemented
     const studentsPresent = attendance.present;
     const studentsAbsent = attendance.absent;
     const messagesSent = 0; // Assuming no logic for this yet
     const newAdmissions = useMemo(() => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        // This assumes new students have a `createdAt` field. If not, this needs adjustment.
-        // As there is no `createdAt` field, we will mock this for now.
-        return 0;
+        // This assumes new students have a `createdAt` field, which they don't.
+        // We will simulate this based on student ID sequence for now.
+        const recentStudents = students.filter(student => {
+             const studentNum = parseInt(student.id.substring(1));
+             // This is a rough heuristic, will be inaccurate if IDs are not sequential
+             return studentNum > (students.length - 5);
+        });
+        return recentStudents.length;
     }, [students]);
 
 
@@ -93,7 +97,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {topRowStats.map((stat) => {
           const Icon = iconMap[stat.icon];
           return (
@@ -112,7 +116,7 @@ export default function DashboardPage() {
           );
         })}
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {bottomRowStats.map((stat) => {
             const Icon = iconMap[stat.icon];
             return (
