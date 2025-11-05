@@ -131,17 +131,20 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
 
 export async function getStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');
-  const q = query(studentsCollection, where("isActive", "!=", false), orderBy("isActive"), orderBy("id"));
+  const q = query(studentsCollection, where("isActive", "==", true));
   const studentsSnap = await getDocs(q);
-  return studentsSnap.docs.map(doc => doc.data() as Student);
+  const studentData = studentsSnap.docs.map(doc => doc.data() as Student);
+  return studentData.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function getInactiveStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');
-  const q = query(studentsCollection, where("isActive", "==", false), orderBy("id"));
+  const q = query(studentsCollection, where("isActive", "==", false));
   const studentsSnap = await getDocs(q);
-  return studentsSnap.docs.map(doc => doc.data() as Student);
+  const studentData = studentsSnap.docs.map(doc => doc.data() as Student);
+  return studentData.sort((a, b) => a.id.localeCompare(b.id));
 }
+
 
 
 export async function getStudentsByClass(className: string): Promise<Student[]> {
