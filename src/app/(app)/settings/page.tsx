@@ -37,7 +37,7 @@ type CustomMessageTarget =
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
-  const { classes, teachers, loading: appLoading } = useAppContext();
+  const { classes, teachers, students, loading: appLoading } = useAppContext();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -76,6 +76,7 @@ export default function SettingsPage() {
   const [teacherAbsentTemplate, setTeacherAbsentTemplate] = useState('');
 
   const [isTestingApi, setIsTestingApi] = useState(false);
+  const [isSendingCustom, setIsSendingCustom] = useState(false);
   const [testResult, setTestResult] = useState<{status: 'success' | 'error', message: string} | null>(null);
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
 
@@ -242,6 +243,91 @@ export default function SettingsPage() {
     }
 
     setIsTestingApi(false);
+  }
+
+  const handleSendCustomMessage = async () => {
+    if (!customMessage.trim()) {
+      toast({ variant: 'destructive', title: 'Message Empty', description: 'Cannot send an empty message.' });
+      return;
+    }
+
+    setIsSendingCustom(true);
+    let targetNumbers: string[] = [];
+
+    switch (customMessageTarget) {
+      case 'all_classes':
+        targetNumbers = students.map(s => s.phone).filter(Boolean);
+        break;
+      case 'specific_class':
+        if (!specificClass) {
+          toast({ variant: 'destructive', title: 'No Class Selected', description: 'Please select a class to send the message to.' });
+          setIsSendingCustom(false);
+          return;
+        }
+        const className = classes.find(c => c.id === specificClass)?.name;
+        targetNumbers = students.filter(s => s.class === className).map(s => s.phone).filter(Boolean);
+        break;
+      case 'specific_student':
+        const student = students.find(s => s.id.toLowerCase() === specificStudent.toLowerCase());
+        if (!student || !student.phone) {
+          toast({ variant: 'destructive', title: 'Student Not Found', description: 'Could not find a student with that roll number or the student has no phone number.' });
+          setIsSendingCustom(false);
+          return;
+        }
+        targetNumbers = [student.phone];
+        break;
+      case 'all_teachers':
+        targetNumbers = teachers.map(t => t.phone).filter(Boolean);
+        break;
+      case 'specific_teacher':
+        const teacher = teachers.find(t => t.id === specificTeacher);
+        if (!teacher || !teacher.phone) {
+          toast({ variant: 'destructive', title: 'Teacher Not Found', description: 'Could not find the selected teacher or the teacher has no phone number.' });
+          setIsSendingCustom(false);
+          return;
+        }
+        targetNumbers = [teacher.phone];
+        break;
+      case 'custom_numbers':
+        targetNumbers = customNumbers.split(',').map(n => n.trim()).filter(Boolean);
+        break;
+    }
+    
+    const uniqueNumbers = [...new Set(targetNumbers)];
+
+    if (uniqueNumbers.length === 0) {
+      toast({ variant: 'destructive', title: 'No Recipients', description: 'No valid phone numbers found for the selected target.' });
+      setIsSendingCustom(false);
+      return;
+    }
+
+    const apiUrl = whatsappProvider === 'ultramsg' ? ultraMsgApiUrl : officialApiUrl;
+    const token = whatsappProvider === 'ultramsg' ? ultraMsgToken : officialApiToken;
+
+    toast({ title: `Sending ${uniqueNumbers.length} messages...`, description: 'This may take a moment.' });
+    
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const number of uniqueNumbers) {
+      try {
+        const result = await sendWhatsappMessage({ to: number, body: customMessage, apiUrl, token });
+        if (result.success) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch {
+        errorCount++;
+      }
+    }
+
+    toast({
+      title: 'Bulk Messaging Complete',
+      description: `${successCount} messages sent successfully. ${errorCount} failed.`,
+    });
+
+    setIsSendingCustom(false);
   }
   
   return (
@@ -597,7 +683,8 @@ export default function SettingsPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button>
+                    <Button onClick={handleSendCustomMessage} disabled={isSendingCustom}>
+                        {isSendingCustom && <Loader2 className="mr-2 animate-spin" />}
                         <Send className="mr-2 h-4 w-4" />
                         Send Message
                     </Button>
