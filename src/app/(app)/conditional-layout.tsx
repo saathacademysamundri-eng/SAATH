@@ -55,6 +55,8 @@ import { signOut } from 'firebase/auth';
 import { AppProvider } from '@/hooks/use-app-context';
 import { WelcomeDialog } from '@/components/welcome-dialog';
 import { GlobalPreloader } from '@/components/global-preloader';
+import { useLock } from '@/hooks/use-lock';
+import { LockScreen } from '@/components/lock-screen';
 
 function SidebarPin() {
     const { isPinned, setPinned } = useSidebar();
@@ -161,6 +163,7 @@ function MainSidebar() {
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
+  const { isLocked } = useLock();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -172,6 +175,11 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   if (loading) {
       return <GlobalPreloader />;
   }
+  
+  if (isLocked) {
+    return <LockScreen />;
+  }
+
 
   if (!user) {
       return null;

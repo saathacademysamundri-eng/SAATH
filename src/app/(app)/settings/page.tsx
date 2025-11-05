@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate } from 'lucide-react';
+import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { seedDatabase } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { InputOTP } from '@/components/ui/input-otp';
 
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
@@ -42,6 +44,11 @@ export default function SettingsPage() {
   // Appearance State
   const [preloaderStyle, setPreloaderStyle] = useState('style-1');
 
+  // Security State
+  const [autoLockEnabled, setAutoLockEnabled] = useState(false);
+  const [autoLockTimeout, setAutoLockTimeout] = useState(300);
+  const [securityPin, setSecurityPin] = useState('');
+
   // WhatsApp State
   const [ultraMsgEnabled, setUltraMsgEnabled] = useState(false);
   const [ultraMsgApiUrl, setUltraMsgApiUrl] = useState('');
@@ -59,6 +66,10 @@ export default function SettingsPage() {
       setLogo(settings.logo);
       setAcademicSession(settings.academicSession);
       setPreloaderStyle(settings.preloaderStyle);
+
+      setAutoLockEnabled(settings.autoLockEnabled);
+      setAutoLockTimeout(settings.autoLockTimeout);
+      setSecurityPin(settings.securityPin);
 
       // WhatsApp settings
       setUltraMsgEnabled(settings.ultraMsgEnabled);
@@ -97,6 +108,24 @@ export default function SettingsPage() {
       description: 'Your appearance settings have been updated.',
     });
   }
+  
+  const handleSaveSecurity = async () => {
+    if (securityPin.length > 0 && securityPin.length < 4) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid PIN',
+        description: 'Security PIN must be 4 digits long.',
+      });
+      return;
+    }
+    setIsSaving(true);
+    await updateSettings({ autoLockEnabled, autoLockTimeout, securityPin });
+    setIsSaving(false);
+    toast({
+      title: 'Security Saved',
+      description: 'Your security settings have been updated.',
+    });
+  };
 
   const handleSaveWhatsApp = async () => {
     setIsSaving(true);
@@ -173,10 +202,11 @@ export default function SettingsPage() {
           </p>
         </div>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full max-w-xl grid-cols-4">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="website"> <LayoutTemplate className="mr-2 h-4 w-4"/> Website Editor</TabsTrigger>
             <TabsTrigger value="appearance"> <Palette className="mr-2 h-4 w-4"/> Appearance</TabsTrigger>
+            <TabsTrigger value="security"> <ShieldCheck className="mr-2 h-4 w-4"/> Security</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
           </TabsList>
           <TabsContent value="general">
@@ -298,6 +328,49 @@ export default function SettingsPage() {
                     <Button onClick={handleSaveAppearance} disabled={isSaving || isSettingsLoading}>
                         {isSaving && <Loader2 className="mr-2 animate-spin" />}
                         Save Appearance Settings
+                    </Button>
+                </CardFooter>
+            </Card>
+          </TabsContent>
+           <TabsContent value="security">
+            <Card className='max-w-2xl'>
+                <CardHeader>
+                    <CardTitle>Auto-Lock Security</CardTitle>
+                    <CardDescription>Protect your application from unauthorized access by enabling an automatic lock screen.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                      <div>
+                        <Label htmlFor="auto-lock-switch" className="font-semibold">Enable Auto-Lock</Label>
+                        <p className="text-sm text-muted-foreground">Automatically lock the application after a period of inactivity.</p>
+                      </div>
+                      <Switch id="auto-lock-switch" checked={autoLockEnabled} onCheckedChange={setAutoLockEnabled} />
+                    </div>
+                    {autoLockEnabled && (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="security-pin">Security PIN (4 digits)</Label>
+                          <InputOTP maxLength={4} value={securityPin} onChange={setSecurityPin}>
+                            <div className="flex gap-2">
+                              {Array.from({ length: 4 }).map((_, index) => (
+                                <Input key={index} className="w-12 text-center text-lg" />
+                              ))}
+                            </div>
+                          </InputOTP>
+                          <p className="text-xs text-muted-foreground">This PIN will be required to unlock the application.</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="lock-timeout">Inactivity Timeout (seconds)</Label>
+                          <Input id="lock-timeout" type="number" value={autoLockTimeout} onChange={(e) => setAutoLockTimeout(Number(e.target.value))} placeholder="e.g., 300" />
+                          <p className="text-xs text-muted-foreground">The time in seconds before the application locks automatically.</p>
+                        </div>
+                      </div>
+                    )}
+                </CardContent>
+                <CardFooter>
+                    <Button onClick={handleSaveSecurity} disabled={isSaving || isSettingsLoading}>
+                      {isSaving && <Loader2 className="mr-2 animate-spin" />}
+                      {isSaving ? 'Saving...' : 'Save Security Settings'}
                     </Button>
                 </CardFooter>
             </Card>

@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -93,11 +94,16 @@ export default {
           '0%': { transform: 'translateY(0)' },
           '100%': { transform: 'translateY(-66.66%)' },
         },
+        "caret-blink": {
+          "0%,70%,100%": { opacity: "1" },
+          "20%,50%": { opacity: "0" },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'scroll-up-slow': 'scroll-up-slow 40s linear infinite',
+        "caret-blink": "caret-blink 1.25s ease-out infinite",
       },
     },
   },

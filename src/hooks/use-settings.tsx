@@ -44,6 +44,10 @@ export interface Settings {
   academicSession: string;
   preloaderStyle: string;
   
+  autoLockEnabled: boolean;
+  autoLockTimeout: number; // in seconds
+  securityPin: string;
+
   ultraMsgEnabled: boolean;
   ultraMsgApiUrl: string;
   ultraMsgToken: string;
@@ -66,6 +70,9 @@ const defaultSettings: Settings = {
   logo: '/logo.png',
   academicSession: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
   preloaderStyle: 'style-1',
+  autoLockEnabled: false,
+  autoLockTimeout: 300,
+  securityPin: '',
   ultraMsgEnabled: false,
   ultraMsgApiUrl: '',
   ultraMsgToken: '',

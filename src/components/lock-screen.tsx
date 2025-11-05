@@ -1,0 +1,93 @@
+
+'use client';
+
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '@/components/ui/input-otp';
+import { LiveDate, LiveTime } from './live-date-time';
+import { Logo } from './logo';
+import { Button } from './ui/button';
+import { LogOut, Facebook, Twitter, Instagram } from 'lucide-react';
+import { useSettings } from '@/hooks/use-settings';
+import { useLock } from '@/hooks/use-lock';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
+import { useRouter } from 'next/navigation';
+
+export function LockScreen() {
+  const { settings, isSettingsLoading } = useSettings();
+  const { unlock } = useLock();
+  const { toast } = useToast();
+  const router = useRouter();
+  const [pin, setPin] = useState('');
+
+  const handlePinChange = (value: string) => {
+    setPin(value);
+    if (value.length === 4) {
+      if (unlock(value)) {
+        toast({ title: 'System Unlocked' });
+      } else {
+        toast({ variant: 'destructive', title: 'Invalid PIN' });
+        setPin('');
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
+
+  if (isSettingsLoading) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-lg">
+      <div className="flex w-full max-w-sm flex-col items-center rounded-2xl bg-card p-8 text-card-foreground shadow-2xl">
+        <div className="mb-4 text-center">
+          <p className="text-muted-foreground">
+            <LiveDate /> | <LiveTime />
+          </p>
+        </div>
+        <div className="mb-4 h-20 w-20">
+          <Logo noText />
+        </div>
+        <h1 className="mb-2 text-3xl font-bold">{settings.name}</h1>
+        <p className="mb-6 text-muted-foreground">Enter Security PIN to Unlock</p>
+
+        <InputOTP maxLength={4} value={pin} onChange={handlePinChange}>
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+            <InputOTPSlot index={3} />
+          </InputOTPGroup>
+        </InputOTP>
+
+        <Button variant="link" className="mt-6" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout and login with email & password
+        </Button>
+
+        <div className="mt-8 w-full border-t pt-6 text-center">
+          <p className="text-sm">{settings.address}</p>
+          <p className="text-sm">{settings.phone}</p>
+        </div>
+
+        <div className="mt-6 text-center text-sm text-muted-foreground">
+          <p>Developed by "Mian Mudassar"</p>
+          <div className="mt-2 flex justify-center gap-4">
+            <Facebook className="h-4 w-4" />
+            <Twitter className="h-4 w-4" />
+            <Instagram className="h-4 w-4" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
