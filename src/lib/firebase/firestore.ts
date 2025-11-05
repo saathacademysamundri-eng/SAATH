@@ -40,13 +40,62 @@ service cloud.firestore {
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout } from '@/lib/data';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns';
 
 const db = getFirestore(app);
+
+// Activity Log Functions
+export async function logActivity(type: Activity['type'], message: string, link?: string) {
+    try {
+        await addDoc(collection(db, 'activities'), {
+            type,
+            message,
+            link: link || null,
+            date: serverTimestamp(),
+        });
+    } catch (e) {
+        console.error("Failed to log activity:", e);
+        // We don't throw an error here as this is a non-critical background task
+    }
+}
+
+export async function getRecentActivities(): Promise<Activity[]> {
+    try {
+        const q = query(collection(db, 'activities'), orderBy('date', 'desc'), limit(20));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                date: data.date.toDate(),
+            } as Activity;
+        });
+    } catch (error) {
+        console.error("Error fetching recent activities:", error);
+        return [];
+    }
+}
+
+export async function clearActivityHistory() {
+    try {
+        const activitiesCollection = collection(db, 'activities');
+        const activitiesSnap = await getDocs(activitiesCollection);
+        const batch = writeBatch(db);
+        activitiesSnap.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        return { success: true, message: 'Activity history cleared.' };
+    } catch (serverError) {
+        return { success: false, message: (serverError as Error).message };
+    }
+}
+
 
 // Settings Functions
 export async function getSettings(docId: 'details' | 'landing-page'): Promise<any> {
@@ -110,6 +159,7 @@ export async function addStudent(student: Omit<Student, 'id'> & { id: string }) 
     const docRef = doc(db, 'students', student.id);
     try {
         await setDoc(docRef, student);
+        await logActivity('new_admission', `New admission: ${student.name} (ID: ${student.id}) in class ${student.class}.`, `/students/${student.id}`);
         return { success: true, message: "Student added successfully." };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: student });
@@ -376,6 +426,7 @@ export async function addIncome(incomeData: Omit<Income, 'id' | 'date'>) {
         const receiptId = `RCPT-${Date.now()}`;
         const dataToSave = { ...incomeData, receiptId, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'income'), dataToSave);
+        await logActivity('fee_payment', `Payment of ${incomeData.amount} PKR received from ${incomeData.studentName}.`, `/student-ledger?search=${incomeData.studentId}`);
         return { success: true, message: 'Income record added.', id: docRef.id, receiptId };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'income/[auto-id]', operation: 'create', requestResourceData: incomeData });
@@ -801,6 +852,7 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
     try {
         const dataToSave = { ...examData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'exams'), dataToSave);
+        await logActivity('exam_created', `New exam created: ${examData.name} for class ${examData.className}.`, `/exams/${docRef.id}`);
         return { success: true, message: 'Exam created successfully.', id: docRef.id };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'exams/[auto-id]', operation: 'create', requestResourceData: examData });
@@ -879,5 +931,3 @@ export async function getTodaysMessagesCount(): Promise<number> {
         return 0;
     }
 }
-
-    

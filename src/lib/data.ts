@@ -1,13 +1,12 @@
 
 
-
-
-
-
-
-
-
-
+export type Activity = {
+    id: string;
+    type: 'new_admission' | 'fee_payment' | 'exam_created';
+    message: string;
+    date: Date;
+    link?: string;
+}
 
 export type Subject = {
     id: string;
@@ -124,12 +123,12 @@ export const dashboardStats = [
     { title: 'Pending Fees', value: '120,000 PKR', change: '+2.3%', icon: 'Hourglass' },
 ];
 
-export const recentActivities = [
-    { name: 'Ali Khan', amount: '1000 PKR', status: 'Paid', date: '5 minutes ago' },
-    { name: 'New admission: Sara Ahmed', amount: '', status: 'Admission', date: '10 minutes ago' },
-    { name: 'Fatima Aslam', amount: '1000 PKR', status: 'Paid', date: '30 minutes ago' },
-    { name: 'Test created: Physics', amount: '', status: 'Exam', date: '1 hour ago' },
-    { name: 'Umar Farooq', amount: '500 PKR', status: 'Partial', date: '2 hours ago' },
+export const recentActivities: Activity[] = [
+    { id: '1', type: 'fee_payment', message: 'Payment of 1000 PKR received from Ali Khan.', date: new Date() },
+    { id: '2', type: 'new_admission', message: 'New admission: Sara Ahmed', date: new Date() },
+    { id: '3', type: 'fee_payment', message: 'Payment of 1000 PKR received from Fatima Aslam.', date: new Date() },
+    { id: '4', type: 'exam_created', message: 'Test created: Physics', date: new Date() },
+    { id: '5', type: 'fee_payment', message: 'Payment of 500 PKR received from Umar Farooq.', date: new Date() },
 ];
 
 export const feeCollectionData = [

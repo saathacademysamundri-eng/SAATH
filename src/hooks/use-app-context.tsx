@@ -1,8 +1,8 @@
 
 'use client';
 
-import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSubjects, getAllPayouts } from '@/lib/firebase/firestore';
-import type { Class, Expense, Income, Student, Subject, Teacher, TeacherPayout, Report } from '@/lib/data';
+import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSubjects, getAllPayouts, getRecentActivities } from '@/lib/firebase/firestore';
+import type { Class, Expense, Income, Student, Subject, Teacher, TeacherPayout, Report, Activity } from '@/lib/data';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { GlobalPreloader } from '@/components/global-preloader';
@@ -15,6 +15,7 @@ interface AppContextType {
   expenses: Expense[];
   allSubjects: Subject[];
   allPayouts: (TeacherPayout & { report?: Report, academyShare?: number })[];
+  activities: Activity[];
   loading: boolean;
   refreshData: () => Promise<void>;
 }
@@ -29,6 +30,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
   const [allPayouts, setAllPayouts] = useState<(TeacherPayout & { report?: Report, academyShare?: number })[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -42,6 +44,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         expensesData,
         allSubjectsData,
         allPayoutsData,
+        activitiesData,
       ] = await Promise.all([
         getStudents(),
         getTeachers(),
@@ -50,6 +53,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         getExpenses(),
         getAllSubjects(),
         getAllPayouts(),
+        getRecentActivities(),
       ]);
 
       setStudents(studentsData);
@@ -59,6 +63,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setExpenses(expensesData);
       setAllSubjects(allSubjectsData);
       setAllPayouts(allPayoutsData);
+      setActivities(activitiesData);
 
     } catch (error) {
       console.error("Failed to fetch app data:", error);
@@ -80,6 +85,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     expenses,
     allSubjects,
     allPayouts,
+    activities,
     loading,
     refreshData: fetchData,
   };

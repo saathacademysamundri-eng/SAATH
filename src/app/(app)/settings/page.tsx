@@ -11,9 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck } from 'lucide-react';
+import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { seedDatabase } from '@/lib/firebase/firestore';
+import { seedDatabase, clearActivityHistory } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Dialog, DialogClose, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 type CustomMessageTarget = 
   | 'all_classes' 
@@ -35,9 +36,61 @@ type CustomMessageTarget =
   | 'custom_numbers';
 
 
+function ClearHistoryDialog({ onConfirm }: { onConfirm: (pin: string) => Promise<boolean> }) {
+  const [pin, setPin] = useState('');
+  const [isClearing, setIsClearing] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleConfirm = async () => {
+    setIsClearing(true);
+    const success = await onConfirm(pin);
+    if (success) {
+      setIsOpen(false);
+    }
+    setIsClearing(false);
+    setPin('');
+  }
+
+  return (
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+              <Button variant="destructive">
+                  <Trash2 className="mr-2" />
+                  Clear Activity History
+              </Button>
+          </DialogTrigger>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>Confirm History Deletion</DialogTitle>
+                  <DialogDescription>
+                      This action cannot be undone. To proceed, please enter your 4-digit security PIN.
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 flex justify-center">
+                  <InputOTP maxLength={4} value={pin} onChange={setPin}>
+                      <InputOTPGroup>
+                          <InputOTPSlot index={0} isPin />
+                          <InputOTPSlot index={1} isPin />
+                          <InputOTPSlot index={2} isPin />
+                          <InputOTPSlot index={3} isPin />
+                      </InputOTPGroup>
+                  </InputOTP>
+              </div>
+              <DialogFooter>
+                  <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                  <Button variant="destructive" onClick={handleConfirm} disabled={isClearing || pin.length !== 4}>
+                      {isClearing && <Loader2 className="animate-spin mr-2" />}
+                      Confirm & Delete
+                  </Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
+  )
+}
+
 export default function SettingsPage() {
   const { settings, updateSettings, isSettingsLoading } = useSettings();
-  const { classes, teachers, students, loading: appLoading } = useAppContext();
+  const { classes, teachers, students, loading: appLoading, refreshData } = useAppContext();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -207,6 +260,22 @@ export default function SettingsPage() {
           });
       }
       setIsSeeding(false);
+  }
+
+  const handleClearHistory = async (pin: string) => {
+    if (pin !== settings.securityPin) {
+      toast({ variant: 'destructive', title: 'Invalid PIN', description: 'The provided PIN is incorrect.' });
+      return false;
+    }
+    const result = await clearActivityHistory();
+    if (result.success) {
+      toast({ title: 'History Cleared', description: 'All activity logs have been deleted.' });
+      refreshData();
+      return true;
+    } else {
+      toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
+      return false;
+    }
   }
 
   const handleTestApi = async () => {
@@ -483,10 +552,10 @@ export default function SettingsPage() {
                             }}
                            >
                             <InputOTPGroup>
-                                <InputOTPSlot index={0} />
-                                <InputOTPSlot index={1} />
-                                <InputOTPSlot index={2} />
-                                <InputOTPSlot index={3} />
+                                <InputOTPSlot index={0} isPin />
+                                <InputOTPSlot index={1} isPin />
+                                <InputOTPSlot index={2} isPin />
+                                <InputOTPSlot index={3} isPin />
                             </InputOTPGroup>
                           </InputOTP>
                           <p className="text-xs text-muted-foreground">This PIN will be required to unlock the application.</p>
@@ -756,7 +825,7 @@ export default function SettingsPage() {
                     <CardTitle>Database Management</CardTitle>
                     <CardDescription>Handle database-related administrative tasks.</CardDescription>
                 </CardHeader>
-                 <CardContent>
+                 <CardContent className="space-y-4">
                      <div className="space-y-2">
                         <Label className="font-semibold">Seed Database</Label>
                         <div className="flex items-center justify-between rounded-md border p-3">
@@ -765,6 +834,13 @@ export default function SettingsPage() {
                                 <Database className='mr-2'/>
                                 {isSeeding ? 'Seeding...' : 'Seed Database'}
                             </Button>
+                        </div>
+                    </div>
+                     <div className="space-y-2">
+                        <Label className="font-semibold text-destructive">Danger Zone</Label>
+                        <div className="flex items-center justify-between rounded-md border border-destructive/50 p-3">
+                           <p className="text-sm text-muted-foreground">Permanently delete all activity logs. This action is not reversible and requires your security PIN.</p>
+                            <ClearHistoryDialog onConfirm={handleClearHistory} />
                         </div>
                     </div>
                 </CardContent>
