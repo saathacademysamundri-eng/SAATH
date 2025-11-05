@@ -1,5 +1,6 @@
 
 
+
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -791,6 +792,26 @@ export async function getAttendanceForClassInMonth(classId: string, month: numbe
     }
 }
 
+export async function saveTeacherAttendance(date: string, records: { [teacherId: string]: AttendanceStatus }) {
+    const batch = writeBatch(db);
+    
+    for (const teacherId in records) {
+        const status = records[teacherId];
+        const attendanceId = `${date}_${teacherId}`;
+        const docRef = doc(db, 'teacher_attendance', attendanceId);
+        batch.set(docRef, { teacherId, date, status });
+    }
+
+    try {
+        await batch.commit();
+        return { success: true, message: 'Teacher attendance saved.' };
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: 'teacher_attendance/[auto-id]', operation: 'write', requestResourceData: records });
+        errorEmitter.emit('permission-error', permissionError);
+        return { success: false, message: (serverError as Error).message };
+    }
+}
+
 export async function getTeacherAttendanceForMonth(teacherId: string, month: number, year: number): Promise<{ date: Date, status: AttendanceStatus }[]> {
     try {
         const teacherAttendance: { date: Date, status: AttendanceStatus }[] = [];
@@ -808,7 +829,7 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
         querySnapshot.forEach(doc => {
             const data = doc.data();
             teacherAttendance.push({
-                date: new Date(data.date),
+                date: new Date(data.date + 'T00:00:00'), // Ensure it's parsed as local date
                 status: data.status,
             });
         });
@@ -886,3 +907,4 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
         return { success: false, message: (serverError as Error).message };
     }
 }
+
