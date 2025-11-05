@@ -1,7 +1,7 @@
 
 'use client';
 
-import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSubjects, getAllPayouts, getRecentActivities } from '@/lib/firebase/firestore';
+import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSubjects, getAllPayouts, getRecentActivities, checkAndGenerateMonthlyFees } from '@/lib/firebase/firestore';
 import type { Class, Expense, Income, Student, Subject, Teacher, TeacherPayout, Report, Activity } from '@/lib/data';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
@@ -33,9 +33,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) {
+      setLoading(true);
+    }
     try {
+      if (isInitialLoad) {
+        // Run fee generation check on the very first load.
+        await checkAndGenerateMonthlyFees();
+      }
+
       const [
         studentsData,
         teachersData,
@@ -69,12 +76,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to fetch app data:", error);
       // Handle error appropriately, maybe show a toast
     } finally {
-      setLoading(false);
+       if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    fetchData();
+    fetchData(true);
   }, [fetchData]);
 
   const value = {
@@ -87,7 +96,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     allPayouts,
     activities,
     loading,
-    refreshData: fetchData,
+    refreshData: () => fetchData(false),
   };
 
   if (loading) {

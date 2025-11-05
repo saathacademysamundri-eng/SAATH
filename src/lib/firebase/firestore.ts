@@ -6,7 +6,7 @@ import { students as initialStudents, teachers as initialTeachers, classes as in
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format as formatDate } from 'date-fns';
 
 const db = getFirestore(app);
 
@@ -246,8 +246,18 @@ export async function updateStudentFeeStatus(studentId: string, newBalance: numb
     }
 }
 
-export async function resetMonthlyFees() {
+export async function checkAndGenerateMonthlyFees() {
     try {
+        const stateRef = doc(db, 'system_state', 'fee_management');
+        const stateDoc = await getDoc(stateRef);
+        const currentMonth = formatDate(new Date(), 'yyyy-MM');
+
+        if (stateDoc.exists() && stateDoc.data().lastGeneratedMonth === currentMonth) {
+            // Fees already generated for this month
+            return { success: true, message: "Fees for the current month have already been generated." };
+        }
+        
+        // If we've reached here, we need to generate fees.
         const studentsCollection = collection(db, 'students');
         const q = query(studentsCollection, where("status", "==", "active"));
         const studentsSnap = await getDocs(q);
@@ -265,12 +275,20 @@ export async function resetMonthlyFees() {
                 feeStatus: newStatus,
             });
         });
+        
+        // Update the state document after preparing the student updates
+        batch.set(stateRef, { lastGeneratedMonth: currentMonth });
 
         await batch.commit();
-        await logActivity('fee_generated', `Generated next month's fees for all students.`);
-        return { success: true, message: "Next month's fees have been generated for all students." };
+
+        if (!studentsSnap.empty) {
+             await logActivity('fee_generated', `Automatically generated monthly fees for all active students for ${currentMonth}.`);
+        }
+
+        return { success: true, message: "Monthly fees have been generated successfully." };
+
     } catch (error) {
-        console.error("Error resetting monthly fees: ", error);
+        console.error("Error in automatic fee generation process: ", error);
         return { success: false, message: (error as Error).message };
     }
 }
