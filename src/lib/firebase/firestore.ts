@@ -1,6 +1,5 @@
 
 
-
 /*
 ================================================================================
 IMPORTANT: FIREBASE SECURITY RULES
@@ -98,7 +97,7 @@ import { students as initialStudents, teachers as initialTeachers, classes as in
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { startOfDay, endOfDay, subDays } from 'date-fns';
+import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns';
 
 const db = getFirestore(app);
 
@@ -815,8 +814,12 @@ export async function saveTeacherAttendance(date: string, records: { [teacherId:
 export async function getTeacherAttendanceForMonth(teacherId: string, month: number, year: number): Promise<{ date: Date, status: AttendanceStatus }[]> {
     try {
         const teacherAttendance: { date: Date, status: AttendanceStatus }[] = [];
-        const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-        const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+        
+        const monthStart = startOfMonth(new Date(year, month));
+        const monthEnd = endOfMonth(new Date(year, month));
+
+        const startDate = monthStart.toISOString().split('T')[0];
+        const endDate = monthEnd.toISOString().split('T')[0];
 
         const q = query(
             collection(db, 'teacher_attendance'),
@@ -828,8 +831,11 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
 
         querySnapshot.forEach(doc => {
             const data = doc.data();
+            // The date from firestore is a string 'YYYY-MM-DD'.
+            // new Date('2024-07-30') creates a date in UTC at midnight.
+            // We should append T00:00:00 to ensure it is parsed as local time midnight
             teacherAttendance.push({
-                date: new Date(data.date + 'T00:00:00'), // Ensure it's parsed as local date
+                date: new Date(data.date + 'T00:00:00'),
                 status: data.status,
             });
         });
