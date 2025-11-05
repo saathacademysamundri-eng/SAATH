@@ -21,15 +21,12 @@ export function RecentActivities() {
     const { activities, loading } = useAppContext();
 
     const sortedActivities = useMemo(() => {
-        return [...activities].sort((a, b) => b.date.getTime() - a.date.getTime());
-    }, [activities]);
-    
-    const duplicatedActivities = useMemo(() => {
-        if (sortedActivities.length === 0) return [];
+        // Sort activities by date descending, and then artificially duplicate for scrolling effect if list is short.
+        const sorted = [...activities].sort((a, b) => b.date.getTime() - a.date.getTime());
+        if (sorted.length === 0) return [];
         // Ensure the list is long enough to scroll, duplicate if necessary
-        return sortedActivities.length < 10 ? [...sortedActivities, ...sortedActivities] : sortedActivities;
-    }, [sortedActivities]);
-
+        return sorted.length < 10 ? [...sorted, ...sorted] : sorted;
+    }, [activities]);
 
     return (
         <Card>
@@ -44,10 +41,10 @@ export function RecentActivities() {
                  <div className="h-64 overflow-hidden relative">
                     {loading ? (
                         <div className="text-center text-muted-foreground">Loading activities...</div>
-                    ) : duplicatedActivities.length > 0 ? (
+                    ) : sortedActivities.length > 0 ? (
                         <div className="absolute top-0 animate-scroll-up-slow">
                             <div className="space-y-4">
-                                {duplicatedActivities.map((activity, index) => (
+                                {sortedActivities.map((activity, index) => (
                                     <div key={`${activity.id}-${index}`} className="flex items-start gap-4">
                                         <div className="flex-1">
                                             <p className="font-medium text-sm leading-tight">
@@ -64,7 +61,7 @@ export function RecentActivities() {
                                 ))}
                             </div>
                              <div className="space-y-4 mt-4">
-                                {duplicatedActivities.map((activity, index) => (
+                                {sortedActivities.map((activity, index) => (
                                     <div key={`${activity.id}-${index}-clone`} className="flex items-start gap-4">
                                         <div className="flex-1">
                                             <p className="font-medium text-sm leading-tight">
