@@ -94,6 +94,7 @@ import { students as initialStudents, teachers as initialTeachers, classes as in
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { startOfDay, endOfDay, subDays } from 'date-fns';
 
 const db = getFirestore(app);
 
@@ -682,6 +683,34 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
         return { success: false, message: (serverError as Error).message };
     }
 }
+
+export async function getTodaysAttendanceSummary(): Promise<{ present: number, absent: number }> {
+    try {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const q = query(collection(db, 'attendance'), where('date', '==', todayStr));
+        const querySnapshot = await getDocs(q);
+
+        let present = 0;
+        let absent = 0;
+
+        querySnapshot.forEach(doc => {
+            const records = doc.data().records;
+            for (const studentId in records) {
+                if (records[studentId] === 'Present') {
+                    present++;
+                } else if (records[studentId] === 'Absent') {
+                    absent++;
+                }
+            }
+        });
+
+        return { present, absent };
+    } catch (error) {
+        console.error("Error fetching today's attendance summary: ", error);
+        return { present: 0, absent: 0 };
+    }
+}
+
 
 export async function getAttendanceForMonth(studentId: string, month: number, year: number): Promise<{ date: Date, status: AttendanceStatus }[]> {
     try {

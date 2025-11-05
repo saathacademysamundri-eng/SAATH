@@ -16,7 +16,8 @@ import {
   Scale
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { getTodaysAttendanceSummary } from '@/lib/firebase/firestore';
 
 const iconMap: { [key: string]: React.ElementType } = {
   Users,
@@ -32,6 +33,11 @@ const iconMap: { [key: string]: React.ElementType } = {
 
 export default function DashboardPage() {
     const { income, expenses, students, teachers } = useAppContext();
+    const [attendance, setAttendance] = useState({ present: 0, absent: 0 });
+
+    useEffect(() => {
+        getTodaysAttendanceSummary().then(setAttendance);
+    }, []);
 
     const totalIncome = useMemo(() => {
         const thisMonth = new Date().getMonth();
@@ -58,24 +64,30 @@ export default function DashboardPage() {
     const netProfit = totalIncome - totalExpenses;
     
     // Mock data for new cards, as the logic is not yet implemented
-    const studentsPresent = 0;
-    const studentsAbsent = 0;
-    const messagesSent = 0;
-    const newAdmissions = 0;
+    const studentsPresent = attendance.present;
+    const studentsAbsent = attendance.absent;
+    const messagesSent = 0; // Assuming no logic for this yet
+    const newAdmissions = useMemo(() => {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        // This assumes new students have a `createdAt` field. If not, this needs adjustment.
+        // As there is no `createdAt` field, we will mock this for now.
+        return 0;
+    }, [students]);
 
 
     const topRowStats = [
-        { title: 'Total Students', value: students.length.toLocaleString(), subtitle: '+2% from last month', icon: 'Users', color: 'bg-purple-600' },
-        { title: 'Students Present', value: studentsPresent, subtitle: 'Attendance for today', icon: 'UserCheck', color: 'bg-green-600' },
-        { title: 'Students Absent', value: studentsAbsent, subtitle: 'Attendance for today', icon: 'UserX', color: 'bg-red-600' },
-        { title: 'Messages Sent Today', value: messagesSent, subtitle: 'WhatsApp messages delivered', icon: 'MessageSquare', color: 'bg-blue-600' },
-        { title: 'New Admissions', value: newAdmissions, subtitle: 'In the last 30 days', icon: 'UserPlus', color: 'bg-indigo-600' },
+        { title: 'Total Students', value: students.length.toLocaleString(), subtitle: '+2% from last month', icon: 'Users', color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
+        { title: 'Students Present', value: studentsPresent, subtitle: 'Attendance for today', icon: 'UserCheck', color: 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800' },
+        { title: 'Students Absent', value: studentsAbsent, subtitle: 'Attendance for today', icon: 'UserX', color: 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800' },
+        { title: 'Messages Sent Today', value: messagesSent, subtitle: 'WhatsApp messages delivered', icon: 'MessageSquare', color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
+        { title: 'New Admissions', value: newAdmissions, subtitle: 'In the last 30 days', icon: 'UserPlus', color: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' },
     ];
     
     const bottomRowStats = [
-        { title: 'Income (This Month)', value: `${totalIncome.toLocaleString()}`, unit: 'PKR', icon: 'TrendingUp', color: 'bg-green-700/20 text-green-500 border-green-500/30' },
-        { title: 'Expenses (This Month)', value: `${totalExpenses.toLocaleString()}`, unit: 'PKR', icon: 'TrendingDown', color: 'bg-red-700/20 text-red-500 border-red-500/30' },
-        { title: 'Net Profit / Loss', value: `${netProfit.toLocaleString()}`, unit: 'PKR', icon: 'Scale', color: 'bg-purple-700/20 text-purple-400 border-purple-500/30' },
+        { title: 'Income (This Month)', value: `${totalIncome.toLocaleString()}`, unit: 'PKR', icon: 'TrendingUp', color: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' },
+        { title: 'Expenses (This Month)', value: `${totalExpenses.toLocaleString()}`, unit: 'PKR', icon: 'TrendingDown', color: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' },
+        { title: 'Net Profit / Loss', value: `${netProfit.toLocaleString()}`, unit: 'PKR', icon: 'Scale', color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
     ];
 
 
@@ -85,16 +97,16 @@ export default function DashboardPage() {
         {topRowStats.map((stat) => {
           const Icon = iconMap[stat.icon];
           return (
-            <Card key={stat.title} className={cn("shadow-sm text-white", stat.color)}>
+            <Card key={stat.title} className={cn("shadow-sm border", stat.color)}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                 <CardTitle className="text-sm font-medium text-white/80">
+                 <CardTitle className="text-sm font-medium">
                   {stat.title}
                 </CardTitle>
-                <Icon className="h-5 w-5 text-white/80" />
+                <Icon className="h-5 w-5" />
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold">{stat.value}</div>
-                {stat.subtitle && <p className="text-xs text-white/70">{stat.subtitle}</p>}
+                {stat.subtitle && <p className="text-xs text-muted-foreground">{stat.subtitle}</p>}
               </CardContent>
             </Card>
           );
@@ -104,7 +116,7 @@ export default function DashboardPage() {
         {bottomRowStats.map((stat) => {
             const Icon = iconMap[stat.icon];
             return (
-                 <Card key={stat.title} className={cn("shadow-sm", stat.color)}>
+                 <Card key={stat.title} className={cn("shadow-sm border", stat.color)}>
                     <CardHeader className="flex flex-row items-start justify-between space-y-0">
                         <div className='grid gap-2'>
                            <CardTitle className="text-sm font-medium">
