@@ -813,36 +813,38 @@ export async function saveTeacherAttendance(date: string, records: { [teacherId:
 
 export async function getTeacherAttendanceForMonth(teacherId: string, month: number, year: number): Promise<{ date: Date, status: AttendanceStatus }[]> {
     try {
-        const teacherAttendance: { date: Date, status: AttendanceStatus }[] = [];
-        
         const monthStart = startOfMonth(new Date(year, month));
         const monthEnd = endOfMonth(new Date(year, month));
-
-        const startDate = monthStart.toISOString().split('T')[0];
-        const endDate = monthEnd.toISOString().split('T')[0];
 
         const q = query(
             collection(db, 'teacher_attendance'),
             where('teacherId', '==', teacherId),
-            where('date', '>=', startDate),
-            where('date', '<=', endDate)
+            orderBy('date')
         );
+
         const querySnapshot = await getDocs(q);
 
+        const teacherAttendance: { date: Date, status: AttendanceStatus }[] = [];
         querySnapshot.forEach(doc => {
             const data = doc.data();
-            // The date from firestore is a string 'YYYY-MM-DD'.
-            // new Date('2024-07-30') creates a date in UTC at midnight.
-            // We should append T00:00:00 to ensure it is parsed as local time midnight
-            teacherAttendance.push({
-                date: new Date(data.date + 'T00:00:00'),
-                status: data.status,
-            });
+            const recordDate = new Date(data.date + 'T00:00:00');
+            if (recordDate >= monthStart && recordDate <= monthEnd) {
+                teacherAttendance.push({
+                    date: recordDate,
+                    status: data.status,
+                });
+            }
         });
 
         return teacherAttendance;
     } catch (error) {
         console.error(`Error fetching teacher attendance for ${teacherId}:`, error);
+        if (error instanceof Error && error.message.includes("The query requires an index")) {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `teacher_attendance`,
+                operation: 'list',
+            }));
+        }
         return [];
     }
 }
