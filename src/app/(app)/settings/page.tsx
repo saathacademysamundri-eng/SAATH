@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 type CustomMessageTarget = 
-  | 'all_families' 
+  | 'all_classes' 
   | 'specific_class' 
   | 'specific_student' 
   | 'all_teachers' 
@@ -78,7 +79,7 @@ export default function SettingsPage() {
   const [testResult, setTestResult] = useState<{status: 'success' | 'error', message: string} | null>(null);
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
 
-  const [customMessageTarget, setCustomMessageTarget] = useState<CustomMessageTarget>('all_families');
+  const [customMessageTarget, setCustomMessageTarget] = useState<CustomMessageTarget>('all_classes');
   const [customMessage, setCustomMessage] = useState('');
   const [specificClass, setSpecificClass] = useState('');
   const [specificStudent, setSpecificStudent] = useState('');
@@ -514,8 +515,8 @@ export default function SettingsPage() {
                         <Label>Send To:</Label>
                         <RadioGroup value={customMessageTarget} onValueChange={(v) => setCustomMessageTarget(v as CustomMessageTarget)} className="flex flex-wrap items-center gap-4">
                             <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="all_families" id="all_families" />
-                                <Label htmlFor="all_families">All Families</Label>
+                                <RadioGroupItem value="all_classes" id="all_classes" />
+                                <Label htmlFor="all_classes">All Classes</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="specific_class" id="specific_class" />
