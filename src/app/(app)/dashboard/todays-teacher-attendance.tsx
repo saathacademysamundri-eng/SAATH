@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Badge } from '@/components/ui/badge';
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAppContext } from '@/hooks/use-app-context';
 import { getTeacherAttendanceForMonth } from '@/lib/firebase/firestore';
-import { ClipboardUser } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 
 type TeacherAttendanceSummary = {
@@ -61,7 +62,7 @@ export function TodaysTeacherAttendance() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <ClipboardUser />
+                    <ClipboardList />
                     Today's Teacher Attendance
                 </CardTitle>
                 <CardDescription>A summary of teacher attendance for today and the current month.</CardDescription>
