@@ -11,16 +11,19 @@ import {
 import { useSettings } from "@/hooks/use-settings";
 import { useEffect, useState } from "react";
 import { Logo } from "./logo";
+import { format } from "date-fns";
 
 export function WelcomeDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const { settings, isSettingsLoading } = useSettings();
+  const [currentDate, setCurrentDate] = useState('');
 
   useEffect(() => {
     const hasBeenShown = sessionStorage.getItem("welcomeDialogShown");
     if (!hasBeenShown && !isSettingsLoading) {
       setIsOpen(true);
       sessionStorage.setItem("welcomeDialogShown", "true");
+      setCurrentDate(format(new Date(), "PPP"));
     }
   }, [isSettingsLoading]);
 
@@ -37,6 +40,7 @@ export function WelcomeDialog() {
             Welcome to {settings.name}
           </DialogTitle>
           <DialogDescription>Developed by Mian Mudassar.</DialogDescription>
+          <DialogDescription>{currentDate}</DialogDescription>
         </DialogHeader>
       </DialogContent>
     </Dialog>
