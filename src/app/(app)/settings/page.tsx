@@ -224,7 +224,7 @@ export default function SettingsPage() {
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="appearance"> <Palette className="mr-2 h-4 w-4"/> Appearance</TabsTrigger>
             <TabsTrigger value="security"> <ShieldCheck className="mr-2 h-4 w-4"/> Security</TabsTrigger>
-            <TabsTrigger value="integrations">Integrations</TabsTrigger>
+            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
           </TabsList>
           <TabsContent value="general">
             <Card className='max-w-2xl'>
@@ -387,7 +387,7 @@ export default function SettingsPage() {
                 </CardFooter>
             </Card>
           </TabsContent>
-          <TabsContent value="integrations">
+          <TabsContent value="whatsapp">
             <div className="grid gap-6 max-w-4xl">
               <Card>
                 <CardHeader>
