@@ -92,25 +92,24 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
 
 
 export async function getStudents(): Promise<Student[]> {
-  const studentsCollection = collection(db, 'students');
-  const q = query(studentsCollection, where("status", "==", "active"));
-  const studentsSnap = await getDocs(q);
-  const studentData = studentsSnap.docs.map(doc => doc.data() as Student);
-  return studentData.sort((a, b) => a.id.localeCompare(b.id));
+    const studentsCollection = collection(db, 'students');
+    const studentsSnap = await getDocs(studentsCollection);
+    const allStudents = studentsSnap.docs.map(doc => doc.data() as Student);
+    return allStudents.filter(s => s.status === 'active').sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function getAlumni(): Promise<Student[]> {
-    const q = query(collection(db, 'students'), where('status', '==', 'graduated'));
-    const studentsSnap = await getDocs(q);
-    const studentData = studentsSnap.docs.map(doc => doc.data() as Student);
-    return studentData.sort((a, b) => a.id.localeCompare(b.id));
+    const studentsCollection = collection(db, 'students');
+    const studentsSnap = await getDocs(studentsCollection);
+    const allStudents = studentsSnap.docs.map(doc => doc.data() as Student);
+    return allStudents.filter(s => s.status === 'graduated').sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function getArchivedStudents(): Promise<Student[]> {
-    const q = query(collection(db, 'students'), where('status', '==', 'archived'));
-    const studentsSnap = await getDocs(q);
-    const studentData = studentsSnap.docs.map(doc => doc.data() as Student);
-    return studentData.sort((a, b) => a.id.localeCompare(b.id));
+    const studentsCollection = collection(db, 'students');
+    const studentsSnap = await getDocs(studentsCollection);
+    const allStudents = studentsSnap.docs.map(doc => doc.data() as Student);
+    return allStudents.filter(s => s.status === 'archived').sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function getStudentsByClass(className: string): Promise<Student[]> {
@@ -259,7 +258,7 @@ export async function resetMonthlyFees() {
             const studentRef = studentDoc.ref;
             
             const newTotalFee = student.totalFee + student.monthlyFee;
-            const newStatus = student.totalFee > 0 ? 'Overdue' : 'Pending';
+            const newStatus: Student['feeStatus'] = newTotalFee > student.monthlyFee ? 'Overdue' : 'Pending';
 
             batch.update(studentRef, {
                 totalFee: newTotalFee,
