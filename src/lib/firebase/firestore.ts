@@ -93,6 +93,8 @@ export async function clearActivityHistory() {
         await logActivity('settings_updated', 'Cleared all activity history logs.');
         return { success: true, message: 'Activity history cleared.' };
     } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: 'activities', operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }
 }
@@ -129,7 +131,7 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
 
 export async function getStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');
-  const q = query(studentsCollection, where("isActive", "!=", false), orderBy("id"));
+  const q = query(studentsCollection, where("isActive", "!=", false), orderBy("isActive"), orderBy("id"));
   const studentsSnap = await getDocs(q);
   return studentsSnap.docs.map(doc => doc.data() as Student);
 }
