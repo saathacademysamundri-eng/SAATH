@@ -10,7 +10,7 @@ import {
 import { LiveDate, LiveTime } from './live-date-time';
 import { Logo } from './logo';
 import { Button } from './ui/button';
-import { LogOut, Facebook, Twitter, Instagram } from 'lucide-react';
+import { LogOut, Facebook, Instagram, MessageSquare } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { useLock } from '@/hooks/use-lock';
 import { useState } from 'react';
@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export function LockScreen() {
   const { settings, isSettingsLoading } = useSettings();
@@ -83,9 +84,15 @@ export function LockScreen() {
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>Developed by "Mian Mudassar"</p>
           <div className="mt-2 flex justify-center gap-4">
-            <Facebook className="h-4 w-4" />
-            <Twitter className="h-4 w-4" />
-            <Instagram className="h-4 w-4" />
+             <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer">
+                <Facebook className="h-4 w-4" />
+            </Link>
+             <Link href="https://api.whatsapp.com/send?phone=923099969535&text=Hye%20%0AI%20want%20to%20know%20about%20the%20software%20you%20created%2C%20which%20is%20a%20management%20system%20in%20the%20school.%20" target="_blank" rel="noopener noreferrer">
+                <MessageSquare className="h-4 w-4" />
+            </Link>
+            <Link href="https://www.instagram.com/mianmudassar_" target="_blank" rel="noopener noreferrer">
+                <Instagram className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </div>
