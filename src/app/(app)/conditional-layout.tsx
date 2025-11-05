@@ -22,7 +22,6 @@ import {
   LayoutDashboard,
   LifeBuoy,
   LogOut,
-  Megaphone,
   School,
   Settings,
   Users,
@@ -41,6 +40,7 @@ import {
   Palette,
   Globe,
   UserCheck,
+  GraduationCap
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -87,6 +87,7 @@ function MainSidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/students', label: 'Students', icon: Users },
     { href: '/teachers', label: 'Teachers', icon: BookUser },
+    { href: '/alumni', label: 'Alumni', icon: GraduationCap },
     { href: '/classes', label: 'Classes', icon: School },
     { href: '/attendance', label: 'Attendance', icon: ClipboardCheck },
     { href: '/teacher-attendance', label: 'Teacher Attendance', icon: UserCheck },
@@ -96,7 +97,6 @@ function MainSidebar() {
     { href: '/expenses', label: 'Expenses', icon: TrendingDown },
     { href: '/academy-share', label: 'Academy Share', icon: TrendingUp },
     { href: '/reports', label: 'Reports', icon: LineChart },
-    { href: '/announcements', label: 'Announcements', icon: Megaphone },
   ];
 
   return (

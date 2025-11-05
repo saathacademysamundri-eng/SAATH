@@ -49,7 +49,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteStudent } from '@/lib/firebase/firestore';
+import { deactivateStudent } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 export default function StudentsPage() {
@@ -92,14 +92,14 @@ export default function StudentsPage() {
     closeDialogs();
   };
   
-  const handleConfirmDelete = async (student: Student | null) => {
+  const handleConfirmDeactivate = async (student: Student | null) => {
     if (!student) return;
-    const result = await deleteStudent(student.id);
+    const result = await deactivateStudent(student.id);
     if(result.success) {
-      toast({ title: "Student Deleted", description: `Record for ${student.name} has been removed.`});
+      toast({ title: "Student Moved to Alumni", description: `${student.name} has been marked as inactive.`});
       refreshData();
     } else {
-      toast({ variant: "destructive", title: "Deletion Failed", description: result.message });
+      toast({ variant: "destructive", title: "Action Failed", description: result.message });
     }
     closeDialogs();
   }
@@ -214,7 +214,7 @@ export default function StudentsPage() {
                               <AlertDialogTrigger asChild>
                                 <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
                                   <Trash className="mr-2 h-4 w-4" />
-                                  Delete
+                                  Move to Alumni
                                 </DropdownMenuItem>
                               </AlertDialogTrigger>
                             </DropdownMenuContent>
@@ -223,12 +223,12 @@ export default function StudentsPage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the student record for <span className="font-bold">{student.name}</span>.
+                                This will mark the student <span className="font-bold">{student.name}</span> as inactive and move them to the Alumni list. Their data will be preserved.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleConfirmDelete(student)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                              <AlertDialogAction onClick={() => handleConfirmDeactivate(student)} className="bg-destructive hover:bg-destructive/90">Move to Alumni</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                       </AlertDialog>

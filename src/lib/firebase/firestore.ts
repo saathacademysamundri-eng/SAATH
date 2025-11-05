@@ -129,13 +129,21 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
 
 export async function getStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');
-  const q = query(studentsCollection, orderBy("id"));
+  const q = query(studentsCollection, where("isActive", "!=", false), orderBy("id"));
   const studentsSnap = await getDocs(q);
   return studentsSnap.docs.map(doc => doc.data() as Student);
 }
 
+export async function getInactiveStudents(): Promise<Student[]> {
+  const studentsCollection = collection(db, 'students');
+  const q = query(studentsCollection, where("isActive", "==", false), orderBy("id"));
+  const studentsSnap = await getDocs(q);
+  return studentsSnap.docs.map(doc => doc.data() as Student);
+}
+
+
 export async function getStudentsByClass(className: string): Promise<Student[]> {
-    const q = query(collection(db, 'students'), where('class', '==', className));
+    const q = query(collection(db, 'students'), where('class', '==', className), where("isActive", "!=", false));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => doc.data() as Student);
 }
@@ -158,12 +166,13 @@ export async function getStudent(id: string): Promise<Student | null> {
 
 export async function addStudent(student: Omit<Student, 'id'> & { id: string }) {
     const docRef = doc(db, 'students', student.id);
+    const studentWithActive = { ...student, isActive: true };
     try {
-        await setDoc(docRef, student);
+        await setDoc(docRef, studentWithActive);
         await logActivity('new_admission', `New admission: ${student.name} (ID: ${student.id}) in class ${student.class}.`, `/students/${student.id}`);
         return { success: true, message: "Student added successfully." };
     } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: student });
+        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: studentWithActive });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }
@@ -182,23 +191,42 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
     }
 }
 
-export async function deleteStudent(studentId: string) {
+export async function deactivateStudent(studentId: string) {
     const studentRef = doc(db, 'students', studentId);
     try {
         const studentDoc = await getDoc(studentRef);
         if (studentDoc.exists()) {
+            await updateDoc(studentRef, { isActive: false });
             const student = studentDoc.data() as Student;
-            await deleteDoc(studentRef);
-            await logActivity('student_deleted', `Deleted student: ${student.name} (ID: ${studentId}).`);
-            return { success: true, message: "Student deleted successfully." };
+            await logActivity('student_deactivated', `Deactivated student: ${student.name} (ID: ${studentId}) and moved to Alumni.`);
+            return { success: true, message: "Student moved to Alumni." };
         }
         return { success: false, message: "Student not found." };
     } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'delete' });
+        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'update' });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }
 }
+
+export async function reactivateStudent(studentId: string) {
+    const studentRef = doc(db, 'students', studentId);
+    try {
+        const studentDoc = await getDoc(studentRef);
+        if (studentDoc.exists()) {
+            await updateDoc(studentRef, { isActive: true });
+            const student = studentDoc.data() as Student;
+            await logActivity('student_reactivated', `Reactivated student: ${student.name} (ID: ${studentId}) from Alumni.`);
+            return { success: true, message: "Student reactivated successfully." };
+        }
+        return { success: false, message: "Student not found." };
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'update' });
+        errorEmitter.emit('permission-error', permissionError);
+        return { success: false, message: (serverError as Error).message };
+    }
+}
+
 
 
 export async function getNextStudentId(): Promise<string> {
