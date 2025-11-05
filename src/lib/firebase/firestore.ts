@@ -24,7 +24,7 @@ export async function logActivity(type: Activity['type'], message: string, link?
     }
 }
 
-export async function getRecentActivities(count = 20): Promise<Activity[]> {
+export async function getRecentActivities(count = 50): Promise<Activity[]> {
     try {
         const q = query(collection(db, 'activities'), orderBy('date', 'desc'), limit(count));
         const querySnapshot = await getDocs(q);
@@ -92,19 +92,17 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
 
 export async function getStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');
-  const studentsSnap = await getDocs(studentsCollection);
-  const studentData = studentsSnap.docs
-    .map(doc => doc.data() as Student)
-    .filter(student => student.isActive !== false); // Keep active and undefined
+  const q = query(studentsCollection, where("isActive", "!=", false));
+  const studentsSnap = await getDocs(q);
+  const studentData = studentsSnap.docs.map(doc => doc.data() as Student)
   return studentData.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function getInactiveStudents(): Promise<Student[]> {
   const studentsCollection = collection(db, 'students');
-  const studentsSnap = await getDocs(studentsCollection);
-  const studentData = studentsSnap.docs
-    .map(doc => doc.data() as Student)
-    .filter(student => student.isActive === false);
+  const q = query(studentsCollection, where("isActive", "==", false));
+  const studentsSnap = await getDocs(q);
+  const studentData = studentsSnap.docs.map(doc => doc.data() as Student)
   return studentData.sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -196,14 +194,29 @@ export async function reactivateStudent(studentId: string) {
 export async function deleteStudentPermanently(studentId: string) {
     const studentRef = doc(db, 'students', studentId);
     try {
-        const studentDoc = await getDoc(studentRef);
-        if (studentDoc.exists()) {
+        await runTransaction(db, async (transaction) => {
+            const studentDoc = await transaction.get(studentRef);
+            if (!studentDoc.exists()) {
+                throw new Error("Student not found.");
+            }
+
             const student = studentDoc.data() as Student;
-            await deleteDoc(studentRef);
-            await logActivity('student_deleted', `Permanently deleted student record for ${student.name} (ID: ${studentId}).`);
-            return { success: true, message: 'Student record permanently deleted.' };
-        }
-        return { success: false, message: "Student not found." };
+
+            // Find and delete all income records for this student
+            const incomeQuery = query(collection(db, 'income'), where('studentId', '==', studentId));
+            const incomeSnapshot = await getDocs(incomeQuery);
+            incomeSnapshot.forEach(incomeDoc => {
+                transaction.delete(incomeDoc.ref);
+            });
+
+            // Delete the student document
+            transaction.delete(studentRef);
+            
+            await logActivity('student_deleted', `Permanently deleted student record and all associated payments for ${student.name} (ID: ${studentId}).`);
+        });
+
+        return { success: true, message: 'Student record and all associated payments have been permanently deleted.' };
+
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
