@@ -6,15 +6,17 @@ import { UserNav } from '@/components/user-nav';
 import { ThemeSwitcher } from './theme-switcher';
 import { usePathname } from 'next/navigation';
 import { LiveDate, LiveTime } from './live-date-time';
-import { Input } from './ui/input';
-import { Search } from 'lucide-react';
+import { Search, Lock } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { SearchCommand } from './search-command';
 import { useState, useEffect } from 'react';
 import { Logo } from './logo';
+import { Button } from './ui/button';
+import { useLock } from '@/hooks/use-lock';
 
 export function Header() {
   const { settings } = useSettings();
+  const { lock } = useLock();
   const [openSearch, setOpenSearch] = useState(false);
   const pathname = usePathname();
 
@@ -54,6 +56,12 @@ export function Header() {
         </div>
         <LiveDate />
         <LiveTime />
+        {settings.autoLockEnabled && (
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={lock}>
+            <Lock className="h-4 w-4" />
+            <span className="sr-only">Lock Screen</span>
+          </Button>
+        )}
         <ThemeSwitcher />
         <UserNav />
       </div>
