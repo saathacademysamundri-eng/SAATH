@@ -60,7 +60,7 @@ export interface Settings {
 }
 
 const defaultSettings: Settings = {
-  name: 'My Academy',
+  name: 'SAATH Academy Samundri',
   address: 'Housing Colony 2, Samundri Faisalabad',
   phone: '0333 9114333',
   logo: '/logo.png',
