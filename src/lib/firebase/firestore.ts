@@ -77,6 +77,9 @@ service cloud.firestore {
     match /attendance/{attendanceId} {
       allow read, write: if isAdmin();
     }
+     match /teacher_attendance/{attendanceId} {
+      allow read, write: if isAdmin();
+    }
     match /exams/{examId} {
       allow read, write: if isAdmin();
     }
@@ -785,6 +788,35 @@ export async function getAttendanceForClassInMonth(classId: string, month: numbe
     } catch (error) {
         console.error("Error fetching class attendance:", error);
         return {};
+    }
+}
+
+export async function getTeacherAttendanceForMonth(teacherId: string, month: number, year: number): Promise<{ date: Date, status: AttendanceStatus }[]> {
+    try {
+        const teacherAttendance: { date: Date, status: AttendanceStatus }[] = [];
+        const startDate = new Date(year, month, 1).toISOString().split('T')[0];
+        const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+
+        const q = query(
+            collection(db, 'teacher_attendance'),
+            where('teacherId', '==', teacherId),
+            where('date', '>=', startDate),
+            where('date', '<=', endDate)
+        );
+        const querySnapshot = await getDocs(q);
+
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            teacherAttendance.push({
+                date: new Date(data.date),
+                status: data.status,
+            });
+        });
+
+        return teacherAttendance;
+    } catch (error) {
+        console.error(`Error fetching teacher attendance for ${teacherId}:`, error);
+        return [];
     }
 }
 
