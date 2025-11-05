@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History } from 'lucide-react';
+import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History, Archive, GraduationCap } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { seedDatabase, clearActivityHistory, getRecentActivities } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -483,10 +483,11 @@ export default function SettingsPage() {
           </p>
         </div>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-6">
+          <TabsList className="grid w-full max-w-3xl grid-cols-7">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="appearance"> <Palette className="mr-2 h-4 w-4"/> Appearance</TabsTrigger>
             <TabsTrigger value="security"> <ShieldCheck className="mr-2 h-4 w-4"/> Security</TabsTrigger>
+            <TabsTrigger value="data">Data Management</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
             <TabsTrigger value="history"> <History className="mr-2 h-4 w-4"/> History</TabsTrigger>
             <TabsTrigger value="database">Database</TabsTrigger>
@@ -650,6 +651,42 @@ export default function SettingsPage() {
                       {isSaving ? 'Saving...' : 'Save Security Settings'}
                     </Button>
                 </CardFooter>
+            </Card>
+          </TabsContent>
+          <TabsContent value="data">
+            <Card className="max-w-2xl">
+              <CardHeader>
+                <CardTitle>Data Management</CardTitle>
+                <CardDescription>Access and manage historical student data.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <Link href="/alumni" className="block">
+                  <div className="rounded-lg border p-4 hover:bg-muted transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-primary/10 text-primary p-2 rounded-md">
+                        <GraduationCap className="h-6 w-6"/>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Alumni Records</h3>
+                        <p className="text-sm text-muted-foreground">View students who have graduated.</p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+                <Link href="/archive" className="block">
+                  <div className="rounded-lg border p-4 hover:bg-muted transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-primary/10 text-primary p-2 rounded-md">
+                        <Archive className="h-6 w-6"/>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Archived Students</h3>
+                        <p className="text-sm text-muted-foreground">Manage students pending deletion.</p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </CardContent>
             </Card>
           </TabsContent>
           <TabsContent value="whatsapp">
