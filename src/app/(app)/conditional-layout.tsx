@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Header } from '@/components/header';
@@ -57,6 +56,7 @@ import { WelcomeDialog } from '@/components/welcome-dialog';
 import { GlobalPreloader } from '@/components/global-preloader';
 import { useLock } from '@/hooks/use-lock';
 import { LockScreen } from '@/components/lock-screen';
+import { WelcomeBackDialog } from '@/components/welcome-back-dialog';
 
 function SidebarPin() {
     const { isPinned, setPinned } = useSidebar();
@@ -188,6 +188,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
         <WelcomeDialog />
+        <WelcomeBackDialog />
         <SidebarProvider>
             <MainSidebar />
             <SidebarInset>

@@ -9,12 +9,15 @@ interface LockContextType {
   isLocked: boolean;
   lock: () => void;
   unlock: (pin: string) => boolean;
+  showWelcomeBack: boolean;
+  setShowWelcomeBack: (show: boolean) => void;
 }
 
 const LockContext = createContext<LockContextType | undefined>(undefined);
 
 export const LockProvider = ({ children }: { children: ReactNode }) => {
   const [isLocked, setIsLocked] = useState(false);
+  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const { settings } = useSettings();
 
   const handleIdle = useCallback(() => {
@@ -34,12 +37,13 @@ export const LockProvider = ({ children }: { children: ReactNode }) => {
   const unlock = (pin: string) => {
     if (pin === settings.securityPin) {
       setIsLocked(false);
+      setShowWelcomeBack(true);
       return true;
     }
     return false;
   };
 
-  const value = { isLocked, lock, unlock };
+  const value = { isLocked, lock, unlock, showWelcomeBack, setShowWelcomeBack };
 
   return (
     <LockContext.Provider value={value}>
