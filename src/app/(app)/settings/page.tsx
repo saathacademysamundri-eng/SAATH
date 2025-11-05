@@ -478,41 +478,50 @@ export default function SettingsPage() {
                             <AlertDescription>{testResult.message}</AlertDescription>
                         </Alert>
                     )}
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Automated Message Templates</CardTitle>
-                            <CardDescription>Enable or disable automatic messages and customize their content. Use placeholders like {"{student_name}"}.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="flex items-start justify-between rounded-lg border p-4">
-                                <div>
-                                    <Label htmlFor="new-admission-switch" className="font-semibold">New Admission Message</Label>
-                                    <Textarea className="mt-2" value={newAdmissionTemplate} onChange={e => setNewAdmissionTemplate(e.target.value)} disabled={!newAdmissionMsg} />
-                                </div>
-                                <Switch id="new-admission-switch" checked={newAdmissionMsg} onCheckedChange={setNewAdmissionMsg} />
-                            </div>
-                            <div className="flex items-start justify-between rounded-lg border p-4">
-                                <div>
-                                    <Label htmlFor="absent-switch" className="font-semibold">Student Absent Message</Label>
-                                    <Textarea className="mt-2" value={absentTemplate} onChange={e => setAbsentTemplate(e.target.value)} disabled={!absentMsg} />
-                                </div>
-                                <Switch id="absent-switch" checked={absentMsg} onCheckedChange={setAbsentMsg} />
-                            </div>
-                            <div className="flex items-start justify-between rounded-lg border p-4">
-                                <div>
-                                    <Label htmlFor="payment-switch" className="font-semibold">Payment Receipt Message</Label>
-                                    <Textarea className="mt-2" value={paymentReceiptTemplate} onChange={e => setPaymentReceiptTemplate(e.target.value)} disabled={!paymentReceiptMsg} />
-                                </div>
-                                <Switch id="payment-switch" checked={paymentReceiptMsg} onCheckedChange={setPaymentReceiptMsg} />
-                            </div>
-                        </CardContent>
-                    </Card>
                 </CardContent>
                 <CardFooter>
                     <Button onClick={handleSaveWhatsApp} disabled={isSaving}>
                       {isSaving && <Loader2 className="mr-2 animate-spin" />}
                       {isSaving ? 'Saving...' : 'Save API Settings'}
+                    </Button>
+                </CardFooter>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Automated Notifications</CardTitle>
+                  <CardDescription>Enable/disable automated messages for specific events.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-6">
+                  <div className="flex items-center justify-between rounded-lg border p-4">
+                    <div>
+                      <Label className="font-semibold">Admission Confirmation</Label>
+                      <p className="text-sm text-muted-foreground">Sent on new admission.</p>
+                      <Textarea className="mt-2" value={newAdmissionTemplate} onChange={e => setNewAdmissionTemplate(e.target.value)} disabled={!newAdmissionMsg} />
+                    </div>
+                    <Switch checked={newAdmissionMsg} onCheckedChange={setNewAdmissionMsg} />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border p-4">
+                    <div>
+                      <Label className="font-semibold">Absentee Notice</Label>
+                      <p className="text-sm text-muted-foreground">Sent on notifying absentees.</p>
+                      <Textarea className="mt-2" value={absentTemplate} onChange={e => setAbsentTemplate(e.target.value)} disabled={!absentMsg} />
+                    </div>
+                    <Switch checked={absentMsg} onCheckedChange={setAbsentMsg} />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border p-4">
+                    <div>
+                      <Label className="font-semibold">Fee Payment Receipt</Label>
+                      <p className="text-sm text-muted-foreground">Sent on fee collection.</p>
+                       <Textarea className="mt-2" value={paymentReceiptTemplate} onChange={e => setPaymentReceiptTemplate(e.target.value)} disabled={!paymentReceiptMsg} />
+                    </div>
+                    <Switch checked={paymentReceiptMsg} onCheckedChange={setPaymentReceiptMsg} />
+                  </div>
+                </CardContent>
+                 <CardFooter>
+                    <Button onClick={handleSaveWhatsApp} disabled={isSaving}>
+                      {isSaving && <Loader2 className="mr-2 animate-spin" />}
+                      {isSaving ? 'Saving...' : 'Save Template Settings'}
                     </Button>
                 </CardFooter>
               </Card>
