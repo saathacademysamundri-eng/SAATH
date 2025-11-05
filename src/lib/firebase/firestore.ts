@@ -38,7 +38,7 @@ service cloud.firestore {
 */
 
 
-import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt } from 'firebase/firestore';
+import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
@@ -862,6 +862,22 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
     }
 }
 
+export async function getTodaysMessagesCount(): Promise<number> {
+    try {
+        const todayStart = startOfDay(new Date());
+        const todayEnd = endOfDay(new Date());
 
+        const q = query(
+            collection(db, 'message_logs'),
+            where('timestamp', '>=', Timestamp.fromDate(todayStart)),
+            where('timestamp', '<=', Timestamp.fromDate(todayEnd))
+        );
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.size;
+    } catch (error) {
+        console.error("Error fetching today's message count: ", error);
+        return 0;
+    }
+}
 
     

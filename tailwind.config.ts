@@ -92,7 +92,7 @@ export default {
         },
          'scroll-up-slow': {
           '0%': { transform: 'translateY(0)' },
-          '100%': { transform: 'translateY(-66.66%)' },
+          '100%': { transform: 'translateY(-50%)' },
         },
         "caret-blink": {
           "0%,70%,100%": { opacity: "1" },

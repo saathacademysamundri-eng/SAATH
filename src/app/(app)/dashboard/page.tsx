@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState, useEffect } from 'react';
-import { getTodaysAttendanceSummary } from '@/lib/firebase/firestore';
+import { getTodaysAttendanceSummary, getTodaysMessagesCount } from '@/lib/firebase/firestore';
 import { TodaysAttendance } from './todays-attendance';
 import { RecentActivities } from './recent-activities';
 import { TodaysTeacherAttendance } from './todays-teacher-attendance';
@@ -37,9 +37,12 @@ const iconMap: { [key: string]: React.ElementType } = {
 export default function DashboardPage() {
     const { income, expenses, students, teachers } = useAppContext();
     const [attendance, setAttendance] = useState({ present: 0, absent: 0 });
+    const [messagesSent, setMessagesSent] = useState(0);
+
 
     useEffect(() => {
         getTodaysAttendanceSummary().then(setAttendance);
+        getTodaysMessagesCount().then(setMessagesSent);
     }, []);
 
     const totalIncome = useMemo(() => {
@@ -68,7 +71,7 @@ export default function DashboardPage() {
     
     const studentsPresent = attendance.present;
     const studentsAbsent = attendance.absent;
-    const messagesSent = 0; // Assuming no logic for this yet
+    
     const newAdmissions = useMemo(() => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

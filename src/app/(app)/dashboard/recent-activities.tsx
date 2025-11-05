@@ -27,31 +27,60 @@ export function RecentActivities() {
                 <CardDescription>A live feed of recent actions.</CardDescription>
             </CardHeader>
             <CardContent>
-                 <div className="space-y-4">
-                    {recentActivities.map((activity, index) => (
-                        <div key={index} className="flex items-start gap-4">
-                             <div className="flex-1">
-                                <p className="font-medium text-sm leading-tight">
-                                    {activity.status === 'Admission' ? activity.name : (
-                                        <>
-                                            {activity.status === 'Exam' ? activity.name : (
+                 <div className="h-64 overflow-hidden relative">
+                    <div className="absolute top-0 animate-scroll-up-slow">
+                        <div className="space-y-4">
+                            {recentActivities.map((activity, index) => (
+                                <div key={index} className="flex items-start gap-4">
+                                    <div className="flex-1">
+                                        <p className="font-medium text-sm leading-tight">
+                                            {activity.status === 'Admission' ? activity.name : (
                                                 <>
-                                                    Payment of <span className="font-bold">{activity.amount}</span> received from <span className="font-bold">{activity.name}</span>.
+                                                    {activity.status === 'Exam' ? activity.name : (
+                                                        <>
+                                                            Payment of <span className="font-bold">{activity.amount}</span> received from <span className="font-bold">{activity.name}</span>.
+                                                        </>
+                                                    )}
                                                 </>
                                             )}
-                                        </>
-                                    )}
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                                    <Badge variant={activityTypeMap[activity.status]?.variant || 'default'}>
-                                        {activityTypeMap[activity.status]?.text || activity.status}
-                                    </Badge>
-                                    <span>{activity.date}</span>
+                                        </p>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                            <Badge variant={activityTypeMap[activity.status]?.variant || 'default'}>
+                                                {activityTypeMap[activity.status]?.text || activity.status}
+                                            </Badge>
+                                            <span>{activity.date}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            ))}
                         </div>
-                    ))}
-                 </div>
+                        <div className="space-y-4 mt-4">
+                            {recentActivities.map((activity, index) => (
+                                <div key={index + recentActivities.length} className="flex items-start gap-4">
+                                    <div className="flex-1">
+                                        <p className="font-medium text-sm leading-tight">
+                                            {activity.status === 'Admission' ? activity.name : (
+                                                <>
+                                                    {activity.status === 'Exam' ? activity.name : (
+                                                        <>
+                                                            Payment of <span className="font-bold">{activity.amount}</span> received from <span className="font-bold">{activity.name}</span>.
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
+                                        </p>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                            <Badge variant={activityTypeMap[activity.status]?.variant || 'default'}>
+                                                {activityTypeMap[activity.status]?.text || activity.status}
+                                            </Badge>
+                                            <span>{activity.date}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     );
