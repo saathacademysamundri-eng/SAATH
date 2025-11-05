@@ -22,65 +22,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // Allow admin full access to everything.
-    // Replace "YOUR_ADMIN_UID" with the actual UID of your admin user.
     function isAdmin() {
       return request.auth.uid == "rSwt0U3gwxNrYzS2ky6P5TnYXtj2";
     }
 
-    // Default deny all reads and writes
+    // Default deny all reads and writes, but allow admin full access.
     match /{document=**} {
-      allow read, write: if false;
-    }
-    
-    // Allow public read for students, teachers, and classes for profile pages
-    match /students/{studentId} {
-      allow write: if isAdmin();
-      allow read: if true;
-    }
-    match /teachers/{teacherId} {
-      allow write: if isAdmin();
-      allow read: if true;
-    }
-    match /classes/{classId} {
-      allow write: if isAdmin();
-      allow read: if true;
-    }
-    match /classes/{classId}/subjects/{subjectId} {
-       allow write: if isAdmin();
-       allow read: if true;
-    }
-
-    // Allow authenticated users to read income data
-    match /income/{incomeId} {
-       allow write: if isAdmin();
-       allow read: if request.auth != null;
-    }
-    
-    // Restrict writes to admin, but allow reads for teacher payouts and reports
-    match /teacher_payouts/{payoutId} {
-       allow read, write: if isAdmin();
-    }
-    match /expenses/{expenseId} {
-       allow read, write: if isAdmin();
-    }
-    match /reports/{reportId} {
-       allow read, write: if isAdmin();
-    }
-
-    // Settings can be read by any authenticated user, but only written by admin
-    match /settings/{docId} {
-       allow write: if isAdmin();
-       allow read: if true; // Allow public read for landing page
-    }
-
-    // Rules for new collections
-    match /attendance/{attendanceId} {
-      allow read, write: if isAdmin();
-    }
-     match /teacher_attendance/{attendanceId} {
-      allow read, write: if isAdmin();
-    }
-    match /exams/{examId} {
       allow read, write: if isAdmin();
     }
   }
