@@ -21,12 +21,14 @@ export function RecentActivities() {
     const { activities, loading } = useAppContext();
 
     const sortedActivities = useMemo(() => {
-        // Sort activities by date descending, and then artificially duplicate for scrolling effect if list is short.
-        const sorted = [...activities].sort((a, b) => b.date.getTime() - a.date.getTime());
-        if (sorted.length === 0) return [];
-        // Ensure the list is long enough to scroll, duplicate if necessary
-        return sorted.length < 10 ? [...sorted, ...sorted] : sorted;
+        return [...activities].sort((a, b) => b.date.getTime() - a.date.getTime());
     }, [activities]);
+
+    const activitiesForScrolling = useMemo(() => {
+        if (sortedActivities.length === 0) return [];
+        // Ensure the list is long enough to scroll, duplicate if necessary for the animation
+        return sortedActivities.length < 10 ? [...sortedActivities, ...sortedActivities] : sortedActivities;
+    }, [sortedActivities]);
 
     return (
         <Card>
@@ -44,7 +46,7 @@ export function RecentActivities() {
                     ) : sortedActivities.length > 0 ? (
                         <div className="absolute top-0 animate-scroll-up-slow">
                             <div className="space-y-4">
-                                {sortedActivities.map((activity, index) => (
+                                {activitiesForScrolling.map((activity, index) => (
                                     <div key={`${activity.id}-${index}`} className="flex items-start gap-4">
                                         <div className="flex-1">
                                             <p className="font-medium text-sm leading-tight">
@@ -52,7 +54,7 @@ export function RecentActivities() {
                                             </p>
                                             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                                                 <Badge variant={activityTypeMap[activity.type]?.variant || 'default'}>
-                                                    {activityTypeMap[activity.type]?.text || activity.type}
+                                                    {activityTypeMap[activity.type]?.text || activity.type.replace(/_/g, ' ')}
                                                 </Badge>
                                                 <span>{formatDistanceToNow(activity.date, { addSuffix: true })}</span>
                                             </div>
@@ -61,7 +63,7 @@ export function RecentActivities() {
                                 ))}
                             </div>
                              <div className="space-y-4 mt-4">
-                                {sortedActivities.map((activity, index) => (
+                                {activitiesForScrolling.map((activity, index) => (
                                     <div key={`${activity.id}-${index}-clone`} className="flex items-start gap-4">
                                         <div className="flex-1">
                                             <p className="font-medium text-sm leading-tight">
@@ -69,7 +71,7 @@ export function RecentActivities() {
                                             </p>
                                             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                                                 <Badge variant={activityTypeMap[activity.type]?.variant || 'default'}>
-                                                    {activityTypeMap[activity.type]?.text || activity.type}
+                                                    {activityTypeMap[activity.type]?.text || activity.type.replace(/_/g, ' ')}
                                                 </Badge>
                                                 <span>{formatDistanceToNow(activity.date, { addSuffix: true })}</span>
                                             </div>
