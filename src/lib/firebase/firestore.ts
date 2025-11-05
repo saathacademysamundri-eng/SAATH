@@ -24,7 +24,7 @@ service cloud.firestore {
     // Allow admin full access to everything.
     // Replace "YOUR_ADMIN_UID" with the actual UID of your admin user.
     function isAdmin() {
-      return request.auth.uid == "jpmL48E3sLZj3k9d5pSgP2d13w13";
+      return request.auth.uid == "rSwt0U3gwxNrYzS2ky6P5TnYXtj2";
     }
 
     // Default deny all reads and writes
@@ -916,3 +916,6 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
     }
 }
 
+
+
+    
