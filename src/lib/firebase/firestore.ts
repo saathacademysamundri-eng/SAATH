@@ -684,30 +684,39 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
     }
 }
 
-export async function getTodaysAttendanceSummary(): Promise<{ present: number, absent: number }> {
+export async function getTodaysAttendanceSummary(): Promise<{ present: number, absent: number, classes: { [classId: string]: { present: number, absent: number } } }> {
     try {
         const todayStr = new Date().toISOString().split('T')[0];
         const q = query(collection(db, 'attendance'), where('date', '==', todayStr));
         const querySnapshot = await getDocs(q);
 
-        let present = 0;
-        let absent = 0;
+        let totalPresent = 0;
+        let totalAbsent = 0;
+        const classSummary: { [classId: string]: { present: number, absent: number } } = {};
 
-        querySnapshot.forEach(doc => {
-            const records = doc.data().records;
+        querySnapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const classId = data.classId;
+            if (!classSummary[classId]) {
+                classSummary[classId] = { present: 0, absent: 0 };
+            }
+
+            const records = data.records;
             for (const studentId in records) {
                 if (records[studentId] === 'Present') {
-                    present++;
+                    totalPresent++;
+                    classSummary[classId].present++;
                 } else if (records[studentId] === 'Absent') {
-                    absent++;
+                    totalAbsent++;
+                    classSummary[classId].absent++;
                 }
             }
         });
 
-        return { present, absent };
+        return { present: totalPresent, absent: totalAbsent, classes: classSummary };
     } catch (error) {
         console.error("Error fetching today's attendance summary: ", error);
-        return { present: 0, absent: 0 };
+        return { present: 0, absent: 0, classes: {} };
     }
 }
 

@@ -18,6 +18,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useMemo, useState, useEffect } from 'react';
 import { getTodaysAttendanceSummary } from '@/lib/firebase/firestore';
+import { TodaysAttendance } from './todays-attendance';
+import { RecentActivities } from './recent-activities';
 
 const iconMap: { [key: string]: React.ElementType } = {
   Users,
@@ -134,6 +136,16 @@ export default function DashboardPage() {
             )
         })}
       </div>
+
+       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+            <div className="lg:col-span-3">
+                <TodaysAttendance />
+            </div>
+            <div className="lg:col-span-2">
+                <RecentActivities />
+            </div>
+       </div>
+
        <div className="grid grid-cols-1 gap-6">
         <Card className="col-span-1 shadow-sm lg:col-span-3">
           <CardHeader>
