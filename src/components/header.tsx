@@ -16,10 +16,22 @@ import { Logo } from './logo';
 export function Header() {
   const { settings } = useSettings();
   const [openSearch, setOpenSearch] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
-    document.title = settings.name || 'My Academy';
-  }, [settings.name]);
+    const academyName = settings.name || 'My Academy';
+    const pageName = pathname.split('/').filter(Boolean).pop() || 'dashboard';
+    const title = pageName.charAt(0).toUpperCase() + pageName.slice(1);
+    
+    // Handle special cases or deep routes
+    let pageTitle = title;
+    if (pathname.includes('/students/')) pageTitle = 'Student Profile';
+    if (pathname.includes('/teachers/')) pageTitle = 'Teacher Profile';
+    if (pathname.includes('/exams/')) pageTitle = 'Exam Results';
+
+    document.title = `${pageTitle} | ${academyName}`;
+    
+  }, [pathname, settings.name]);
 
   return (
     <>
