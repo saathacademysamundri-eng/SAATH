@@ -90,6 +90,7 @@ export async function clearActivityHistory() {
             batch.delete(doc.ref);
         });
         await batch.commit();
+        await logActivity('settings_updated', 'Cleared all activity history logs.');
         return { success: true, message: 'Activity history cleared.' };
     } catch (serverError) {
         return { success: false, message: (serverError as Error).message };
@@ -172,6 +173,7 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
     const docRef = doc(db, 'students', studentId);
     try {
         await updateDoc(docRef, studentData);
+        await logActivity('student_updated', `Updated details for student ${studentData.name} (ID: ${studentId}).`, `/students/${studentId}`);
         return { success: true, message: "Student updated successfully." };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: studentData });
@@ -181,12 +183,18 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
 }
 
 export async function deleteStudent(studentId: string) {
-    const docRef = doc(db, 'students', studentId);
+    const studentRef = doc(db, 'students', studentId);
     try {
-        await deleteDoc(docRef);
-        return { success: true, message: "Student deleted successfully." };
+        const studentDoc = await getDoc(studentRef);
+        if (studentDoc.exists()) {
+            const student = studentDoc.data() as Student;
+            await deleteDoc(studentRef);
+            await logActivity('student_deleted', `Deleted student: ${student.name} (ID: ${studentId}).`);
+            return { success: true, message: "Student deleted successfully." };
+        }
+        return { success: false, message: "Student not found." };
     } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
+        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }
@@ -238,6 +246,7 @@ export async function resetMonthlyFees() {
         });
 
         await batch.commit();
+        await logActivity('fee_generated', `Generated next month's fees for all students.`);
         return { success: true, message: "Next month's fees have been generated for all students." };
     } catch (error) {
         console.error("Error resetting monthly fees: ", error);
@@ -279,6 +288,7 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
         };
         const docRef = doc(db, 'teachers', newTeacherId);
         await setDoc(docRef, newTeacher);
+        await logActivity('teacher_added', `Added new teacher: ${teacherData.name}.`, `/teachers/${newTeacherId}`);
         return { success: true, message: "Teacher added successfully." };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: `teachers/[auto-id]`, operation: 'create', requestResourceData: teacherData });
@@ -291,6 +301,7 @@ export async function updateTeacher(teacherId: string, teacherData: Partial<Omit
     const docRef = doc(db, 'teachers', teacherId);
     try {
         await updateDoc(docRef, teacherData);
+        await logActivity('teacher_updated', `Updated details for teacher ${teacherData.name}.`, `/teachers/${teacherId}`);
         return { success: true, message: "Teacher updated successfully." };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: teacherData });
@@ -300,12 +311,18 @@ export async function updateTeacher(teacherId: string, teacherData: Partial<Omit
 }
 
 export async function deleteTeacher(teacherId: string) {
-    const docRef = doc(db, "teachers", teacherId);
+    const teacherRef = doc(db, "teachers", teacherId);
     try {
-        await deleteDoc(docRef);
-        return { success: true, message: "Teacher deleted successfully." };
+        const teacherDoc = await getDoc(teacherRef);
+        if (teacherDoc.exists()) {
+            const teacher = teacherDoc.data() as Teacher;
+            await deleteDoc(teacherRef);
+            await logActivity('teacher_deleted', `Deleted teacher: ${teacher.name} (ID: ${teacherId}).`);
+            return { success: true, message: "Teacher deleted successfully." };
+        }
+        return { success: false, message: "Teacher not found." };
     } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
+        const permissionError = new FirestorePermissionError({ path: teacherRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }
@@ -329,6 +346,7 @@ export async function addClass(name: string) {
         const newClass = { id: newClassId, name: name, subjects: [] };
         const docRef = doc(db, 'classes', newClassId);
         await setDoc(docRef, { id: newClassId, name: name });
+        await logActivity('class_added', `Created new class: ${name}.`);
         return { success: true, message: "Class created successfully." };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'classes/[auto-id]', operation: 'create', requestResourceData: { name } });
@@ -381,6 +399,7 @@ export async function updateClassSubjects(classId: string, subjects: Subject[]) 
         });
 
         await batch.commit();
+        await logActivity('class_updated', `Updated subjects for a class.`);
         return { success: true, message: "Class subjects updated successfully." };
 
     } catch (serverError) {
@@ -412,6 +431,7 @@ export async function seedDatabase() {
     });
 
     await batch.commit();
+    await logActivity('database_seeded', `Database populated with initial data.`);
     return { success: true, message: 'Database seeded successfully!' };
   } catch (serverError) {
     const permissionError = new FirestorePermissionError({ path: '[multiple]', operation: 'write', requestResourceData: { seeding: true } });
@@ -481,6 +501,7 @@ export async function deleteIncomeRecord(incomeId: string) {
                 transaction.update(studentRef, { totalFee: newTotalFee, feeStatus: newFeeStatus });
             }
             transaction.delete(incomeRef);
+            await logActivity('fee_reversal', `Reversed payment of ${incomeData.amount} for ${incomeData.studentName}.`);
         });
 
         return { success: true, message: 'Income record deleted and student balance updated.' };
@@ -512,6 +533,7 @@ export async function updateIncomeRecord(incomeId: string, newAmount: number) {
                 transaction.update(studentRef, { totalFee: newTotalFee, feeStatus: newFeeStatus });
             }
             transaction.update(incomeRef, { amount: newAmount });
+            await logActivity('fee_updated', `Updated payment for ${incomeData.studentName} to ${newAmount}.`);
         });
         return { success: true, message: 'Income record updated and student balance adjusted.' };
     } catch (serverError) {
@@ -527,6 +549,7 @@ export async function updateIncomeRecord(incomeId: string, newAmount: number) {
 export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>) {
     try {
         const docRef = await addDoc(collection(db, 'expenses'), { ...expenseData, date: serverTimestamp() });
+        await logActivity('expense_added', `Added new expense: ${expenseData.description} for ${expenseData.amount}.`);
         return { success: true, message: 'Expense record added.', id: docRef.id };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'expenses/[auto-id]', operation: 'create', requestResourceData: expenseData });
@@ -545,6 +568,7 @@ export async function updateExpense(expenseId: string, data: { description: stri
     const docRef = doc(db, 'expenses', expenseId);
     try {
         await updateDoc(docRef, data);
+        await logActivity('expense_updated', `Updated expense: ${data.description}.`);
         return { success: true };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: data });
@@ -576,6 +600,7 @@ export async function deleteExpense(expenseId: string) {
                 }
             }
             transaction.delete(expenseRef);
+            await logActivity('expense_deleted', `Deleted expense: ${expenseData.description}.`);
         });
         return { success: true, message: "Expense deleted and any associated payout reversed." };
     } catch (serverError) {
@@ -620,8 +645,10 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
             const reportRef = doc(collection(db, 'reports'));
             batch.set(reportRef, { ...reportData, teacherId, teacherName, payoutId: payoutRef.id, reportDate: payoutTimestamp });
         }
-
+        
         await batch.commit();
+
+        await logActivity('teacher_payout', `Paid ${amount.toLocaleString()} PKR to teacher ${teacherName}.`, `/teachers/${teacherId}`);
         return { success: true, message: `Successfully paid ${amount.toLocaleString()} PKR to ${teacherName}.` };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: '[multiple]', operation: 'write', requestResourceData: { teacherId, amount } });
@@ -677,6 +704,7 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
     const docRef = doc(db, 'attendance', `${attendanceData.date}_${attendanceData.classId}`);
     try {
         await setDoc(docRef, attendanceData, { merge: true });
+        await logActivity('attendance_marked', `Marked attendance for class ${attendanceData.className}.`);
         return { success: true, message: 'Attendance saved successfully.' };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'write', requestResourceData: attendanceData });
@@ -801,6 +829,7 @@ export async function saveTeacherAttendance(date: string, records: { [teacherId:
 
     try {
         await batch.commit();
+        await logActivity('attendance_marked', `Marked attendance for teachers.`);
         return { success: true, message: 'Teacher attendance saved.' };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'teacher_attendance/[auto-id]', operation: 'write', requestResourceData: records });
@@ -865,6 +894,7 @@ export async function updateExam(examId: string, examData: Partial<Omit<Exam, 'i
     const docRef = doc(db, 'exams', examId);
     try {
         await updateDoc(docRef, examData);
+        await logActivity('exam_updated', `Updated exam: ${examData.name}.`);
         return { success: true, message: 'Exam updated successfully.' };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: examData });
@@ -876,8 +906,14 @@ export async function updateExam(examId: string, examData: Partial<Omit<Exam, 'i
 export async function deleteExam(examId: string) {
     const docRef = doc(db, 'exams', examId);
     try {
-        await deleteDoc(docRef);
-        return { success: true, message: 'Exam deleted successfully.' };
+        const examDoc = await getDoc(docRef);
+        if (examDoc.exists()) {
+            const exam = examDoc.data() as Exam;
+            await deleteDoc(docRef);
+            await logActivity('exam_deleted', `Deleted exam: ${exam.name}.`);
+            return { success: true, message: 'Exam deleted successfully.' };
+        }
+        return { success: false, message: 'Exam not found.' };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
@@ -906,6 +942,7 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
     const docRef = doc(db, 'exams', examId);
     try {
         await updateDoc(docRef, { results });
+        await logActivity('exam_results_saved', `Saved results for an exam.`);
         return { success: true, message: 'Exam results saved successfully.' };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { results } });

@@ -2,7 +2,7 @@
 
 export type Activity = {
     id: string;
-    type: 'new_admission' | 'fee_payment' | 'exam_created';
+    type: 'new_admission' | 'fee_payment' | 'exam_created' | 'teacher_payout' | 'settings_updated' | 'student_deleted' | 'teacher_deleted';
     message: string;
     date: Date;
     link?: string;
@@ -121,23 +121,6 @@ export const dashboardStats = [
     { title: 'New Admissions', value: '82', change: '+20.1%', icon: 'UserPlus' },
     { title: 'Daily Fees Collected', value: '75,000 PKR', change: '-5.0%', icon: 'Wallet' },
     { title: 'Pending Fees', value: '120,000 PKR', change: '+2.3%', icon: 'Hourglass' },
-];
-
-export const recentActivities: Activity[] = [
-    { id: '1', type: 'fee_payment', message: 'Payment of 1000 PKR received from Ali Khan.', date: new Date() },
-    { id: '2', type: 'new_admission', message: 'New admission: Sara Ahmed', date: new Date() },
-    { id: '3', type: 'fee_payment', message: 'Payment of 1000 PKR received from Fatima Aslam.', date: new Date() },
-    { id: '4', type: 'exam_created', message: 'Test created: Physics', date: new Date() },
-    { id: '5', type: 'fee_payment', message: 'Payment of 500 PKR received from Umar Farooq.', date: new Date() },
-];
-
-export const feeCollectionData = [
-    { month: 'Jan', collected: 400000, pending: 240000 },
-    { month: 'Feb', collected: 300000, pending: 139800 },
-    { month: 'Mar', collected: 500000, pending: 98000 },
-    { month: 'Apr', collected: 478000, pending: 39080 },
-    { month: 'May', collected: 689000, pending: 48000 },
-    { month: 'Jun', collected: 539000, pending: 38000 },
 ];
 
 export let students: Student[] = [

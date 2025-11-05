@@ -184,7 +184,7 @@ export default function SettingsPage() {
 
   const handleSaveGeneral = async () => {
     setIsSaving(true);
-    await updateSettings({ name, address, phone, logo, academicSession });
+    await updateSettings({ name, address, phone, logo, academicSession }, "Updated general academy settings.");
     setIsSaving(false);
     toast({
       title: 'Settings Saved',
@@ -194,7 +194,7 @@ export default function SettingsPage() {
 
   const handleSaveAppearance = async () => {
     setIsSaving(true);
-    await updateSettings({ preloaderStyle });
+    await updateSettings({ preloaderStyle }, "Updated application appearance settings.");
     setIsSaving(false);
     toast({
       title: 'Appearance Saved',
@@ -212,7 +212,7 @@ export default function SettingsPage() {
       return;
     }
     setIsSaving(true);
-    await updateSettings({ autoLockEnabled, autoLockTimeout, securityPin });
+    await updateSettings({ autoLockEnabled, autoLockTimeout, securityPin }, "Updated security settings.");
     setIsSaving(false);
     toast({
       title: 'Security Saved',
@@ -236,7 +236,7 @@ export default function SettingsPage() {
         absentTemplate,
         paymentReceiptTemplate,
         teacherAbsentTemplate,
-    });
+    }, "Updated WhatsApp integration and template settings.");
     setIsSaving(false);
     toast({
       title: 'Settings Saved',

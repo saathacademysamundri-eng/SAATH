@@ -1,7 +1,7 @@
 
 'use client';
 
-import { getSettings as getDBSettings, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
+import { getSettings as getDBSettings, logActivity, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 
 export type StyleProps = {
@@ -100,7 +100,7 @@ const defaultSettings: Settings = {
 
 interface SettingsContextType {
     settings: Settings;
-    updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
+    updateSettings: (newSettings: Partial<Settings>, logMessage?: string) => Promise<void>;
     isSettingsLoading: boolean;
 }
 
@@ -136,7 +136,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     loadSettings();
   }, [loadSettings]);
 
-  const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
+  const updateSettings = useCallback(async (newSettings: Partial<Settings>, logMessage?: string) => {
     const { landingPage, ...otherSettings } = newSettings;
     const updatedSettings: Settings = { 
       ...settings, 
@@ -150,6 +150,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
     if (landingPage) {
         await updateDBSettings('landing-page', { sections: landingPage.sections });
+    }
+
+    if (logMessage) {
+        await logActivity('settings_updated', logMessage, '/settings');
     }
 
   }, [settings]);
