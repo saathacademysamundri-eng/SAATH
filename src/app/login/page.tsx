@@ -58,10 +58,10 @@ export default function LoginPage() {
                         {settings.name}
                     </h1>
                 </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-900">
                 Login to system
               </h2>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-500">
                 Please enter your login information.
               </p>
             </div>
