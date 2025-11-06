@@ -12,6 +12,7 @@ export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // If not loading, redirect based on user auth state.
     if (!loading) {
       if (user) {
         router.replace('/dashboard');
@@ -21,5 +22,7 @@ export default function RootPage() {
     }
   }, [user, loading, router]);
 
+  // While checking auth state, show a preloader.
+  // This prevents any flash of content before redirection.
   return <GlobalPreloader />;
 }

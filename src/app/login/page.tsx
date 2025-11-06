@@ -4,8 +4,7 @@
 import { LoginForm } from '@/components/login/login-form';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
 
 export default function LoginPage() {
@@ -15,8 +14,22 @@ export default function LoginPage() {
   useEffect(() => {
     setIsClient(true);
     setBgImageId(Math.floor(Math.random() * 1000) + 1);
-    document.title = 'Login | Academy';
   }, []);
+
+  useEffect(() => {
+    const cachedSettings = sessionStorage.getItem('cachedSettings');
+    let academyName = 'My Academy';
+    if (cachedSettings) {
+      try {
+        const settings = JSON.parse(cachedSettings);
+        academyName = settings.name || 'My Academy';
+      } catch (e) {
+        console.error("Failed to parse cached settings for title");
+      }
+    }
+    document.title = `Login | ${academyName}`;
+  }, []);
+
 
   if (!isClient) {
     return (
@@ -35,16 +48,11 @@ export default function LoginPage() {
             {/* Background texture */}
             <div className="absolute inset-0 bg-[url('/grid.svg')] bg-repeat opacity-5 [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]"></div>
 
-            <Link href="/" className="absolute top-4 left-4 z-10 inline-flex items-center text-sm text-muted-foreground hover:text-primary">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Link>
-
           <div className="relative z-10 mx-auto w-full max-w-sm">
             <div className="mb-8 text-left">
                 <div className="flex flex-col items-start gap-4 mb-4">
                     <div className="h-20 w-20">
-                        <Logo noText />
+                        <Logo noText onLogin />
                     </div>
                 </div>
               <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-900">

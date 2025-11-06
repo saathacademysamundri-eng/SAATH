@@ -16,7 +16,7 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
   const logoSrc = settings.logo || '/logo.png';
   const academyName = settings.name || 'My Academy';
 
-  if (isSettingsLoading && !isClient) {
+  if (!isClient || (isSettingsLoading && !sessionStorage.getItem('cachedSettings'))) {
     return (
         <div className="flex items-center gap-2 font-headline text-2xl font-bold text-primary">
             <Skeleton className="h-10 w-10 rounded-full" />
@@ -31,7 +31,6 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
             <div className='h-24 w-24 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
                 <img src={logoSrc} alt="logo" className="object-cover w-full h-full" />
             </div>
-            <span className="font-bold tracking-tighter text-3xl">{academyName}</span>
         </div>
     )
   }
