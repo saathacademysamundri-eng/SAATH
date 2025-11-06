@@ -50,13 +50,18 @@ export default function LoginPage() {
 
           <div className="relative z-10 mx-auto w-full max-w-sm">
             <div className="mb-8 text-left">
-                <div className="h-16 w-auto mb-4">
-                    <Logo onLogin />
+                <div className="flex flex-col items-start gap-4 mb-4">
+                    <div className="h-20 w-20">
+                        <Logo noText />
+                    </div>
+                    <h1 className="text-3xl font-bold tracking-tight text-primary">
+                        {settings.name}
+                    </h1>
                 </div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+              <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
                 Login to system
-              </h1>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              </h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Please enter your login information.
               </p>
             </div>
