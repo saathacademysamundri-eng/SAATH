@@ -50,53 +50,37 @@ export function LoginForm() {
   };
 
   return (
-    <form className="grid gap-8" onSubmit={handleLogin}>
-      <div className="relative">
+    <form className="grid gap-6" onSubmit={handleLogin}>
+      <div className="grid gap-2">
+        <Label htmlFor="email">Email Address</Label>
         <Input
           id="email"
           type="email"
-          placeholder=" " // Required for the label animation
-          className="peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent px-0 py-2.5 text-base text-gray-900 focus:border-primary focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white dark:focus:border-primary"
+          placeholder="admin@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <Label
-          htmlFor="email"
-          className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-base text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-primary dark:text-gray-400 peer-focus:dark:text-primary"
-        >
-          Email Address
-        </Label>
       </div>
-      <div className="relative">
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <a
+              href="#"
+              className="text-sm font-medium text-primary hover:underline"
+              tabIndex={-1}
+              onClick={(e) => e.preventDefault()}
+            >
+              Forgot password?
+            </a>
+        </div>
         <Input
           id="password"
           type="password"
-          placeholder=" " // Required for the label animation
-          className="peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent px-0 py-2.5 text-base text-gray-900 focus:border-primary focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-white dark:focus:border-primary"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <Label
-          htmlFor="password"
-          className="absolute top-3 -z-10 origin-[0] -translate-y-6 scale-75 transform text-base text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-0 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-primary dark:text-gray-400 peer-focus:dark:text-primary"
-        >
-          Password
-        </Label>
-      </div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-           {/* Checkbox can be added here if needed */}
-        </div>
-        <a
-          href="#"
-          className="text-sm font-medium text-primary hover:underline"
-          tabIndex={-1}
-          onClick={(e) => e.preventDefault()}
-        >
-          Forgot password?
-        </a>
       </div>
       <Button
         type="submit"
