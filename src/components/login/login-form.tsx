@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase/config';
-import { getSettings, updateSettings } from '@/lib/firebase/firestore';
+import { getSettings } from '@/lib/firebase/firestore';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';

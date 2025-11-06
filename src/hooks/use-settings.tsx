@@ -106,8 +106,24 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
+// Function to get initial settings from cache or defaults
+const getInitialSettings = (): Settings => {
+    if (typeof window !== 'undefined') {
+        const cachedSettings = sessionStorage.getItem('cachedSettings');
+        if (cachedSettings) {
+            try {
+                return { ...defaultSettings, ...JSON.parse(cachedSettings) };
+            } catch (e) {
+                console.error("Failed to parse cached settings", e);
+            }
+        }
+    }
+    return defaultSettings;
+};
+
+
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-  const [settings, setSettingsState] = useState<Settings>(defaultSettings);
+  const [settings, setSettingsState] = useState<Settings>(getInitialSettings);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
 
   const loadSettings = useCallback(async () => {
@@ -123,10 +139,15 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         };
 
       setSettingsState(mergedSettings);
+      
+      // Update cache
+      sessionStorage.setItem('cachedSettings', JSON.stringify(mergedSettings));
+
 
     } catch (error) {
       console.error("Failed to load settings:", error);
-      setSettingsState(defaultSettings);
+      // Fallback to initial (possibly cached) state
+      setSettingsState(getInitialSettings());
     } finally {
       setIsSettingsLoading(false);
     }
@@ -144,6 +165,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       landingPage: landingPage ? { sections: landingPage.sections } : settings.landingPage,
     };
     setSettingsState(updatedSettings);
+
+    // Update cache immediately
+    sessionStorage.setItem('cachedSettings', JSON.stringify(updatedSettings));
+
 
     if (Object.keys(otherSettings).length > 0) {
         await updateDBSettings('details', otherSettings);
