@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { auth } from '@/lib/firebase/config';
 import { signOut } from 'firebase/auth';
-import { CreditCard, LifeBuoy, LogOut, Settings, User, MessageCircleQuestion } from 'lucide-react';
+import { LifeBuoy, LogOut, Settings, User, MessageCircleQuestion, Database } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -39,11 +39,17 @@ export function UserNav() {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Super Admin</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              admin@example.com
-            </p>
+          <div className="flex flex-col items-center gap-2 py-2">
+            <Avatar className="h-16 w-16">
+              <AvatarImage src="https://i.pravatar.cc/100" alt="Admin" data-ai-hint="male portrait" />
+              <AvatarFallback>SA</AvatarFallback>
+            </Avatar>
+            <div className="text-center">
+              <p className="text-sm font-medium leading-none">Super Admin</p>
+              <p className="text-xs leading-none text-muted-foreground">
+                admin@example.com
+              </p>
+            </div>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -54,16 +60,16 @@ export function UserNav() {
               <span>Profile</span>
             </DropdownMenuItem>
           </Link>
-          <Link href="/billing">
-             <DropdownMenuItem>
-              <CreditCard className="mr-2 h-4 w-4" />
-              <span>Billing</span>
-            </DropdownMenuItem>
-          </Link>
           <Link href="/settings">
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
+            </DropdownMenuItem>
+          </Link>
+           <Link href="/settings?tab=data">
+            <DropdownMenuItem>
+              <Database className="mr-2 h-4 w-4" />
+              <span>Data Management</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
