@@ -18,6 +18,7 @@ import { signOut } from 'firebase/auth';
 import { LifeBuoy, LogOut, Settings, User, MessageCircleQuestion, Database } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Logo } from './logo';
 
 export function UserNav() {
   const router = useRouter();
@@ -31,10 +32,9 @@ export function UserNav() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-          <Avatar className="h-9 w-9">
-            <AvatarImage src="https://i.pravatar.cc/100" alt="Admin" data-ai-hint="male portrait" />
-            <AvatarFallback>SA</AvatarFallback>
-          </Avatar>
+           <div className='h-9 w-9 bg-sidebar-primary text-sidebar-primary-foreground rounded-full flex items-center justify-center overflow-hidden shrink-0'>
+              <Logo noText={true} />
+          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>

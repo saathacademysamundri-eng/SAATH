@@ -1,4 +1,5 @@
 
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -9,6 +10,9 @@ export const metadata: Metadata = {
   title: 'My Academy',
   description: 'An Academy Management System',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({
