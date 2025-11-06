@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Logo } from '@/components/logo';
 
 export default function LoginPage() {
   const { settings, isSettingsLoading } = useSettings();
@@ -36,17 +37,22 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-svh w-full items-center justify-center bg-gray-100 dark:bg-gray-900">
       <div className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl md:h-auto md:min-h-[550px] md:flex-row">
+        
         {/* Left Side - Login Form */}
-        <div className="flex w-full flex-col justify-center p-8 md:w-1/2 lg:p-12">
-          <Button variant="ghost" size="sm" asChild className="absolute top-4 left-4 text-muted-foreground">
-             <Link href="#">
+        <div className="relative flex w-full flex-col justify-center p-8 md:w-1/2 lg:p-12">
+            {/* Background texture */}
+            <div className="absolute inset-0 bg-[url('/grid.svg')] bg-repeat opacity-5 [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]"></div>
+
+            <Link href="/" className="absolute top-4 left-4 z-10 inline-flex items-center text-sm text-muted-foreground hover:text-primary">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Link>
-          </Button>
 
-          <div className="mx-auto w-full max-w-sm">
+          <div className="relative z-10 mx-auto w-full max-w-sm">
             <div className="mb-8 text-left">
+                <div className="h-16 w-auto mb-4">
+                    <Logo onLogin />
+                </div>
               <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
                 Login to system
               </h1>
