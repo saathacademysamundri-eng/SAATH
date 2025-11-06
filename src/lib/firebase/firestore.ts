@@ -33,7 +33,9 @@ export async function getRecentActivities(count = 50): Promise<Activity[]> {
             const data = doc.data();
             return {
                 id: doc.id,
-                ...data,
+                type: data.type,
+                message: data.message,
+                link: data.link,
                 date: data.date.toDate(),
             } as Activity;
         });
