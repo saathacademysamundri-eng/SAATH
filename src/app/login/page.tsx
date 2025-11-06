@@ -2,7 +2,6 @@
 'use client';
 
 import { LoginForm } from '@/components/login/login-form';
-import { useSettings } from '@/hooks/use-settings';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -10,23 +9,16 @@ import Link from 'next/link';
 import { Logo } from '@/components/logo';
 
 export default function LoginPage() {
-  const { settings, isSettingsLoading } = useSettings();
   const [isClient, setIsClient] = useState(false);
   const [bgImageId, setBgImageId] = useState(1);
 
   useEffect(() => {
     setIsClient(true);
-    // Randomize background image on each load
     setBgImageId(Math.floor(Math.random() * 1000) + 1);
+    document.title = 'Login | Academy';
   }, []);
 
-  useEffect(() => {
-    if (!isSettingsLoading && settings.name) {
-      document.title = `Login | ${settings.name}`;
-    }
-  }, [isSettingsLoading, settings.name]);
-
-  if (isSettingsLoading || !isClient) {
+  if (!isClient) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -54,9 +46,6 @@ export default function LoginPage() {
                     <div className="h-20 w-20">
                         <Logo noText />
                     </div>
-                    <h1 className="text-3xl font-bold tracking-tight text-primary">
-                        {settings.name}
-                    </h1>
                 </div>
               <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-900">
                 Login to system
