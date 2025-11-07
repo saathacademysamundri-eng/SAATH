@@ -47,7 +47,7 @@ import { QrCodeDialog } from './qr-code-dialog';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
-  const { teachers, students: allStudents, loading, refreshData } = useAppContext();
+  const { teachers, students: allStudents, income, loading, refreshData } = useAppContext();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -69,20 +69,24 @@ export default function TeachersPage() {
     teachers.forEach(teacher => {
         stats.set(teacher.id, { gross: 0, net: 0 });
     });
+    
+    const unpaidIncome = income.filter(i => !i.isPaidOut);
 
-    // Calculate earnings from students' outstanding fees
-    allStudents.forEach(student => {
-      if (student.totalFee > 0) {
-        const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
-        if (studentTeachers.length > 0) {
-          const sharePerTeacher = student.totalFee / studentTeachers.length;
-          studentTeachers.forEach(teacherId => {
-            if (stats.has(teacherId)) {
-              stats.get(teacherId)!.gross += sharePerTeacher;
+    unpaidIncome.forEach(inc => {
+        const student = allStudents.find(s => s.id === inc.studentId);
+        if (student) {
+            const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
+            if (studentTeachers.length > 0) {
+                const sharePerTeacher = inc.amount / studentTeachers.length;
+                
+                // Check which of this student's teachers are in the main teachers list
+                student.subjects.forEach(sub => {
+                    if (stats.has(sub.teacher_id)) {
+                        stats.get(sub.teacher_id)!.gross += sharePerTeacher;
+                    }
+                });
             }
-          });
         }
-      }
     });
 
     stats.forEach(stat => {
@@ -90,7 +94,7 @@ export default function TeachersPage() {
     });
 
     return stats;
-  }, [teachers, allStudents]);
+  }, [teachers, allStudents, income]);
 
   const filteredTeachers = teachers.filter(teacher =>
     teacher.name.toLowerCase().includes(search.toLowerCase())
@@ -257,3 +261,5 @@ export default function TeachersPage() {
     </div>
   );
 }
+
+    
