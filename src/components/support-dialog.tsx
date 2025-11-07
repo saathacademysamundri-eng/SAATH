@@ -4,6 +4,8 @@
 import {
   DialogContent,
   DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { useSettings } from '@/hooks/use-settings';
 import { Button } from './ui/button';
@@ -24,10 +26,10 @@ export function SupportDialog() {
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gray-800 overflow-hidden border-2 border-gray-700">
           <img src="https://i.postimg.cc/25bFSj1P/Whats-App-Image-2025-11-07-at-2-10-20-PM.jpg" alt="Developer Logo" className="object-cover w-full h-full" />
         </div>
-        <h2 className="text-3xl font-bold">Support</h2>
-        <p className="text-sm text-gray-400">
+        <DialogTitle className="text-3xl font-bold">Support</DialogTitle>
+        <DialogDescription className="text-sm text-gray-400">
           Contact Information for the SchoolUp Platform.
-        </p>
+        </DialogDescription>
       </DialogHeader>
       <div className="py-4 px-2 space-y-4 text-center text-gray-300 text-sm">
         <p>
