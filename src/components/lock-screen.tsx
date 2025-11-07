@@ -13,7 +13,7 @@ import { Button } from './ui/button';
 import { LogOut, Facebook, Instagram, MessageSquare } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { useLock } from '@/hooks/use-lock';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
@@ -26,6 +26,12 @@ export function LockScreen() {
   const { toast } = useToast();
   const router = useRouter();
   const [pin, setPin] = useState('');
+
+  useEffect(() => {
+    if (!isSettingsLoading) {
+      document.title = `Lock Screen | ${settings.name}`;
+    }
+  }, [isSettingsLoading, settings.name]);
 
   const handlePinChange = (value: string) => {
     setPin(value);
