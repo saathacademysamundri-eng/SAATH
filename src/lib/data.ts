@@ -39,6 +39,7 @@ export type Student = {
     totalFee: number; // This represents the outstanding balance
     monthlyFee: number; // This is the base fee charged each month
     status: 'active' | 'graduated' | 'archived'; 
+    imageUrl?: string;
 };
 
 export type Teacher = {

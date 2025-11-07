@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { updateStudentStatus } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function StudentsPage() {
   const { students: studentList, loading, refreshData } = useAppContext();
@@ -171,6 +172,7 @@ export default function StudentsPage() {
                     <TableCell><Skeleton className="h-5 w-12" /></TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
                         <Skeleton className="h-5 w-32" />
                       </div>
                     </TableCell>
@@ -185,7 +187,13 @@ export default function StudentsPage() {
                   <TableRow key={student.id}>
                     <TableCell className="font-medium">{student.id}</TableCell>
                     <TableCell>
-                      <div className="font-medium">{student.name}</div>
+                      <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={student.imageUrl} alt={student.name} />
+                            <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="font-medium">{student.name}</div>
+                      </div>
                     </TableCell>
                     <TableCell>
                         <Badge variant={

@@ -21,13 +21,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { type Student, type StudentSubject, type Subject } from "@/lib/data"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { updateStudent } from "@/lib/firebase/firestore"
-import { Loader2 } from "lucide-react"
+import { Loader2, User, Upload } from "lucide-react"
 import { useAppContext } from "@/hooks/use-app-context"
 
 type SelectedSubjectInfo = {
@@ -55,9 +55,25 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
              return { subject: subjectDetails!, teacherId: ss.teacher_id };
          }).filter(item => item.subject);
     });
+    const [imageUrl, setImageUrl] = useState(student.imageUrl || '');
     
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const male_avatar = "https://i.postimg.cc/x1BZ31bs/male.png";
+    const female_avatar = "https://i.postimg.cc/7hgPwR8W/1487318.png";
+
+    useEffect(() => {
+        // only set default if the current imageUrl is one of the defaults
+        if(imageUrl === male_avatar || imageUrl === female_avatar || !imageUrl){
+             if(gender === 'male'){
+                setImageUrl(male_avatar)
+            } else {
+                setImageUrl(female_avatar)
+            }
+        }
+    }, [gender])
 
     const handleClassChange = (value: string) => {
         setSelectedClassId(value);
@@ -119,6 +135,7 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
             class: currentClassDetails?.name || '',
             subjects: studentSubjects,
             monthlyFee: monthlyFee,
+            imageUrl: imageUrl.trim(),
         };
 
         const result = await updateStudent(student.id, updatedStudentData);
@@ -139,6 +156,17 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
         setIsSaving(false);
     };
 
+    const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImageUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const currentClass = classes.find(c => c.id === selectedClassId);
 
   return (
@@ -150,6 +178,37 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
+            <div className="space-y-2">
+                <Label htmlFor="imageUrl">Photo URL</Label>
+                <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-full border flex items-center justify-center bg-muted overflow-hidden">
+                        {imageUrl ? (
+                            <img src={imageUrl} alt="Student" className="w-full h-full object-cover" />
+                        ) : (
+                            <User className="w-10 h-10 text-muted-foreground" />
+                        )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                        <Input 
+                            id="imageUrl" 
+                            placeholder="https://example.com/photo.png"
+                            value={imageUrl}
+                            onChange={(e) => setImageUrl(e.target.value)}
+                        />
+                         <input 
+                            type="file" 
+                            ref={fileInputRef}
+                            onChange={handleImageFileChange}
+                            className="hidden"
+                            accept="image/*"
+                        />
+                        <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
+                            <Upload className="mr-2" />
+                            Upload from Computer
+                        </Button>
+                    </div>
+                </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
                     <Label htmlFor="name">Full Name</Label>
