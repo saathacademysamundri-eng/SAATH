@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Payout } from '@/lib/data';
 
 const months = [
     { value: '1', label: 'January' }, { value: '2', label: 'February' }, { value: '3', label: 'March' },
@@ -24,7 +25,7 @@ const months = [
 ];
 
 export default function AcademySharePage() {
-  const { teachers, allPayouts, expenses, loading: isAppLoading } = useAppContext();
+  const { academyShare, expenses, loading: isAppLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const router = useRouter();
@@ -33,53 +34,46 @@ export default function AcademySharePage() {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
   const availableYears = useMemo(() => {
-    const years = new Set(allPayouts.map(p => p.payoutDate.getFullYear().toString()));
+    const years = new Set(academyShare.map(p => p.payoutDate.getFullYear().toString()));
     return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
-  }, [allPayouts]);
+  }, [academyShare]);
 
-  const filteredPayouts = useMemo(() => {
-    if (!selectedYear) return allPayouts;
+  const filteredAcademyShare = useMemo(() => {
+    if (!selectedYear) return academyShare;
 
-    return allPayouts.filter(payout => {
-      const payoutYear = payout.payoutDate.getFullYear().toString();
-      const payoutMonth = (payout.payoutDate.getMonth() + 1).toString();
+    return academyShare.filter(share => {
+      const shareYear = share.payoutDate.getFullYear().toString();
+      const shareMonth = (share.payoutDate.getMonth() + 1).toString();
       
       if (selectedYear && !selectedMonth) {
-        return payoutYear === selectedYear;
+        return shareYear === selectedYear;
       }
       if (selectedYear && selectedMonth) {
-        return payoutYear === selectedYear && payoutMonth === selectedMonth;
+        return shareYear === selectedYear && shareMonth === selectedMonth;
       }
       return true;
     });
-  }, [allPayouts, selectedYear, selectedMonth]);
+  }, [academyShare, selectedYear, selectedMonth]);
 
-  const academyShareData = useMemo(() => {
+  const shareByTeacher = useMemo(() => {
     if (isAppLoading) return [];
 
-    const shareByTeacher = new Map<string, { teacher: any; totalShare: number }>();
+    const shareMap = new Map<string, { teacherName: string; teacherId: string; totalShare: number }>();
 
-    teachers.forEach(teacher => {
-      shareByTeacher.set(teacher.id, { teacher, totalShare: 0 });
-    });
-
-    filteredPayouts.forEach(payout => {
-      if (shareByTeacher.has(payout.teacherId)) {
-        const entry = shareByTeacher.get(payout.teacherId)!;
-        const academyShare = payout.report?.academyShare || 0;
-        entry.totalShare += academyShare;
+    filteredAcademyShare.forEach(share => {
+      if (!shareMap.has(share.teacherId)) {
+        shareMap.set(share.teacherId, { teacherName: share.teacherName, teacherId: share.teacherId, totalShare: 0 });
       }
+      shareMap.get(share.teacherId)!.totalShare += share.amount;
     });
 
-    return Array.from(shareByTeacher.values())
-      .filter(item => item.totalShare > 0)
-      .sort((a, b) => b.totalShare - a.totalShare);
+    return Array.from(shareMap.values()).sort((a, b) => b.totalShare - a.totalShare);
 
-  }, [isAppLoading, teachers, filteredPayouts]);
+  }, [isAppLoading, filteredAcademyShare]);
 
   const totalAcademyEarnings = useMemo(() => {
-    return academyShareData.reduce((acc, curr) => acc + curr.totalShare, 0);
-  }, [academyShareData]);
+    return shareByTeacher.reduce((acc, curr) => acc + curr.totalShare, 0);
+  }, [shareByTeacher]);
 
    const filteredManualExpenses = useMemo(() => {
     const manualExpenses = expenses.filter(e => e.source === 'manual');
@@ -98,7 +92,6 @@ export default function AcademySharePage() {
   const totalManualExpenses = useMemo(() => {
     return filteredManualExpenses.reduce((acc, curr) => acc + curr.amount, 0);
   }, [filteredManualExpenses]);
-
 
   const netAcademyEarnings = totalAcademyEarnings - totalManualExpenses;
 
@@ -129,9 +122,9 @@ export default function AcademySharePage() {
     }
 
     const shareTableHeaders = ["Teacher", "Total Academy Share"];
-    const shareTableRows = academyShareData.map(item => `
+    const shareTableRows = shareByTeacher.map(item => `
         <tr>
-          <td>${item.teacher.name}</td>
+          <td>${item.teacherName}</td>
           <td style="text-align: right;">${item.totalShare.toLocaleString()} PKR</td>
         </tr>
       `).join('');
@@ -352,14 +345,14 @@ export default function AcademySharePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {academyShareData.map(({ teacher, totalShare }) => (
-                <TableRow key={teacher.id} className="cursor-pointer" onClick={() => router.push(`/teachers/${teacher.id}`)}>
+              {shareByTeacher.map(({ teacherName, teacherId, totalShare }) => (
+                <TableRow key={teacherId} className="cursor-pointer" onClick={() => router.push(`/teachers/${teacherId}`)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{teacherName.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <div className="font-medium">{teacher.name}</div>
+                      <div className="font-medium">{teacherName}</div>
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-semibold text-primary">
@@ -367,7 +360,7 @@ export default function AcademySharePage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {academyShareData.length === 0 && (
+              {shareByTeacher.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={2} className="text-center h-24 text-muted-foreground">
                         No payout data available for the selected period.

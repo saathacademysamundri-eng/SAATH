@@ -2,7 +2,7 @@
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity } from '@/lib/data';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -677,6 +677,18 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
         const payoutRef = doc(collection(db, 'teacher_payouts'));
         batch.set(payoutRef, { teacherId, teacherName, amount, payoutDate: payoutTimestamp, incomeIds });
 
+        // Also add to academy share history
+        if (reportData && reportData.academyShare > 0) {
+            const academyShareRef = doc(collection(db, 'academy_share'));
+            batch.set(academyShareRef, {
+                teacherId,
+                teacherName,
+                amount: reportData.academyShare,
+                payoutDate: payoutTimestamp,
+                payoutId: payoutRef.id,
+            });
+        }
+
         incomeIds.forEach(id => batch.update(doc(db, 'income', id), { isPaidOut: true, payoutId: payoutRef.id }));
 
         const expenseRef = doc(collection(db, 'expenses'));
@@ -697,6 +709,7 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
         return { success: false, message: (serverError as Error).message };
     }
 }
+
 
 export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
     const q = query(collection(db, "teacher_payouts"), where("teacherId", "==", teacherId), orderBy("payoutDate", "desc"));
@@ -736,7 +749,18 @@ export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Repor
     return payoutsWithReports;
 }
 
-
+export async function getAcademyShare(): Promise<Payout[]> {
+    const q = query(collection(db, "academy_share"), orderBy("payoutDate", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            payoutDate: data.payoutDate.toDate(),
+        } as Payout;
+    });
+}
 
 
 // Attendance Functions

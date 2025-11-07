@@ -1,8 +1,8 @@
 
 'use client';
 
-import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSubjects, getAllPayouts, getRecentActivities, checkAndGenerateMonthlyFees } from '@/lib/firebase/firestore';
-import type { Class, Expense, Income, Student, Subject, Teacher, TeacherPayout, Report, Activity } from '@/lib/data';
+import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSubjects, getAllPayouts, getRecentActivities, checkAndGenerateMonthlyFees, getAcademyShare } from '@/lib/firebase/firestore';
+import type { Class, Expense, Income, Student, Subject, Teacher, TeacherPayout, Report, Activity, Payout } from '@/lib/data';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { GlobalPreloader } from '@/components/global-preloader';
@@ -16,6 +16,7 @@ interface AppContextType {
   allSubjects: Subject[];
   allPayouts: (TeacherPayout & { report?: Report, academyShare?: number })[];
   activities: Activity[];
+  academyShare: Payout[];
   loading: boolean;
   refreshData: () => Promise<void>;
 }
@@ -31,6 +32,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
   const [allPayouts, setAllPayouts] = useState<(TeacherPayout & { report?: Report, academyShare?: number })[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [academyShare, setAcademyShare] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async (isInitialLoad = false) => {
@@ -52,6 +54,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         allSubjectsData,
         allPayoutsData,
         activitiesData,
+        academyShareData,
       ] = await Promise.all([
         getStudents(),
         getTeachers(),
@@ -61,6 +64,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         getAllSubjects(),
         getAllPayouts(),
         getRecentActivities(),
+        getAcademyShare(),
       ]);
 
       setStudents(studentsData);
@@ -71,6 +75,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setAllSubjects(allSubjectsData);
       setAllPayouts(allPayoutsData);
       setActivities(activitiesData);
+      setAcademyShare(academyShareData);
 
     } catch (error) {
       console.error("Failed to fetch app data:", error);
@@ -95,6 +100,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     allSubjects,
     allPayouts,
     activities,
+    academyShare,
     loading,
     refreshData: () => fetchData(false),
   };
