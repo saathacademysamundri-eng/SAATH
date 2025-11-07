@@ -52,7 +52,7 @@ export function LoginForm() {
   return (
     <form className="grid gap-6" onSubmit={handleLogin}>
       <div className="grid gap-2">
-        <Label htmlFor="email">Email Address</Label>
+        <Label htmlFor="email" className="text-gray-700">Email Address</Label>
         <Input
           id="email"
           type="email"
@@ -60,11 +60,12 @@ export function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          className="bg-gray-100 dark:bg-gray-200 text-gray-900"
         />
       </div>
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-gray-700">Password</Label>
             <a
               href="#"
               className="text-sm font-medium text-primary hover:underline"
@@ -80,6 +81,7 @@ export function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          className="bg-gray-100 dark:bg-gray-200 text-gray-900"
         />
       </div>
       <Button

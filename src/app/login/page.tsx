@@ -44,16 +44,17 @@ export default function LoginPage() {
       <div className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl md:h-auto md:min-h-[550px] md:flex-row">
         
         {/* Left Side - Login Form */}
-        <div className="relative flex w-full flex-col justify-center p-8 md:w-1/2 lg:p-12">
+        <div className="relative flex w-full flex-col justify-center p-8 md:w-1/2 lg:p-12 text-gray-900 dark:text-gray-900">
             {/* Background texture */}
             <div className="absolute inset-0 bg-[url('/grid.svg')] bg-repeat opacity-5 [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]"></div>
 
           <div className="relative z-10 mx-auto w-full max-w-sm">
             <div className="mb-8 text-left">
-                <div className="flex flex-col items-start gap-4 mb-4">
+                <div className="flex flex-col items-start gap-2 mb-4">
                     <div className="h-20 w-20">
                         <Logo noText onLogin />
                     </div>
+                    <h1 className="text-3xl font-bold tracking-tighter text-gray-900">{academyName}</h1>
                 </div>
               <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
                 Login to system
@@ -63,16 +64,16 @@ export default function LoginPage() {
               </p>
             </div>
             <LoginForm />
-            <div className="mt-8 text-center text-sm text-muted-foreground">
+            <div className="mt-8 text-center text-sm text-gray-500">
               <p>Developed by "Mian Mudassar"</p>
               <div className="mt-2 flex justify-center gap-4">
-                 <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer">
+                 <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-900">
                     <Facebook className="h-4 w-4" />
                 </Link>
-                 <Link href="https://api.whatsapp.com/send?phone=923099969535&text=Hye%20%0AI%20want%20to%20know%20about%20the%20software%20you%20created%2C%20which%20is%20a%20management%20system%20in%20the%20school.%20" target="_blank" rel="noopener noreferrer">
+                 <Link href="https://api.whatsapp.com/send?phone=923099969535&text=Hye%20%0AI%20want%20to%20know%20about%20the%20software%20you%20created%2C%20which%20is%20a%20management%20system%20in%20the%20school.%20" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-900">
                     <MessageSquare className="h-4 w-4" />
                 </Link>
-                <Link href="https://www.instagram.com/mianmudassar_" target="_blank" rel="noopener noreferrer">
+                <Link href="https://www.instagram.com/mianmudassar_" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-900">
                     <Instagram className="h-4 w-4" />
                 </Link>
               </div>
