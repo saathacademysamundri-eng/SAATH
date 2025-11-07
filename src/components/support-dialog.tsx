@@ -26,12 +26,12 @@ export function SupportDialog() {
         </div>
         <h2 className="text-3xl font-bold">Support</h2>
         <p className="text-sm text-gray-400">
-          Contact Information for the {settings.name} Platform.
+          Contact Information for the SchoolUp Platform.
         </p>
       </DialogHeader>
       <div className="py-4 px-2 space-y-4 text-center text-gray-300 text-sm">
         <p>
-          At {settings.name} – A Unique Platform for Smart Schools, we believe that
+          At Schoolup - A Unique Platform for Smart Schools, we believe that
           every question deserves a clear answer and every problem
           deserves a quick solution. Our support team is always here to
           guide you, whether it's about setting up your account, managing
@@ -39,8 +39,8 @@ export function SupportDialog() {
           WhatsApp integration and live data management.
         </p>
         <p>
-          We have designed {settings.name} to be simple, reliable, and family-focused,
-          ensuring that schools can run smarter and parents can
+          We have designed Schoolup to be simple, reliable, and family-
+          focused, ensuring that schools can run smarter and parents can
           stay more connected. If you ever face any issue, need detailed
           guidance, or want to unlock the full potential of our platform, our
           dedicated support team is just a message away.
