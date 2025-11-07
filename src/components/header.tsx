@@ -15,7 +15,7 @@ import { Button } from './ui/button';
 import { useLock } from '@/hooks/use-lock';
 
 export function Header() {
-  const { settings } = useSettings();
+  const { settings, isSettingsLoading } = useSettings();
   const { lock } = useLock();
   const [openSearch, setOpenSearch] = useState(false);
   const pathname = usePathname();
@@ -56,7 +56,7 @@ export function Header() {
         </div>
         <LiveDate />
         <LiveTime />
-        {settings.autoLockEnabled && (
+        {!isSettingsLoading && settings.autoLockEnabled && (
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={lock}>
             <Lock className="h-4 w-4" />
             <span className="sr-only">Lock Screen</span>
