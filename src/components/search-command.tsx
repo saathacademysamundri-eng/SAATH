@@ -8,7 +8,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandHeader,
 } from "@/components/ui/command"
 import { useAppContext } from "@/hooks/use-app-context"
 import { Users, FileText } from "lucide-react"
