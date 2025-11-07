@@ -25,7 +25,7 @@ const months = [
 ];
 
 export default function AcademySharePage() {
-  const { academyShare, expenses, loading: isAppLoading } = useAppContext();
+  const { income, expenses, loading: isAppLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const router = useRouter();
@@ -34,46 +34,32 @@ export default function AcademySharePage() {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
   const availableYears = useMemo(() => {
-    const years = new Set(academyShare.map(p => p.payoutDate.getFullYear().toString()));
+    const years = new Set(income.map(p => p.date.getFullYear().toString()));
     return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
-  }, [academyShare]);
+  }, [income]);
 
-  const filteredAcademyShare = useMemo(() => {
-    if (!selectedYear) return academyShare;
+  const filteredIncome = useMemo(() => {
+    if (!selectedYear) return income;
 
-    return academyShare.filter(share => {
-      const shareYear = share.payoutDate.getFullYear().toString();
-      const shareMonth = (share.payoutDate.getMonth() + 1).toString();
+    return income.filter(inc => {
+      const incYear = inc.date.getFullYear().toString();
+      const incMonth = (inc.date.getMonth() + 1).toString();
       
       if (selectedYear && !selectedMonth) {
-        return shareYear === selectedYear;
+        return incYear === selectedYear;
       }
       if (selectedYear && selectedMonth) {
-        return shareYear === selectedYear && shareMonth === selectedMonth;
+        return incYear === selectedYear && incMonth === selectedMonth;
       }
       return true;
     });
-  }, [academyShare, selectedYear, selectedMonth]);
-
-  const shareByTeacher = useMemo(() => {
-    if (isAppLoading) return [];
-
-    const shareMap = new Map<string, { teacherName: string; teacherId: string; totalShare: number }>();
-
-    filteredAcademyShare.forEach(share => {
-      if (!shareMap.has(share.teacherId)) {
-        shareMap.set(share.teacherId, { teacherName: share.teacherName, teacherId: share.teacherId, totalShare: 0 });
-      }
-      shareMap.get(share.teacherId)!.totalShare += share.amount;
-    });
-
-    return Array.from(shareMap.values()).sort((a, b) => b.totalShare - a.totalShare);
-
-  }, [isAppLoading, filteredAcademyShare]);
+  }, [income, selectedYear, selectedMonth]);
 
   const totalAcademyEarnings = useMemo(() => {
-    return shareByTeacher.reduce((acc, curr) => acc + curr.totalShare, 0);
-  }, [shareByTeacher]);
+    // Academy gets 30% of all income from student fees
+    const grossEarnings = filteredIncome.reduce((acc, curr) => acc + curr.amount, 0);
+    return grossEarnings * 0.3;
+  }, [filteredIncome]);
 
    const filteredManualExpenses = useMemo(() => {
     const manualExpenses = expenses.filter(e => e.source === 'manual');
@@ -120,14 +106,6 @@ export default function AcademySharePage() {
     } else if (selectedYear) {
         dateRangeString = `For Year ${selectedYear}`;
     }
-
-    const shareTableHeaders = ["Teacher", "Total Academy Share"];
-    const shareTableRows = shareByTeacher.map(item => `
-        <tr>
-          <td>${item.teacherName}</td>
-          <td style="text-align: right;">${item.totalShare.toLocaleString()} PKR</td>
-        </tr>
-      `).join('');
     
     const expenseTableHeaders = ["Description", "Category", "Amount"];
     const expenseTableRows = filteredManualExpenses.map(item => `
@@ -190,7 +168,7 @@ export default function AcademySharePage() {
             </div>
              <div class="summary-grid">
                 <div class="summary-card income">
-                    <p>Total Academy Earnings</p>
+                    <p>Total Academy Share (30%)</p>
                     <p class="amount">${totalAcademyEarnings.toLocaleString()} PKR</p>
                 </div>
                  <div class="summary-card expense">
@@ -198,22 +176,10 @@ export default function AcademySharePage() {
                     <p class="amount">${totalManualExpenses.toLocaleString()} PKR</p>
                 </div>
                 <div class="summary-card net">
-                    <p>Net Academy Earnings</p>
+                    <p>Net Academy Profit</p>
                     <p class="amount">${netAcademyEarnings.toLocaleString()} PKR</p>
                 </div>
             </div>
-
-            <h3 class="table-title">Share Per Teacher</h3>
-            <table>
-              <thead>
-                <tr>
-                  ${shareTableHeaders.map(h => `<th>${h}</th>`).join('')}
-                </tr>
-              </thead>
-              <tbody>
-                ${shareTableRows.length > 0 ? shareTableRows : `<tr><td colspan="${shareTableHeaders.length}" style="text-align: center;">No data for this period.</td></tr>`}
-              </tbody>
-            </table>
             
              <h3 class="table-title">Manual Expense Breakdown</h3>
              <table>
@@ -229,8 +195,8 @@ export default function AcademySharePage() {
 
             <table class="final-summary">
                 <tr><th>Total Academy Share</th><td>${totalAcademyEarnings.toLocaleString()} PKR</td></tr>
-                <tr><th>Total Manual Expenses</th><td>${totalManualExpenses.toLocaleString()} PKR</td></tr>
-                <tr style="font-weight: bold; border-top: 2px solid #333;"><th>Net Earnings</th><td>${netAcademyEarnings.toLocaleString()} PKR</td></tr>
+                <tr><th>Total Manual Expenses</th><td>-${totalManualExpenses.toLocaleString()} PKR</td></tr>
+                <tr style="font-weight: bold; border-top: 2px solid #333;"><th>Net Profit</th><td>${netAcademyEarnings.toLocaleString()} PKR</td></tr>
             </table>
 
           </div>
@@ -247,7 +213,7 @@ export default function AcademySharePage() {
         <div>
             <h1 className="text-2xl font-bold tracking-tight">Academy Share</h1>
             <p className="text-muted-foreground">
-                An overview of the academy's revenue share from teacher earnings.
+                An overview of the academy's 30% share from collected student fees.
             </p>
         </div>
         <div className="flex items-center gap-2">
@@ -286,12 +252,10 @@ export default function AcademySharePage() {
           <CardHeader>
               <CardTitle className="flex items-center gap-2">
                   <TrendingUp />
-                  Total Academy Earnings
+                  Total Academy Share
               </CardTitle>
               <CardDescription>
-                  The cumulative 30% share from all teacher payouts
-                  {selectedYear && !selectedMonth && ` for ${selectedYear}`}
-                  {selectedYear && selectedMonth && ` for ${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}`}.
+                  The cumulative 30% share from all collected student fees for the selected period.
               </CardDescription>
           </CardHeader>
           <CardContent>
@@ -316,7 +280,7 @@ export default function AcademySharePage() {
           <CardHeader>
               <CardTitle className="flex items-center gap-2">
                   <Wallet className="text-green-600" />
-                  Net Academy Earnings
+                  Net Academy Profit
               </CardTitle>
               <CardDescription>
                   The academy's final profit after deducting manual expenses.
@@ -328,49 +292,7 @@ export default function AcademySharePage() {
         </Card>
       </div>
 
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Share per Teacher</CardTitle>
-          <CardDescription>
-            The total revenue share generated for the academy by each teacher for the selected period.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Teacher</TableHead>
-                <TableHead className="text-right">Total Academy Share</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {shareByTeacher.map(({ teacherName, teacherId, totalShare }) => (
-                <TableRow key={teacherId} className="cursor-pointer" onClick={() => router.push(`/teachers/${teacherId}`)}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarFallback>{teacherName.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="font-medium">{teacherName}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right font-semibold text-primary">
-                    {totalShare.toLocaleString()} PKR
-                  </TableCell>
-                </TableRow>
-              ))}
-              {shareByTeacher.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={2} className="text-center h-24 text-muted-foreground">
-                        No payout data available for the selected period.
-                    </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1">
        <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -417,3 +339,5 @@ export default function AcademySharePage() {
     </div>
   );
 }
+
+    

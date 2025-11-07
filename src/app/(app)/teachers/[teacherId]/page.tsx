@@ -58,24 +58,29 @@ export default function TeacherProfilePage() {
     const unpaidIncome = income.filter(i => !i.isPaidOut);
     const currentStudentEarnings: StudentEarning[] = [];
     
+    // This is the core logic change. We iterate through actual income records.
     unpaidIncome.forEach(inc => {
         const student = students.find(s => s.id === inc.studentId);
-        if (student && student.subjects.some(sub => sub.teacher_id === teacherData.id)) {
-            // This income is relevant to this teacher.
-            // Find how many teachers are assigned to this student to split the fee
-            const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
-            if (studentTeachers.length > 0) {
-              const earnedShare = inc.amount / studentTeachers.length;
-              
-              const relevantSubject = student.subjects.find(s => s.teacher_id === teacherData.id);
-
-              currentStudentEarnings.push({
-                  student: student,
-                  earnedShare: earnedShare,
-                  subjectName: relevantSubject?.subject_name || 'N/A',
-                  incomeId: inc.id,
-                  incomeDate: inc.date,
-              });
+        if (student) {
+            // Find all subjects this teacher teaches this student
+            const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
+            if (relevantSubjects.length > 0) {
+              // The income amount should be distributed among the fee shares of all subjects for that student
+              const totalFeeShare = student.subjects.reduce((acc, s) => acc + s.fee_share, 0);
+              if (totalFeeShare > 0) {
+                 relevantSubjects.forEach(subject => {
+                    const proportion = subject.fee_share / totalFeeShare;
+                    const earnedShare = inc.amount * proportion;
+                    
+                    currentStudentEarnings.push({
+                        student: student,
+                        earnedShare: earnedShare,
+                        subjectName: subject.subject_name,
+                        incomeId: inc.id,
+                        incomeDate: inc.date,
+                    });
+                 });
+              }
             }
         }
     });
@@ -105,7 +110,7 @@ export default function TeacherProfilePage() {
       }
 
       setIsPaying(true);
-      const relevantIncomeIds = studentEarnings.map(e => e.incomeId);
+      const relevantIncomeIds = [...new Set(studentEarnings.map(e => e.incomeId))];
       
       const result = await payoutTeacher(teacher.id, teacher.name, teacherShare, relevantIncomeIds, getReportData());
 
@@ -504,5 +509,7 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
+
+    
 
     
