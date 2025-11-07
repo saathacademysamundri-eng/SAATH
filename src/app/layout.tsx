@@ -7,7 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { SettingsProvider } from '@/hooks/use-settings';
 
 export const metadata: Metadata = {
-  title: 'My Academy',
+  title: 'Loading...',
   description: 'An Academy Management System',
   manifest: '/manifest.json',
   icons: {
