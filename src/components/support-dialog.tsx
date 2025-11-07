@@ -59,7 +59,7 @@ export function SupportDialog() {
         </Button>
       </div>
       <div className="border-t border-gray-800 mt-6 pt-4 flex justify-between items-center text-xs text-gray-500">
-        <p>{settings.name} – Because Smart Schools Deserve a Unique Platform.</p>
+        <p>Schoolup – Because Smart Schools Deserve a Unique Platform.</p>
         <div className="flex items-center gap-4">
           <p>Developed by "Mian Mudassar"</p>
           <Link href="https://api.whatsapp.com/send?phone=923099969535" target="_blank" className="hover:text-white"><MessageSquare className="h-4 w-4" /></Link>
