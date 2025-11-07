@@ -31,23 +31,23 @@ export function SupportDialog() {
       </DialogHeader>
       <div className="py-4 px-2 space-y-4 text-center text-gray-300 text-sm">
         <p>
-          At {settings.name} – A Unique Platform for Smart Schools, we believe
-          that every question deserves a clear answer and every problem deserves a
-          quick solution. Our support team is always here to guide you, whether
-          it's about setting up your account, managing attendance, handling
-          finances, or exploring advanced features like WhatsApp integration and
-          live data management.
+          At {settings.name} – A Unique Platform for Smart Schools, we believe that
+          every question deserves a clear answer and every problem
+          deserves a quick solution. Our support team is always here to
+          guide you, whether it's about setting up your account, managing
+          attendance, handling finances, or exploring advanced features like
+          WhatsApp integration and live data management.
         </p>
         <p>
-          We have designed {settings.name} to be simple, reliable, and
-          family-focused, ensuring that schools can run smarter and parents can
+          We have designed {settings.name} to be simple, reliable, and family-focused,
+          ensuring that schools can run smarter and parents can
           stay more connected. If you ever face any issue, need detailed
           guidance, or want to unlock the full potential of our platform, our
           dedicated support team is just a message away.
         </p>
         <p>
-          Your trust matters to us, and we are committed to keeping your school
-          management experience smooth, efficient, and stress-free.
+          Your trust matters to us, and we are committed to keeping your
+          school management experience smooth, efficient, and stress-free.
         </p>
       </div>
       <div className="flex justify-center">
