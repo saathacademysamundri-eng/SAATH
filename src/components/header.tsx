@@ -41,7 +41,7 @@ export function Header() {
       <div className="flex items-center gap-4">
         <SidebarTrigger className="md:hidden" />
         <div className="h-10 w-auto md:hidden">
-            <Logo />
+            <Logo noText={true} />
         </div>
       </div>
       <div className='flex items-center gap-4'>
