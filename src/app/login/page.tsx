@@ -4,32 +4,32 @@
 import { LoginForm } from '@/components/login/login-form';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Facebook, Instagram, MessageSquare } from 'lucide-react';
 import { Logo } from '@/components/logo';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [isClient, setIsClient] = useState(false);
   const [bgImageId, setBgImageId] = useState(1);
+  const [academyName, setAcademyName] = useState('My Academy');
 
   useEffect(() => {
     setIsClient(true);
     setBgImageId(Math.floor(Math.random() * 1000) + 1);
-  }, []);
 
-  useEffect(() => {
     const cachedSettings = sessionStorage.getItem('cachedSettings');
-    let academyName = 'My Academy';
+    let name = 'My Academy';
     if (cachedSettings) {
       try {
         const settings = JSON.parse(cachedSettings);
-        academyName = settings.name || 'My Academy';
+        name = settings.name || 'My Academy';
       } catch (e) {
         console.error("Failed to parse cached settings for title");
       }
     }
-    document.title = `Login | ${academyName}`;
+    setAcademyName(name);
+    document.title = `Login | ${name}`;
   }, []);
-
 
   if (!isClient) {
     return (
@@ -55,14 +55,28 @@ export default function LoginPage() {
                         <Logo noText onLogin />
                     </div>
                 </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-900">
+              <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
                 Login to system
               </h2>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-500">
+              <p className="mt-1 text-sm text-gray-500">
                 Please enter your login information.
               </p>
             </div>
             <LoginForm />
+            <div className="mt-8 text-center text-sm text-muted-foreground">
+              <p>Developed by "Mian Mudassar"</p>
+              <div className="mt-2 flex justify-center gap-4">
+                 <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer">
+                    <Facebook className="h-4 w-4" />
+                </Link>
+                 <Link href="https://api.whatsapp.com/send?phone=923099969535&text=Hye%20%0AI%20want%20to%20know%20about%20the%20software%20you%20created%2C%20which%20is%20a%20management%20system%20in%20the%20school.%20" target="_blank" rel="noopener noreferrer">
+                    <MessageSquare className="h-4 w-4" />
+                </Link>
+                <Link href="https://www.instagram.com/mianmudassar_" target="_blank" rel="noopener noreferrer">
+                    <Instagram className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
 
