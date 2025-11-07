@@ -49,9 +49,9 @@ export default function LoginPage() {
             <div className="absolute inset-0 bg-[url('/grid.svg')] bg-repeat opacity-5 [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]"></div>
 
           <div className="relative z-10 mx-auto w-full max-w-sm">
-            <div className="mb-8 text-left">
-                <div className="flex flex-col items-start gap-2 mb-4">
-                    <div className="h-20 w-20">
+            <div className="mb-8 text-center">
+                <div className="flex flex-col items-center gap-2 mb-4">
+                    <div className="h-24 w-24">
                         <Logo noText onLogin />
                     </div>
                     <h1 className="text-3xl font-bold tracking-tighter text-gray-900">{academyName}</h1>
