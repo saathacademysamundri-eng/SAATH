@@ -40,10 +40,9 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col items-center gap-2 py-2">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src="https://i.pravatar.cc/100" alt="Admin" data-ai-hint="male portrait" />
-              <AvatarFallback>SA</AvatarFallback>
-            </Avatar>
+             <div className='h-16 w-16 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
+                <Logo noText={true} />
+            </div>
             <div className="text-center">
               <p className="text-sm font-medium leading-none">Super Admin</p>
               <p className="text-xs leading-none text-muted-foreground">
