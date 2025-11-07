@@ -45,7 +45,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -58,6 +58,8 @@ import { GlobalPreloader } from '@/components/global-preloader';
 import { useLock } from '@/hooks/use-lock';
 import { LockScreen } from '@/components/lock-screen';
 import { WelcomeBackDialog } from '@/components/welcome-back-dialog';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { SupportDialog } from '@/components/support-dialog';
 
 function SidebarPin() {
     const { isPinned, setPinned } = useSidebar();
@@ -78,6 +80,7 @@ function MainSidebar() {
   const router = useRouter();
   const { settings } = useSettings();
   const { isPinned } = useSidebar();
+  const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -130,30 +133,33 @@ function MainSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
-           <SidebarMenuItem>
-                <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" isActive={pathname.startsWith('/settings')}>
-                    <Link href="/settings">
-                        <Settings className={cn("h-6 w-6")} />
-                        <span className='group-data-[collapsible=icon]:hidden'>Settings</span>
-                    </Link>
+        <Dialog open={isSupportDialogOpen} onOpenChange={setIsSupportDialogOpen}>
+            <SidebarMenu>
+            <SidebarMenuItem>
+                    <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" isActive={pathname.startsWith('/settings')}>
+                        <Link href="/settings">
+                            <Settings className={cn("h-6 w-6")} />
+                            <span className='group-data-[collapsible=icon]:hidden'>Settings</span>
+                        </Link>
+                    </Button>
+            </SidebarMenuItem>
+            <DialogTrigger asChild>
+                <SidebarMenuItem>
+                    <Button variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center">
+                        <MessageCircleQuestion className={cn("h-6 w-6")} />
+                        <span className='group-data-[collapsible=icon]:hidden'>Support</span>
+                    </Button>
+                </SidebarMenuItem>
+            </DialogTrigger>
+            <SidebarMenuItem>
+                <Button variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" onClick={handleLogout}>
+                    <LogOut className={cn("h-6 w-6")} />
+                    <span className='group-data-[collapsible=icon]:hidden'>Log Out</span>
                 </Button>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-              <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center">
-                <Link href="#">
-                    <MessageCircleQuestion className={cn("h-6 w-6")} />
-                    <span className='group-data-[collapsible=icon]:hidden'>Support</span>
-                </Link>
-             </Button>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-             <Button variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" onClick={handleLogout}>
-                <LogOut className={cn("h-6 w-6")} />
-                <span className='group-data-[collapsible=icon]:hidden'>Log Out</span>
-            </Button>
-          </SidebarMenuItem>
-        </SidebarMenu>
+            </SidebarMenuItem>
+            </SidebarMenu>
+            <SupportDialog />
+        </Dialog>
       </SidebarFooter>
     </Sidebar>
   );
