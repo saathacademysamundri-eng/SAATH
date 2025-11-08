@@ -155,11 +155,10 @@ export default function StudentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Roll #</TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead>Student</TableHead>
                 <TableHead>Fee Status</TableHead>
-                <TableHead className="hidden md:table-cell">Class</TableHead>
-                <TableHead className="hidden lg:table-cell">Subjects</TableHead>
+                <TableHead className="hidden sm:table-cell">Class</TableHead>
+                <TableHead className="hidden md:table-cell">Subjects</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -169,30 +168,34 @@ export default function StudentsPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-12" /></TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-10 w-10 rounded-full" />
-                        <Skeleton className="h-5 w-32" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-5 w-32" />
+                          <Skeleton className="h-4 w-12" />
+                        </div>
                       </div>
                     </TableCell>
                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                   </TableRow>
                 ))
               ) : (
                 filteredStudents.map((student) => (
                   <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.id}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
                             <AvatarImage src={student.imageUrl} alt={student.name} />
                             <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                           </Avatar>
-                          <div className="font-medium">{student.name}</div>
+                          <div>
+                            <div className="font-medium">{student.name}</div>
+                            <div className="text-xs text-muted-foreground">{student.id}</div>
+                          </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -202,15 +205,15 @@ export default function StudentsPage() {
                             'outline'
                         }>{student.feeStatus}</Badge>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">{student.class}</TableCell>
-                    <TableCell className="hidden lg:table-cell">
+                    <TableCell className="hidden sm:table-cell">{student.class}</TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <div className="flex flex-wrap gap-1">
                           {student.subjects.map(sub => (
                               <Badge key={sub.subject_name} variant="outline" className={cn('font-normal')}>{sub.subject_name}</Badge>
                           ))}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button aria-haspopup="true" size="icon" variant="ghost">
