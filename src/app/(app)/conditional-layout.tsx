@@ -167,15 +167,16 @@ function MainSidebar() {
 
 
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
-  const [user, loading] = useAuthState(auth);
+  const [user, authLoading] = useAuthState(auth);
+  const { isSettingsLoading } = useSettings();
   const router = useRouter();
   const { isLocked } = useLock();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -192,7 +193,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   }, [router]);
 
 
-  if (loading) {
+  if (authLoading || isSettingsLoading) {
       return <GlobalPreloader />;
   }
   

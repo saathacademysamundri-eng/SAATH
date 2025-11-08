@@ -5,7 +5,6 @@ import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSub
 import type { Class, Expense, Income, Student, Subject, Teacher, TeacherPayout, Report, Activity, Payout } from '@/lib/data';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
-import { GlobalPreloader } from '@/components/global-preloader';
 
 interface AppContextType {
   students: Student[];
@@ -36,9 +35,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async (isInitialLoad = false) => {
-    if (isInitialLoad) {
-      setLoading(true);
-    }
+    setLoading(true);
     try {
       if (isInitialLoad) {
         // Run fee generation check on the very first load.
@@ -81,9 +78,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to fetch app data:", error);
       // Handle error appropriately, maybe show a toast
     } finally {
-       if (isInitialLoad) {
-        setLoading(false);
-      }
+       setLoading(false);
     }
   }, []);
 
@@ -104,10 +99,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     loading,
     refreshData: () => fetchData(false),
   };
-
-  if (loading) {
-    return <GlobalPreloader />;
-  }
 
   return (
     <AppContext.Provider value={value}>
