@@ -177,6 +177,20 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, router]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.altKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        router.push('/fee-collection');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [router]);
+
 
   if (loading) {
       return <GlobalPreloader />;
