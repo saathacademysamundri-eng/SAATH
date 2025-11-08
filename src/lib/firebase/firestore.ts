@@ -165,30 +165,31 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
 
 export async function updateStudentStatus(studentId: string, status: 'active' | 'graduated' | 'archived') {
     const studentRef = doc(db, 'students', studentId);
-    try {
-        const studentDoc = await getDoc(studentRef);
-        if (studentDoc.exists()) {
-            await updateDoc(studentRef, { status });
-            const student = studentDoc.data() as Student;
-            if (status === 'graduated') {
-                 await logActivity('student_graduated', `Marked student as graduated: ${student.name} (ID: ${studentId}).`);
-            } else if (status === 'archived') {
-                await logActivity('student_archived', `Archived student: ${student.name} (ID: ${studentId}).`);
-            } else if (status === 'active') {
-                await logActivity('student_reactivated', `Reactivated student: ${student.name} (ID: ${studentId}).`);
-            }
-            return { success: true, message: `Student status updated to ${status}.` };
-        }
+    const studentDoc = await getDoc(studentRef);
+    if (!studentDoc.exists()) {
         return { success: false, message: "Student not found." };
-    } catch (serverError: any) {
+    }
+    const student = studentDoc.data() as Student;
+    
+    updateDoc(studentRef, { status }).then(async () => {
+        if (status === 'graduated') {
+            await logActivity('student_graduated', `Marked student as graduated: ${student.name} (ID: ${studentId}).`);
+        } else if (status === 'archived') {
+            await logActivity('student_archived', `Archived student: ${student.name} (ID: ${studentId}).`);
+        } else if (status === 'active') {
+            await logActivity('student_reactivated', `Reactivated student: ${student.name} (ID: ${studentId}).`);
+        }
+    }).catch((serverError: Error) => {
         const permissionError = new FirestorePermissionError({
             path: studentRef.path,
             operation: 'update',
             requestResourceData: { status }
         });
         errorEmitter.emit('permission-error', permissionError);
-        return { success: false, message: serverError.message };
-    }
+    });
+
+    // Optimistically return success
+    return { success: true, message: `Student status update for ${student.name} is in progress.` };
 }
 
 export async function deleteStudentPermanently(studentId: string) {
@@ -1040,4 +1041,5 @@ export async function getTodaysMessagesCount(): Promise<number> {
         return 0;
     }
 }
+
 
