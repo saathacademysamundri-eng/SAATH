@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase/config';
 import { getSettings } from '@/lib/firebase/firestore';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -24,6 +24,9 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
+      // Set session persistence
+      await setPersistence(auth, browserSessionPersistence);
+      
       await signInWithEmailAndPassword(auth, email, password);
 
       // Fetch and cache settings on login
