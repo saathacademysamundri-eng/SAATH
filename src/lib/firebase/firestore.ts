@@ -136,7 +136,7 @@ export async function getStudent(id: string): Promise<Student | null> {
     return null;
 }
 
-export async function addStudent(student: Omit<Student, 'id'> & { id: string }) {
+export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id: string }) {
     const docRef = doc(db, 'students', student.id);
     const studentWithStatus = { ...student, status: 'active' as const };
     try {
@@ -712,9 +712,12 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
 
 
 export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
-    const q = query(collection(db, "teacher_payouts"), where("teacherId", "==", teacherId), orderBy("payoutDate", "desc"));
+    const q = query(collection(db, "teacher_payouts"), where("teacherId", "==", teacherId));
     const querySnapshot = await getDocs(q);
-    const payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: doc.data().payoutDate.toDate() } as TeacherPayout));
+    let payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: doc.data().payoutDate.toDate() } as TeacherPayout));
+
+    // Sort client-side
+    payouts = payouts.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
 
     const payoutsWithReports: (TeacherPayout & { report?: Report, academyShare?: number })[] = [];
     for (const payout of payouts) {
@@ -1033,3 +1036,4 @@ export async function getTodaysMessagesCount(): Promise<number> {
         return 0;
     }
 }
+
