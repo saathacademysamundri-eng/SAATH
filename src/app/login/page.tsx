@@ -11,18 +11,18 @@ import Link from 'next/link';
 export default function LoginPage() {
   const [isClient, setIsClient] = useState(false);
   const [bgImageId, setBgImageId] = useState(1);
-  const [academyName, setAcademyName] = useState('My Academy');
+  const [academyName, setAcademyName] = useState('SAATH Academy Samundri');
 
   useEffect(() => {
     setIsClient(true);
     setBgImageId(Math.floor(Math.random() * 1000) + 1);
 
     const cachedSettings = sessionStorage.getItem('cachedSettings');
-    let name = 'My Academy';
+    let name = 'SAATH Academy Samundri';
     if (cachedSettings) {
       try {
         const settings = JSON.parse(cachedSettings);
-        name = settings.name || 'My Academy';
+        name = settings.name || 'SAATH Academy Samundri';
       } catch (e) {
         console.error("Failed to parse cached settings for title");
       }
