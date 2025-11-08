@@ -4,9 +4,9 @@
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserNav } from '@/components/user-nav';
 import { ThemeSwitcher } from './theme-switcher';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { LiveDate, LiveTime } from './live-date-time';
-import { Search, Lock } from 'lucide-react';
+import { Search, Lock, ArrowLeft } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { SearchCommand } from './search-command';
 import { useState, useEffect } from 'react';
@@ -19,6 +19,7 @@ export function Header() {
   const { lock } = useLock();
   const [openSearch, setOpenSearch] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const academyName = settings.name || 'My Academy';
@@ -38,8 +39,14 @@ export function Header() {
   return (
     <>
     <header className="sticky top-0 z-10 flex h-20 w-full items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 print:hidden">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <SidebarTrigger className="md:hidden" />
+        {pathname !== '/dashboard' && (
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => router.back()}>
+            <ArrowLeft />
+            <span className="sr-only">Go Back</span>
+          </Button>
+        )}
         <div className="h-10 w-auto md:hidden">
             <Logo noText={true} />
         </div>
