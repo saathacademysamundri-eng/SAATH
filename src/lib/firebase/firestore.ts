@@ -180,10 +180,14 @@ export async function updateStudentStatus(studentId: string, status: 'active' | 
             return { success: true, message: `Student status updated to ${status}.` };
         }
         return { success: false, message: "Student not found." };
-    } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'update' });
+    } catch (serverError: any) {
+        const permissionError = new FirestorePermissionError({
+            path: studentRef.path,
+            operation: 'update',
+            requestResourceData: { status }
+        });
         errorEmitter.emit('permission-error', permissionError);
-        return { success: false, message: (serverError as Error).message };
+        return { success: false, message: serverError.message };
     }
 }
 
