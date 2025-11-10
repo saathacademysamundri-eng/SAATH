@@ -60,6 +60,7 @@ import { LockScreen } from '@/components/lock-screen';
 import { WelcomeBackDialog } from '@/components/welcome-back-dialog';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { SupportDialog } from '@/components/support-dialog';
+import { WhatsappSupportButton } from '@/components/whatsapp-support-button';
 
 function SidebarPin() {
     const { isPinned, setPinned } = useSidebar();
@@ -215,6 +216,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
             <SidebarInset>
                 <Header />
                 <main className="flex-1 p-4 sm:p-6">{children}</main>
+                <WhatsappSupportButton />
             </SidebarInset>
         </SidebarProvider>
     </>
