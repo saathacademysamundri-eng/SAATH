@@ -165,13 +165,15 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
 
 export async function updateStudentStatus(studentId: string, status: 'active' | 'graduated' | 'archived') {
     const studentRef = doc(db, 'students', studentId);
-    const studentDoc = await getDoc(studentRef);
-    if (!studentDoc.exists()) {
-        return { success: false, message: "Student not found." };
-    }
-    const student = studentDoc.data() as Student;
-    
-    updateDoc(studentRef, { status }).then(async () => {
+    try {
+        const studentDoc = await getDoc(studentRef);
+        if (!studentDoc.exists()) {
+            return { success: false, message: "Student not found." };
+        }
+        const student = studentDoc.data() as Student;
+
+        await updateDoc(studentRef, { status });
+        
         if (status === 'graduated') {
             await logActivity('student_graduated', `Marked student as graduated: ${student.name} (ID: ${studentId}).`);
         } else if (status === 'archived') {
@@ -179,18 +181,19 @@ export async function updateStudentStatus(studentId: string, status: 'active' | 
         } else if (status === 'active') {
             await logActivity('student_reactivated', `Reactivated student: ${student.name} (ID: ${studentId}).`);
         }
-    }).catch((serverError: Error) => {
+        
+        return { success: true, message: `Student status updated successfully.` };
+    } catch (serverError) {
         const permissionError = new FirestorePermissionError({
             path: studentRef.path,
             operation: 'update',
             requestResourceData: { status }
         });
         errorEmitter.emit('permission-error', permissionError);
-    });
-
-    // Optimistically return success
-    return { success: true, message: `Student status update for ${student.name} is in progress.` };
+        return { success: false, message: (serverError as Error).message };
+    }
 }
+
 
 export async function deleteStudentPermanently(studentId: string) {
     const studentRef = doc(db, 'students', studentId);
