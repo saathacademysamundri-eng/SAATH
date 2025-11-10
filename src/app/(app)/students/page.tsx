@@ -214,6 +214,7 @@ export default function StudentsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
+                         <AlertDialog>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -243,6 +244,19 @@ export default function StudentsPage() {
                               </AlertDialogTrigger>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                           <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will move <span className="font-bold">{student.name}</span> to the Archive. You can permanently delete them from there.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => handleArchiveAction(student, false)}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleConfirmAction(student, 'archived')} className="bg-destructive hover:bg-destructive/90">Archive</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))
