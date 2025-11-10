@@ -46,6 +46,7 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
     const [selectedClassId, setSelectedClassId] = useState<string | null>(() => {
         return classes.find(c => c.name === student.class)?.id || null
     });
+    const [selectedSection, setSelectedSection] = useState<string | undefined>(student.section);
     const [monthlyFee, setMonthlyFee] = useState(student.monthlyFee);
     const [selectedSubjects, setSelectedSubjects] = useState<SelectedSubjectInfo[]>(() => {
          const currentClass = classes.find(c => c.name === student.class);
@@ -78,6 +79,7 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
     const handleClassChange = (value: string) => {
         setSelectedClassId(value);
         setSelectedSubjects([]);
+        setSelectedSection(undefined);
     }
 
     const handleSubjectCheckedChange = (subject: Subject) => {
@@ -133,6 +135,7 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
             address,
             gender,
             class: currentClassDetails?.name || '',
+            section: selectedSection,
             subjects: studentSubjects,
             monthlyFee: monthlyFee,
             imageUrl: imageUrl.trim(),
@@ -272,6 +275,21 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
                     onChange={(e) => setMonthlyFee(Number(e.target.value))}
                 />
             </div>
+            {currentClass && currentClass.sections && currentClass.sections.length > 0 && (
+                 <div className="grid gap-2">
+                    <Label htmlFor="section">Section (Optional)</Label>
+                    <Select onValueChange={setSelectedSection} value={selectedSection}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a section" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {currentClass.sections.map((section) => (
+                                <SelectItem key={section} value={section}>{section}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
           </div>
           
           {currentClass && (

@@ -17,6 +17,7 @@ export type Class = {
     id: string;
     name: string;
     subjects: Subject[];
+    sections: string[];
 };
 
 export type StudentSubject = {
@@ -34,6 +35,7 @@ export type Student = {
     address: string;
     gender: string;
     class: string;
+    section?: string;
     subjects: StudentSubject[];
     feeStatus: 'Paid' | 'Pending' | 'Partial' | 'Overdue';
     totalFee: number; // This represents the outstanding balance
@@ -280,7 +282,8 @@ export const classes: Class[] = [
             { id: 'S04', name: 'Biology' },
             { id: 'S05', name: 'Computer Science' },
             { id: 'S06', name: 'English' },
-        ] 
+        ],
+        sections: ['A', 'B']
     },
     { 
         id: 'C02', 
@@ -292,7 +295,8 @@ export const classes: Class[] = [
             { id: 'S04', name: 'Biology' },
             { id: 'S05', name: 'Computer Science' },
             { id: 'S06', name: 'English' },
-        ] 
+        ],
+        sections: ['Gold', 'Diamond']
     },
     { 
         id: 'C03', 
@@ -303,7 +307,8 @@ export const classes: Class[] = [
             { id: 'S02', name: 'Physics' },
             { id: 'S03', name: 'Chemistry' },
             { id: 'S06', name: 'English' },
-        ] 
+        ],
+        sections: [] 
     },
      { 
         id: 'C04', 
@@ -314,7 +319,8 @@ export const classes: Class[] = [
             { id: 'S02', name: 'Physics' },
             { id: 'S03', name: 'Chemistry' },
             { id: 'S06', name: 'English' },
-        ] 
+        ],
+        sections: [] 
     },
 ];
 

@@ -194,7 +194,7 @@ export default function StudentsPage() {
                           </Avatar>
                           <div>
                             <div className="font-medium">{student.name}</div>
-                            <div className="text-xs text-muted-foreground">{student.id}</div>
+                            <div className="text-xs text-muted-foreground">{student.id} {student.section && `(${student.section})`}</div>
                           </div>
                       </div>
                     </TableCell>

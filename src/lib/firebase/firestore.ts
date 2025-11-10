@@ -392,9 +392,9 @@ async function getNextClassId(): Promise<string> {
 export async function addClass(name: string) {
     try {
         const newClassId = await getNextClassId();
-        const newClass = { id: newClassId, name: name, subjects: [] };
+        const newClass = { id: newClassId, name: name, subjects: [], sections: [] };
         const docRef = doc(db, 'classes', newClassId);
-        await setDoc(docRef, { id: newClassId, name: name });
+        await setDoc(docRef, { id: newClassId, name: name, sections: [] });
         await logActivity('class_added', `Created new class: ${name}.`);
         return { success: true, message: "Class created successfully." };
     } catch (serverError) {
@@ -411,11 +411,11 @@ export async function getClasses(): Promise<Class[]> {
     const classesData: Class[] = [];
 
     for (const classDoc of classesSnap.docs) {
-        const classData = classDoc.data() as Omit<Class, 'subjects'>;
+        const classData = classDoc.data() as Omit<Class, 'subjects' | 'sections'> & { sections?: string[] };
         const subjectsCollection = collection(db, `classes/${classDoc.id}/subjects`);
         const subjectsSnap = await getDocs(subjectsCollection);
         const subjects = subjectsSnap.docs.map(subjectDoc => subjectDoc.data() as Subject);
-        classesData.push({ ...classData, id: classDoc.id, name: classData.name, subjects });
+        classesData.push({ ...classData, id: classDoc.id, name: classData.name, subjects, sections: classData.sections || [] });
     }
     return classesData;
 }
@@ -458,6 +458,19 @@ export async function updateClassSubjects(classId: string, subjects: Subject[]) 
     }
 }
 
+export async function updateClass(classId: string, classData: Partial<Pick<Class, 'name' | 'sections'>>) {
+    const docRef = doc(db, 'classes', classId);
+    try {
+        await updateDoc(docRef, classData);
+        await logActivity('class_updated', `Updated details for class ${classData.name || ''}.`);
+        return { success: true, message: "Class updated successfully." };
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: classData });
+        errorEmitter.emit('permission-error', permissionError);
+        return { success: false, message: (serverError as Error).message };
+    }
+}
+
 
 export async function seedDatabase() {
   try {
@@ -475,7 +488,7 @@ export async function seedDatabase() {
     initialTeachers.forEach(t => batch.set(doc(db, 'teachers', t.id), t));
     initialClasses.forEach(c => {
         const { subjects, ...classData } = c;
-        batch.set(doc(db, 'classes', c.id), { id: c.id, name: c.name });
+        batch.set(doc(db, 'classes', c.id), { id: c.id, name: c.name, sections: classData.sections || [] });
         subjects.forEach(sub => batch.set(doc(db, `classes/${c.id}/subjects`, sub.id), sub));
     });
 
