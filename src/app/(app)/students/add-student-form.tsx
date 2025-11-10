@@ -335,12 +335,13 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
           )}
         </div>
         <DialogFooter>
-          <DialogClose asChild>
+            <DialogClose asChild>
+                <Button type="button" variant="ghost">Cancel</Button>
+            </DialogClose>
             <Button type="button" onClick={handleSubmit} disabled={isSaving}>
                 {isSaving && <Loader2 className="animate-spin mr-2"/>}
                 {isSaving ? 'Adding Student...' : 'Add Student'}
             </Button>
-          </DialogClose>
         </DialogFooter>
       </DialogContent>
   )
