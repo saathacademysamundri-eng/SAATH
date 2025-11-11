@@ -58,6 +58,14 @@ export default function SeatingPlanPage() {
     
     const className = classes.find(c => c.id === selectedClassId)?.name || 'N/A';
 
+    const tableHeader = `
+      <thead>
+        <tr>
+          ${Array.from({ length: cols }).map((_, cIdx) => `<th>Column ${cIdx + 1}</th>`).join('')}
+        </tr>
+      </thead>
+    `;
+
     const tableRows = seatingPlan.map(row => `
         <tr>
             ${row.map(student => `
@@ -86,7 +94,9 @@ export default function SeatingPlanPage() {
             .academy-details h1 { font-size: 1.5rem; }
             .report-title { text-align: center; margin-bottom: 1rem; }
             table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-            td { border: 1px solid #000; padding: 8px; text-align: center; vertical-align: middle; height: 80px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: center; vertical-align: middle; }
+            th { font-weight: bold; background-color: #f2f2f2; }
+            td { height: 80px; }
           </style>
         </head>
         <body>
@@ -100,6 +110,7 @@ export default function SeatingPlanPage() {
               <p>Class: ${className}</p>
             </div>
             <table>
+              ${tableHeader}
               <tbody>${tableRows}</tbody>
             </table>
           </div>
@@ -166,6 +177,15 @@ export default function SeatingPlanPage() {
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    {Array.from({ length: cols }).map((_, cIdx) => (
+                      <th key={`col-header-${cIdx}`} className="border border-border p-2 font-semibold bg-muted">
+                        Column {cIdx + 1}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
                 <tbody>
                   {seatingPlan.map((row, rIdx) => (
                     <tr key={rIdx}>
