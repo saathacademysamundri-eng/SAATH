@@ -11,6 +11,7 @@ import { useSettings } from '@/hooks/use-settings';
 import { Student } from '@/lib/data';
 import { Armchair, Printer } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { format } from 'date-fns';
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = (array: any[]) => {
@@ -27,6 +28,7 @@ export default function SeatingPlanPage() {
   const { classes, students, loading: appLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [examName, setExamName] = useState('Mid-Term Exam');
   const [rows, setRows] = useState(5);
   const [cols, setCols] = useState(5);
   const [seatingPlan, setSeatingPlan] = useState<(Student | null)[][]>([]);
@@ -57,6 +59,7 @@ export default function SeatingPlanPage() {
     if (!printWindow) return;
     
     const className = classes.find(c => c.id === selectedClassId)?.name || 'N/A';
+    const currentDate = format(new Date(), 'PPP');
 
     const tableHeader = `
       <thead>
@@ -93,6 +96,8 @@ export default function SeatingPlanPage() {
             .academy-details { text-align: center; margin-bottom: 1rem; }
             .academy-details h1 { font-size: 1.5rem; }
             .report-title { text-align: center; margin-bottom: 1rem; }
+            .report-title h2 { margin-bottom: 0.5rem; }
+            .report-title p { margin: 0.25rem 0; font-size: 1rem; color: #333; }
             table { width: 100%; border-collapse: collapse; table-layout: fixed; }
             th, td { border: 1px solid #000; padding: 8px; text-align: center; vertical-align: middle; }
             th { font-weight: bold; background-color: #f2f2f2; }
@@ -107,7 +112,9 @@ export default function SeatingPlanPage() {
             </div>
             <div class="report-title">
               <h2>Seating Plan</h2>
-              <p>Class: ${className}</p>
+              <p><strong>Exam:</strong> ${examName}</p>
+              <p><strong>Class:</strong> ${className}</p>
+              <p><strong>Date:</strong> ${currentDate}</p>
             </div>
             <table>
               ${tableHeader}
@@ -144,6 +151,10 @@ export default function SeatingPlanPage() {
                 {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="examName">Exam Name</Label>
+            <Input id="examName" value={examName} onChange={e => setExamName(e.target.value)} className="w-48" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="rows">Rows</Label>
