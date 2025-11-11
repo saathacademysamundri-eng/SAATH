@@ -61,7 +61,7 @@ export default function SeatingPlanPage() {
     const tableHeader = `
       <thead>
         <tr>
-          ${Array.from({ length: cols }).map((_, cIdx) => `<th>Column ${cIdx + 1}</th>`).join('')}
+          ${Array.from({ length: cols }).map((_, cIdx) => `<th>Line ${cIdx + 1}</th>`).join('')}
         </tr>
       </thead>
     `;
@@ -181,7 +181,7 @@ export default function SeatingPlanPage() {
                   <tr>
                     {Array.from({ length: cols }).map((_, cIdx) => (
                       <th key={`col-header-${cIdx}`} className="border border-border p-2 font-semibold bg-muted">
-                        Column {cIdx + 1}
+                        Line {cIdx + 1}
                       </th>
                     ))}
                   </tr>
