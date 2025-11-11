@@ -7,6 +7,7 @@ import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format as formatDate } from 'date-fns';
+import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
 
 const db = getFirestore(app);
 
@@ -338,6 +339,27 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
         const docRef = doc(db, 'teachers', newTeacherId);
         await setDoc(docRef, newTeacher);
         await logActivity('teacher_added', `Added new teacher: ${teacherData.name}.`, `/teachers/${newTeacherId}`);
+        
+        // Send WhatsApp message if enabled
+        const settings = await getSettings('details');
+        if (settings && settings.newTeacherMsg && newTeacher.phone) {
+            let messageBody = settings.newTeacherTemplate || 'Dear {teacher_name}, welcome to {academy_name}! We are excited to have you on our team.';
+            messageBody = messageBody.replace(/{teacher_name}/g, newTeacher.name);
+            messageBody = messageBody.replace(/{academy_name}/g, settings.name || '');
+
+            const apiUrl = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgApiUrl : settings.officialApiUrl;
+            const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
+            
+            if (apiUrl && token) {
+                await sendWhatsappMessage({
+                    to: newTeacher.phone,
+                    body: messageBody,
+                    apiUrl: apiUrl,
+                    token: token
+                });
+            }
+        }
+        
         return { success: true, message: "Teacher added successfully." };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: `teachers/[auto-id]`, operation: 'create', requestResourceData: teacherData });

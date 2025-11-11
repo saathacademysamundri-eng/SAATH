@@ -214,10 +214,12 @@ export default function SettingsPage() {
   const [absentMsg, setAbsentMsg] = useState(false);
   const [paymentReceiptMsg, setPaymentReceiptMsg] = useState(false);
   const [teacherAbsentMsg, setTeacherAbsentMsg] = useState(false);
+  const [newTeacherMsg, setNewTeacherMsg] = useState(false);
   const [newAdmissionTemplate, setNewAdmissionTemplate] = useState('');
   const [absentTemplate, setAbsentTemplate] = useState('');
   const [paymentReceiptTemplate, setPaymentReceiptTemplate] = useState('');
   const [teacherAbsentTemplate, setTeacherAbsentTemplate] = useState('');
+  const [newTeacherTemplate, setNewTeacherTemplate] = useState('');
 
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [isSendingCustom, setIsSendingCustom] = useState(false);
@@ -255,10 +257,12 @@ export default function SettingsPage() {
       setAbsentMsg(settings.absentMsg);
       setPaymentReceiptMsg(settings.paymentReceiptMsg);
       setTeacherAbsentMsg(settings.teacherAbsentMsg || false);
+      setNewTeacherMsg(settings.newTeacherMsg || false);
       setNewAdmissionTemplate(settings.newAdmissionTemplate);
       setAbsentTemplate(settings.absentTemplate);
       setPaymentReceiptTemplate(settings.paymentReceiptTemplate);
       setTeacherAbsentTemplate(settings.teacherAbsentTemplate || 'Dear {teacher_name}, you were marked absent today. Please contact administration if this is an error.');
+      setNewTeacherTemplate(settings.newTeacherTemplate || 'Dear {teacher_name}, welcome to {academy_name}! We are excited to have you on our team.');
     }
   }, [isSettingsLoading, settings]);
 
@@ -323,10 +327,12 @@ export default function SettingsPage() {
         absentMsg,
         paymentReceiptMsg,
         teacherAbsentMsg,
+        newTeacherMsg,
         newAdmissionTemplate,
         absentTemplate,
         paymentReceiptTemplate,
         teacherAbsentTemplate,
+        newTeacherTemplate,
     }, "Updated WhatsApp integration and template settings.");
     setIsSaving(false);
     toast({
@@ -882,12 +888,23 @@ export default function SettingsPage() {
                    <div className="space-y-4 rounded-lg border p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <Label className="text-base font-semibold">Admission Confirmation</Label>
+                                <Label className="text-base font-semibold">New Student Admission</Label>
                                 <p className="text-sm text-muted-foreground">Sent to the parent/student upon new admission.</p>
                             </div>
                             <Switch checked={newAdmissionMsg} onCheckedChange={setNewAdmissionMsg} />
                         </div>
                         {newAdmissionMsg && <Textarea value={newAdmissionTemplate} onChange={e => setNewAdmissionTemplate(e.target.value)} placeholder="e.g. Welcome {student_name} to {academy_name}! Your Roll No is {student_id}." />}
+                    </div>
+
+                    <div className="space-y-4 rounded-lg border p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <Label className="text-base font-semibold">New Teacher Welcome</Label>
+                                <p className="text-sm text-muted-foreground">Sent when a new teacher is added.</p>
+                            </div>
+                            <Switch checked={newTeacherMsg} onCheckedChange={setNewTeacherMsg} />
+                        </div>
+                        {newTeacherMsg && <Textarea value={newTeacherTemplate} onChange={e => setNewTeacherTemplate(e.target.value)} placeholder="e.g. Dear {teacher_name}, welcome to {academy_name}! We are excited to have you on our team." />}
                     </div>
 
                     <div className="space-y-4 rounded-lg border p-4">
