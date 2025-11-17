@@ -121,7 +121,7 @@ export default function VouchersPage() {
                 .fee-details th { background-color: #f2f2f2; text-align: left;}
                 .text-right { text-align: right; }
                 .total-row td { font-weight: bold; }
-                .slip-container { display: flex; justify-content: space-between; gap: 20px; margin-top: auto; }
+                .slip-container { display: flex; justify-content: center; gap: 20px; margin-top: auto; }
                 .slip { border: 1px solid #000; padding: 10px; width: 48%; }
                 .qr-section { text-align: center; margin-top: 20px; }
                 .qr-section img { margin: auto; }
@@ -152,17 +152,17 @@ export default function VouchersPage() {
         </p>
       </div>
 
-      <Card className="max-w-2xl">
+      <Card className="max-w-4xl">
         <CardHeader>
           <CardTitle>Voucher Generation</CardTitle>
           <CardDescription>Select a class and set dates to generate fee vouchers for all its students.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-end gap-4">
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label>Select Class</Label>
               <Select onValueChange={setSelectedClassId} disabled={appLoading}>
-                <SelectTrigger className="w-[280px]">
+                <SelectTrigger>
                   <SelectValue placeholder="Select a class..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -177,7 +177,7 @@ export default function VouchersPage() {
                   <Button
                     id="issueDate"
                     variant={"outline"}
-                    className={cn("w-[180px] justify-start text-left font-normal", !issueDate && "text-muted-foreground")}
+                    className={cn("w-full justify-start text-left font-normal", !issueDate && "text-muted-foreground")}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {issueDate ? format(issueDate, "PPP") : <span>Pick a date</span>}
@@ -195,7 +195,7 @@ export default function VouchersPage() {
                   <Button
                     id="dueDate"
                     variant={"outline"}
-                    className={cn("w-[180px] justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                    className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
@@ -207,7 +207,7 @@ export default function VouchersPage() {
               </Popover>
             </div>
           </div>
-           <Button onClick={handlePrintVouchers} disabled={!selectedClassId || isSettingsLoading}>
+           <Button onClick={handlePrintVouchers} disabled={!selectedClassId || isSettingsLoading} size="lg">
               <Printer className="mr-2" />
               Print Vouchers ({studentsInClass.length} Students)
             </Button>
@@ -216,4 +216,3 @@ export default function VouchersPage() {
     </div>
   );
 }
-
