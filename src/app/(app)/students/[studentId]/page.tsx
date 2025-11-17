@@ -68,7 +68,7 @@ export default function StudentProfilePage() {
       <Card>
         <CardHeader className="flex-row items-center gap-6 space-y-0">
           <Avatar className="h-24 w-24 border-2 border-primary">
-            <AvatarImage src={`https://i.pravatar.cc/150?u=${student.id}`} />
+            <AvatarImage src={student.imageUrl} alt={student.name} />
             <AvatarFallback className="text-3xl">{student.name.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="grid gap-1">

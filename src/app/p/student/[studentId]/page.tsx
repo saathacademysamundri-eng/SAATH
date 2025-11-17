@@ -103,7 +103,7 @@ export default function StudentPublicProfile() {
                 <Card>
                     <CardHeader className="items-center text-center space-y-4">
                         <Avatar className="h-28 w-28 border-4 border-primary shadow-lg">
-                            <AvatarImage src={`https://i.pravatar.cc/150?u=${student.id}`} alt={student.name} />
+                            <AvatarImage src={student.imageUrl} alt={student.name} />
                             <AvatarFallback className="text-4xl">{student.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className='grid gap-1'>
