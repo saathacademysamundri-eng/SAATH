@@ -8,11 +8,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
 import { deleteExam, getExams } from '@/lib/firebase/firestore';
-import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit } from 'lucide-react';
+import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { CreateExamDialog } from './create-exam-dialog';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -30,18 +30,29 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { EditExamDialog } from './edit-exam-dialog';
+import { useAppContext } from '@/hooks/use-app-context';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { DateRange } from 'react-day-picker';
+import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
+  const { classes, loading: appLoading } = useAppContext();
+
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Filter state
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const fetchExams = async () => {
     setLoading(true);
@@ -69,7 +80,6 @@ export default function ExamsPage() {
     setIsEditDialogOpen(true);
   };
 
-
   const handleDeleteExam = async (examId: string) => {
     const result = await deleteExam(examId);
     if (result.success) {
@@ -78,6 +88,26 @@ export default function ExamsPage() {
     } else {
         toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
     }
+  }
+
+  const filteredExams = useMemo(() => {
+    return exams.filter(exam => {
+        const classMatch = !selectedClass || exam.className === selectedClass;
+        
+        let dateMatch = true;
+        if (dateRange?.from) {
+            const fromDate = dateRange.from;
+            const toDate = dateRange.to ? addDays(dateRange.to, 1) : addDays(fromDate, 1);
+            dateMatch = exam.date >= fromDate && exam.date < toDate;
+        }
+
+        return classMatch && dateMatch;
+    });
+  }, [exams, selectedClass, dateRange]);
+
+  const clearFilters = () => {
+    setSelectedClass(null);
+    setDateRange(undefined);
   }
 
   return (
@@ -101,7 +131,60 @@ export default function ExamsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Exam History</CardTitle>
-          <CardDescription>A list of all created exams.</CardDescription>
+          <CardDescription>A list of all created exams. Use the filters below to narrow down the results.</CardDescription>
+           <div className="flex flex-wrap items-center gap-4 pt-4">
+            <Select onValueChange={(v) => setSelectedClass(v === 'all' ? null : v)} value={selectedClass || 'all'}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by class..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Classes</SelectItem>
+                    {classes.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
+
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                        id="date"
+                        variant={"outline"}
+                        className={cn(
+                            "w-[300px] justify-start text-left font-normal",
+                            !dateRange && "text-muted-foreground"
+                        )}
+                    >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange?.from ? (
+                            dateRange.to ? (
+                                <>
+                                    {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
+                                </>
+                            ) : (
+                                format(dateRange.from, "LLL dd, y")
+                            )
+                        ) : (
+                            <span>Filter by date...</span>
+                        )}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={dateRange?.from}
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
+                    />
+                </PopoverContent>
+            </Popover>
+
+            {(selectedClass || dateRange) && (
+              <Button variant="ghost" onClick={clearFilters}>
+                <X className="mr-2 h-4 w-4" /> Clear Filters
+              </Button>
+            )}
+        </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -127,8 +210,8 @@ export default function ExamsPage() {
                     <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                   </TableRow>
                 ))
-              ) : exams.length > 0 ? (
-                exams.map(exam => (
+              ) : filteredExams.length > 0 ? (
+                filteredExams.map(exam => (
                   <TableRow key={exam.id}>
                     <TableCell>{format(exam.date, 'PPP')}</TableCell>
                     <TableCell className="font-medium">{exam.name}</TableCell>
@@ -191,7 +274,7 @@ export default function ExamsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    No exams have been created yet.
+                    No exams found matching your criteria.
                   </TableCell>
                 </TableRow>
               )}
