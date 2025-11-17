@@ -40,12 +40,28 @@ export function LoginForm() {
         description: 'Welcome back, Admin!',
       });
       router.push('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      if (error.code) {
+        switch(error.code) {
+            case 'auth/user-not-found':
+            case 'auth/wrong-password':
+            case 'auth/invalid-credential':
+                errorMessage = 'Invalid email or password. Please try again.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage = 'The email address you entered is not valid.';
+                break;
+            default:
+                errorMessage = 'Could not log you in. Please check your connection and try again.';
+                break;
+        }
+      }
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: (error as Error).message || 'An error occurred during login.',
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
