@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student } from '@/lib/data';
 import { getStudent, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
-import { Printer, Search, Loader2 } from 'lucide-react';
+import { Printer, Search, Loader2, CalendarIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
@@ -23,6 +23,9 @@ import QRCode from 'qrcode';
 import { format, addDays } from 'date-fns';
 import { PaidStamp } from '@/components/paid-stamp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { Calendar } from '@/components/ui/calendar';
 
 type PrintFormat = 'thermal' | 'a4';
 
@@ -33,6 +36,8 @@ export default function FeeCollectionPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
+  const [issueDate, setIssueDate] = useState<Date>(new Date());
+  const [dueDate, setDueDate] = useState<Date>(addDays(new Date(), 10));
   
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
@@ -274,8 +279,6 @@ export default function FeeCollectionPage() {
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-
-    const dueDate = format(addDays(new Date(), 10), 'PPP');
     
     const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
     let qrCodeDataUrl = '';
@@ -319,7 +322,7 @@ export default function FeeCollectionPage() {
                         <table class="details">
                             <tr><td><strong>Student Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
                             <tr><td><strong>Father's Name:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
-                            <tr><td><strong>Issue Date:</strong></td><td>${format(new Date(), 'PPP')}</td><td><strong>Due Date:</strong></td><td>${dueDate}</td></tr>
+                            <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
                         </table>
                         <table class="fee-details">
                             <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
@@ -333,17 +336,11 @@ export default function FeeCollectionPage() {
                             ` : ''}
                         </div>
                          <div class="slip-container">
-                            <div class="slip">
-                                <h4>Bank Copy</h4>
+                            <div class="slip" style="text-align: center; width: 100%;">
+                                <h4>Academy Copy</h4>
                                 <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
                                 <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
-                                <p><strong>Due Date:</strong> ${dueDate}</p>
-                            </div>
-                            <div class="slip">
-                                <h4>Student Copy</h4>
-                                <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                                <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
-                                <p><strong>Due Date:</strong> ${dueDate}</p>
+                                <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
                             </div>
                         </div>
                     </div>
@@ -380,7 +377,7 @@ export default function FeeCollectionPage() {
                       <p class='text-xs'>Phone: ${settings.phone}</p>
                   </div>
                   <div class="border-t border-b my-2 py-1 text-xs">
-                      <div class='flex justify-between'><span>Voucher</span><span>${format(new Date(), 'PPP')}</span></div>
+                      <div class='flex justify-between'><span>Voucher</span><span>${format(issueDate, 'PPP')}</span></div>
                   </div>
                   <div class='text-xs'>
                       <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
@@ -388,7 +385,7 @@ export default function FeeCollectionPage() {
                   </div>
                   <div class="border-t my-2"></div>
                   <div class='flex justify-between font-bold text-xs'><span>Total Due:</span><span>${searchedStudent.totalFee.toLocaleString()} PKR</span></div>
-                  <p class='text-center text-xs mt-4'>Please pay by: ${dueDate}</p>
+                  <p class='text-center text-xs mt-4'>Please pay by: ${format(dueDate, 'PPP')}</p>
                    <div class='text-center mt-4'>
                       ${qrCodeDataUrl ? `
                           <p class='font-bold text-xs'>Scan to check status</p>
@@ -472,6 +469,42 @@ export default function FeeCollectionPage() {
                                     <SelectItem value="a4">A4 Voucher</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="issueDate">Issue Date</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                id="issueDate"
+                                variant={"outline"}
+                                className={cn("w-[180px] justify-start text-left font-normal", !issueDate && "text-muted-foreground")}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {issueDate ? format(issueDate, "PPP") : <span>Pick a date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar mode="single" selected={issueDate} onSelect={(d) => setIssueDate(d || new Date())} initialFocus />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dueDate">Due Date</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                id="dueDate"
+                                variant={"outline"}
+                                className={cn("w-[180px] justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar mode="single" selected={dueDate} onSelect={(d) => setDueDate(d || new Date())} initialFocus />
+                            </PopoverContent>
+                          </Popover>
                         </div>
                         <Button variant="outline" onClick={handlePrintVoucher} disabled={isSettingsLoading || searchedStudent.totalFee === 0}>
                             <Printer className="mr-2"/>

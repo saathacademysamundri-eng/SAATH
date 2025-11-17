@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,9 +10,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useSettings } from '@/hooks/use-settings';
 import { format, addDays } from 'date-fns';
-import { Newspaper, Printer } from 'lucide-react';
+import { Newspaper, Printer, CalendarIcon } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import QRCode from 'qrcode';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { Calendar } from '@/components/ui/calendar';
 
 export default function VouchersPage() {
   const { classes, students, loading: appLoading } = useAppContext();
@@ -19,6 +23,8 @@ export default function VouchersPage() {
   const { toast } = useToast();
 
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [issueDate, setIssueDate] = useState<Date>(new Date());
+  const [dueDate, setDueDate] = useState<Date>(addDays(new Date(), 10));
 
   const studentsInClass = useMemo(() => {
     if (!selectedClassId) return [];
@@ -43,7 +49,6 @@ export default function VouchersPage() {
     }
 
     let allVouchersHtml = '';
-    const dueDate = format(addDays(new Date(), 10), 'PPP');
 
     for (const student of studentsInClass) {
       const verificationUrl = `${window.location.origin}/p/student/${student.id}`;
@@ -66,7 +71,7 @@ export default function VouchersPage() {
           <table class="details">
               <tr><td><strong>Student Name:</strong></td><td>${student.name}</td><td><strong>Roll No:</strong></td><td>${student.id}</td></tr>
               <tr><td><strong>Father's Name:</strong></td><td>${student.fatherName}</td><td><strong>Class:</strong></td><td>${student.class}</td></tr>
-              <tr><td><strong>Issue Date:</strong></td><td>${format(new Date(), 'PPP')}</td><td><strong>Due Date:</strong></td><td>${dueDate}</td></tr>
+              <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
           </table>
           <table class="fee-details">
               <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
@@ -80,17 +85,11 @@ export default function VouchersPage() {
               ` : ''}
           </div>
            <div class="slip-container">
-              <div class="slip">
-                  <h4>Bank Copy</h4>
+              <div class="slip" style="text-align: center; width: 100%;">
+                  <h4>Academy Copy</h4>
                   <p><strong>Student:</strong> ${student.name} (${student.id})</p>
                   <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
-                  <p><strong>Due Date:</strong> ${dueDate}</p>
-              </div>
-              <div class="slip">
-                  <h4>Student Copy</h4>
-                  <p><strong>Student:</strong> ${student.name} (${student.id})</p>
-                  <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
-                  <p><strong>Due Date:</strong> ${dueDate}</p>
+                  <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
               </div>
           </div>
         </div>
@@ -153,29 +152,68 @@ export default function VouchersPage() {
         </p>
       </div>
 
-      <Card className="max-w-xl">
+      <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle>Voucher Generation</CardTitle>
-          <CardDescription>Select a class to generate fee vouchers for all its students.</CardDescription>
+          <CardDescription>Select a class and set dates to generate fee vouchers for all its students.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-4">
-          <div className="space-y-2">
-            <Label>Select Class</Label>
-            <Select onValueChange={setSelectedClassId} disabled={appLoading}>
-              <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a class..." />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="space-y-2">
+              <Label>Select Class</Label>
+              <Select onValueChange={setSelectedClassId} disabled={appLoading}>
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Select a class..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="issueDate">Issue Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="issueDate"
+                    variant={"outline"}
+                    className={cn("w-[180px] justify-start text-left font-normal", !issueDate && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {issueDate ? format(issueDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={issueDate} onSelect={(d) => setIssueDate(d || new Date())} initialFocus />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">Due Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="dueDate"
+                    variant={"outline"}
+                    className={cn("w-[180px] justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={dueDate} onSelect={(d) => setDueDate(d || new Date())} initialFocus />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-          <Button onClick={handlePrintVouchers} disabled={!selectedClassId || isSettingsLoading}>
-            <Printer className="mr-2" />
-            Print Vouchers ({studentsInClass.length} Students)
-          </Button>
+           <Button onClick={handlePrintVouchers} disabled={!selectedClassId || isSettingsLoading}>
+              <Printer className="mr-2" />
+              Print Vouchers ({studentsInClass.length} Students)
+            </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
+
