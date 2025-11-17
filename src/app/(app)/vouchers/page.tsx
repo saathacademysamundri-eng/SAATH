@@ -81,13 +81,7 @@ export default function VouchersPage() {
           </div>
            <div class="slip-container">
               <div class="slip">
-                  <h4>Bank Copy</h4>
-                  <p><strong>Student:</strong> ${student.name} (${student.id})</p>
-                  <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
-                  <p><strong>Due Date:</strong> ${dueDate}</p>
-              </div>
-              <div class="slip">
-                  <h4>Student Copy</h4>
+                  <h4>Academy Copy</h4>
                   <p><strong>Student:</strong> ${student.name} (${student.id})</p>
                   <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
                   <p><strong>Due Date:</strong> ${dueDate}</p>
@@ -122,7 +116,7 @@ export default function VouchersPage() {
                 .fee-details th { background-color: #f2f2f2; text-align: left;}
                 .text-right { text-align: right; }
                 .total-row td { font-weight: bold; }
-                .slip-container { display: flex; justify-content: space-between; gap: 20px; margin-top: auto; }
+                .slip-container { display: flex; justify-content: center; gap: 20px; margin-top: auto; }
                 .slip { border: 1px solid #000; padding: 10px; width: 48%; }
                 .qr-section { text-align: center; margin-top: 20px; }
                 .qr-section img { margin: auto; }
