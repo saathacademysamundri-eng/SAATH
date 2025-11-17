@@ -274,8 +274,6 @@ export default function FeeCollectionPage() {
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-
-    const dueDate = format(addDays(new Date(), 10), 'PPP');
     
     const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
     let qrCodeDataUrl = '';
@@ -286,6 +284,8 @@ export default function FeeCollectionPage() {
     }
 
     let voucherHtml = '';
+    const issueDate = new Date();
+    const dueDate = addDays(issueDate, 10);
 
     if (printFormat === 'a4') {
         voucherHtml = `
@@ -319,7 +319,7 @@ export default function FeeCollectionPage() {
                         <table class="details">
                             <tr><td><strong>Student Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
                             <tr><td><strong>Father's Name:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
-                            <tr><td><strong>Issue Date:</strong></td><td>${format(new Date(), 'PPP')}</td><td><strong>Due Date:</strong></td><td>${dueDate}</td></tr>
+                            <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
                         </table>
                         <table class="fee-details">
                             <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
@@ -333,17 +333,11 @@ export default function FeeCollectionPage() {
                             ` : ''}
                         </div>
                          <div class="slip-container">
-                            <div class="slip">
-                                <h4>Bank Copy</h4>
+                            <div class="slip" style="text-align: center; width: 100%;">
+                                <h4>Academy Copy</h4>
                                 <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
                                 <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
-                                <p><strong>Due Date:</strong> ${dueDate}</p>
-                            </div>
-                            <div class="slip">
-                                <h4>Student Copy</h4>
-                                <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                                <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
-                                <p><strong>Due Date:</strong> ${dueDate}</p>
+                                <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
                             </div>
                         </div>
                     </div>
@@ -380,7 +374,7 @@ export default function FeeCollectionPage() {
                       <p class='text-xs'>Phone: ${settings.phone}</p>
                   </div>
                   <div class="border-t border-b my-2 py-1 text-xs">
-                      <div class='flex justify-between'><span>Voucher</span><span>${format(new Date(), 'PPP')}</span></div>
+                      <div class='flex justify-between'><span>Voucher</span><span>${format(issueDate, 'PPP')}</span></div>
                   </div>
                   <div class='text-xs'>
                       <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
@@ -388,7 +382,7 @@ export default function FeeCollectionPage() {
                   </div>
                   <div class="border-t my-2"></div>
                   <div class='flex justify-between font-bold text-xs'><span>Total Due:</span><span>${searchedStudent.totalFee.toLocaleString()} PKR</span></div>
-                  <p class='text-center text-xs mt-4'>Please pay by: ${dueDate}</p>
+                  <p class='text-center text-xs mt-4'>Please pay by: ${format(dueDate, 'PPP')}</p>
                    <div class='text-center mt-4'>
                       ${qrCodeDataUrl ? `
                           <p class='font-bold text-xs'>Scan to check status</p>
