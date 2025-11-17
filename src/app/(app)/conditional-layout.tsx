@@ -43,6 +43,7 @@ import {
   GraduationCap,
   Archive,
   Armchair,
+  Newspaper,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -99,6 +100,7 @@ function MainSidebar() {
     { href: '/exams', label: 'Exams', icon: ClipboardPenLine },
     { href: '/seating-plan', label: 'Seating Plan', icon: Armchair },
     { href: '/fee-collection', label: 'Fee Collection', icon: DollarSign },
+    { href: '/vouchers', label: 'Vouchers', icon: Newspaper },
     { href: '/income', label: 'Income', icon: TrendingUp },
     { href: '/expenses', label: 'Expenses', icon: TrendingDown },
     { href: '/academy-share', label: 'Academy Share', icon: TrendingUp },
