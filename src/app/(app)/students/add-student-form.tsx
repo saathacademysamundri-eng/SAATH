@@ -94,6 +94,20 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         return monthlyFee / selectedSubjects.length;
     }, [monthlyFee, selectedSubjects.length]);
 
+    const resetForm = () => {
+        setName('');
+        setFatherName('');
+        setPhone('');
+        setCollege('');
+        setAddress('');
+        setGender('male');
+        setSelectedClassId(null);
+        setSelectedSection(undefined);
+        setMonthlyFee(0);
+        setSelectedSubjects([]);
+        setImageUrl('');
+    };
+
     const handleSubmit = async () => {
         const hasMissingInfo = !name || !fatherName || !phone || !college || !address || !selectedClassId || monthlyFee <= 0 || selectedSubjects.length === 0;
         const hasNullTeacher = selectedSubjects.some(s => s.teacherId === null);
@@ -137,6 +151,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         const result = await addStudent(newStudent);
 
         if(result.success) {
+            resetForm();
             onStudentAdded();
             toast({
                 title: 'Student Added',
