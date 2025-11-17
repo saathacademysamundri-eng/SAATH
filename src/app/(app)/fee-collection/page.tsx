@@ -313,6 +313,7 @@ export default function FeeCollectionPage() {
                             ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
                             <h1>${settings.name}</h1>
                             <p>${settings.address}</p>
+                            <p>Phone: ${settings.phone}</p>
                         </div>
                         <h2>Fee Voucher</h2>
                         <table class="details">
@@ -376,6 +377,7 @@ export default function FeeCollectionPage() {
                       ${settings.logo ? `<img src="${settings.logo}" alt="logo" style="height: 4rem; object-fit: contain; margin: auto;">` : ''}
                       <h1 class='text-lg font-bold'>${settings.name}</h1>
                       <p class='text-xs'>${settings.address}</p>
+                      <p class='text-xs'>Phone: ${settings.phone}</p>
                   </div>
                   <div class="border-t border-b my-2 py-1 text-xs">
                       <div class='flex justify-between'><span>Voucher</span><span>${format(new Date(), 'PPP')}</span></div>
@@ -516,3 +518,5 @@ export default function FeeCollectionPage() {
     </div>
   );
 }
+
+    

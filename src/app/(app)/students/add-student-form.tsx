@@ -361,3 +361,5 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
       </DialogContent>
   )
 }
+
+    

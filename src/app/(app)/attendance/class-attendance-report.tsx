@@ -137,6 +137,7 @@ export function ClassAttendanceReport() {
                         <div class="academy-details">
                             ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
                             <h1>${settings.name}</h1>
+                            <p>${settings.phone}</p>
                         </div>
                         <div class="report-title">
                             <h2>Class Attendance Report</h2>
@@ -247,3 +248,5 @@ export function ClassAttendanceReport() {
         </div>
     );
 }
+
+    
