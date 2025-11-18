@@ -97,22 +97,48 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
 export async function getStudents(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
     const studentsSnap = await getDocs(studentsCollection);
-    const allStudents = studentsSnap.docs.map(doc => doc.data() as Student);
+    const allStudents = studentsSnap.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            ...data,
+            id: doc.id,
+            archivedAt: data.archivedAt?.toDate() 
+        } as Student;
+    });
     return allStudents.filter(s => s.status === 'active').sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function getAlumni(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
     const studentsSnap = await getDocs(studentsCollection);
-    const allStudents = studentsSnap.docs.map(doc => doc.data() as Student);
+    const allStudents = studentsSnap.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            ...data,
+            id: doc.id,
+            archivedAt: data.archivedAt?.toDate() 
+        } as Student;
+    });
     return allStudents.filter(s => s.status === 'graduated').sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function getArchivedStudents(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
     const studentsSnap = await getDocs(studentsCollection);
-    const allStudents = studentsSnap.docs.map(doc => doc.data() as Student);
-    return allStudents.filter(s => s.status === 'archived').sort((a, b) => a.id.localeCompare(b.id));
+    const allStudents = studentsSnap.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            ...data,
+            id: doc.id,
+            archivedAt: data.archivedAt?.toDate() 
+        } as Student;
+    });
+    return allStudents.filter(s => s.status === 'archived').sort((a, b) => {
+        if (a.archivedAt && b.archivedAt) {
+            return b.archivedAt.getTime() - a.archivedAt.getTime();
+        }
+        return a.id.localeCompare(b.id);
+    });
 }
 
 export async function getStudentsByClass(className: string): Promise<Student[]> {
@@ -125,14 +151,25 @@ export async function getStudent(id: string): Promise<Student | null> {
     const studentDocRef = doc(db, 'students', id);
     const studentDoc = await getDoc(studentDocRef);
     if (studentDoc.exists()) {
-        return studentDoc.data() as Student;
+        const data = studentDoc.data();
+        return { 
+            ...data,
+            id: studentDoc.id,
+            archivedAt: data.archivedAt?.toDate() 
+        } as Student;
     }
     
     // Fallback search by case-insensitive id
     const q = query(collection(db, "students"), where("id", "==", id.toUpperCase()));
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
-        return querySnapshot.docs[0].data() as Student;
+        const doc = querySnapshot.docs[0];
+        const data = doc.data();
+        return { 
+            ...data,
+            id: doc.id,
+            archivedAt: data.archivedAt?.toDate() 
+        } as Student;
     }
     return null;
 }
@@ -173,7 +210,15 @@ export async function updateStudentStatus(studentId: string, status: 'active' | 
         }
         const student = studentDoc.data() as Student;
 
-        await updateDoc(studentRef, { status });
+        const updateData: { status: string; archivedAt?: any } = { status };
+
+        if (status === 'archived') {
+            updateData.archivedAt = serverTimestamp();
+        } else {
+            updateData.archivedAt = deleteField();
+        }
+
+        await updateDoc(studentRef, updateData);
         
         if (status === 'graduated') {
             await logActivity('student_graduated', `Marked student as graduated: ${student.name} (ID: ${studentId}).`);
@@ -1172,3 +1217,4 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+

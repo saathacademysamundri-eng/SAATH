@@ -65,6 +65,7 @@ export type Student = {
     monthlyFee: number; // This is the base fee charged each month
     status: 'active' | 'graduated' | 'archived'; 
     imageUrl?: string;
+    archivedAt?: Date;
 };
 
 export type Teacher = {
@@ -361,4 +362,5 @@ export const subjectTeacherMap: { [subjectName: string]: string } = {
 };
 
     
+
 
