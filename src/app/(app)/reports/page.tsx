@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -15,12 +14,14 @@ import {
   Printer,
   FileDown,
   BookCopy,
+  CalendarCheck2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type Student } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { ClassAttendanceDialog } from './class-attendance-dialog';
+import { DailyAttendanceSummaryDialog } from './daily-attendance-summary-dialog';
 
 export default function ReportsPage() {
   const { students, loading: studentsLoading } = useAppContext();
@@ -30,12 +31,13 @@ export default function ReportsPage() {
 
   const reportCards = [
     {
-      id: 'all-students',
-      title: 'All Students Report',
-      description: 'Generate a report with a complete list of all students currently enrolled in the academy.',
-      icon: Users,
+      id: 'daily-summary',
+      title: 'Daily Attendance Summary',
+      description: 'A printable summary of today\'s student and teacher attendance, highlighting absentees.',
+      icon: CalendarCheck2,
       isEnabled: true,
-      type: 'print-export',
+      type: 'dialog',
+      dialogComponent: <DailyAttendanceSummaryDialog />,
     },
      {
       id: 'student-ledger',
@@ -46,11 +48,11 @@ export default function ReportsPage() {
       type: 'action',
     },
     {
-      id: 'fee-collection',
-      title: 'Fee Collection Report',
-      description: 'Summary of all fees collected within a specific date range, categorized by class or student.',
-      icon: DollarSign,
-      isEnabled: false,
+      id: 'all-students',
+      title: 'All Students Report',
+      description: 'Generate a report with a complete list of all students currently enrolled in the academy.',
+      icon: Users,
+      isEnabled: true,
       type: 'print-export',
     },
     {
@@ -63,11 +65,12 @@ export default function ReportsPage() {
     },
     {
       id: 'attendance',
-      title: 'Attendance Report',
-      description: 'Generate class-wise attendance reports for a specified period, with print and export options.',
+      title: 'Monthly Attendance Report',
+      description: 'Generate class-wise monthly attendance sheets, with print and export options.',
       icon: ClipboardCheck,
       isEnabled: true,
       type: 'dialog',
+      dialogComponent: <ClassAttendanceDialog />,
     },
   ];
   
@@ -287,7 +290,7 @@ export default function ReportsPage() {
                     </DialogTrigger>
                   </CardContent>
                 </Card>
-                <ClassAttendanceDialog />
+                {report.dialogComponent}
               </Dialog>
             );
           }
