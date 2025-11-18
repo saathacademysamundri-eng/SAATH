@@ -195,8 +195,7 @@ export default function StudentsPage() {
                             <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{student.name}</div>
-                            <div className="text-xs text-muted-foreground">{student.fatherName}</div>
+                            <div className="font-medium">{student.name} <span className="text-xs text-muted-foreground">s/o {student.fatherName}</span></div>
                             <div className="text-xs text-muted-foreground">{student.id} {student.section && `(${student.section})`}</div>
                           </div>
                       </div>
@@ -300,7 +299,7 @@ export default function StudentsPage() {
         </AlertDialog>
 
       {dialogState.selectedStudent && (
-          <Dialog open={dialogState.isEditOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isEditOpen: isOpen })}>
+          <Dialog open={dialogState.isEditOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isEditOpen: isOpen, selectedStudent: isOpen ? dialogState.selectedStudent : null })}>
               <EditStudentForm 
                   student={dialogState.selectedStudent}
                   onStudentUpdated={onStudentUpdated}
