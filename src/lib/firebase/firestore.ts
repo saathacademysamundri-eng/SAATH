@@ -2,7 +2,7 @@
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout } from '@/lib/data';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -1080,4 +1080,95 @@ export async function getTodaysMessagesCount(): Promise<number> {
     }
 }
 
+export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSummary | null> {
+    try {
+        const todayStr = formatDate(new Date(), 'yyyy-MM-dd');
+        
+        // Fetch all data in parallel
+        const [allClasses, allStudents, allTeachers] = await Promise.all([
+            getClasses(),
+            getStudents(),
+            getTeachers()
+        ]);
+        
+        const qStudents = query(collection(db, 'attendance'), where('date', '==', todayStr));
+        const studentAttendanceSnap = await getDocs(qStudents);
 
+        const qTeachers = query(collection(db, 'teacher_attendance'), where('date', '==', todayStr));
+        const teacherAttendanceSnap = await getDocs(qTeachers);
+
+        // Process student attendance
+        const studentSummary: DailyAttendanceSummary['students'] = {
+            totalStudents: allStudents.length,
+            totalPresent: 0,
+            totalAbsent: 0,
+            classSummaries: [],
+        };
+
+        const attendanceByClass: { [classId: string]: { records: { [studentId: string]: AttendanceStatus } } } = {};
+        studentAttendanceSnap.forEach(doc => {
+            const data = doc.data();
+            attendanceByClass[data.classId] = { records: data.records };
+        });
+
+        studentSummary.classSummaries = allClasses.map(cls => {
+            const studentsInClass = allStudents.filter(s => s.class === cls.name);
+            const classAttendance = attendanceByClass[cls.id];
+            let presentCount = 0;
+            const absentStudents: { id: string; name: string }[] = [];
+
+            studentsInClass.forEach(student => {
+                const status = classAttendance?.records[student.id];
+                if (status === 'Present') {
+                    presentCount++;
+                } else if (status === 'Absent' || status === 'Leave' || !status) {
+                    absentStudents.push({ id: student.id, name: student.name });
+                }
+            });
+
+            studentSummary.totalPresent += presentCount;
+            studentSummary.totalAbsent += absentStudents.length;
+
+            return {
+                classId: cls.id,
+                className: cls.name,
+                totalStudents: studentsInClass.length,
+                presentCount: presentCount,
+                absentCount: absentStudents.length,
+                absentStudents: absentStudents,
+            };
+        });
+
+        // Process teacher attendance
+        const teacherSummary: DailyAttendanceSummary['teachers'] = {
+            totalTeachers: allTeachers.length,
+            presentCount: 0,
+            absentCount: 0,
+            absentTeachers: [],
+        };
+        
+        const presentTeacherIds = new Set<string>();
+        teacherAttendanceSnap.forEach(doc => {
+            const data = doc.data();
+            if (data.status === 'Present') {
+                presentTeacherIds.add(data.teacherId);
+            }
+        });
+        
+        teacherSummary.presentCount = presentTeacherIds.size;
+        teacherSummary.absentTeachers = allTeachers
+            .filter(t => !presentTeacherIds.has(t.id))
+            .map(t => ({ id: t.id, name: t.name }));
+        teacherSummary.absentCount = teacherSummary.absentTeachers.length;
+
+        return {
+            date: new Date(),
+            students: studentSummary,
+            teachers: teacherSummary,
+        };
+
+    } catch (error) {
+        console.error("Error generating detailed daily attendance:", error);
+        return null;
+    }
+}
