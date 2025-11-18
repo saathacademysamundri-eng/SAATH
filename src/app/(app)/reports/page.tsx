@@ -71,7 +71,7 @@ export default function ReportsPage() {
           <title>${title}</title>
           <style>
             @media print {
-              @page { size: A4 portrait; margin: 0.75in; }
+              @page { size: A4 landscape; margin: 0.75in; }
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
@@ -133,12 +133,14 @@ export default function ReportsPage() {
 
     if (reportId === 'all-students') {
         reportTitle = 'All Students Report';
-        tableHeaders = ["Roll #", "Student Name", "Class", "Outstanding Fee", "Fee Status"];
+        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Class", "Phone", "Outstanding Fee", "Fee Status"];
         tableRows = students.map(student => `
             <tr>
               <td>${student.id}</td>
               <td>${student.name}</td>
+              <td>${student.fatherName}</td>
               <td>${student.class}</td>
+              <td>${student.phone}</td>
               <td>${student.totalFee.toLocaleString()} PKR</td>
               <td>${student.feeStatus}</td>
             </tr>
@@ -173,39 +175,64 @@ export default function ReportsPage() {
     let filename = '';
 
     if (reportId === 'all-students') {
-      headers = ["ID", "Name", "Class", "Total Fee", "Fee Status", "Subjects"];
+      headers = ["ID", "Name", "Father's Name", "Class", "Phone", "Total Fee", "Fee Status", "Subjects"];
       data = students;
       filename = 'all-students-report.csv';
+
+      const csvContent = [
+        headers.join(','),
+        ...data.map((s: Student) => [
+          s.id,
+          s.name,
+          s.fatherName,
+          s.class,
+          s.phone,
+          s.totalFee,
+          s.feeStatus,
+          `"${s.subjects.map(sub => sub.subject_name).join(', ')}"`
+        ].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
     } else if (reportId === 'unpaid-dues') {
       headers = ["ID", "Name", "Class", "Outstanding Dues", "Fee Status"];
       data = students.filter(s => s.feeStatus !== 'Paid');
       filename = 'unpaid-dues-report.csv';
+
+      const csvContent = [
+        headers.join(','),
+        ...data.map((s: Student) => [
+          s.id,
+          s.name,
+          s.class,
+          s.totalFee,
+          s.feeStatus,
+        ].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
     } else {
       toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for export.' });
       return;
     }
-
-    const csvContent = [
-      headers.join(','),
-      ...data.map((s: Student) => [
-        s.id,
-        s.name,
-        s.class,
-        s.totalFee,
-        s.feeStatus,
-        ...(reportId === 'all-students' ? [`"${s.subjects.map(sub => sub.subject_name).join(', ')}"`] : [])
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
   
   const handleAction = (reportId: string) => {
@@ -269,5 +296,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    
