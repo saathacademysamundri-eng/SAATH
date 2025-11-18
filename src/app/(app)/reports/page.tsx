@@ -22,12 +22,24 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { ClassAttendanceDialog } from './class-attendance-dialog';
 import { DailyAttendanceSummaryDialog } from './daily-attendance-summary-dialog';
+import { useState, useMemo } from 'react';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+
+const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(0, i), 'MMMM') }));
+const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
+
 
 export default function ReportsPage() {
   const { students, income, loading: studentsLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const router = useRouter();
+
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
 
   const reportCards = [
     {
@@ -83,6 +95,9 @@ export default function ReportsPage() {
   ];
   
   const generatePrintHtml = (title: string, headers: string[], rows: string) => {
+    const monthName = months.find(m => m.value === selectedMonth)?.label;
+    const dateTitle = `${monthName}, ${selectedYear}`;
+    
     return `
       <html>
         <head>
@@ -100,6 +115,7 @@ export default function ReportsPage() {
             .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
             .report-title { text-align: center; margin: 2rem 0; }
             .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0; }
+             .report-title .date-subtitle { font-size: 1rem; color: #555; }
             table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
             th, td { padding: 8px 10px; border: 1px solid #ddd; }
             th { font-weight: bold; background-color: #f2f2f2; }
@@ -116,6 +132,7 @@ export default function ReportsPage() {
             </div>
             <div class="report-title">
               <h2>${title}</h2>
+              ${['paid-students', 'unpaid-dues'].includes(title.toLowerCase().replace(/\s+/g, '-')) ? `<p class="date-subtitle">${dateTitle}</p>` : ''}
             </div>
             <table>
               <thead>
@@ -149,6 +166,9 @@ export default function ReportsPage() {
     let tableHeaders: string[] = [];
     let tableRows = '';
 
+    const monthStart = startOfMonth(new Date(selectedYear, selectedMonth));
+    const monthEnd = endOfMonth(new Date(selectedYear, selectedMonth));
+
     if (reportId === 'all-students') {
         reportTitle = 'All Students Report';
         tableHeaders = ["Roll #", "Student Name", "Father's Name", "Class", "Phone", "Outstanding Fee", "Fee Status"];
@@ -167,7 +187,7 @@ export default function ReportsPage() {
         reportTitle = 'Unpaid Dues Report';
         tableHeaders = ["Roll #", "Student Name", "Class", "Outstanding Dues", "Fee Status"];
         tableRows = students
-          .filter(s => s.feeStatus !== 'Paid')
+          .filter(s => s.totalFee > 0)
           .map(student => `
             <tr>
               <td>${student.id}</td>
@@ -181,16 +201,16 @@ export default function ReportsPage() {
         reportTitle = 'Paid Students Report';
         tableHeaders = ["Roll #", "Student Name", "Father's Name", "Class", "Fee Amount", "Fee Status", "Last Paid Date"];
         
-        const studentLastPayment: { [studentId: string]: Date } = {};
-        income.forEach(inc => {
-            if (!studentLastPayment[inc.studentId] || inc.date > studentLastPayment[inc.studentId]) {
-                studentLastPayment[inc.studentId] = inc.date;
-            }
-        });
+        const paymentsInMonth = income.filter(i => i.date >= monthStart && i.date <= monthEnd);
+        const studentIdsPaidInMonth = new Set(paymentsInMonth.map(i => i.studentId));
 
         tableRows = students
-          .filter(s => s.feeStatus === 'Paid')
-          .map(student => `
+          .filter(s => studentIdsPaidInMonth.has(s.id))
+          .map(student => {
+             const lastPaymentInMonth = paymentsInMonth
+                .filter(i => i.studentId === student.id)
+                .sort((a,b) => b.date.getTime() - a.date.getTime())[0];
+            return `
             <tr>
               <td>${student.id}</td>
               <td>${student.name}</td>
@@ -198,9 +218,10 @@ export default function ReportsPage() {
               <td>${student.class}</td>
               <td>${student.monthlyFee.toLocaleString()} PKR</td>
               <td>${student.feeStatus}</td>
-              <td>${studentLastPayment[student.id] ? new Date(studentLastPayment[student.id]).toLocaleDateString() : 'N/A'}</td>
+              <td>${lastPaymentInMonth ? new Date(lastPaymentInMonth.date).toLocaleDateString() : 'N/A'}</td>
             </tr>
-          `).join('');
+          `})
+          .join('');
     } else {
         toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for printing.' });
         return;
@@ -213,101 +234,61 @@ export default function ReportsPage() {
 
   const handleExport = (reportId: string) => {
     let headers: string[] = [];
-    let data: Student[] = [];
+    let data: any[] = [];
     let filename = '';
+    
+    const monthStart = startOfMonth(new Date(selectedYear, selectedMonth));
+    const monthEnd = endOfMonth(new Date(selectedYear, selectedMonth));
 
     if (reportId === 'all-students') {
       headers = ["ID", "Name", "Father's Name", "Class", "Phone", "Total Fee", "Fee Status", "Subjects"];
-      data = students;
-      filename = 'all-students-report.csv';
-
-      const csvContent = [
-        headers.join(','),
-        ...data.map((s: Student) => [
-          s.id,
-          s.name,
-          s.fatherName,
-          s.class,
-          s.phone,
-          s.totalFee,
-          s.feeStatus,
+      data = students.map((s: Student) => [
+          s.id, s.name, s.fatherName, s.class, s.phone, s.totalFee, s.feeStatus,
           `"${s.subjects.map(sub => sub.subject_name).join(', ')}"`
-        ].join(','))
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
+        ]);
+      filename = 'all-students-report.csv';
     } else if (reportId === 'unpaid-dues') {
       headers = ["ID", "Name", "Class", "Outstanding Dues", "Fee Status"];
-      data = students.filter(s => s.feeStatus !== 'Paid');
+      data = students.filter(s => s.totalFee > 0).map((s: Student) => [
+          s.id, s.name, s.class, s.totalFee, s.feeStatus,
+        ]);
       filename = 'unpaid-dues-report.csv';
-
-      const csvContent = [
-        headers.join(','),
-        ...data.map((s: Student) => [
-          s.id,
-          s.name,
-          s.class,
-          s.totalFee,
-          s.feeStatus,
-        ].join(','))
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
     } else if (reportId === 'paid-students') {
-        const studentLastPayment: { [studentId: string]: Date } = {};
-        income.forEach(inc => {
-            if (!studentLastPayment[inc.studentId] || inc.date > studentLastPayment[inc.studentId]) {
-                studentLastPayment[inc.studentId] = inc.date;
-            }
-        });
-      headers = ["ID", "Name", "Father's Name", "Class", "Fee Amount", "Fee Status", "Last Paid Date"];
-      data = students.filter(s => s.feeStatus === 'Paid');
+        headers = ["ID", "Name", "Father's Name", "Class", "Fee Amount", "Fee Status", "Last Paid Date"];
+        const paymentsInMonth = income.filter(i => i.date >= monthStart && i.date <= monthEnd);
+        const studentIdsPaidInMonth = new Set(paymentsInMonth.map(i => i.studentId));
+
+        data = students
+          .filter(s => studentIdsPaidInMonth.has(s.id))
+          .map(student => {
+             const lastPaymentInMonth = paymentsInMonth
+                .filter(i => i.studentId === student.id)
+                .sort((a,b) => b.date.getTime() - a.date.getTime())[0];
+            return [
+              student.id, student.name, student.fatherName, student.class, student.monthlyFee,
+              student.feeStatus, lastPaymentInMonth ? new Date(lastPaymentInMonth.date).toLocaleDateString() : 'N/A'
+            ]
+          });
       filename = 'paid-students-report.csv';
-
-      const csvContent = [
-        headers.join(','),
-        ...data.map((s: Student) => [
-          s.id,
-          s.name,
-          s.fatherName,
-          s.class,
-          s.monthlyFee,
-          s.feeStatus,
-          studentLastPayment[s.id] ? new Date(studentLastPayment[s.id]).toLocaleDateString() : 'N/A'
-        ].join(','))
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
     } else {
       toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for export.' });
       return;
     }
+
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => row.join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
   
   const handleAction = (reportId: string) => {
@@ -324,6 +305,37 @@ export default function ReportsPage() {
           Generate, view, and export various reports for your academy.
         </p>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle>Report Filters</CardTitle>
+          <CardDescription>Select a month and year for financial reports.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-4 items-end">
+            <div className="space-y-2">
+                <Label>Month</Label>
+                <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label>Year</Label>
+                <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                    <SelectTrigger className="w-[120px]">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {reportCards.map((report) => {
@@ -401,5 +413,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    
