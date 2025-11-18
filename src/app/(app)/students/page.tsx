@@ -158,6 +158,7 @@ export default function StudentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Student</TableHead>
+                <TableHead>Father's Name</TableHead>
                 <TableHead>Fee Status</TableHead>
                 <TableHead className="hidden sm:table-cell">Class</TableHead>
                 <TableHead className="hidden md:table-cell">Subjects</TableHead>
@@ -179,6 +180,7 @@ export default function StudentsPage() {
                         </div>
                       </div>
                     </TableCell>
+                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                     <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
@@ -195,11 +197,12 @@ export default function StudentsPage() {
                             <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{student.name} <span className="text-xs text-muted-foreground">s/o {student.fatherName}</span></div>
+                            <div className="font-medium">{student.name}</div>
                             <div className="text-xs text-muted-foreground">{student.id} {student.section && `(${student.section})`}</div>
                           </div>
                       </div>
                     </TableCell>
+                    <TableCell>{student.fatherName}</TableCell>
                     <TableCell>
                         <Badge variant={
                             student.feeStatus === 'Paid' ? 'secondary' : 
