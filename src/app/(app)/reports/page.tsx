@@ -20,49 +20,54 @@ import { useToast } from '@/hooks/use-toast';
 import { type Student } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 
-const reportCards = [
-  {
-    id: 'all-students',
-    title: 'All Students Report',
-    description: 'Generate a report with a complete list of all students currently enrolled in the academy.',
-    icon: Users,
-    isEnabled: true,
-  },
-   {
-    id: 'student-ledger',
-    title: 'Student Financial Ledger',
-    description: 'Search for a student to view their detailed fee payment history and outstanding dues.',
-    icon: BookCopy,
-    isEnabled: true,
-  },
-  {
-    id: 'fee-collection',
-    title: 'Fee Collection Report',
-    description: 'Summary of all fees collected within a specific date range, categorized by class or student.',
-    icon: DollarSign,
-    isEnabled: false,
-  },
-  {
-    id: 'unpaid-dues',
-    title: 'Unpaid Dues Report',
-    description: 'A list of all students with pending or overdue fee payments, including balance amounts.',
-    icon: BadgeAlert,
-    isEnabled: true,
-  },
-  {
-    id: 'attendance',
-    title: 'Attendance Report',
-    description: 'Generate attendance reports for a class or student for a specified period.',
-    icon: ClipboardCheck,
-    isEnabled: false,
-  },
-];
-
 export default function ReportsPage() {
   const { students, loading: studentsLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const router = useRouter();
+
+  const reportCards = [
+    {
+      id: 'all-students',
+      title: 'All Students Report',
+      description: 'Generate a report with a complete list of all students currently enrolled in the academy.',
+      icon: Users,
+      isEnabled: true,
+      type: 'print-export',
+    },
+     {
+      id: 'student-ledger',
+      title: 'Student Financial Ledger',
+      description: 'Search for a student to view their detailed fee payment history and outstanding dues.',
+      icon: BookCopy,
+      isEnabled: true,
+      type: 'action',
+    },
+    {
+      id: 'fee-collection',
+      title: 'Fee Collection Report',
+      description: 'Summary of all fees collected within a specific date range, categorized by class or student.',
+      icon: DollarSign,
+      isEnabled: false,
+      type: 'print-export',
+    },
+    {
+      id: 'unpaid-dues',
+      title: 'Unpaid Dues Report',
+      description: 'A list of all students with pending or overdue fee payments, including balance amounts.',
+      icon: BadgeAlert,
+      isEnabled: true,
+      type: 'print-export',
+    },
+    {
+      id: 'attendance',
+      title: 'Attendance Report',
+      description: 'Generate attendance reports for a class or student for a specified period.',
+      icon: ClipboardCheck,
+      isEnabled: true,
+      type: 'action',
+    },
+  ];
   
   const generatePrintHtml = (title: string, headers: string[], rows: string) => {
     return `
@@ -238,6 +243,8 @@ export default function ReportsPage() {
   const handleAction = (reportId: string) => {
     if (reportId === 'student-ledger') {
         router.push('/student-ledger');
+    } else if (reportId === 'attendance') {
+        router.push('/attendance');
     }
   }
 
@@ -253,7 +260,7 @@ export default function ReportsPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {reportCards.map((report) => {
           const Icon = report.icon;
-          const isLedger = report.id === 'student-ledger';
+          const isAction = report.type === 'action';
 
           return (
             <Card key={report.id} className="flex flex-col">
@@ -271,10 +278,10 @@ export default function ReportsPage() {
                 </div>
               </CardHeader>
               <CardContent className="mt-auto flex gap-2 pt-4">
-                {isLedger ? (
+                {isAction ? (
                     <Button className="w-full" onClick={() => handleAction(report.id)} disabled={!report.isEnabled}>
                         <FileText className="mr-2 h-4 w-4" />
-                        Generate Report
+                        Open Report Section
                     </Button>
                 ) : (
                     <>
