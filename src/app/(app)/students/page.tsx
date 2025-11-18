@@ -74,7 +74,9 @@ export default function StudentsPage() {
   });
 
   const filteredStudents = studentList.filter(student =>
-    student.name.toLowerCase().includes(search.toLowerCase()) || student.id.toLowerCase().includes(search.toLowerCase())
+    student.name.toLowerCase().includes(search.toLowerCase()) || 
+    student.id.toLowerCase().includes(search.toLowerCase()) ||
+    student.fatherName.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleEditClick = (student: Student) => {
@@ -144,7 +146,7 @@ export default function StudentsPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search students..." 
+              placeholder="Search by student name, father's name, or roll number..." 
               className="pl-8" 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -156,6 +158,7 @@ export default function StudentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Student</TableHead>
+                <TableHead>Father's Name</TableHead>
                 <TableHead>Fee Status</TableHead>
                 <TableHead className="hidden sm:table-cell">Class</TableHead>
                 <TableHead className="hidden md:table-cell">Subjects</TableHead>
@@ -177,6 +180,7 @@ export default function StudentsPage() {
                         </div>
                       </div>
                     </TableCell>
+                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                     <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
@@ -198,6 +202,7 @@ export default function StudentsPage() {
                           </div>
                       </div>
                     </TableCell>
+                    <TableCell>{student.fatherName}</TableCell>
                     <TableCell>
                         <Badge variant={
                             student.feeStatus === 'Paid' ? 'secondary' : 
@@ -297,7 +302,7 @@ export default function StudentsPage() {
         </AlertDialog>
 
       {dialogState.selectedStudent && (
-          <Dialog open={dialogState.isEditOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isEditOpen: isOpen })}>
+          <Dialog open={dialogState.isEditOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isEditOpen: isOpen, selectedStudent: isOpen ? dialogState.selectedStudent : null })}>
               <EditStudentForm 
                   student={dialogState.selectedStudent}
                   onStudentUpdated={onStudentUpdated}

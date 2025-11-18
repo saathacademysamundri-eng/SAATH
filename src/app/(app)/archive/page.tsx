@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAppContext } from '@/hooks/use-app-context';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { format } from 'date-fns';
 
 export default function ArchivePage() {
   const [archivedStudents, setArchivedStudents] = useState<Student[]>([]);
@@ -103,7 +105,7 @@ export default function ArchivePage() {
               <TableRow>
                 <TableHead>Roll #</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Class</TableHead>
+                <TableHead>Archived Date</TableHead>
                 <TableHead>Subjects</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -134,7 +136,7 @@ export default function ArchivePage() {
                   <TableRow key={student.id}>
                     <TableCell className="font-medium">{student.id}</TableCell>
                     <TableCell>{student.name}</TableCell>
-                    <TableCell>{student.class}</TableCell>
+                    <TableCell>{student.archivedAt ? format(student.archivedAt, 'PPP') : 'N/A'}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {student.subjects.map((sub) => (
