@@ -24,7 +24,7 @@ import { ClassAttendanceDialog } from './class-attendance-dialog';
 import { DailyAttendanceSummaryDialog } from './daily-attendance-summary-dialog';
 
 export default function ReportsPage() {
-  const { students, loading: studentsLoading } = useAppContext();
+  const { students, income, loading: studentsLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const router = useRouter();
@@ -179,7 +179,15 @@ export default function ReportsPage() {
           `).join('');
     } else if (reportId === 'paid-students') {
         reportTitle = 'Paid Students Report';
-        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Class", "Phone"];
+        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Class", "Fee Amount", "Fee Status", "Last Paid Date"];
+        
+        const studentLastPayment: { [studentId: string]: Date } = {};
+        income.forEach(inc => {
+            if (!studentLastPayment[inc.studentId] || inc.date > studentLastPayment[inc.studentId]) {
+                studentLastPayment[inc.studentId] = inc.date;
+            }
+        });
+
         tableRows = students
           .filter(s => s.feeStatus === 'Paid')
           .map(student => `
@@ -188,7 +196,9 @@ export default function ReportsPage() {
               <td>${student.name}</td>
               <td>${student.fatherName}</td>
               <td>${student.class}</td>
-              <td>${student.phone}</td>
+              <td>${student.monthlyFee.toLocaleString()} PKR</td>
+              <td>${student.feeStatus}</td>
+              <td>${studentLastPayment[student.id] ? new Date(studentLastPayment[student.id]).toLocaleDateString() : 'N/A'}</td>
             </tr>
           `).join('');
     } else {
@@ -262,7 +272,13 @@ export default function ReportsPage() {
       document.body.removeChild(link);
       
     } else if (reportId === 'paid-students') {
-      headers = ["ID", "Name", "Father's Name", "Class", "Phone"];
+        const studentLastPayment: { [studentId: string]: Date } = {};
+        income.forEach(inc => {
+            if (!studentLastPayment[inc.studentId] || inc.date > studentLastPayment[inc.studentId]) {
+                studentLastPayment[inc.studentId] = inc.date;
+            }
+        });
+      headers = ["ID", "Name", "Father's Name", "Class", "Fee Amount", "Fee Status", "Last Paid Date"];
       data = students.filter(s => s.feeStatus === 'Paid');
       filename = 'paid-students-report.csv';
 
@@ -273,7 +289,9 @@ export default function ReportsPage() {
           s.name,
           s.fatherName,
           s.class,
-          s.phone,
+          s.monthlyFee,
+          s.feeStatus,
+          studentLastPayment[s.id] ? new Date(studentLastPayment[s.id]).toLocaleDateString() : 'N/A'
         ].join(','))
       ].join('\n');
 
@@ -383,3 +401,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
