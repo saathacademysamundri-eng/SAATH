@@ -70,7 +70,7 @@ export default function ReportsPage() {
      {
       id: 'paid-students',
       title: 'Paid Students Report',
-      description: 'Generate a list of all students who have fully paid their fees for the current cycle.',
+      description: 'Generate a list of all students who have fully paid their fees for the selected month.',
       icon: DollarSign,
       isEnabled: true,
       type: 'print-export',
@@ -78,7 +78,7 @@ export default function ReportsPage() {
     {
       id: 'unpaid-dues',
       title: 'Unpaid Dues Report',
-      description: 'A list of all students with pending or overdue fee payments, including balance amounts.',
+      description: 'A list of all students with pending or overdue fee payments.',
       icon: BadgeAlert,
       isEnabled: true,
       type: 'print-export',
@@ -185,13 +185,15 @@ export default function ReportsPage() {
           `).join('');
     } else if (reportId === 'unpaid-dues') {
         reportTitle = 'Unpaid Dues Report';
-        tableHeaders = ["Roll #", "Student Name", "Class", "Outstanding Dues", "Fee Status"];
+        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Phone", "Class", "Outstanding Dues", "Fee Status"];
         tableRows = students
           .filter(s => s.totalFee > 0)
           .map(student => `
             <tr>
               <td>${student.id}</td>
               <td>${student.name}</td>
+              <td>${student.fatherName}</td>
+              <td>${student.phone}</td>
               <td>${student.class}</td>
               <td>${student.totalFee.toLocaleString()} PKR</td>
               <td>${student.feeStatus}</td>
@@ -248,9 +250,9 @@ export default function ReportsPage() {
         ]);
       filename = 'all-students-report.csv';
     } else if (reportId === 'unpaid-dues') {
-      headers = ["ID", "Name", "Class", "Outstanding Dues", "Fee Status"];
+      headers = ["ID", "Name", "Father's Name", "Phone", "Class", "Outstanding Dues", "Fee Status"];
       data = students.filter(s => s.totalFee > 0).map((s: Student) => [
-          s.id, s.name, s.class, s.totalFee, s.feeStatus,
+          s.id, s.name, s.fatherName, s.phone, s.class, s.totalFee, s.feeStatus,
         ]);
       filename = 'unpaid-dues-report.csv';
     } else if (reportId === 'paid-students') {
@@ -306,40 +308,10 @@ export default function ReportsPage() {
         </p>
       </div>
 
-       <Card>
-        <CardHeader>
-          <CardTitle>Report Filters</CardTitle>
-          <CardDescription>Select a month and year for financial reports.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-4 items-end">
-            <div className="space-y-2">
-                <Label>Month</Label>
-                <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
-                <Label>Year</Label>
-                <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-                    <SelectTrigger className="w-[120px]">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-            </div>
-        </CardContent>
-      </Card>
-
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {reportCards.map((report) => {
           const Icon = report.icon;
+          const isFinancialReport = report.id === 'paid-students' || report.id === 'unpaid-dues';
           
           if (report.type === 'dialog') {
             return (
@@ -387,24 +359,52 @@ export default function ReportsPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="mt-auto flex gap-2 pt-4">
-                {report.type === 'action' ? (
-                    <Button className="w-full" onClick={() => handleAction(report.id)} disabled={!report.isEnabled}>
-                        <FileText className="mr-2 h-4 w-4" />
-                        Open Report Section
-                    </Button>
-                ) : (
-                    <>
-                        <Button variant="outline" className="w-full" onClick={() => handlePrint(report.id)} disabled={!report.isEnabled || studentsLoading || isSettingsLoading}>
-                          <Printer className="mr-2 h-4 w-4" />
-                          Print
-                        </Button>
-                        <Button variant="outline" className="w-full" onClick={() => handleExport(report.id)} disabled={!report.isEnabled || studentsLoading}>
-                          <FileDown className="mr-2 h-4 w-4" />
-                          Export as CSV
-                        </Button>
-                    </>
+              <CardContent className="mt-auto flex flex-col gap-4 pt-4">
+                 {isFinancialReport && (
+                  <div className="flex flex-wrap gap-2 items-end border-t pt-4">
+                      <div className="space-y-1 flex-grow">
+                          <Label className="text-xs">Month</Label>
+                          <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                              <SelectTrigger>
+                                  <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-1">
+                          <Label className="text-xs">Year</Label>
+                          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                              <SelectTrigger>
+                                  <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                  </div>
                 )}
+                <div className="flex gap-2">
+                    {report.type === 'action' ? (
+                        <Button className="w-full" onClick={() => handleAction(report.id)} disabled={!report.isEnabled}>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Open Report Section
+                        </Button>
+                    ) : (
+                        <>
+                            <Button variant="outline" className="w-full" onClick={() => handlePrint(report.id)} disabled={!report.isEnabled || studentsLoading || isSettingsLoading}>
+                              <Printer className="mr-2 h-4 w-4" />
+                              Print
+                            </Button>
+                            <Button variant="outline" className="w-full" onClick={() => handleExport(report.id)} disabled={!report.isEnabled || studentsLoading}>
+                              <FileDown className="mr-2 h-4 w-4" />
+                              Export
+                            </Button>
+                        </>
+                    )}
+                </div>
               </CardContent>
             </Card>
           );
