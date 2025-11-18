@@ -55,6 +55,14 @@ export default function ReportsPage() {
       isEnabled: true,
       type: 'print-export',
     },
+     {
+      id: 'paid-students',
+      title: 'Paid Students Report',
+      description: 'Generate a list of all students who have fully paid their fees for the current cycle.',
+      icon: DollarSign,
+      isEnabled: true,
+      type: 'print-export',
+    },
     {
       id: 'unpaid-dues',
       title: 'Unpaid Dues Report',
@@ -169,6 +177,20 @@ export default function ReportsPage() {
               <td>${student.feeStatus}</td>
             </tr>
           `).join('');
+    } else if (reportId === 'paid-students') {
+        reportTitle = 'Paid Students Report';
+        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Class", "Phone"];
+        tableRows = students
+          .filter(s => s.feeStatus === 'Paid')
+          .map(student => `
+            <tr>
+              <td>${student.id}</td>
+              <td>${student.name}</td>
+              <td>${student.fatherName}</td>
+              <td>${student.class}</td>
+              <td>${student.phone}</td>
+            </tr>
+          `).join('');
     } else {
         toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for printing.' });
         return;
@@ -239,6 +261,31 @@ export default function ReportsPage() {
       link.click();
       document.body.removeChild(link);
       
+    } else if (reportId === 'paid-students') {
+      headers = ["ID", "Name", "Father's Name", "Class", "Phone"];
+      data = students.filter(s => s.feeStatus === 'Paid');
+      filename = 'paid-students-report.csv';
+
+      const csvContent = [
+        headers.join(','),
+        ...data.map((s: Student) => [
+          s.id,
+          s.name,
+          s.fatherName,
+          s.class,
+          s.phone,
+        ].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } else {
       toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for export.' });
       return;
