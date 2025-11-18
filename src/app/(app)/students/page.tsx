@@ -74,7 +74,9 @@ export default function StudentsPage() {
   });
 
   const filteredStudents = studentList.filter(student =>
-    student.name.toLowerCase().includes(search.toLowerCase()) || student.id.toLowerCase().includes(search.toLowerCase())
+    student.name.toLowerCase().includes(search.toLowerCase()) || 
+    student.id.toLowerCase().includes(search.toLowerCase()) ||
+    student.fatherName.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleEditClick = (student: Student) => {
@@ -144,7 +146,7 @@ export default function StudentsPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search students..." 
+              placeholder="Search by student name, father's name, or roll number..." 
               className="pl-8" 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -194,6 +196,7 @@ export default function StudentsPage() {
                           </Avatar>
                           <div>
                             <div className="font-medium">{student.name}</div>
+                            <div className="text-xs text-muted-foreground">{student.fatherName}</div>
                             <div className="text-xs text-muted-foreground">{student.id} {student.section && `(${student.section})`}</div>
                           </div>
                       </div>
