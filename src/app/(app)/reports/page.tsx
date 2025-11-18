@@ -19,6 +19,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { type Student } from '@/lib/data';
 import { useRouter } from 'next/navigation';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { ClassAttendanceDialog } from './class-attendance-dialog';
 
 export default function ReportsPage() {
   const { students, loading: studentsLoading } = useAppContext();
@@ -62,10 +64,10 @@ export default function ReportsPage() {
     {
       id: 'attendance',
       title: 'Attendance Report',
-      description: 'Generate attendance reports for a class or student for a specified period.',
+      description: 'Generate class-wise attendance reports for a specified period, with print and export options.',
       icon: ClipboardCheck,
       isEnabled: true,
-      type: 'action',
+      type: 'dialog',
     },
   ];
   
@@ -243,8 +245,6 @@ export default function ReportsPage() {
   const handleAction = (reportId: string) => {
     if (reportId === 'student-ledger') {
         router.push('/student-ledger');
-    } else if (reportId === 'attendance') {
-        router.push('/attendance');
     }
   }
 
@@ -260,8 +260,38 @@ export default function ReportsPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {reportCards.map((report) => {
           const Icon = report.icon;
-          const isAction = report.type === 'action';
-
+          
+          if (report.type === 'dialog') {
+            return (
+              <Dialog key={report.id}>
+                <Card className="flex flex-col">
+                  <CardHeader>
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <div className="flex-1">
+                        <CardTitle>{report.title}</CardTitle>
+                        <CardDescription className="mt-1">
+                          {report.description}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="mt-auto flex gap-2 pt-4">
+                     <DialogTrigger asChild>
+                       <Button className="w-full" disabled={!report.isEnabled}>
+                          <FileText className="mr-2 h-4 w-4" />
+                          Generate Report
+                        </Button>
+                    </DialogTrigger>
+                  </CardContent>
+                </Card>
+                <ClassAttendanceDialog />
+              </Dialog>
+            );
+          }
+          
           return (
             <Card key={report.id} className="flex flex-col">
               <CardHeader>
@@ -278,7 +308,7 @@ export default function ReportsPage() {
                 </div>
               </CardHeader>
               <CardContent className="mt-auto flex gap-2 pt-4">
-                {isAction ? (
+                {report.type === 'action' ? (
                     <Button className="w-full" onClick={() => handleAction(report.id)} disabled={!report.isEnabled}>
                         <FileText className="mr-2 h-4 w-4" />
                         Open Report Section
