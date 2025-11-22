@@ -125,19 +125,26 @@ export default function ExamResultsPage() {
       };
     });
 
-    // Sort by total marks descending to calculate position
-    const sortedStudents = [...studentTotals].sort((a, b) => b.totalMarks - a.totalMarks);
-
-    // Assign positions, handling ties
+    const sortedForRanking = [...studentTotals].sort((a, b) => b.totalMarks - a.totalMarks);
+    
+    const finalResultsWithPosition: EnhancedResult[] = [];
     let rank = 0;
     let lastMark = -1;
-    return sortedStudents.map((student, index) => {
+
+    // Assign positions
+    const rankedStudents = new Map<number, number>();
+    sortedForRanking.forEach((student, index) => {
       if (student.totalMarks !== lastMark) {
         rank = index + 1;
         lastMark = student.totalMarks;
       }
-      return { ...student, position: rank };
+      rankedStudents.set(student.totalMarks, rank);
     });
+
+    return studentTotals.map(s => ({
+      ...s,
+      position: rankedStudents.get(s.totalMarks) || 0,
+    }))
 
   }, [results, students, exam]);
 
@@ -181,7 +188,7 @@ export default function ExamResultsPage() {
                 <td>${student.id}</td>
                 <td>${student.name}</td>
                 ${marksCells}
-                <td style="text-align: center; font-weight: bold;">${enhanced?.totalMarks ?? 0}</td>
+                ${exam.subjects.length > 1 ? `<td style="text-align: center; font-weight: bold;">${enhanced?.totalMarks ?? 0}</td>` : ''}
                 <td style="text-align: center;">${enhanced?.percentage.toFixed(2) ?? '0.00'}%</td>
                 <td style="text-align: center; font-weight: bold;">${enhanced?.position ?? '-'}</td>
             </tr>
@@ -238,7 +245,7 @@ export default function ExamResultsPage() {
                   <th>Roll #</th>
                   <th>Student Name</th>
                   ${tableHeader}
-                  <th>Total</th>
+                  ${exam.subjects.length > 1 ? `<th>Total</th>` : ''}
                   <th>%age</th>
                   <th>Pos.</th>
                 </tr>
@@ -297,8 +304,8 @@ export default function ExamResultsPage() {
                   {exam.subjects.map(subject => (
                     <TableHead key={subject} className="text-center">{subject}</TableHead>
                   ))}
-                  <TableHead className="text-center font-bold">Obtained</TableHead>
-                  <TableHead className="text-center font-bold">Total</TableHead>
+                  {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Obtained</TableHead>}
+                  {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Total</TableHead>}
                   <TableHead className="text-center font-bold">%</TableHead>
                   <TableHead className="text-center font-bold">Pos.</TableHead>
                 </TableRow>
@@ -313,8 +320,8 @@ export default function ExamResultsPage() {
                            </div>
                         </TableCell>
                     ))}
-                    <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>
-                    <TableCell></TableCell>
+                    {exam.subjects.length > 1 && <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>}
+                    {exam.subjects.length > 1 && <TableCell></TableCell>}
                     <TableCell></TableCell>
                     <TableCell></TableCell>
                 </TableRow>
@@ -334,8 +341,8 @@ export default function ExamResultsPage() {
                             />
                         </TableCell>
                         ))}
-                        <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>
-                        <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>
+                        {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>}
+                        {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>}
                         <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
                         <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>
                     </TableRow>
