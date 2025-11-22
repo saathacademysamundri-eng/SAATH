@@ -187,6 +187,7 @@ export default function ExamResultsPage() {
             <tr>
                 <td>${student.id}</td>
                 <td>${student.name}</td>
+                <td>${student.fatherName}</td>
                 ${marksCells}
                 ${exam.subjects.length > 1 ? `<td style="text-align: center; font-weight: bold;">${enhanced?.totalMarks ?? 0}</td>` : ''}
                 <td style="text-align: center;">${enhanced?.percentage.toFixed(2) ?? '0.00'}%</td>
@@ -244,6 +245,7 @@ export default function ExamResultsPage() {
                 <tr>
                   <th>Roll #</th>
                   <th>Student Name</th>
+                  <th>Father's Name</th>
                   ${tableHeader}
                   ${exam.subjects.length > 1 ? `<th>Total</th>` : ''}
                   <th>%age</th>
@@ -301,6 +303,7 @@ export default function ExamResultsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="min-w-[150px]">Student</TableHead>
+                  <TableHead className="min-w-[150px]">Father's Name</TableHead>
                   {exam.subjects.map(subject => (
                     <TableHead key={subject} className="text-center">{subject}</TableHead>
                   ))}
@@ -312,7 +315,7 @@ export default function ExamResultsPage() {
               </TableHeader>
               <TableBody>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableCell className="font-semibold">Total Marks</TableCell>
+                    <TableCell colSpan={2} className="font-semibold">Total Marks</TableCell>
                     {exam.subjects.map(subject => (
                         <TableCell key={subject} className="text-center font-semibold">
                            <div className="flex justify-center">
@@ -330,6 +333,7 @@ export default function ExamResultsPage() {
                    return(
                     <TableRow key={student.id}>
                         <TableCell className="font-medium">{student.name}<br/><span className="text-xs text-muted-foreground">{student.id}</span></TableCell>
+                        <TableCell className="font-medium">{student.fatherName}</TableCell>
                         {exam.subjects.map(subject => (
                         <TableCell key={subject}>
                             <Input
