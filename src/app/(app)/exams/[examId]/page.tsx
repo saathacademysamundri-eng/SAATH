@@ -44,11 +44,13 @@ export default function ExamResultsPage() {
       if (examData) {
         setExam(examData);
         const studentData = await getStudentsByClass(examData.className);
-        setStudents(studentData);
+        // Sort students by ID to ensure a consistent order
+        const sortedStudents = studentData.sort((a, b) => a.id.localeCompare(b.id));
+        setStudents(sortedStudents);
 
         // Initialize results state
         const initialResults: { [studentId: string]: StudentResult } = {};
-        studentData.forEach(student => {
+        sortedStudents.forEach(student => {
           const existingResult = examData.results?.find(r => r.studentId === student.id);
           if (existingResult) {
             initialResults[student.id] = existingResult;
@@ -165,11 +167,6 @@ export default function ExamResultsPage() {
     const tableHeader = exam.subjects.map(s => `<th style="text-align: center;">${s}<br>(${maxMarksPerSubject})</th>`).join('');
     
     const tableRows = students
-      .sort((a, b) => {
-          const resA = getStudentEnhancedResult(a.id)?.position ?? Infinity;
-          const resB = getStudentEnhancedResult(b.id)?.position ?? Infinity;
-          return resA - resB;
-      })
       .map(student => {
         const studentResult = results[student.id];
         const enhanced = getStudentEnhancedResult(student.id);
@@ -321,11 +318,7 @@ export default function ExamResultsPage() {
                     <TableCell></TableCell>
                     <TableCell></TableCell>
                 </TableRow>
-                {students.sort((a,b) => {
-                    const resA = getStudentEnhancedResult(a.id)?.position ?? Infinity;
-                    const resB = getStudentEnhancedResult(b.id)?.position ?? Infinity;
-                    return resA - resB;
-                }).map(student => {
+                {students.map(student => {
                    const enhanced = getStudentEnhancedResult(student.id);
                    return(
                     <TableRow key={student.id}>
