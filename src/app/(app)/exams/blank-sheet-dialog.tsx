@@ -25,6 +25,9 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { Printer, Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
+type SheetType = 'single' | 'full';
 
 export function BlankSheetDialog() {
   const { classes, students, loading: appLoading } = useAppContext();
@@ -34,11 +37,13 @@ export function BlankSheetDialog() {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [examName, setExamName] = useState('Weekly Test');
   const [totalMarks, setTotalMarks] = useState(100);
+  const [sheetType, setSheetType] = useState<SheetType>('single');
   const [isPrinting, setIsPrinting] = useState(false);
 
   const studentsInClass = useMemo(() => {
     if (!selectedClassId) return [];
     const className = classes.find((c) => c.id === selectedClassId)?.name;
+    if (!className) return [];
     return students.filter((student) => student.class === className);
   }, [selectedClassId, students, classes]);
 
@@ -60,21 +65,49 @@ export function BlankSheetDialog() {
       return;
     }
 
-    const className = classes.find((c) => c.id === selectedClassId)?.name || '';
+    const selectedClass = classes.find((c) => c.id === selectedClassId);
+    if (!selectedClass) {
+        setIsPrinting(false);
+        return;
+    }
+    const className = selectedClass.name;
 
-    const tableRows = studentsInClass
-      .sort((a, b) => a.id.localeCompare(b.id))
-      .map(
-        (student) => `
-        <tr>
-          <td>${student.id}</td>
-          <td>${student.name}</td>
-          <td>${student.fatherName}</td>
-          <td style="height: 25px;"></td>
-        </tr>
-      `
-      )
-      .join('');
+    let tableHeaders: string[] = [];
+    let tableRows: string = '';
+    let reportTitle = '';
+    let subTitle = '';
+
+    const sortedStudents = [...studentsInClass].sort((a, b) => a.id.localeCompare(b.id));
+
+    if (sheetType === 'single') {
+        reportTitle = examName;
+        subTitle = `<p>Class: ${className}</p><p style="font-size: 1rem;">Total Marks: ${totalMarks}</p>`;
+        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Obtained Marks"];
+        tableRows = sortedStudents.map(student => `
+            <tr>
+              <td>${student.id}</td>
+              <td>${student.name}</td>
+              <td>${student.fatherName}</td>
+              <td style="height: 25px;"></td>
+            </tr>
+          `).join('');
+    } else { // Full class sheet
+        reportTitle = `Class Marks Sheet`;
+        subTitle = `<p>Class: ${className}</p>`;
+        tableHeaders = ["Roll #", "Student Name", "Father's Name", ...selectedClass.subjects.map(s => s.name)];
+        tableRows = sortedStudents.map(student => {
+            const subjectCells = selectedClass.subjects.map(() => '<td style="height: 25px;"></td>').join('');
+            return `
+                <tr>
+                    <td>${student.id}</td>
+                    <td>${student.name}</td>
+                    <td>${student.fatherName}</td>
+                    ${subjectCells}
+                </tr>
+            `;
+        }).join('');
+    }
+
 
     const printHtml = `
       <html>
@@ -82,7 +115,7 @@ export function BlankSheetDialog() {
           <title>Blank Mark Sheet - ${className}</title>
           <style>
             @media print {
-              @page { size: A4 portrait; margin: 0.75in; }
+              @page { size: A4 landscape; margin: 0.75in; }
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
@@ -108,17 +141,13 @@ export function BlankSheetDialog() {
               <p>Phone: ${settings.phone}</p>
             </div>
             <div class="report-title">
-              <h2>${examName}</h2>
-              <p>Class: ${className}</p>
-              <p style="font-size: 1rem;">Total Marks: ${totalMarks}</p>
+              <h2>${reportTitle}</h2>
+              ${subTitle}
             </div>
             <table>
               <thead>
                 <tr>
-                  <th style="width: 15%;">Roll #</th>
-                  <th style="width: 30%;">Student Name</th>
-                  <th style="width: 30%;">Father's Name</th>
-                  <th style="width: 25%;">Obtained Marks</th>
+                  ${tableHeaders.map(h => `<th>${h}</th>`).join('')}
                 </tr>
               </thead>
               <tbody>
@@ -138,9 +167,23 @@ export function BlankSheetDialog() {
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>Print Blank Marks Sheet</DialogTitle>
-        <DialogDescription>Select a class and define the exam details to generate a printable blank sheet for manual marking.</DialogDescription>
+        <DialogDescription>Generate a printable blank sheet for manual marking.</DialogDescription>
       </DialogHeader>
       <div className="grid gap-6 py-4">
+        <div className="space-y-2">
+          <Label>Sheet Type</Label>
+          <RadioGroup value={sheetType} onValueChange={(v: any) => setSheetType(v)} className="flex items-center gap-4">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="single" id="single" />
+              <Label htmlFor="single" className="font-normal">Single Test</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="full" id="full" />
+              <Label htmlFor="full" className="font-normal">Full Class Sheet</Label>
+            </div>
+          </RadioGroup>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="class-select">Class</Label>
           <Select onValueChange={setSelectedClassId} value={selectedClassId || undefined} disabled={appLoading}>
@@ -156,14 +199,20 @@ export function BlankSheetDialog() {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="exam-name">Exam Name</Label>
-          <Input id="exam-name" value={examName} onChange={(e) => setExamName(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="total-marks">Total Marks</Label>
-          <Input id="total-marks" type="number" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} />
-        </div>
+
+        {sheetType === 'single' && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="exam-name">Exam Name</Label>
+              <Input id="exam-name" value={examName} onChange={(e) => setExamName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="total-marks">Total Marks</Label>
+              <Input id="total-marks" type="number" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} />
+            </div>
+          </>
+        )}
+
       </div>
       <DialogFooter>
         <DialogClose asChild>
