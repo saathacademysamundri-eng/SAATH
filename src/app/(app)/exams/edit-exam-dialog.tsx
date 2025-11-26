@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -29,8 +30,9 @@ import { Loader2 } from "lucide-react"
 export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpdated: () => void }) {
     const [name, setName] = useState(exam.name);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-    const [examType, setExamType] = useState<'Single Subject' | 'Full Test'>(exam.examType);
+    const [examType, setExamType] = useState<Exam['examType']>(exam.examType);
     const [selectedSubject, setSelectedSubject] = useState<string | null>(exam.examType === 'Single Subject' ? exam.subjects[0] : null);
+    const [manualSubjects, setManualSubjects] = useState(exam.examType === 'Manual' ? exam.subjects.join(', ') : '');
     const [totalMarks, setTotalMarks] = useState(exam.totalMarks || 100);
 
     const [classes, setClasses] = useState<Class[]>([]);
@@ -55,7 +57,17 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
     }
 
     const handleSubmit = async () => {
-        const hasMissingInfo = !name || !selectedClassId || (examType === 'Single Subject' && !selectedSubject) || totalMarks <= 0;
+        const subjects: string[] = [];
+        if (examType === 'Single Subject') {
+            if (selectedSubject) subjects.push(selectedSubject);
+        } else if (examType === 'Full Test') {
+            const currentClass = classes.find(c => c.id === selectedClassId);
+            if (currentClass) subjects.push(...currentClass.subjects.map(s => s.name));
+        } else if (examType === 'Manual') {
+            subjects.push(...manualSubjects.split(',').map(s => s.trim()).filter(s => s));
+        }
+
+        const hasMissingInfo = !name || !selectedClassId || subjects.length === 0 || totalMarks <= 0;
 
         if (hasMissingInfo) {
             toast({
@@ -73,7 +85,7 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
             name,
             className: currentClass!.name,
             examType,
-            subjects: examType === 'Single Subject' ? [selectedSubject!] : currentClass!.subjects.map(s => s.name),
+            subjects,
             totalMarks,
         };
 
@@ -136,6 +148,10 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
                             <RadioGroupItem value="Full Test" id="full" />
                             <Label htmlFor="full" className="font-normal">Full Test</Label>
                         </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="Manual" id="manual" />
+                            <Label htmlFor="manual" className="font-normal">Manual</Label>
+                        </div>
                     </RadioGroup>
                 </div>
             </div>
@@ -153,6 +169,13 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
                             ))}
                         </SelectContent>
                     </Select>
+                </div>
+            )}
+            
+            {examType === 'Manual' && (
+                 <div className="grid gap-2">
+                    <Label htmlFor="manual-subjects">Manual Subjects</Label>
+                    <Input id="manual-subjects" value={manualSubjects} onChange={(e) => setManualSubjects(e.target.value)} placeholder="Enter subjects, separated by commas" />
                 </div>
             )}
 
