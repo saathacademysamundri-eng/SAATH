@@ -187,7 +187,9 @@ export default function ExamResultsPage() {
         const marksCells = exam.subjects.map(subject => {
             const marks = studentResult?.marks[subject];
             const isAbsent = marks === 'A';
-            const cellStyle = isAbsent ? 'background-color: #fee2e2; color: #991b1b; font-weight: bold;' : 'text-align: center;';
+            const cellStyle = isAbsent
+              ? 'background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;'
+              : 'text-align: center;';
             return `<td style="${cellStyle}">${marks ?? '-'}</td>`;
         }).join('');
 
