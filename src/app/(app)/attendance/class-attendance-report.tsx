@@ -240,12 +240,12 @@ export function ClassAttendanceReport() {
 
 
     return (
-        <div class="space-y-6">
-            <div class="flex flex-wrap gap-4 items-end">
-                <div class="space-y-2">
+        <div className="space-y-6">
+            <div className="flex flex-wrap gap-4 items-end">
+                <div className="space-y-2">
                     <Label>Class</Label>
                     <Select onValueChange={(v) => setSelectedClassId(v)} disabled={appLoading}>
-                        <SelectTrigger class="w-[180px]">
+                        <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Select a class" />
                         </SelectTrigger>
                         <SelectContent>
@@ -253,10 +253,10 @@ export function ClassAttendanceReport() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div class="space-y-2">
+                <div className="space-y-2">
                     <Label>Month</Label>
                     <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))} disabled={!selectedClassId}>
-                        <SelectTrigger class="w-[140px]">
+                        <SelectTrigger className="w-[140px]">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -264,10 +264,10 @@ export function ClassAttendanceReport() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div class="space-y-2">
+                <div className="space-y-2">
                     <Label>Year</Label>
                     <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))} disabled={!selectedClassId}>
-                        <SelectTrigger class="w-[100px]">
+                        <SelectTrigger className="w-[100px]">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -276,31 +276,31 @@ export function ClassAttendanceReport() {
                     </Select>
                 </div>
                 <Button onClick={handleFetchReport} disabled={isLoading || !selectedClassId}>
-                    {isLoading ? <Loader2 class="animate-spin mr-2" /> : null}
+                    {isLoading ? <Loader2 className="animate-spin mr-2" /> : null}
                     Generate Report
                 </Button>
                 <Button onClick={handlePrintBlank} variant="secondary" disabled={!selectedClassId || isSettingsLoading}>
-                    <FileText class="mr-2" />
+                    <FileText className="mr-2" />
                     Print Blank Sheet
                 </Button>
                  <Button onClick={handlePrint} variant="outline" disabled={isLoading || Object.keys(monthlyData).length === 0 || isSettingsLoading}>
-                    <Printer class="mr-2" />
+                    <Printer className="mr-2" />
                     Print Report
                 </Button>
             </div>
             
-            {isLoading && <Skeleton class="h-96 w-full" />}
+            {isLoading && <Skeleton className="h-96 w-full" />}
             
             {!isLoading && Object.keys(monthlyData).length > 0 && (
-                <div class="overflow-x-auto">
+                <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead class="sticky left-0 bg-background z-10 min-w-[150px]">Student Name</TableHead>
-                                {dayHeaders.map(day => <TableHead key={day} class="text-center">{day}</TableHead>)}
-                                <TableHead class="text-center text-green-700 font-bold sticky right-[96px] bg-background z-10">P</TableHead>
-                                <TableHead class="text-center text-red-700 font-bold sticky right-[48px] bg-background z-10">A</TableHead>
-                                <TableHead class="text-center text-yellow-700 font-bold sticky right-0 bg-background z-10">L</TableHead>
+                                <TableHead className="sticky left-0 bg-background z-10 min-w-[150px]">Student Name</TableHead>
+                                {dayHeaders.map(day => <TableHead key={day} className="text-center">{day}</TableHead>)}
+                                <TableHead className="text-center text-green-700 font-bold sticky right-[96px] bg-background z-10">P</TableHead>
+                                <TableHead className="text-center text-red-700 font-bold sticky right-[48px] bg-background z-10">A</TableHead>
+                                <TableHead className="text-center text-yellow-700 font-bold sticky right-0 bg-background z-10">L</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -308,15 +308,15 @@ export function ClassAttendanceReport() {
                                 const summary = studentSummaries.find(s => s.studentId === student.id)?.summary || { P: 0, A: 0, L: 0 };
                                 return (
                                     <TableRow key={student.id}>
-                                        <TableCell class="font-medium sticky left-0 bg-background z-10">{student.name}</TableCell>
+                                        <TableCell className="font-medium sticky left-0 bg-background z-10">{student.name}</TableCell>
                                         {dayHeaders.map(day => (
                                             <TableCell key={day} className={`text-center font-bold text-xs p-2 ${getStatusStyle(monthlyData[student.id]?.[day])}`}>
                                                 {monthlyData[student.id]?.[day] || '-'}
                                             </TableCell>
                                         ))}
-                                        <TableCell class="text-center font-bold text-green-700 sticky right-[96px] bg-background z-10">{summary.P}</TableCell>
-                                        <TableCell class="text-center font-bold text-red-700 sticky right-[48px] bg-background z-10">{summary.A}</TableCell>
-                                        <TableCell class="text-center font-bold text-yellow-700 sticky right-0 bg-background z-10">{summary.L}</TableCell>
+                                        <TableCell className="text-center font-bold text-green-700 sticky right-[96px] bg-background z-10">{summary.P}</TableCell>
+                                        <TableCell className="text-center font-bold text-red-700 sticky right-[48px] bg-background z-10">{summary.A}</TableCell>
+                                        <TableCell className="text-center font-bold text-yellow-700 sticky right-0 bg-background z-10">{summary.L}</TableCell>
                                     </TableRow>
                                 )
                            })}
