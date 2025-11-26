@@ -137,14 +137,14 @@ export type Report = {
 export type StudentResult = {
     studentId: string;
     studentName: string;
-    marks: { [subjectName: string]: number | null };
+    marks: { [subjectName: string]: number | null | string };
 }
 
 export type Exam = {
     id: string;
     name: string;
     className: string;
-    examType: 'Single Subject' | 'Full Test';
+    examType: 'Single Subject' | 'Full Test' | 'Manual';
     subjects: string[];
     totalMarks: number;
     date: Date;
@@ -362,5 +362,6 @@ export const subjectTeacherMap: { [subjectName: string]: string } = {
 };
 
     
+
 
 

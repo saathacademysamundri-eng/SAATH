@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -29,8 +30,9 @@ import { Loader2 } from "lucide-react"
 export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: string) => void }) {
     const [name, setName] = useState('');
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-    const [examType, setExamType] = useState<'Single Subject' | 'Full Test'>('Single Subject');
+    const [examType, setExamType] = useState<'Single Subject' | 'Full Test' | 'Manual'>('Single Subject');
     const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+    const [manualSubjects, setManualSubjects] = useState('');
     const [totalMarks, setTotalMarks] = useState(100);
 
     const [classes, setClasses] = useState<Class[]>([]);
@@ -51,13 +53,23 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     }
 
     const handleSubmit = async () => {
-        const hasMissingInfo = !name || !selectedClassId || (examType === 'Single Subject' && !selectedSubject) || totalMarks <= 0;
+        const subjects: string[] = [];
+        if (examType === 'Single Subject') {
+            if (selectedSubject) subjects.push(selectedSubject);
+        } else if (examType === 'Full Test') {
+            const currentClass = classes.find(c => c.id === selectedClassId);
+            if (currentClass) subjects.push(...currentClass.subjects.map(s => s.name));
+        } else if (examType === 'Manual') {
+            subjects.push(...manualSubjects.split(',').map(s => s.trim()).filter(s => s));
+        }
+
+        const hasMissingInfo = !name || !selectedClassId || subjects.length === 0 || totalMarks <= 0;
 
         if (hasMissingInfo) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Please fill out all required fields, including total marks.',
+                description: 'Please fill out all required fields, including at least one subject and total marks.',
             });
             return;
         }
@@ -69,7 +81,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             name,
             className: currentClass!.name,
             examType,
-            subjects: examType === 'Single Subject' ? [selectedSubject!] : currentClass!.subjects.map(s => s.name),
+            subjects,
             totalMarks,
             results: [],
         };
@@ -133,6 +145,10 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                             <RadioGroupItem value="Full Test" id="full" />
                             <Label htmlFor="full" className="font-normal">Full Test</Label>
                         </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="Manual" id="manual" />
+                            <Label htmlFor="manual" className="font-normal">Manual</Label>
+                        </div>
                     </RadioGroup>
                 </div>
             </div>
@@ -150,6 +166,13 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                             ))}
                         </SelectContent>
                     </Select>
+                </div>
+            )}
+            
+            {examType === 'Manual' && (
+                 <div className="grid gap-2">
+                    <Label htmlFor="manual-subjects">Manual Subjects</Label>
+                    <Input id="manual-subjects" value={manualSubjects} onChange={(e) => setManualSubjects(e.target.value)} placeholder="Enter subjects, separated by commas" />
                 </div>
             )}
             

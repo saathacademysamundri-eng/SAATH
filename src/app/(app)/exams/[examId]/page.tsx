@@ -72,8 +72,14 @@ export default function ExamResultsPage() {
     fetchExamData();
   }, [examId, toast]);
 
-  const handleMarksChange = (studentId: string, subjectName: string, marks: string) => {
-    const numericMarks = marks === '' ? null : Number(marks);
+  const handleMarksChange = (studentId: string, subjectName: string, value: string) => {
+    let finalValue: number | string | null;
+    if (value.trim().toLowerCase() === 'a') {
+      finalValue = 'A';
+    } else {
+      const numericValue = Number(value);
+      finalValue = value === '' ? null : isNaN(numericValue) ? results[studentId]?.marks[subjectName] ?? '' : numericValue;
+    }
 
     setResults(prev => ({
       ...prev,
@@ -81,7 +87,7 @@ export default function ExamResultsPage() {
         ...prev[studentId],
         marks: {
           ...prev[studentId].marks,
-          [subjectName]: numericMarks,
+          [subjectName]: finalValue,
         },
       },
     }));
@@ -180,7 +186,11 @@ export default function ExamResultsPage() {
 
         const marksCells = exam.subjects.map(subject => {
             const marks = studentResult?.marks[subject];
-            return `<td style="text-align: center;">${marks ?? '-'}</td>`;
+            const isAbsent = marks === 'A';
+            const cellStyle = isAbsent
+              ? 'background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;'
+              : 'text-align: center;';
+            return `<td style="${cellStyle}">${marks ?? '-'}</td>`;
         }).join('');
 
         return `
@@ -283,7 +293,7 @@ export default function ExamResultsPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Enter Marks</CardTitle>
-              <CardDescription>Enter the marks obtained by each student in the subjects below.</CardDescription>
+              <CardDescription>Enter the marks obtained or 'A' for absent students.</CardDescription>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSaveResults} disabled={isSaving}>
@@ -334,17 +344,20 @@ export default function ExamResultsPage() {
                     <TableRow key={student.id}>
                         <TableCell className="font-medium">{student.name}<br/><span className="text-xs text-muted-foreground">{student.id}</span></TableCell>
                         <TableCell className="font-medium">{student.fatherName}</TableCell>
-                        {exam.subjects.map(subject => (
-                        <TableCell key={subject}>
-                            <Input
-                            type="number"
-                            placeholder="-"
-                            className="max-w-[80px] mx-auto text-center"
-                            value={results[student.id]?.marks[subject] ?? ''}
-                            onChange={e => handleMarksChange(student.id, subject, e.target.value)}
-                            />
-                        </TableCell>
-                        ))}
+                        {exam.subjects.map(subject => {
+                          const marks = results[student.id]?.marks[subject] ?? '';
+                          return (
+                            <TableCell key={subject}>
+                              <Input
+                                type="text"
+                                placeholder="-"
+                                className="max-w-[80px] mx-auto text-center"
+                                value={marks}
+                                onChange={e => handleMarksChange(student.id, subject, e.target.value)}
+                              />
+                            </TableCell>
+                          )
+                        })}
                         {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>}
                         {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>}
                         <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
@@ -360,5 +373,3 @@ export default function ExamResultsPage() {
     </div>
   );
 }
-
-    
