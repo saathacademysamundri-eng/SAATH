@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Student } from '@/lib/data';
 import { getAttendanceForClassInMonth } from '@/lib/firebase/firestore';
 import { format, getDaysInMonth } from 'date-fns';
-import { Loader2, Printer } from 'lucide-react';
+import { Loader2, Printer, FileText } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '@/hooks/use-app-context';
 import { Label } from '@/components/ui/label';
@@ -39,7 +39,7 @@ export function ClassAttendanceReport() {
     const classStudents = useMemo(() => {
         if (!selectedClassId) return [];
         const className = classes.find(c => c.id === selectedClassId)?.name;
-        return students.filter(s => s.class === className);
+        return students.filter(s => s.class === className).sort((a, b) => a.id.localeCompare(b.id));
     }, [selectedClassId, students, classes]);
 
     const handleFetchReport = async () => {
@@ -80,7 +80,7 @@ export function ClassAttendanceReport() {
     }, [monthlyData, classStudents]);
 
     const handlePrint = () => {
-        if (isSettingsLoading || !selectedClassId || !monthlyData) {
+        if (isSettingsLoading || !selectedClassId || Object.keys(monthlyData).length === 0) {
             toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please generate a report first.' });
             return;
         }
@@ -162,6 +162,77 @@ export function ClassAttendanceReport() {
         printWindow.document.write(printHtml);
         printWindow.document.close();
     }
+    
+    const handlePrintBlank = () => {
+        if (isSettingsLoading || !selectedClassId) {
+            toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please select a class.' });
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        const className = classes.find(c => c.id === selectedClassId)?.name || '';
+
+        const thDays = dayHeaders.map(day => `<th>${day}</th>`).join('');
+        const tbodyRows = classStudents.map(student => {
+            const daysCells = dayHeaders.map(() => `<td style="height: 25px;"></td>`).join('');
+            return `
+                <tr>
+                    <td style="text-align: left;">${student.name}</td>
+                    <td style="text-align: left;">${student.id}</td>
+                    ${daysCells}
+                </tr>
+            `;
+        }).join('');
+
+        const printHtml = `
+            <html>
+                <head>
+                    <title>Blank Attendance Sheet - ${className}</title>
+                     <style>
+                        @media print {
+                            @page { size: A4 landscape; margin: 0.5in; }
+                            body { font-size: 8pt; }
+                        }
+                        body { font-family: 'Segoe UI', sans-serif; }
+                        .report-container { max-width: 1100px; margin: auto; }
+                        .academy-details { text-align: center; margin-bottom: 1rem; }
+                        .academy-details h1 { font-size: 1.5rem; }
+                        .report-title { text-align: center; margin-bottom: 1rem; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #333; padding: 4px; text-align: center; }
+                        th { background-color: #f2f2f2; }
+                     </style>
+                </head>
+                <body>
+                    <div class="report-container">
+                        <div class="academy-details">
+                            ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
+                            <h1>${settings.name}</h1>
+                            <p>${settings.phone}</p>
+                        </div>
+                        <div class="report-title">
+                            <h2>Blank Attendance Sheet</h2>
+                            <p>${className} - ${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}</p>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="min-width: 120px; text-align: left;">Student Name</th>
+                                    <th style="min-width: 60px; text-align: left;">Roll #</th>
+                                    ${thDays}
+                                </tr>
+                            </thead>
+                            <tbody>${tbodyRows}</tbody>
+                        </table>
+                    </div>
+                </body>
+            </html>
+        `;
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+    }
 
 
     return (
@@ -203,6 +274,10 @@ export function ClassAttendanceReport() {
                 <Button onClick={handleFetchReport} disabled={isLoading || !selectedClassId}>
                     {isLoading ? <Loader2 className="animate-spin mr-2" /> : null}
                     Generate Report
+                </Button>
+                <Button onClick={handlePrintBlank} variant="secondary" disabled={!selectedClassId || isSettingsLoading}>
+                    <FileText className="mr-2" />
+                    Print Blank Sheet
                 </Button>
                  <Button onClick={handlePrint} variant="outline" disabled={isLoading || Object.keys(monthlyData).length === 0 || isSettingsLoading}>
                     <Printer className="mr-2" />
@@ -249,4 +324,3 @@ export function ClassAttendanceReport() {
     );
 }
 
-    
