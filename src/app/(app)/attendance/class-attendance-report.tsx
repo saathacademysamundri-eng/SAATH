@@ -179,8 +179,8 @@ export function ClassAttendanceReport() {
             const daysCells = dayHeaders.map(() => `<td style="height: 25px;"></td>`).join('');
             return `
                 <tr>
-                    <td style="text-align: left;">${student.name}</td>
                     <td style="text-align: left;">${student.id}</td>
+                    <td style="text-align: left;">${student.name}</td>
                     ${daysCells}
                 </tr>
             `;
@@ -189,7 +189,7 @@ export function ClassAttendanceReport() {
         const printHtml = `
             <html>
                 <head>
-                    <title>Blank Attendance Sheet - ${className}</title>
+                    <title>Attendance Sheet - ${className}</title>
                      <style>
                         @media print {
                             @page { size: A4 landscape; margin: 0.5in; }
@@ -198,8 +198,11 @@ export function ClassAttendanceReport() {
                         body { font-family: 'Segoe UI', sans-serif; }
                         .report-container { max-width: 1100px; margin: auto; }
                         .academy-details { text-align: center; margin-bottom: 1rem; }
-                        .academy-details h1 { font-size: 1.5rem; }
+                        .academy-details h1 { font-size: 1.5rem; margin: 0; }
+                        .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
                         .report-title { text-align: center; margin-bottom: 1rem; }
+                        .report-title h2 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+                        .report-title p { font-size: 1.2rem; margin: 0; color: #333; }
                         table { width: 100%; border-collapse: collapse; }
                         th, td { border: 1px solid #333; padding: 4px; text-align: center; }
                         th { background-color: #f2f2f2; }
@@ -210,17 +213,18 @@ export function ClassAttendanceReport() {
                         <div class="academy-details">
                             ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
                             <h1>${settings.name}</h1>
+                            <p>${settings.address}</p>
                             <p>${settings.phone}</p>
                         </div>
                         <div class="report-title">
-                            <h2>Blank Attendance Sheet</h2>
+                            <h2>Attendance Sheet</h2>
                             <p>${className} - ${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}</p>
                         </div>
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="min-width: 120px; text-align: left;">Student Name</th>
                                     <th style="min-width: 60px; text-align: left;">Roll #</th>
+                                    <th style="min-width: 120px; text-align: left;">Student Name</th>
                                     ${thDays}
                                 </tr>
                             </thead>
@@ -236,12 +240,12 @@ export function ClassAttendanceReport() {
 
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-wrap gap-4 items-end">
-                <div className="space-y-2">
+        <div class="space-y-6">
+            <div class="flex flex-wrap gap-4 items-end">
+                <div class="space-y-2">
                     <Label>Class</Label>
                     <Select onValueChange={(v) => setSelectedClassId(v)} disabled={appLoading}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger class="w-[180px]">
                             <SelectValue placeholder="Select a class" />
                         </SelectTrigger>
                         <SelectContent>
@@ -249,10 +253,10 @@ export function ClassAttendanceReport() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="space-y-2">
+                <div class="space-y-2">
                     <Label>Month</Label>
                     <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))} disabled={!selectedClassId}>
-                        <SelectTrigger className="w-[140px]">
+                        <SelectTrigger class="w-[140px]">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -260,10 +264,10 @@ export function ClassAttendanceReport() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="space-y-2">
+                <div class="space-y-2">
                     <Label>Year</Label>
                     <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))} disabled={!selectedClassId}>
-                        <SelectTrigger className="w-[100px]">
+                        <SelectTrigger class="w-[100px]">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -272,31 +276,31 @@ export function ClassAttendanceReport() {
                     </Select>
                 </div>
                 <Button onClick={handleFetchReport} disabled={isLoading || !selectedClassId}>
-                    {isLoading ? <Loader2 className="animate-spin mr-2" /> : null}
+                    {isLoading ? <Loader2 class="animate-spin mr-2" /> : null}
                     Generate Report
                 </Button>
                 <Button onClick={handlePrintBlank} variant="secondary" disabled={!selectedClassId || isSettingsLoading}>
-                    <FileText className="mr-2" />
+                    <FileText class="mr-2" />
                     Print Blank Sheet
                 </Button>
                  <Button onClick={handlePrint} variant="outline" disabled={isLoading || Object.keys(monthlyData).length === 0 || isSettingsLoading}>
-                    <Printer className="mr-2" />
+                    <Printer class="mr-2" />
                     Print Report
                 </Button>
             </div>
             
-            {isLoading && <Skeleton className="h-96 w-full" />}
+            {isLoading && <Skeleton class="h-96 w-full" />}
             
             {!isLoading && Object.keys(monthlyData).length > 0 && (
-                <div className="overflow-x-auto">
+                <div class="overflow-x-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="sticky left-0 bg-background z-10 min-w-[150px]">Student Name</TableHead>
-                                {dayHeaders.map(day => <TableHead key={day} className="text-center">{day}</TableHead>)}
-                                <TableHead className="text-center text-green-700 font-bold sticky right-[96px] bg-background z-10">P</TableHead>
-                                <TableHead className="text-center text-red-700 font-bold sticky right-[48px] bg-background z-10">A</TableHead>
-                                <TableHead className="text-center text-yellow-700 font-bold sticky right-0 bg-background z-10">L</TableHead>
+                                <TableHead class="sticky left-0 bg-background z-10 min-w-[150px]">Student Name</TableHead>
+                                {dayHeaders.map(day => <TableHead key={day} class="text-center">{day}</TableHead>)}
+                                <TableHead class="text-center text-green-700 font-bold sticky right-[96px] bg-background z-10">P</TableHead>
+                                <TableHead class="text-center text-red-700 font-bold sticky right-[48px] bg-background z-10">A</TableHead>
+                                <TableHead class="text-center text-yellow-700 font-bold sticky right-0 bg-background z-10">L</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -304,15 +308,15 @@ export function ClassAttendanceReport() {
                                 const summary = studentSummaries.find(s => s.studentId === student.id)?.summary || { P: 0, A: 0, L: 0 };
                                 return (
                                     <TableRow key={student.id}>
-                                        <TableCell className="font-medium sticky left-0 bg-background z-10">{student.name}</TableCell>
+                                        <TableCell class="font-medium sticky left-0 bg-background z-10">{student.name}</TableCell>
                                         {dayHeaders.map(day => (
                                             <TableCell key={day} className={`text-center font-bold text-xs p-2 ${getStatusStyle(monthlyData[student.id]?.[day])}`}>
                                                 {monthlyData[student.id]?.[day] || '-'}
                                             </TableCell>
                                         ))}
-                                        <TableCell className="text-center font-bold text-green-700 sticky right-[96px] bg-background z-10">{summary.P}</TableCell>
-                                        <TableCell className="text-center font-bold text-red-700 sticky right-[48px] bg-background z-10">{summary.A}</TableCell>
-                                        <TableCell className="text-center font-bold text-yellow-700 sticky right-0 bg-background z-10">{summary.L}</TableCell>
+                                        <TableCell class="text-center font-bold text-green-700 sticky right-[96px] bg-background z-10">{summary.P}</TableCell>
+                                        <TableCell class="text-center font-bold text-red-700 sticky right-[48px] bg-background z-10">{summary.A}</TableCell>
+                                        <TableCell class="text-center font-bold text-yellow-700 sticky right-0 bg-background z-10">{summary.L}</TableCell>
                                     </TableRow>
                                 )
                            })}
@@ -324,3 +328,4 @@ export function ClassAttendanceReport() {
     );
 }
 
+    
