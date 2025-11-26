@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
 import { deleteExam, getExams } from '@/lib/firebase/firestore';
-import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X } from 'lucide-react';
+import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { CreateExamDialog } from './create-exam-dialog';
@@ -40,6 +40,7 @@ import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BlankSheetDialog } from './blank-sheet-dialog';
 
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -50,6 +51,7 @@ export default function ExamsPage() {
 
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isBlankSheetDialogOpen, setIsBlankSheetDialogOpen] = useState(false);
 
   // Filter state
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
@@ -118,15 +120,26 @@ export default function ExamsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Exams</h1>
           <p className="text-muted-foreground">Create and manage academic exams.</p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2" />
-              Create Exam
-            </Button>
-          </DialogTrigger>
-          <CreateExamDialog onExamCreated={handleExamCreated} />
-        </Dialog>
+        <div className="flex gap-2">
+            <Dialog open={isBlankSheetDialogOpen} onOpenChange={setIsBlankSheetDialogOpen}>
+              <DialogTrigger asChild>
+                  <Button variant="outline">
+                      <File className="mr-2" />
+                      Print Blank Sheet
+                  </Button>
+              </DialogTrigger>
+              <BlankSheetDialog />
+          </Dialog>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2" />
+                Create Exam
+              </Button>
+            </DialogTrigger>
+            <CreateExamDialog onExamCreated={handleExamCreated} />
+          </Dialog>
+        </div>
       </div>
 
       <Card>
