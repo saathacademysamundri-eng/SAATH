@@ -52,10 +52,12 @@ import {
 import { updateStudentStatus } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function StudentsPage() {
-  const { students: studentList, loading, refreshData } = useAppContext();
+  const { students: studentList, classes, loading, refreshData } = useAppContext();
   const [search, setSearch] = useState('');
+  const [classFilter, setClassFilter] = useState('all');
   const router = useRouter();
   const { toast } = useToast();
 
@@ -73,11 +75,15 @@ export default function StudentsPage() {
     selectedStudent: null,
   });
 
-  const filteredStudents = studentList.filter(student =>
-    student.name.toLowerCase().includes(search.toLowerCase()) || 
-    student.id.toLowerCase().includes(search.toLowerCase()) ||
-    student.fatherName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredStudents = studentList.filter(student => {
+    const searchMatch = student.name.toLowerCase().includes(search.toLowerCase()) || 
+      student.id.toLowerCase().includes(search.toLowerCase()) ||
+      student.fatherName.toLowerCase().includes(search.toLowerCase());
+    
+    const classMatch = classFilter === 'all' || student.class === classes.find(c => c.id === classFilter)?.name;
+
+    return searchMatch && classMatch;
+  });
 
   const handleEditClick = (student: Student) => {
     setDialogState({ ...dialogState, isEditOpen: true, selectedStudent: student });
@@ -143,14 +149,25 @@ export default function StudentsPage() {
           <CardDescription>
             A list of all students in the academy.
           </CardDescription>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search by student name, father's name, or roll number..." 
-              className="pl-8" 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="flex flex-col md:flex-row gap-4 pt-2">
+            <div className="relative flex-grow">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search by student name, father's name, or roll number..." 
+                className="pl-8" 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Filter by class" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent>
