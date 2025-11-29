@@ -147,7 +147,10 @@ export default function StudentsPage() {
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            A list of all students in the academy.
+            {classFilter === 'all' && search === ''
+              ? `A list of all ${filteredStudents.length} students in the academy.`
+              : `Found ${filteredStudents.length} students matching your criteria.`
+            }
           </CardDescription>
           <div className="flex flex-col md:flex-row gap-4 pt-2">
             <div className="relative flex-grow">
