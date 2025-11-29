@@ -22,20 +22,60 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const getInitialState = (): Omit<AppContextType, 'loading' | 'refreshData'> => {
+  if (typeof window !== 'undefined') {
+    const cachedData = sessionStorage.getItem('appContextCache');
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        // Dates need to be re-hydrated
+        return {
+          ...parsed,
+          income: parsed.income.map((i: any) => ({ ...i, date: new Date(i.date) })),
+          expenses: parsed.expenses.map((e: any) => ({ ...e, date: new Date(e.date) })),
+          allPayouts: parsed.allPayouts.map((p: any) => ({ ...p, payoutDate: new Date(p.payoutDate) })),
+          activities: parsed.activities.map((a: any) => ({ ...a, date: new Date(a.date) })),
+          academyShare: parsed.academyShare.map((a: any) => ({ ...a, payoutDate: new Date(a.payoutDate) })),
+        };
+      } catch (e) {
+        console.error("Failed to parse app context cache", e);
+      }
+    }
+  }
+  return {
+    students: [],
+    teachers: [],
+    classes: [],
+    income: [],
+    expenses: [],
+    allSubjects: [],
+    allPayouts: [],
+    activities: [],
+    academyShare: [],
+  };
+};
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [income, setIncome] = useState<Income[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
-  const [allPayouts, setAllPayouts] = useState<(TeacherPayout & { report?: Report, academyShare?: number })[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [academyShare, setAcademyShare] = useState<Payout[]>([]);
+  const [initialState] = useState(getInitialState);
+  const [students, setStudents] = useState<Student[]>(initialState.students);
+  const [teachers, setTeachers] = useState<Teacher[]>(initialState.teachers);
+  const [classes, setClasses] = useState<Class[]>(initialState.classes);
+  const [income, setIncome] = useState<Income[]>(initialState.income);
+  const [expenses, setExpenses] = useState<Expense[]>(initialState.expenses);
+  const [allSubjects, setAllSubjects] = useState<Subject[]>(initialState.allSubjects);
+  const [allPayouts, setAllPayouts] = useState<(TeacherPayout & { report?: Report, academyShare?: number })[]>(initialState.allPayouts);
+  const [activities, setActivities] = useState<Activity[]>(initialState.activities);
+  const [academyShare, setAcademyShare] = useState<Payout[]>(initialState.academyShare);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async (isInitialLoad = false) => {
-    setLoading(true);
+    // Only show loader on initial hard load
+    if (sessionStorage.getItem('appContextCache') === null) {
+      setLoading(true);
+    } else {
+        setLoading(false);
+    }
+
     try {
       if (isInitialLoad) {
         // Run fee generation check on the very first load.
@@ -63,6 +103,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         getRecentActivities(),
         getAcademyShare(),
       ]);
+      
+      const fullState = {
+        students: studentsData,
+        teachers: teachersData,
+        classes: classesData,
+        income: incomeData,
+        expenses: expensesData,
+        allSubjects: allSubjectsData,
+        allPayouts: allPayoutsData,
+        activities: activitiesData,
+        academyShare: academyShareData,
+      };
 
       setStudents(studentsData);
       setTeachers(teachersData);
@@ -73,6 +125,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setAllPayouts(allPayoutsData);
       setActivities(activitiesData);
       setAcademyShare(academyShareData);
+
+      sessionStorage.setItem('appContextCache', JSON.stringify(fullState));
 
     } catch (error) {
       console.error("Failed to fetch app data:", error);

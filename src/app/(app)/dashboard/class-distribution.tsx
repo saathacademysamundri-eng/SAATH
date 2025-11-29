@@ -1,11 +1,13 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { useAppContext } from '@/hooks/use-app-context';
-import { Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Tooltip, Cell, LabelList } from 'recharts';
 import { useMemo } from 'react';
 import { Users } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const chartColors = [
   'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))',
@@ -36,6 +38,28 @@ export function ClassDistribution() {
     return config;
   }, [classData]);
 
+  if (loading) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Users /> Class Distribution</CardTitle>
+                <CardDescription>Student distribution across classes.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    {Array.from({length: 4}).map((_, i) => (
+                         <div key={i} className="p-4 bg-muted/50 rounded-lg">
+                            <Skeleton className="h-5 w-20 mb-2" />
+                            <Skeleton className="h-8 w-12" />
+                        </div>
+                    ))}
+                </div>
+                <Skeleton className="h-[250px] w-full" />
+            </CardContent>
+        </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -43,9 +67,18 @@ export function ClassDistribution() {
             <Users />
             Class Distribution
         </CardTitle>
-        <CardDescription>Student distribution across top classes.</CardDescription>
+        <CardDescription>Student distribution across classes.</CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {classData.map(item => (
+                <div key={item.name} className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm font-medium text-muted-foreground">{item.name}</p>
+                    <p className="text-3xl font-bold">{item.studentCount}</p>
+                </div>
+            ))}
+        </div>
+        
         {classData.length > 0 ? (
           <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
             <ResponsiveContainer width="100%" height={250}>
@@ -61,6 +94,10 @@ export function ClassDistribution() {
                   innerRadius={60}
                   strokeWidth={5}
                 >
+                    <LabelList dataKey="studentCount" className="fill-foreground text-sm" />
+                    {classData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>

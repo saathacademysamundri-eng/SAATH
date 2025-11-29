@@ -35,7 +35,7 @@ const iconMap: { [key: string]: React.ElementType } = {
 
 
 export default function DashboardPage() {
-    const { income, expenses, students, teachers } = useAppContext();
+    const { income, expenses, students, teachers, activities } = useAppContext();
     const [attendance, setAttendance] = useState({ present: 0, absent: 0 });
     const [messagesSent, setMessagesSent] = useState(0);
 
@@ -71,26 +71,25 @@ export default function DashboardPage() {
     
     const studentsPresent = attendance.present;
     const studentsAbsent = attendance.absent;
+
+    const totalPendingDues = useMemo(() => {
+        return students.reduce((sum, student) => sum + (student.totalFee > 0 ? student.totalFee : 0), 0);
+    }, [students]);
     
     const newAdmissions = useMemo(() => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        // This assumes new students have a `createdAt` field, which they don't.
-        // We will simulate this based on student ID sequence for now.
-        const recentStudents = students.filter(student => {
-             const studentNum = parseInt(student.id.substring(1));
-             // This is a rough heuristic, will be inaccurate if IDs are not sequential
-             return studentNum > (students.length - 5);
-        });
-        return recentStudents.length;
-    }, [students]);
+        return activities.filter(activity => 
+            activity.type === 'new_admission' && activity.date > thirtyDaysAgo
+        ).length;
+    }, [activities]);
 
 
     const topRowStats = [
         { title: 'Total Students', value: students.length.toLocaleString(), subtitle: '+2% from last month', icon: 'Users', color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
         { title: 'Students Present', value: studentsPresent, subtitle: 'Attendance for today', icon: 'UserCheck', color: 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800' },
         { title: 'Students Absent', value: studentsAbsent, subtitle: 'Attendance for today', icon: 'UserX', color: 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800' },
-        { title: 'Messages Sent Today', value: messagesSent, subtitle: 'WhatsApp messages delivered', icon: 'MessageSquare', color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
+        { title: 'Pending Dues', value: totalPendingDues.toLocaleString(), subtitle: 'All outstanding fees', icon: 'Scale', color: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800' },
         { title: 'New Admissions', value: newAdmissions, subtitle: 'In the last 30 days', icon: 'UserPlus', color: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' },
     ];
     
