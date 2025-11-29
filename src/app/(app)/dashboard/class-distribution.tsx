@@ -1,9 +1,10 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { useAppContext } from '@/hooks/use-app-context';
-import { Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Tooltip, Cell, LabelList } from 'recharts';
 import { useMemo } from 'react';
 import { Users } from 'lucide-react';
 
@@ -60,7 +61,12 @@ export function ClassDistribution() {
                   nameKey="name"
                   innerRadius={60}
                   strokeWidth={5}
+                  labelLine={false}
                 >
+                    <LabelList dataKey="studentCount" position="outside" offset={10} className="fill-foreground text-sm" />
+                    {classData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
