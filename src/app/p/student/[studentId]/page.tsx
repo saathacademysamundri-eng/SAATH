@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,9 +8,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useSettings } from '@/hooks/use-settings';
 import { Student } from '@/lib/data';
 import { getStudent } from '@/lib/firebase/firestore';
-import { Home, Mail, Phone, User, LogIn } from 'lucide-react';
+import { Home, Mail, Phone, User, MessageSquare } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 function ProfileSkeleton() {
     return (
@@ -141,9 +141,11 @@ export default function StudentPublicProfile() {
                         
                     </CardContent>
                     <CardContent>
-                        <Button className="w-full" variant="outline">
-                            <LogIn className="mr-2 h-4 w-4" />
-                            Student Portal Login
+                        <Button className="w-full" variant="outline" asChild>
+                           <Link href="https://wa.me/923438775425" target="_blank">
+                             <MessageSquare className="mr-2 h-4 w-4" />
+                             Help
+                           </Link>
                         </Button>
                     </CardContent>
                 </Card>
