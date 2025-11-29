@@ -35,7 +35,7 @@ const iconMap: { [key: string]: React.ElementType } = {
 
 
 export default function DashboardPage() {
-    const { income, expenses, students, teachers } = useAppContext();
+    const { income, expenses, students, teachers, activities } = useAppContext();
     const [attendance, setAttendance] = useState({ present: 0, absent: 0 });
     const [messagesSent, setMessagesSent] = useState(0);
 
@@ -79,15 +79,10 @@ export default function DashboardPage() {
     const newAdmissions = useMemo(() => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        // This assumes new students have a `createdAt` field, which they don't.
-        // We will simulate this based on student ID sequence for now.
-        const recentStudents = students.filter(student => {
-             const studentNum = parseInt(student.id.substring(1));
-             // This is a rough heuristic, will be inaccurate if IDs are not sequential
-             return studentNum > (students.length - 5);
-        });
-        return recentStudents.length;
-    }, [students]);
+        return activities.filter(activity => 
+            activity.type === 'new_admission' && activity.date > thirtyDaysAgo
+        ).length;
+    }, [activities]);
 
 
     const topRowStats = [
