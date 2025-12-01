@@ -112,7 +112,8 @@ export default function VouchersPage() {
              <style>
                 body { font-family: Calibri, sans-serif; }
                 .voucher-container { 
-                  width: 800px; 
+                  width: 100%;
+                  max-width: 800px;
                   margin: auto; 
                   padding: 20px; 
                   border: 1px solid #ccc; 
@@ -120,6 +121,7 @@ export default function VouchersPage() {
                   height: 100vh;
                   display: flex;
                   flex-direction: column;
+                  box-sizing: border-box;
                 }
                 .voucher-container:last-child { page-break-after: auto; }
                 .header { text-align: center; margin-bottom: 20px; }
