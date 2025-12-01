@@ -28,7 +28,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, PlusCircle, Search, Trash, Edit, Archive, GraduationCap } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Search, Trash, Edit, Archive, GraduationCap, ChevronRight } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
 import { Dialog, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { useState } from 'react';
@@ -53,6 +53,7 @@ import { updateStudentStatus } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PromoteStudentDialog } from './promote-student-dialog';
 
 export default function StudentsPage() {
   const { students: studentList, classes, loading, refreshData } = useAppContext();
@@ -66,12 +67,14 @@ export default function StudentsPage() {
     isEditOpen: boolean;
     isArchiveOpen: boolean;
     isGraduateOpen: boolean;
+    isPromoteOpen: boolean;
     selectedStudent: Student | null;
   }>({
     isAddOpen: false,
     isEditOpen: false,
     isArchiveOpen: false,
     isGraduateOpen: false,
+    isPromoteOpen: false,
     selectedStudent: null,
   });
 
@@ -97,8 +100,12 @@ export default function StudentsPage() {
      setDialogState({ ...dialogState, isGraduateOpen: open, selectedStudent: student });
   }
 
+  const handlePromoteClick = (student: Student) => {
+    setDialogState({ ...dialogState, isPromoteOpen: true, selectedStudent: student });
+  }
+
   const closeDialogs = () => {
-    setDialogState({ isAddOpen: false, isEditOpen: false, isArchiveOpen: false, isGraduateOpen: false, selectedStudent: null });
+    setDialogState({ isAddOpen: false, isEditOpen: false, isArchiveOpen: false, isGraduateOpen: false, isPromoteOpen: false, selectedStudent: null });
   };
 
   const onStudentAdded = () => {
@@ -262,6 +269,10 @@ export default function StudentsPage() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handlePromoteClick(student)}>
+                                <ChevronRight className="mr-2 h-4 w-4" />
+                                Promote Student
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                                <DropdownMenuItem onSelect={() => handleGraduateAction(student, true)}>
                                 <GraduationCap className="mr-2 h-4 w-4" />
@@ -332,6 +343,14 @@ export default function StudentsPage() {
               <EditStudentForm 
                   student={dialogState.selectedStudent}
                   onStudentUpdated={onStudentUpdated}
+              />
+          </Dialog>
+      )}
+       {dialogState.selectedStudent && (
+          <Dialog open={dialogState.isPromoteOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isPromoteOpen: isOpen, selectedStudent: isOpen ? dialogState.selectedStudent : null })}>
+              <PromoteStudentDialog 
+                  student={dialogState.selectedStudent}
+                  onStudentPromoted={onStudentUpdated}
               />
           </Dialog>
       )}
