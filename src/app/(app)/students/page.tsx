@@ -101,7 +101,7 @@ export default function StudentsPage() {
     // When filters change, clear selection if a selected student is no longer visible
     const visibleStudentIds = new Set(filteredStudents.map(s => s.id));
     setSelectedStudents(prev => prev.filter(s => visibleStudentIds.has(s.id)));
-  }, [search, classFilter, studentList, classes]);
+  }, [search, classFilter]);
 
 
   const handleEditClick = (student: Student) => {
@@ -216,7 +216,8 @@ export default function StudentsPage() {
     printWindow.document.write(printHtml);
     printWindow.document.close();
   }
-
+  
+  const showBulkActions = classFilter !== 'all';
 
   return (
     <div className="flex flex-col gap-6">
@@ -272,7 +273,7 @@ export default function StudentsPage() {
               </SelectContent>
             </Select>
           </div>
-          {selectedStudents.length > 0 && (
+          {showBulkActions && selectedStudents.length > 0 && (
             <div className="flex items-center gap-4 border-t pt-4 mt-4">
                 <p className="text-sm text-muted-foreground">{selectedStudents.length} student(s) selected</p>
                 <Button size="sm" onClick={() => setIsBulkPromoteOpen(true)}>
@@ -290,13 +291,13 @@ export default function StudentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                 <TableHead className="w-12">
+                 {showBulkActions && <TableHead className="w-12">
                     <Checkbox
                         checked={selectedStudents.length > 0 && selectedStudents.length === filteredStudents.length && filteredStudents.length > 0}
                         onCheckedChange={handleSelectAll}
                         aria-label="Select all"
                     />
-                 </TableHead>
+                 </TableHead>}
                 <TableHead>Student</TableHead>
                 <TableHead>Father's Name</TableHead>
                 <TableHead>Fee Status</TableHead>
@@ -311,7 +312,7 @@ export default function StudentsPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Checkbox disabled /></TableCell>
+                    {showBulkActions && <TableCell><Checkbox disabled /></TableCell>}
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-10 w-10 rounded-full" />
@@ -331,13 +332,13 @@ export default function StudentsPage() {
               ) : (
                 filteredStudents.map((student) => (
                   <TableRow key={student.id} data-state={selectedStudents.some(s => s.id === student.id) && "selected"}>
-                    <TableCell>
+                    {showBulkActions && <TableCell>
                         <Checkbox
                             checked={selectedStudents.some(s => s.id === student.id)}
                             onCheckedChange={(checked) => handleSelectStudent(student, !!checked)}
                             aria-label={`Select ${student.name}`}
                         />
-                    </TableCell>
+                    </TableCell>}
                     <TableCell>
                       <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
