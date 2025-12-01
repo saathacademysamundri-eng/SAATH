@@ -294,14 +294,17 @@ export default function FeeCollectionPage() {
                 <style>
                     body { font-family: Calibri, sans-serif; height: 100vh; margin: 0; }
                     .container { 
-                        width: 800px; 
+                        width: 100%;
+                        max-width: 800px; 
                         height: 100%;
                         margin: auto; 
                         padding: 20px; 
                         border: 1px solid #ccc; 
                         display: flex;
                         flex-direction: column;
+                        box-sizing: border-box;
                     }
+                    .main-content { flex-grow: 1; }
                     .header { text-align: center; margin-bottom: 20px; }
                     .header img { max-height: 80px; margin-bottom: 10px; }
                     .header h1 { margin: 0; }
@@ -310,8 +313,8 @@ export default function FeeCollectionPage() {
                     .fee-details th { background-color: #f2f2f2; text-align: left;}
                     .text-right { text-align: right; }
                     .total-row td { font-weight: bold; }
-                    .slip-container { display: flex; justify-content: space-between; gap: 20px; margin-top: auto; }
-                    .slip { border: 1px solid #000; padding: 10px; width: 48%; }
+                    .slip-container { display: flex; justify-content: space-between; gap: 20px; }
+                    .slip { border: 1px solid #000; padding: 10px; width: 100%; text-align: center; }
                     .qr-section { text-align: center; margin-top: 20px; }
                     .qr-section img { margin: auto; }
                     .cut-line { 
@@ -334,7 +337,7 @@ export default function FeeCollectionPage() {
                 <body>
                     <div class="container">
                         <!-- Student Copy -->
-                        <div>
+                        <div class="main-content">
                             <div class="header">
                                 ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
                                 <h1>${settings.name}</h1>
@@ -365,7 +368,7 @@ export default function FeeCollectionPage() {
                         </div>
 
                         <!-- Academy Copy -->
-                         <div class="slip" style="text-align: center; width: 100%;">
+                         <div class="slip">
                             <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
                             <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
                             <p><strong>Father's Name:</strong> ${searchedStudent.fatherName}</p>

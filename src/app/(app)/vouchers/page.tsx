@@ -62,7 +62,7 @@ export default function VouchersPage() {
       const voucherHtml = `
         <div class="voucher-container">
             <!-- Student Copy -->
-            <div>
+            <div class="main-content">
               <div class="header">
                   ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
                   <h1>${settings.name}</h1>
@@ -93,7 +93,7 @@ export default function VouchersPage() {
             </div>
 
             <!-- Academy Copy -->
-            <div class="slip" style="text-align: center; width: 100%;">
+            <div class="slip">
                 <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
                 <p><strong>Student:</strong> ${student.name} (${student.id})</p>
                 <p><strong>Father's Name:</strong> ${student.fatherName}</p>
@@ -124,6 +124,7 @@ export default function VouchersPage() {
                   box-sizing: border-box;
                 }
                 .voucher-container:last-child { page-break-after: auto; }
+                .main-content { flex-grow: 1; }
                 .header { text-align: center; margin-bottom: 20px; }
                 .header img { max-height: 80px; margin-bottom: 10px; }
                 .header h1 { margin: 0; }
@@ -132,8 +133,7 @@ export default function VouchersPage() {
                 .fee-details th { background-color: #f2f2f2; text-align: left;}
                 .text-right { text-align: right; }
                 .total-row td { font-weight: bold; }
-                .slip-container { display: flex; justify-content: center; gap: 20px; margin-top: auto; }
-                .slip { border: 1px solid #000; padding: 10px; width: 48%; }
+                .slip { text-align: center; border: 1px solid #000; padding: 10px; width: 100%;}
                 .qr-section { text-align: center; margin-top: 20px; }
                 .qr-section img { margin: auto; }
                 .cut-line { 
