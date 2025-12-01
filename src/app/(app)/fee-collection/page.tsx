@@ -322,20 +322,11 @@ export default function FeeCollectionPage() {
                         border-top: 2px dashed #888;
                         position: relative;
                     }
-                    .cut-line span { 
-                        background: #fff; 
-                        padding: 0 10px;
-                        color: #888;
-                        font-family: sans-serif;
-                        position: absolute;
-                        left: 50%;
-                        transform: translateX(-50%);
-                    }
                     .cut-line-icon {
                         font-size: 20px;
                         position: absolute;
-                        left: 50%;
-                        transform: translateX(-50%) translateY(-50%);
+                        left: 10px;
+                        transform: translateY(-50%);
                         background: #fff;
                         padding: 0 5px;
                     }
@@ -554,7 +545,3 @@ export default function FeeCollectionPage() {
     </div>
   );
 }
-
-    
-
-

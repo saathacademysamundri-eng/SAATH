@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -60,39 +61,46 @@ export default function VouchersPage() {
 
       const voucherHtml = `
         <div class="voucher-container">
-          <div class="header">
-              ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
-              <h1>${settings.name}</h1>
-              <p>${settings.address}</p>
-              <p>Phone: ${settings.phone}</p>
-          </div>
-          <h2>Fee Voucher</h2>
-          <table class="details">
-              <tr><td><strong>Student Name:</strong></td><td>${student.name}</td><td><strong>Roll No:</strong></td><td>${student.id}</td></tr>
-              <tr><td><strong>Father's Name:</strong></td><td>${student.fatherName}</td><td><strong>Class:</strong></td><td>${student.class}</td></tr>
-              <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
-          </table>
-          <table class="fee-details">
-              <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
-              <tbody><tr><td>Tuition Fee</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tbody>
-              <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tfoot>
-          </table>
-          <div class="qr-section">
-             ${qrCodeDataUrl ? `
-                  <p><strong>Scan to check status online</strong></p>
-                  <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
-              ` : ''}
-          </div>
-           <div class="slip-container">
-              <div class="slip" style="text-align: center; width: 100%;">
-                  <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Academy Copy</h3>
-                  <p><strong>Student:</strong> ${student.name} (${student.id})</p>
-                  <p><strong>Father:</strong> ${student.fatherName}</p>
-                  <p><strong>Class:</strong> ${student.class}</p>
-                  <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
-                  <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
+            <!-- Student Copy -->
+            <div>
+              <div class="header">
+                  ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
+                  <h1>${settings.name}</h1>
+                  <p>${settings.address}</p>
+                  <p>Phone: ${settings.phone}</p>
               </div>
-          </div>
+              <h2>Fee Voucher (Student Copy)</h2>
+              <table class="details">
+                  <tr><td><strong>Student Name:</strong></td><td>${student.name}</td><td><strong>Roll No:</strong></td><td>${student.id}</td></tr>
+                  <tr><td><strong>Father's Name:</strong></td><td>${student.fatherName}</td><td><strong>Class:</strong></td><td>${student.class}</td></tr>
+                  <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
+              </table>
+              <table class="fee-details">
+                  <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
+                  <tbody><tr><td>Tuition Fee</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tbody>
+                  <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tfoot>
+              </table>
+              <div class="qr-section">
+                ${qrCodeDataUrl ? `
+                      <p><strong>Scan to check status online</strong></p>
+                      <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
+                  ` : ''}
+              </div>
+            </div>
+
+            <div class="cut-line">
+                <div class="cut-line-icon">&#x2702;</div>
+            </div>
+
+            <!-- Academy Copy -->
+            <div class="slip" style="text-align: center; width: 100%;">
+                <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
+                <p><strong>Student:</strong> ${student.name} (${student.id})</p>
+                <p><strong>Father's Name:</strong> ${student.fatherName}</p>
+                <p><strong>Class:</strong> ${student.class}</p>
+                <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
+                <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
+            </div>
         </div>
       `;
       allVouchersHtml += voucherHtml;
@@ -108,8 +116,8 @@ export default function VouchersPage() {
                   margin: auto; 
                   padding: 20px; 
                   border: 1px solid #ccc; 
-                  page-break-after: always; /* Ensure each voucher is on a new page */
-                  height: 1050px; /*Approx A4 height*/
+                  page-break-after: always;
+                  height: 100vh;
                   display: flex;
                   flex-direction: column;
                 }
@@ -126,6 +134,22 @@ export default function VouchersPage() {
                 .slip { border: 1px solid #000; padding: 10px; width: 48%; }
                 .qr-section { text-align: center; margin-top: 20px; }
                 .qr-section img { margin: auto; }
+                .cut-line { 
+                    display: flex;
+                    align-items: center;
+                    text-align: center;
+                    margin: 20px 0;
+                    border-top: 2px dashed #888;
+                    position: relative;
+                }
+                .cut-line-icon {
+                    font-size: 20px;
+                    position: absolute;
+                    left: 10px;
+                    transform: translateY(-50%);
+                    background: #fff;
+                    padding: 0 5px;
+                }
                 @media print {
                   @page {
                     size: A4 portrait;
