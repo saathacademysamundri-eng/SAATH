@@ -118,7 +118,6 @@ export default function VouchersPage() {
                   padding: 20px; 
                   border: 1px solid #ccc; 
                   page-break-after: always;
-                  height: 100vh;
                   display: flex;
                   flex-direction: column;
                   box-sizing: border-box;
@@ -158,6 +157,9 @@ export default function VouchersPage() {
                     margin: 0.5in;
                   }
                   body { -webkit-print-color-adjust: exact; }
+                  .voucher-container {
+                     min-height: 270mm; /* A bit less than A4 height */
+                  }
                 }
             </style>
             </head>

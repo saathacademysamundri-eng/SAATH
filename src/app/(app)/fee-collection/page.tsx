@@ -292,11 +292,10 @@ export default function FeeCollectionPage() {
             <html>
                 <head><title>Fee Voucher - ${searchedStudent.name}</title></head>
                 <style>
-                    body { font-family: Calibri, sans-serif; height: 100vh; margin: 0; }
+                    body { font-family: Calibri, sans-serif; margin: 0; }
                     .container { 
                         width: 100%;
                         max-width: 800px; 
-                        height: 100%;
                         margin: auto; 
                         padding: 20px; 
                         border: 1px solid #ccc; 
@@ -332,6 +331,13 @@ export default function FeeCollectionPage() {
                         transform: translateY(-50%);
                         background: #fff;
                         padding: 0 5px;
+                    }
+                     @media print {
+                      @page {
+                        size: A4 portrait;
+                        margin: 0.5in;
+                      }
+                      body { -webkit-print-color-adjust: exact; }
                     }
                 </style>
                 <body>
