@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -100,7 +101,7 @@ export default function StudentsPage() {
     // When filters change, clear selection if a selected student is no longer visible
     const visibleStudentIds = new Set(filteredStudents.map(s => s.id));
     setSelectedStudents(prev => prev.filter(s => visibleStudentIds.has(s.id)));
-  }, [filteredStudents]);
+  }, [search, classFilter, studentList, classes]);
 
 
   const handleEditClick = (student: Student) => {
@@ -291,7 +292,7 @@ export default function StudentsPage() {
               <TableRow>
                  <TableHead className="w-12">
                     <Checkbox
-                        checked={selectedStudents.length > 0 && selectedStudents.length === filteredStudents.length}
+                        checked={selectedStudents.length > 0 && selectedStudents.length === filteredStudents.length && filteredStudents.length > 0}
                         onCheckedChange={handleSelectAll}
                         aria-label="Select all"
                     />
