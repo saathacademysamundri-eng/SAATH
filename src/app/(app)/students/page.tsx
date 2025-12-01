@@ -68,6 +68,7 @@ export default function StudentsPage() {
 
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
   const [isBulkPromoteOpen, setIsBulkPromoteOpen] = useState(false);
+  const [isBulkGraduateOpen, setIsBulkGraduateOpen] = useState(false);
 
   const [dialogState, setDialogState] = useState<{
     isAddOpen: boolean;
@@ -112,7 +113,7 @@ export default function StudentsPage() {
     setDialogState({ ...dialogState, isArchiveOpen: open, selectedStudent: student });
   }
   
-  const handleGraduateAction = (student: Student, open: boolean) => {
+  const handleGraduateAction = (student: Student | null, open: boolean) => {
      setDialogState({ ...dialogState, isGraduateOpen: open, selectedStudent: student });
   }
 
@@ -146,6 +147,8 @@ export default function StudentsPage() {
       toast({ variant: "destructive", title: "Action Failed", description: result.message });
     }
     closeDialogs();
+    setIsBulkGraduateOpen(false);
+    setSelectedStudents([]);
   }
 
   const handleSelectAll = (checked: boolean) => {
@@ -218,6 +221,7 @@ export default function StudentsPage() {
   }
   
   const showBulkActions = classFilter !== 'all';
+  const is12thGrade = classes.find(c => c.id === classFilter)?.name === '12th Grade';
 
   return (
     <div className="flex flex-col gap-6">
@@ -276,10 +280,35 @@ export default function StudentsPage() {
           {showBulkActions && selectedStudents.length > 0 && (
             <div className="flex items-center gap-4 border-t pt-4 mt-4">
                 <p className="text-sm text-muted-foreground">{selectedStudents.length} student(s) selected</p>
-                <Button size="sm" onClick={() => setIsBulkPromoteOpen(true)}>
-                    <ChevronsRight className="mr-2 h-4 w-4" />
-                    Promote Selected
-                </Button>
+                {is12thGrade ? (
+                    <AlertDialog open={isBulkGraduateOpen} onOpenChange={setIsBulkGraduateOpen}>
+                        <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="secondary">
+                                <GraduationCap className="mr-2 h-4 w-4" />
+                                Graduate Selected
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Graduate Selected Students?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will move {selectedStudents.length} student(s) to the Alumni list. This action cannot be easily undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleConfirmAction(selectedStudents[0], 'graduated')}>
+                                    Confirm Graduation
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                ) : (
+                    <Button size="sm" onClick={() => setIsBulkPromoteOpen(true)}>
+                        <ChevronsRight className="mr-2 h-4 w-4" />
+                        Promote Selected
+                    </Button>
+                )}
                 <Button size="sm" variant="outline" onClick={handlePrintSelected}>
                     <Printer className="mr-2 h-4 w-4" />
                     Print Selected
@@ -385,10 +414,17 @@ export default function StudentsPage() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handlePromoteClick(student)}>
-                                <ChevronRight className="mr-2 h-4 w-4" />
-                                Promote Student
-                              </DropdownMenuItem>
+                              {is12thGrade ? (
+                                <DropdownMenuItem onSelect={() => handleGraduateAction(student, true)}>
+                                    <GraduationCap className="mr-2 h-4 w-4" />
+                                    Mark as Graduated
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={() => handlePromoteClick(student)}>
+                                    <ChevronRight className="mr-2 h-4 w-4" />
+                                    Promote Student
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
                                <DropdownMenuItem onSelect={() => handleGraduateAction(student, true)}>
                                 <GraduationCap className="mr-2 h-4 w-4" />
@@ -462,7 +498,7 @@ export default function StudentsPage() {
               />
           </Dialog>
       )}
-       {dialogState.selectedStudent && (
+       {dialogState.selectedStudent && !is12thGrade && (
           <Dialog open={dialogState.isPromoteOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isPromoteOpen: isOpen, selectedStudent: isOpen ? dialogState.selectedStudent : null })}>
               <PromoteStudentDialog 
                   student={dialogState.selectedStudent}
@@ -470,7 +506,7 @@ export default function StudentsPage() {
               />
           </Dialog>
       )}
-      {selectedStudents.length > 0 && (
+      {selectedStudents.length > 0 && !is12thGrade && (
           <Dialog open={isBulkPromoteOpen} onOpenChange={setIsBulkPromoteOpen}>
               <BulkPromoteDialog
                   students={selectedStudents}
@@ -481,3 +517,4 @@ export default function StudentsPage() {
     </div>
   );
 }
+
