@@ -32,7 +32,7 @@ export default function FeeCollectionPage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
+  const [printFormat, setPrintFormat] = useState<PrintFormat>('a4');
   
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
@@ -292,8 +292,18 @@ export default function FeeCollectionPage() {
             <html>
                 <head><title>Fee Voucher - ${searchedStudent.name}</title></head>
                 <style>
-                    body { font-family: Calibri, sans-serif; }
-                    .container { width: 800px; margin: auto; padding: 20px; border: 1px solid #ccc; }
+                    body { font-family: Calibri, sans-serif; margin: 0; }
+                    .container { 
+                        width: 100%;
+                        max-width: 800px; 
+                        margin: auto; 
+                        padding: 20px; 
+                        border: 1px solid #ccc; 
+                        display: flex;
+                        flex-direction: column;
+                        box-sizing: border-box;
+                    }
+                    .main-content { flex-grow: 1; }
                     .header { text-align: center; margin-bottom: 20px; }
                     .header img { max-height: 80px; margin-bottom: 10px; }
                     .header h1 { margin: 0; }
@@ -302,43 +312,75 @@ export default function FeeCollectionPage() {
                     .fee-details th { background-color: #f2f2f2; text-align: left;}
                     .text-right { text-align: right; }
                     .total-row td { font-weight: bold; }
-                    .slip-container { display: flex; justify-content: space-between; gap: 20px; margin-top: 30px; }
-                    .slip { border: 1px solid #000; padding: 10px; width: 48%; }
+                    .slip-container { display: flex; justify-content: space-between; gap: 20px; }
+                    .slip { border: 1px solid #000; padding: 10px; width: 100%; text-align: center; }
                     .qr-section { text-align: center; margin-top: 20px; }
                     .qr-section img { margin: auto; }
+                    .cut-line { 
+                        display: flex;
+                        align-items: center;
+                        text-align: center;
+                        margin: 20px 0;
+                        border-top: 2px dashed #888;
+                        position: relative;
+                    }
+                    .cut-line-icon {
+                        font-size: 20px;
+                        position: absolute;
+                        left: 10px;
+                        transform: translateY(-50%);
+                        background: #fff;
+                        padding: 0 5px;
+                    }
+                     @media print {
+                      @page {
+                        size: A4 portrait;
+                        margin: 0.5in;
+                      }
+                      body { -webkit-print-color-adjust: exact; }
+                    }
                 </style>
                 <body>
                     <div class="container">
-                        <div class="header">
-                            ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
-                            <h1>${settings.name}</h1>
-                            <p>${settings.address}</p>
-                            <p>Phone: ${settings.phone}</p>
-                        </div>
-                        <h2>Fee Voucher</h2>
-                        <table class="details">
-                            <tr><td><strong>Student Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
-                            <tr><td><strong>Father's Name:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
-                            <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
-                        </table>
-                        <table class="fee-details">
-                            <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
-                            <tbody><tr><td>Tuition Fee</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tbody>
-                            <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tfoot>
-                        </table>
-                        <div class="qr-section">
-                           ${qrCodeDataUrl ? `
-                                <p><strong>Scan to check status online</strong></p>
-                                <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
-                            ` : ''}
-                        </div>
-                         <div class="slip-container">
-                            <div class="slip" style="text-align: center; width: 100%;">
-                                <h4>Academy Copy</h4>
-                                <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                                <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
-                                <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
+                        <!-- Student Copy -->
+                        <div class="main-content">
+                            <div class="header">
+                                ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
+                                <h1>${settings.name}</h1>
+                                <p>${settings.address}</p>
+                                <p>Phone: ${settings.phone}</p>
                             </div>
+                            <h2>Fee Voucher (Student Copy)</h2>
+                            <table class="details">
+                                <tr><td><strong>Student Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
+                                <tr><td><strong>Father's Name:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
+                                <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
+                            </table>
+                            <table class="fee-details">
+                                <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
+                                <tbody><tr><td>Tuition Fee</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tbody>
+                                <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tfoot>
+                            </table>
+                             <div class="qr-section">
+                               ${qrCodeDataUrl ? `
+                                    <p><strong>Scan to check status online</strong></p>
+                                    <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <div class="cut-line">
+                            <div class="cut-line-icon">&#x2702;</div>
+                        </div>
+
+                        <!-- Academy Copy -->
+                         <div class="slip">
+                            <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
+                            <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
+                            <p><strong>Father's Name:</strong> ${searchedStudent.fatherName}</p>
+                            <p><strong>Class:</strong> ${searchedStudent.class}</p>
+                            <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
+                            <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
                         </div>
                     </div>
                 </body>
@@ -512,5 +554,3 @@ export default function FeeCollectionPage() {
     </div>
   );
 }
-
-    

@@ -148,8 +148,16 @@ export async function getStudentsByClass(className: string): Promise<Student[]> 
 }
 
 export async function getStudent(id: string): Promise<Student | null> {
-    const studentDocRef = doc(db, 'students', id);
+    let searchId = id.toUpperCase();
+    
+    // If the search term is purely numeric, format it as a student ID
+    if (/^\d+$/.test(id)) {
+        searchId = `S${id.padStart(3, '0')}`;
+    }
+
+    const studentDocRef = doc(db, 'students', searchId);
     const studentDoc = await getDoc(studentDocRef);
+
     if (studentDoc.exists()) {
         const data = studentDoc.data();
         return { 
@@ -159,18 +167,6 @@ export async function getStudent(id: string): Promise<Student | null> {
         } as Student;
     }
     
-    // Fallback search by case-insensitive id
-    const q = query(collection(db, "students"), where("id", "==", id.toUpperCase()));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0];
-        const data = doc.data();
-        return { 
-            ...data,
-            id: doc.id,
-            archivedAt: data.archivedAt?.toDate() 
-        } as Student;
-    }
     return null;
 }
 
@@ -1245,3 +1241,4 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+
