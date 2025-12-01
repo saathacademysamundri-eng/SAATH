@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -86,8 +85,10 @@ export default function VouchersPage() {
           </div>
            <div class="slip-container">
               <div class="slip" style="text-align: center; width: 100%;">
-                  <h4>Academy Copy</h4>
+                  <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Academy Copy</h3>
                   <p><strong>Student:</strong> ${student.name} (${student.id})</p>
+                  <p><strong>Father:</strong> ${student.fatherName}</p>
+                  <p><strong>Class:</strong> ${student.class}</p>
                   <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
                   <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
               </div>
