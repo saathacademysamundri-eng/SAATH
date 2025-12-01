@@ -191,7 +191,34 @@ export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id:
 export async function updateStudent(studentId: string, studentData: Partial<Omit<Student, 'id' | 'feeStatus' | 'totalFee'>>) {
     const docRef = doc(db, 'students', studentId);
     try {
-        await updateDoc(docRef, studentData);
+        await runTransaction(db, async (transaction) => {
+            const studentDoc = await transaction.get(docRef);
+            if (!studentDoc.exists()) {
+                throw new Error("Student not found");
+            }
+
+            const oldStudentData = studentDoc.data() as Student;
+            const updateData: any = { ...studentData };
+
+            if (studentData.monthlyFee !== undefined && studentData.monthlyFee !== oldStudentData.monthlyFee) {
+                const feeDifference = studentData.monthlyFee - oldStudentData.monthlyFee;
+                // Adjust totalFee (outstanding balance) by the same difference
+                const newTotalFee = oldStudentData.totalFee + feeDifference;
+                updateData.totalFee = newTotalFee;
+
+                // Optionally, update feeStatus based on new totalFee
+                if (newTotalFee <= 0) {
+                    updateData.feeStatus = 'Paid';
+                } else if (newTotalFee < oldStudentData.totalFee) {
+                    updateData.feeStatus = 'Partial';
+                } else {
+                    updateData.feeStatus = 'Pending';
+                }
+            }
+
+            transaction.update(docRef, updateData);
+        });
+
         await logActivity('student_updated', `Updated details for student ${studentData.name} (ID: ${studentId}).`, `/students/${studentId}`);
         return { success: true, message: "Student updated successfully." };
     } catch (serverError) {
@@ -200,6 +227,7 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
         return { success: false, message: (serverError as Error).message };
     }
 }
+
 
 export async function updateStudentStatus(studentId: string, status: 'active' | 'graduated' | 'archived') {
     const studentRef = doc(db, 'students', studentId);
@@ -1217,4 +1245,3 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
-
