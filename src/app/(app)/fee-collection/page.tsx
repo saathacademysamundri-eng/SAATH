@@ -32,7 +32,7 @@ export default function FeeCollectionPage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
+  const [printFormat, setPrintFormat] = useState<PrintFormat>('a4');
   
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
@@ -314,41 +314,73 @@ export default function FeeCollectionPage() {
                     .slip { border: 1px solid #000; padding: 10px; width: 48%; }
                     .qr-section { text-align: center; margin-top: 20px; }
                     .qr-section img { margin: auto; }
+                    .cut-line { 
+                        display: flex;
+                        align-items: center;
+                        text-align: center;
+                        margin: 20px 0;
+                        border-top: 2px dashed #888;
+                        position: relative;
+                    }
+                    .cut-line span { 
+                        background: #fff; 
+                        padding: 0 10px;
+                        color: #888;
+                        font-family: sans-serif;
+                        position: absolute;
+                        left: 50%;
+                        transform: translateX(-50%);
+                    }
+                    .cut-line-icon {
+                        font-size: 20px;
+                        position: absolute;
+                        left: 50%;
+                        transform: translateX(-50%) translateY(-50%);
+                        background: #fff;
+                        padding: 0 5px;
+                    }
                 </style>
                 <body>
                     <div class="container">
-                        <div class="header">
-                            ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
-                            <h1>${settings.name}</h1>
-                            <p>${settings.address}</p>
-                            <p>Phone: ${settings.phone}</p>
-                        </div>
-                        <h2>Fee Voucher</h2>
-                        <table class="details">
-                            <tr><td><strong>Student Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
-                            <tr><td><strong>Father's Name:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
-                            <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
-                        </table>
-                        <table class="fee-details">
-                            <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
-                            <tbody><tr><td>Tuition Fee</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tbody>
-                            <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tfoot>
-                        </table>
-                        <div class="qr-section">
-                           ${qrCodeDataUrl ? `
-                                <p><strong>Scan to check status online</strong></p>
-                                <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
-                            ` : ''}
-                        </div>
-                         <div class="slip-container">
-                            <div class="slip" style="text-align: center; width: 100%;">
-                                <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Academy Copy</h3>
-                                <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                                <p><strong>Father:</strong> ${searchedStudent.fatherName}</p>
-                                <p><strong>Class:</strong> ${searchedStudent.class}</p>
-                                <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
-                                <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
+                        <!-- Student Copy -->
+                        <div>
+                            <div class="header">
+                                ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
+                                <h1>${settings.name}</h1>
+                                <p>${settings.address}</p>
+                                <p>Phone: ${settings.phone}</p>
                             </div>
+                            <h2>Fee Voucher (Student Copy)</h2>
+                            <table class="details">
+                                <tr><td><strong>Student Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
+                                <tr><td><strong>Father's Name:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
+                                <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
+                            </table>
+                            <table class="fee-details">
+                                <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
+                                <tbody><tr><td>Tuition Fee</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tbody>
+                                <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tfoot>
+                            </table>
+                             <div class="qr-section">
+                               ${qrCodeDataUrl ? `
+                                    <p><strong>Scan to check status online</strong></p>
+                                    <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <div class="cut-line">
+                            <div class="cut-line-icon">&#x2702;</div>
+                        </div>
+
+                        <!-- Academy Copy -->
+                         <div class="slip" style="text-align: center; width: 100%;">
+                            <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
+                            <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
+                            <p><strong>Father's Name:</strong> ${searchedStudent.fatherName}</p>
+                            <p><strong>Class:</strong> ${searchedStudent.class}</p>
+                            <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
+                            <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
                         </div>
                     </div>
                 </body>
@@ -524,4 +556,5 @@ export default function FeeCollectionPage() {
 }
 
     
+
 
