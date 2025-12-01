@@ -292,8 +292,16 @@ export default function FeeCollectionPage() {
             <html>
                 <head><title>Fee Voucher - ${searchedStudent.name}</title></head>
                 <style>
-                    body { font-family: Calibri, sans-serif; }
-                    .container { width: 800px; margin: auto; padding: 20px; border: 1px solid #ccc; }
+                    body { font-family: Calibri, sans-serif; height: 100vh; margin: 0; }
+                    .container { 
+                        width: 800px; 
+                        height: 100%;
+                        margin: auto; 
+                        padding: 20px; 
+                        border: 1px solid #ccc; 
+                        display: flex;
+                        flex-direction: column;
+                    }
                     .header { text-align: center; margin-bottom: 20px; }
                     .header img { max-height: 80px; margin-bottom: 10px; }
                     .header h1 { margin: 0; }
@@ -302,7 +310,7 @@ export default function FeeCollectionPage() {
                     .fee-details th { background-color: #f2f2f2; text-align: left;}
                     .text-right { text-align: right; }
                     .total-row td { font-weight: bold; }
-                    .slip-container { display: flex; justify-content: space-between; gap: 20px; margin-top: 30px; }
+                    .slip-container { display: flex; justify-content: space-between; gap: 20px; margin-top: auto; }
                     .slip { border: 1px solid #000; padding: 10px; width: 48%; }
                     .qr-section { text-align: center; margin-top: 20px; }
                     .qr-section img { margin: auto; }
@@ -334,8 +342,10 @@ export default function FeeCollectionPage() {
                         </div>
                          <div class="slip-container">
                             <div class="slip" style="text-align: center; width: 100%;">
-                                <h4>Academy Copy</h4>
+                                <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Academy Copy</h3>
                                 <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
+                                <p><strong>Father:</strong> ${searchedStudent.fatherName}</p>
+                                <p><strong>Class:</strong> ${searchedStudent.class}</p>
                                 <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
                                 <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
                             </div>
@@ -514,3 +524,4 @@ export default function FeeCollectionPage() {
 }
 
     
+
