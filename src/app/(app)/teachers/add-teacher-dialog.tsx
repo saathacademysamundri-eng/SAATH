@@ -252,5 +252,3 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
         </DialogContent>
     );
 }
-
-    
