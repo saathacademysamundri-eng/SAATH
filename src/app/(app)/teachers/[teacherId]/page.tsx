@@ -8,8 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type Student, type Teacher, type TeacherPayout, type Report, Income } from '@/lib/data';
-import { getTeacherPayouts, payoutTeacher } from '@/lib/firebase/firestore';
-import { Loader2, Phone, Wallet, Printer, Mail, Home, User } from 'lucide-react';
+import { getTeacherPayouts, payoutTeacher, deletePayout } from '@/lib/firebase/firestore';
+import { Loader2, Phone, Wallet, Printer, Mail, Home, User, Trash2 } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, getMonth, getYear } from 'date-fns';
 import { useSettings } from '@/hooks/use-settings';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 type StudentEarning = {
   student: Student;
@@ -53,6 +54,7 @@ export default function TeacherProfilePage() {
   
   const [loading, setLoading] = useState(true);
   const [payingMonth, setPayingMonth] = useState<string | null>(null);
+  const [deletingPayoutId, setDeletingPayoutId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (isAppLoading || !teacherId) return;
@@ -78,7 +80,8 @@ export default function TeacherProfilePage() {
               const totalFeeShare = student.subjects.reduce((acc, s) => acc + s.fee_share, 0);
               if (totalFeeShare > 0) {
                  relevantSubjects.forEach(subject => {
-                    const proportion = subject.fee_share / totalFeeShare;
+                    const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                    const proportion = feeShareForSubject / student.monthlyFee;
                     const earnedShare = inc.amount * proportion;
                     
                     const monthKey = format(inc.date, 'yyyy-MM');
@@ -152,6 +155,19 @@ export default function TeacherProfilePage() {
       }
       setPayingMonth(null);
   };
+
+  const handleDeletePayout = async (payout: TeacherPayout) => {
+    setDeletingPayoutId(payout.id);
+    const result = await deletePayout(payout.id);
+     if (result.success) {
+        toast({ title: 'Payout Reversed', description: 'The payout has been successfully reversed.' });
+        refreshData();
+        fetchData();
+    } else {
+        toast({ variant: 'destructive', title: 'Reversal Failed', description: result.message });
+    }
+    setDeletingPayoutId(null);
+  }
 
 
   const getReportData = useCallback((monthData: MonthlyEarnings) => {
@@ -458,11 +474,33 @@ export default function TeacherProfilePage() {
                                         <TableRow key={payout.id}>
                                             <TableCell>{format(payout.payoutDate, 'PPP')}</TableCell>
                                             <TableCell className="font-medium">{payout.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right space-x-2">
                                                 <Button variant="outline" size="sm" onClick={() => handlePrintHistory(payout)} disabled={!payout.report || isSettingsLoading}>
                                                     <Printer className="mr-2 h-4 w-4" />
                                                     Print
                                                 </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="destructive" size="sm" disabled={deletingPayoutId === payout.id}>
+                                                             {deletingPayoutId === payout.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                                             Delete
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Reverse Payout?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This action will permanently reverse the payout of <span className="font-bold">{payout.amount.toLocaleString()} PKR</span> made on <span className="font-bold">{format(payout.payoutDate, 'PPP')}</span>. The associated income will be marked as unpaid again. This cannot be undone.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeletePayout(payout)} className="bg-destructive hover:bg-destructive/90">
+                                                                Confirm Reversal
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -531,3 +569,4 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
+

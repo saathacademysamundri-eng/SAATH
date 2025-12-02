@@ -826,6 +826,56 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
     }
 }
 
+export async function deletePayout(payoutId: string) {
+    const payoutRef = doc(db, 'teacher_payouts', payoutId);
+    try {
+        await runTransaction(db, async (transaction) => {
+            const payoutDoc = await transaction.get(payoutRef);
+            if (!payoutDoc.exists()) throw new Error("Payout record not found.");
+
+            const payoutData = payoutDoc.data() as TeacherPayout;
+
+            // Mark associated income records as not paid out
+            for (const incomeId of payoutData.incomeIds) {
+                const incomeRef = doc(db, 'income', incomeId);
+                transaction.update(incomeRef, { isPaidOut: false, payoutId: deleteField() });
+            }
+
+            // Find and delete the associated expense record
+            const expenseQuery = query(collection(db, 'expenses'), where("payoutId", "==", payoutId), limit(1));
+            const expenseSnap = await getDocs(expenseQuery);
+            if (!expenseSnap.empty) {
+                transaction.delete(expenseSnap.docs[0].ref);
+            }
+            
+             // Find and delete the associated academy share record
+            const shareQuery = query(collection(db, 'academy_share'), where("payoutId", "==", payoutId), limit(1));
+            const shareSnap = await getDocs(shareQuery);
+            if (!shareSnap.empty) {
+                transaction.delete(shareSnap.docs[0].ref);
+            }
+
+            // Find and delete the associated report
+            const reportQuery = query(collection(db, 'reports'), where("payoutId", "==", payoutId), limit(1));
+            const reportSnap = await getDocs(reportQuery);
+            if (!reportSnap.empty) {
+                transaction.delete(reportSnap.docs[0].ref);
+            }
+
+            // Finally, delete the payout record itself
+            transaction.delete(payoutRef);
+
+            await logActivity('teacher_payout', `Reversed payout of ${payoutData.amount} for ${payoutData.teacherName}.`);
+        });
+
+        return { success: true, message: 'Payout successfully reversed.' };
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: `teacher_payouts/${payoutId}`, operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
+        return { success: false, message: (serverError as Error).message };
+    }
+}
+
 
 export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
     const q = query(collection(db, "teacher_payouts"), where("teacherId", "==", teacherId));
