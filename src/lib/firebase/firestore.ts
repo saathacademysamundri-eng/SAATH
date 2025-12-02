@@ -703,9 +703,10 @@ export async function updateIncomeRecord(incomeId: string, newAmount: number) {
 
 
 // Expense Functions
-export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>) {
+export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>, expenseDate?: Date) {
     try {
-        const docRef = await addDoc(collection(db, 'expenses'), { ...expenseData, date: serverTimestamp() });
+        const dataToSave = { ...expenseData, date: expenseDate ? Timestamp.fromDate(expenseDate) : serverTimestamp() };
+        const docRef = await addDoc(collection(db, 'expenses'), dataToSave);
         await logActivity('expense_added', `Added new expense: ${expenseData.description} for ${expenseData.amount}.`);
         return { success: true, message: 'Expense record added.', id: docRef.id };
     } catch (serverError) {
@@ -748,7 +749,8 @@ export async function deleteExpense(expenseId: string) {
                 if (payoutDoc.exists()) {
                     const payoutData = payoutDoc.data() as TeacherPayout;
                     for (const incomeId of payoutData.incomeIds) {
-                        transaction.update(doc(db, 'income', incomeId), { isPaidOut: false, payoutId: deleteField() });
+                        const incomeRef = doc(db, 'income', incomeId);
+                        transaction.update(incomeRef, { [`paidOutTo.${payoutData.teacherId}`]: deleteField() });
                     }
                     const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payoutRef.id), limit(1));
                     const reportSnap = await getDocs(reportQuery); 
@@ -786,30 +788,45 @@ export async function getReports(): Promise<Report[]> {
 }
 
 // Teacher Payout Functions
-export async function payoutTeacher(teacherId: string, teacherName: string, amount: number, incomeIds: string[], reportData: any) {
+export async function payoutTeacher(teacherId: string, teacherName: string, amount: number, incomeIds: string[], reportData: any, earningsMonth: Date) {
     try {
         const batch = writeBatch(db);
         const payoutTimestamp = serverTimestamp();
+        
+        // Payout Record
         const payoutRef = doc(collection(db, 'teacher_payouts'));
         batch.set(payoutRef, { teacherId, teacherName, amount, payoutDate: payoutTimestamp, incomeIds });
 
-        // Also add to academy share history
+        // Academy Share Record
         if (reportData && reportData.academyShare > 0) {
             const academyShareRef = doc(collection(db, 'academy_share'));
             batch.set(academyShareRef, {
                 teacherId,
                 teacherName,
                 amount: reportData.academyShare,
-                payoutDate: payoutTimestamp,
+                payoutDate: Timestamp.fromDate(earningsMonth), // Use earnings month
                 payoutId: payoutRef.id,
             });
         }
 
-        incomeIds.forEach(id => batch.update(doc(db, 'income', id), { isPaidOut: true, payoutId: payoutRef.id }));
+        // Update Income Records
+        incomeIds.forEach(id => {
+            const incomeRef = doc(db, 'income', id);
+            batch.update(incomeRef, { [`paidOutTo.${teacherId}`]: payoutRef.id });
+        });
 
-        const expenseRef = doc(collection(db, 'expenses'));
-        batch.set(expenseRef, { description: `Payout to ${teacherName}`, amount, date: payoutTimestamp, source: 'payout', payoutId: payoutRef.id, category: 'Salaries' });
+        // Expense Record - set to the last day of the earnings month
+        const expenseDate = endOfMonth(earningsMonth);
+        batch.set(doc(collection(db, 'expenses')), { 
+            description: `Payout to ${teacherName} for ${formatDate(earningsMonth, 'MMMM yyyy')}`, 
+            amount, 
+            date: Timestamp.fromDate(expenseDate),
+            source: 'payout', 
+            payoutId: payoutRef.id, 
+            category: 'Salaries' 
+        });
 
+        // Report Record
         if (reportData) {
             const reportRef = doc(collection(db, 'reports'));
             batch.set(reportRef, { ...reportData, teacherId, teacherName, payoutId: payoutRef.id, reportDate: payoutTimestamp });
@@ -817,10 +834,60 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
         
         await batch.commit();
 
-        await logActivity('teacher_payout', `Paid ${amount.toLocaleString()} PKR to teacher ${teacherName}.`, `/teachers/${teacherId}`);
+        await logActivity('teacher_payout', `Paid ${amount.toLocaleString()} PKR to teacher ${teacherName} for ${formatDate(earningsMonth, 'MMMM yyyy')}.`, `/teachers/${teacherId}`);
         return { success: true, message: `Successfully paid ${amount.toLocaleString()} PKR to ${teacherName}.` };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: '[multiple]', operation: 'write', requestResourceData: { teacherId, amount } });
+        errorEmitter.emit('permission-error', permissionError);
+        return { success: false, message: (serverError as Error).message };
+    }
+}
+
+export async function deletePayout(payoutId: string) {
+    const payoutRef = doc(db, 'teacher_payouts', payoutId);
+    try {
+        await runTransaction(db, async (transaction) => {
+            const payoutDoc = await transaction.get(payoutRef);
+            if (!payoutDoc.exists()) throw new Error("Payout record not found.");
+
+            const payoutData = payoutDoc.data() as TeacherPayout;
+
+            // Mark associated income records as not paid out
+            for (const incomeId of payoutData.incomeIds) {
+                const incomeRef = doc(db, 'income', incomeId);
+                transaction.update(incomeRef, { [`paidOutTo.${payoutData.teacherId}`]: deleteField() });
+            }
+
+            // Find and delete the associated expense record
+            const expenseQuery = query(collection(db, 'expenses'), where("payoutId", "==", payoutId), limit(1));
+            const expenseSnap = await getDocs(expenseQuery);
+            if (!expenseSnap.empty) {
+                transaction.delete(expenseSnap.docs[0].ref);
+            }
+            
+             // Find and delete the associated academy share record
+            const shareQuery = query(collection(db, 'academy_share'), where("payoutId", "==", payoutId), limit(1));
+            const shareSnap = await getDocs(shareQuery);
+            if (!shareSnap.empty) {
+                transaction.delete(shareSnap.docs[0].ref);
+            }
+
+            // Find and delete the associated report
+            const reportQuery = query(collection(db, 'reports'), where("payoutId", "==", payoutId), limit(1));
+            const reportSnap = await getDocs(reportQuery);
+            if (!reportSnap.empty) {
+                transaction.delete(reportSnap.docs[0].ref);
+            }
+
+            // Finally, delete the payout record itself
+            transaction.delete(payoutRef);
+
+            await logActivity('teacher_payout', `Reversed payout of ${payoutData.amount} for ${payoutData.teacherName}.`);
+        });
+
+        return { success: true, message: 'Payout successfully reversed.' };
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: `teacher_payouts/${payoutId}`, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }
@@ -1245,3 +1312,4 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+

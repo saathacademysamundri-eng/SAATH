@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { getClasses, getExpenses, getIncome, getStudents, getTeachers, getAllSubjects, getAllPayouts, getRecentActivities, checkAndGenerateMonthlyFees, getAcademyShare } from '@/lib/firebase/firestore';

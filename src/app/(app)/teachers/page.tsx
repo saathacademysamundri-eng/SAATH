@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -64,33 +65,38 @@ export default function TeachersPage() {
   });
 
   const teacherStats = useMemo(() => {
-    const stats = new Map<string, { gross: number; net: number }>();
+    const stats = new Map<string, { studentCount: number; netEarnings: number }>();
 
     teachers.forEach(teacher => {
-        stats.set(teacher.id, { gross: 0, net: 0 });
-    });
-    
-    const unpaidIncome = income.filter(i => !i.isPaidOut);
+        const taughtStudents = allStudents.filter(student => 
+            student.subjects.some(sub => sub.teacher_id === teacher.id)
+        );
+        
+        // Filter for income that has NOT been paid out to THIS teacher
+        const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
+        
+        let grossEarnings = 0;
 
-    unpaidIncome.forEach(inc => {
-        const student = allStudents.find(s => s.id === inc.studentId);
-        if (student) {
-            const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
-            if (studentTeachers.length > 0) {
-                const sharePerTeacher = inc.amount / studentTeachers.length;
+        unpaidIncome.forEach(inc => {
+            const student = allStudents.find(s => s.id === inc.studentId);
+            if (student && student.subjects.some(sub => sub.teacher_id === teacher.id)) {
+                const relevantSubjects = student.subjects.filter(s => s.teacher_id === teacher.id);
                 
-                // Check which of this student's teachers are in the main teachers list
-                student.subjects.forEach(sub => {
-                    if (stats.has(sub.teacher_id)) {
-                        stats.get(sub.teacher_id)!.gross += sharePerTeacher;
+                relevantSubjects.forEach(subject => {
+                    const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                    if (student.monthlyFee > 0) {
+                      const proportion = feeShareForSubject / student.monthlyFee;
+                      const earnedShare = inc.amount * proportion;
+                      grossEarnings += earnedShare;
                     }
-                });
+                 });
             }
-        }
-    });
-
-    stats.forEach(stat => {
-        stat.net = stat.gross * 0.7;
+        });
+        
+        stats.set(teacher.id, {
+            studentCount: taughtStudents.length,
+            netEarnings: grossEarnings * 0.7,
+        });
     });
 
     return stats;
@@ -161,7 +167,7 @@ export default function TeachersPage() {
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {loading ? null : (
             filteredTeachers.map((teacher) => {
-              const stats = teacherStats.get(teacher.id) || { gross: 0, net: 0 };
+              const stats = teacherStats.get(teacher.id) || { studentCount: 0, netEarnings: 0 };
               return (
                  <AlertDialog key={teacher.id}>
                     <Card className="flex flex-col">
@@ -210,16 +216,16 @@ export default function TeachersPage() {
                           </div>
                            <div>
                                 <p className="text-xs text-muted-foreground">Current Net Earnings (70%)</p>
-                                <p className="text-2xl font-bold text-green-600">{stats.net.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                                <p className="text-2xl font-bold text-green-600">{stats.netEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                           </div>
+                           <div>
+                                <p className="text-xs text-muted-foreground">Students Taught</p>
+                                <p className="text-2xl font-bold">{stats.studentCount}</p>
                            </div>
                         </CardContent>
                         <CardFooter className="flex gap-2">
                            <Button className="w-full" variant="outline" size="sm" onClick={() => router.push(`/teachers/${teacher.id}`)}>
                                 View Profile
-                            </Button>
-                            <Button className="w-full" variant="outline" size="sm" onClick={() => handleQrClick(teacher)}>
-                                <QrCode className="mr-2 h-4 w-4" />
-                                QR Code
                             </Button>
                         </CardFooter>
                     </Card>
@@ -261,5 +267,3 @@ export default function TeachersPage() {
     </div>
   );
 }
-
-    

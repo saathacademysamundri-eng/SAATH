@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -7,8 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type Student, type Teacher, type TeacherPayout, type Report, Income } from '@/lib/data';
-import { getTeacherPayouts, payoutTeacher } from '@/lib/firebase/firestore';
-import { Loader2, Phone, Wallet, Printer, Mail, Home, User } from 'lucide-react';
+import { getTeacherPayouts, payoutTeacher, deletePayout } from '@/lib/firebase/firestore';
+import { Loader2, Phone, Wallet, Printer, Mail, Home, User, Trash2 } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,8 +17,10 @@ import { useParams } from 'next/navigation';
 import { useAppContext } from '@/hooks/use-app-context';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, getMonth, getYear } from 'date-fns';
 import { useSettings } from '@/hooks/use-settings';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 type StudentEarning = {
   student: Student;
@@ -27,6 +30,17 @@ type StudentEarning = {
   incomeDate: Date;
 };
 
+type MonthlyEarnings = {
+  month: string; // e.g., "July 2024"
+  year: number;
+  monthIndex: number;
+  totalGross: number;
+  teacherShare: number;
+  academyShare: number;
+  studentEarnings: StudentEarning[];
+};
+
+
 export default function TeacherProfilePage() {
   const params = useParams();
   const teacherId = params.teacherId as string;
@@ -35,12 +49,12 @@ export default function TeacherProfilePage() {
   
   const { teachers, students, income, loading: isAppLoading, refreshData } = useAppContext();
   const [teacher, setTeacher] = useState<Teacher | null>(null);
-  const [studentEarnings, setStudentEarnings] = useState<StudentEarning[]>([]);
-  const [totalEarnings, setTotalEarnings] = useState(0);
+  const [monthlyEarnings, setMonthlyEarnings] = useState<MonthlyEarnings[]>([]);
   const [payouts, setPayouts] = useState<(TeacherPayout & { report?: Report, academyShare?: number })[]>([]);
   
   const [loading, setLoading] = useState(true);
-  const [isPaying, setIsPaying] = useState(false);
+  const [payingMonth, setPayingMonth] = useState<string | null>(null);
+  const [deletingPayoutId, setDeletingPayoutId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (isAppLoading || !teacherId) return;
@@ -54,41 +68,60 @@ export default function TeacherProfilePage() {
     }
     
     setTeacher(teacherData);
-
-    const unpaidIncome = income.filter(i => !i.isPaidOut);
-    const currentStudentEarnings: StudentEarning[] = [];
     
-    // This is the core logic change. We iterate through actual income records.
+    // Filter for income that has NOT been paid out to THIS teacher
+    const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
+
+    const earningsByMonth: { [key: string]: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> & { year: number, monthIndex: number } } = {};
+
     unpaidIncome.forEach(inc => {
         const student = students.find(s => s.id === inc.studentId);
         if (student) {
-            // Find all subjects this teacher teaches this student
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
             if (relevantSubjects.length > 0) {
-              // The income amount should be distributed among the fee shares of all subjects for that student
-              const totalFeeShare = student.subjects.reduce((acc, s) => acc + s.fee_share, 0);
-              if (totalFeeShare > 0) {
                  relevantSubjects.forEach(subject => {
-                    const proportion = subject.fee_share / totalFeeShare;
-                    const earnedShare = inc.amount * proportion;
-                    
-                    currentStudentEarnings.push({
-                        student: student,
-                        earnedShare: earnedShare,
-                        subjectName: subject.subject_name,
-                        incomeId: inc.id,
-                        incomeDate: inc.date,
-                    });
+                    const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                    if (student.monthlyFee > 0) {
+                      const proportion = feeShareForSubject / student.monthlyFee;
+                      const earnedShare = inc.amount * proportion;
+                      
+                      const monthKey = format(inc.date, 'yyyy-MM');
+                      if (!earningsByMonth[monthKey]) {
+                          earningsByMonth[monthKey] = {
+                              totalGross: 0,
+                              teacherShare: 0,
+                              academyShare: 0,
+                              studentEarnings: [],
+                              year: getYear(inc.date),
+                              monthIndex: getMonth(inc.date),
+                          };
+                      }
+
+                      earningsByMonth[monthKey].totalGross += earnedShare;
+                      earningsByMonth[monthKey].studentEarnings.push({
+                          student: student,
+                          earnedShare: earnedShare,
+                          subjectName: subject.subject_name,
+                          incomeId: inc.id,
+                          incomeDate: inc.date,
+                      });
+                    }
                  });
-              }
             }
         }
     });
-    
-    const currentTotalEarnings = currentStudentEarnings.reduce((acc, curr) => acc + curr.earnedShare, 0);
 
-    setStudentEarnings(currentStudentEarnings);
-    setTotalEarnings(currentTotalEarnings);
+    const finalMonthlyEarnings: MonthlyEarnings[] = Object.keys(earningsByMonth).map(key => {
+      const data = earningsByMonth[key];
+      return {
+        ...data,
+        month: format(new Date(data.year, data.monthIndex), 'MMMM yyyy'),
+        teacherShare: data.totalGross * 0.7,
+        academyShare: data.totalGross * 0.3,
+      };
+    }).sort((a,b) => b.year - a.year || b.monthIndex - a.monthIndex);
+    
+    setMonthlyEarnings(finalMonthlyEarnings);
 
     const payoutData = await getTeacherPayouts(teacherId);
     setPayouts(payoutData);
@@ -100,35 +133,50 @@ export default function TeacherProfilePage() {
     fetchData();
   }, [fetchData]);
 
-  const teacherShare = totalEarnings * 0.7;
-  const academyShare = totalEarnings * 0.3;
-
-  const handlePayout = async () => {
-      if (!teacher || totalEarnings === 0) {
-          toast({ variant: 'destructive', title: 'Payout Error', description: 'No earnings to pay out.' });
+  const handlePayout = async (monthData: MonthlyEarnings) => {
+      if (!teacher || monthData.totalGross === 0) {
+          toast({ variant: 'destructive', title: 'Payout Error', description: 'No earnings to pay out for this month.' });
           return;
       }
 
-      setIsPaying(true);
-      const relevantIncomeIds = [...new Set(studentEarnings.map(e => e.incomeId))];
+      setPayingMonth(monthData.month);
       
-      const result = await payoutTeacher(teacher.id, teacher.name, teacherShare, relevantIncomeIds, getReportData());
+      const relevantIncomeIds = [...new Set(monthData.studentEarnings.map(e => e.incomeId))];
+      
+      const reportData = getReportData(monthData);
+
+      const earningsDate = new Date(monthData.year, monthData.monthIndex, 1);
+
+      const result = await payoutTeacher(teacher.id, teacher.name, monthData.teacherShare, relevantIncomeIds, reportData, earningsDate);
 
       if (result.success) {
-          toast({ title: 'Payout Successful', description: result.message });
+          toast({ title: 'Payout Successful', description: `Paid ${monthData.teacherShare.toLocaleString()} for ${monthData.month}.` });
           refreshData(); 
           fetchData();
       } else {
           toast({ variant: 'destructive', title: 'Payout Failed', description: result.message });
       }
-      setIsPaying(false);
+      setPayingMonth(null);
   };
 
+  const handleDeletePayout = async (payout: TeacherPayout) => {
+    setDeletingPayoutId(payout.id);
+    const result = await deletePayout(payout.id);
+     if (result.success) {
+        toast({ title: 'Payout Reversed', description: 'The payout has been successfully reversed.' });
+        refreshData();
+        fetchData();
+    } else {
+        toast({ variant: 'destructive', title: 'Reversal Failed', description: result.message });
+    }
+    setDeletingPayoutId(null);
+  }
 
-  const getReportData = useCallback(() => {
+
+  const getReportData = useCallback((monthData: MonthlyEarnings) => {
     if (!teacher) return null;
 
-    const breakdown = studentEarnings.map(earning => ({
+    const breakdown = monthData.studentEarnings.map(earning => ({
       studentId: earning.student.id,
       studentName: earning.student.name,
       studentClass: earning.student.class,
@@ -137,14 +185,14 @@ export default function TeacherProfilePage() {
     }));
 
     return {
-      grossEarnings: totalEarnings,
-      teacherShare: teacherShare,
-      academyShare: academyShare,
+      grossEarnings: monthData.totalGross,
+      teacherShare: monthData.teacherShare,
+      academyShare: monthData.academyShare,
       studentBreakdown: breakdown,
     };
-  }, [teacher, studentEarnings, totalEarnings, teacherShare, academyShare]);
+  }, [teacher]);
 
-  const generatePrintHtml = (reportData: any, teacherName: string, reportDate: Date) => {
+  const generatePrintHtml = (reportData: any, teacherName: string, reportDate: Date, title: string) => {
     const { grossEarnings, teacherShare, academyShare, studentBreakdown } = reportData;
     const { logo, name, address, phone } = settings;
     const formattedReportDate = format(reportDate, 'PPP');
@@ -161,19 +209,19 @@ export default function TeacherProfilePage() {
     return `
       <html>
         <head>
-          <title>Earnings Report - ${teacherName}</title>
+          <title>${title} - ${teacherName}</title>
           <style>
             @media print {
-              @page { size: A4; margin: 0; }
+              @page { size: A4; margin: 0.75in; }
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
             body { 
               font-family: 'Helvetica', 'Arial', sans-serif;
               margin: 0; 
-              padding: 2rem; 
+              padding: 0; 
               background-color: #fff;
               color: #000;
-              font-size: 10px;
+              font-size: 10pt;
             }
             .report-container { max-width: 800px; margin: auto; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
@@ -199,13 +247,13 @@ export default function TeacherProfilePage() {
         <body>
           <div class="report-container">
             <div class="academy-details">
-              <img src="${logo}" alt="Academy Logo" />
+              ${logo ? `<img src="${logo}" alt="Academy Logo" />` : ''}
               <h1>${name}</h1>
               <p>${address}</p>
               <p>Phone: ${phone}</p>
             </div>
             <div class="report-title">
-              <h2>Earnings Report</h2>
+              <h2>${title}</h2>
               <p>For: ${teacherName} | Date: ${formattedReportDate}</p>
             </div>
             <div class="stats-grid">
@@ -250,7 +298,7 @@ export default function TeacherProfilePage() {
       return;
     }
 
-    const printHtml = generatePrintHtml(payout.report, payout.teacherName, payout.payoutDate);
+    const printHtml = generatePrintHtml(payout.report, payout.teacherName, payout.payoutDate, `Payout Report - ${format(payout.payoutDate, 'MMMM yyyy')}`);
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(printHtml);
@@ -304,7 +352,7 @@ export default function TeacherProfilePage() {
       <TeacherEarningsClient 
         teacherId={teacher.id} 
         teacherName={teacher.name}
-        getReportData={getReportData}
+        getReportData={() => null} // This client component is now only for the header
       />
       
       <div id="print-area">
@@ -334,86 +382,79 @@ export default function TeacherProfilePage() {
                 <TabsTrigger value="profile">Profile Details</TabsTrigger>
             </TabsList>
             <TabsContent value="earnings" className="mt-4">
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <div className="lg:col-span-1 space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Gross Earnings (from Paid Fees)</CardTitle>
-                                <CardDescription>Teacher's share from all student fees that have been collected but not yet paid out.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p data-stat="gross-earnings" className="text-3xl font-bold">{totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-green-500/50">
-                            <CardHeader>
-                                <CardTitle>Teacher's Share (70%)</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p data-stat="teacher-share" className="text-3xl font-bold text-green-600">{teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
-                            </CardContent>
-                             <CardContent>
-                                <Button onClick={handlePayout} disabled={isPaying || teacherShare <= 0}>
-                                    {isPaying ? <Loader2 className="mr-2 animate-spin" /> : <Wallet className="mr-2" />}
-                                    {isPaying ? 'Processing...' : 'Pay Teacher & Reset'}
-                                </Button>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-blue-500/50">
-                            <CardHeader>
-                                <CardTitle>Academy's Share (30%)</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p data-stat="academy-share" className="text-3xl font-bold text-blue-600">{academyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                    <div className="lg:col-span-2">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Contribution from Paid Fees</CardTitle>
-                                <CardDescription>List of collected fees contributing to the current earnings.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Student</TableHead>
-                                            <TableHead>Fee Date</TableHead>
-                                            <TableHead>Subject</TableHead>
-                                            <TableHead className="text-right">Share from Fee</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {studentEarnings.length > 0 ? (
-                                            studentEarnings.map(({ student, earnedShare, subjectName, incomeId, incomeDate }, index) => (
-                                                <TableRow key={`${incomeId}-${index}`}>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-3">
-                                                           <div>
+               <Card>
+                <CardHeader>
+                    <CardTitle>Unpaid Earnings by Month</CardTitle>
+                    <CardDescription>Earnings from collected student fees, grouped by the month the fee was for.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {monthlyEarnings.length > 0 ? (
+                        <Accordion type="single" collapsible className="w-full">
+                            {monthlyEarnings.map(monthData => (
+                                <AccordionItem value={monthData.month} key={monthData.month}>
+                                    <AccordionTrigger>
+                                        <div className="flex justify-between w-full pr-4">
+                                            <span className="text-lg font-semibold">{monthData.month}</span>
+                                            <span className="text-lg font-bold text-green-600">{monthData.teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</span>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <div className="p-4 bg-muted/50 rounded-md">
+                                            <div className="grid grid-cols-3 gap-4 text-center mb-4">
+                                                <div>
+                                                    <p className="text-sm text-muted-foreground">Gross Earnings</p>
+                                                    <p className="font-bold text-lg">{monthData.totalGross.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-muted-foreground">Teacher's Share (70%)</p>
+                                                    <p className="font-bold text-lg text-green-600">{monthData.teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-muted-foreground">Academy's Share (30%)</p>
+                                                    <p className="font-bold text-lg text-blue-600">{monthData.academyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                </div>
+                                            </div>
+                                             <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Student</TableHead>
+                                                        <TableHead>Fee Date</TableHead>
+                                                        <TableHead>Subject</TableHead>
+                                                        <TableHead className="text-right">Share from Fee</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {monthData.studentEarnings.map(({ student, earnedShare, subjectName, incomeId, incomeDate }, index) => (
+                                                        <TableRow key={`${incomeId}-${index}`}>
+                                                            <TableCell>
                                                                 <div className="font-medium">{student.name}</div>
                                                                 <div className="text-xs text-muted-foreground">{student.id}</div>
-                                                            </div>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>{format(incomeDate, 'PPP')}</TableCell>
-                                                    <TableCell>{subjectName}</TableCell>
-                                                    <TableCell className="text-right">{earnedShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
-                                                </TableRow>
-                                            ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
-                                                    No collected fees waiting for payout for this teacher.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
+                                                            </TableCell>
+                                                            <TableCell>{format(incomeDate, 'PPP')}</TableCell>
+                                                            <TableCell>{subjectName}</TableCell>
+                                                            <TableCell className="text-right">{earnedShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                            <div className="mt-4 flex justify-end">
+                                                 <Button onClick={() => handlePayout(monthData)} disabled={payingMonth === monthData.month || monthData.teacherShare <= 0}>
+                                                    {payingMonth === monthData.month ? <Loader2 className="mr-2 animate-spin" /> : <Wallet className="mr-2" />}
+                                                    {payingMonth === monthData.month ? 'Processing...' : `Pay ${monthData.month}`}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            ))}
+                        </Accordion>
+                    ) : (
+                         <div className="text-center text-muted-foreground h-24 flex items-center justify-center">
+                            No unpaid earnings for this teacher.
+                        </div>
+                    )}
+                </CardContent>
+               </Card>
             </TabsContent>
             <TabsContent value="payouts">
                  <Card>
@@ -436,11 +477,33 @@ export default function TeacherProfilePage() {
                                         <TableRow key={payout.id}>
                                             <TableCell>{format(payout.payoutDate, 'PPP')}</TableCell>
                                             <TableCell className="font-medium">{payout.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right space-x-2">
                                                 <Button variant="outline" size="sm" onClick={() => handlePrintHistory(payout)} disabled={!payout.report || isSettingsLoading}>
                                                     <Printer className="mr-2 h-4 w-4" />
                                                     Print
                                                 </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="destructive" size="sm" disabled={deletingPayoutId === payout.id}>
+                                                             {deletingPayoutId === payout.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                                             Delete
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Reverse Payout?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This action will permanently reverse the payout of <span className="font-bold">{payout.amount.toLocaleString()} PKR</span> made on <span className="font-bold">{format(payout.payoutDate, 'PPP')}</span>. The associated income will be marked as unpaid again. This cannot be undone.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeletePayout(payout)} className="bg-destructive hover:bg-destructive/90">
+                                                                Confirm Reversal
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -509,9 +572,3 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
