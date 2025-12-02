@@ -145,7 +145,9 @@ export default function TeacherProfilePage() {
       
       const reportData = getReportData(monthData);
 
-      const result = await payoutTeacher(teacher.id, teacher.name, monthData.teacherShare, relevantIncomeIds, reportData);
+      const earningsDate = new Date(monthData.year, monthData.monthIndex, 1);
+
+      const result = await payoutTeacher(teacher.id, teacher.name, monthData.teacherShare, relevantIncomeIds, reportData, earningsDate);
 
       if (result.success) {
           toast({ title: 'Payout Successful', description: `Paid ${monthData.teacherShare.toLocaleString()} for ${monthData.month}.` });
@@ -570,4 +572,3 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
-

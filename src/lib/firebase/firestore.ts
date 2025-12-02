@@ -703,9 +703,10 @@ export async function updateIncomeRecord(incomeId: string, newAmount: number) {
 
 
 // Expense Functions
-export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>) {
+export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>, expenseDate?: Date) {
     try {
-        const docRef = await addDoc(collection(db, 'expenses'), { ...expenseData, date: serverTimestamp() });
+        const dataToSave = { ...expenseData, date: expenseDate ? Timestamp.fromDate(expenseDate) : serverTimestamp() };
+        const docRef = await addDoc(collection(db, 'expenses'), dataToSave);
         await logActivity('expense_added', `Added new expense: ${expenseData.description} for ${expenseData.amount}.`);
         return { success: true, message: 'Expense record added.', id: docRef.id };
     } catch (serverError) {
@@ -787,33 +788,45 @@ export async function getReports(): Promise<Report[]> {
 }
 
 // Teacher Payout Functions
-export async function payoutTeacher(teacherId: string, teacherName: string, amount: number, incomeIds: string[], reportData: any) {
+export async function payoutTeacher(teacherId: string, teacherName: string, amount: number, incomeIds: string[], reportData: any, earningsMonth: Date) {
     try {
         const batch = writeBatch(db);
         const payoutTimestamp = serverTimestamp();
+        
+        // Payout Record
         const payoutRef = doc(collection(db, 'teacher_payouts'));
         batch.set(payoutRef, { teacherId, teacherName, amount, payoutDate: payoutTimestamp, incomeIds });
 
-        // Also add to academy share history
+        // Academy Share Record
         if (reportData && reportData.academyShare > 0) {
             const academyShareRef = doc(collection(db, 'academy_share'));
             batch.set(academyShareRef, {
                 teacherId,
                 teacherName,
                 amount: reportData.academyShare,
-                payoutDate: payoutTimestamp,
+                payoutDate: Timestamp.fromDate(earningsMonth), // Use earnings month
                 payoutId: payoutRef.id,
             });
         }
 
+        // Update Income Records
         incomeIds.forEach(id => {
             const incomeRef = doc(db, 'income', id);
             batch.update(incomeRef, { [`paidOutTo.${teacherId}`]: payoutRef.id });
         });
 
+        // Expense Record
         const expenseRef = doc(collection(db, 'expenses'));
-        batch.set(expenseRef, { description: `Payout to ${teacherName}`, amount, date: payoutTimestamp, source: 'payout', payoutId: payoutRef.id, category: 'Salaries' });
+        batch.set(expenseRef, { 
+            description: `Payout to ${teacherName} for ${formatDate(earningsMonth, 'MMMM yyyy')}`, 
+            amount, 
+            date: Timestamp.fromDate(earningsMonth), // Use earnings month for expense date
+            source: 'payout', 
+            payoutId: payoutRef.id, 
+            category: 'Salaries' 
+        });
 
+        // Report Record
         if (reportData) {
             const reportRef = doc(collection(db, 'reports'));
             batch.set(reportRef, { ...reportData, teacherId, teacherName, payoutId: payoutRef.id, reportDate: payoutTimestamp });
@@ -821,7 +834,7 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
         
         await batch.commit();
 
-        await logActivity('teacher_payout', `Paid ${amount.toLocaleString()} PKR to teacher ${teacherName}.`, `/teachers/${teacherId}`);
+        await logActivity('teacher_payout', `Paid ${amount.toLocaleString()} PKR to teacher ${teacherName} for ${formatDate(earningsMonth, 'MMMM yyyy')}.`, `/teachers/${teacherId}`);
         return { success: true, message: `Successfully paid ${amount.toLocaleString()} PKR to ${teacherName}.` };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: '[multiple]', operation: 'write', requestResourceData: { teacherId, amount } });
