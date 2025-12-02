@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -64,33 +65,34 @@ export default function TeachersPage() {
   });
 
   const teacherStats = useMemo(() => {
-    const stats = new Map<string, { gross: number; net: number }>();
+    const stats = new Map<string, { studentCount: number; netEarnings: number }>();
 
     teachers.forEach(teacher => {
-        stats.set(teacher.id, { gross: 0, net: 0 });
-    });
-    
-    const unpaidIncome = income.filter(i => !i.isPaidOut);
+        const taughtStudents = allStudents.filter(student => 
+            student.subjects.some(sub => sub.teacher_id === teacher.id)
+        );
+        
+        const unpaidIncome = income.filter(i => !i.isPaidOut);
+        let grossEarnings = 0;
 
-    unpaidIncome.forEach(inc => {
-        const student = allStudents.find(s => s.id === inc.studentId);
-        if (student) {
-            const studentTeachers = [...new Set(student.subjects.map(s => s.teacher_id))];
-            if (studentTeachers.length > 0) {
-                const sharePerTeacher = inc.amount / studentTeachers.length;
-                
-                // Check which of this student's teachers are in the main teachers list
-                student.subjects.forEach(sub => {
-                    if (stats.has(sub.teacher_id)) {
-                        stats.get(sub.teacher_id)!.gross += sharePerTeacher;
-                    }
-                });
+        unpaidIncome.forEach(inc => {
+            const student = allStudents.find(s => s.id === inc.studentId);
+            if (student && student.subjects.some(sub => sub.teacher_id === teacher.id)) {
+                const relevantSubjects = student.subjects.filter(s => s.teacher_id === teacher.id);
+                const totalFeeShare = student.subjects.reduce((acc, s) => acc + s.fee_share, 0);
+
+                if (totalFeeShare > 0) {
+                    const teacherFeeShare = relevantSubjects.reduce((acc, s) => acc + s.fee_share, 0);
+                    const proportion = teacherFeeShare / totalFeeShare;
+                    grossEarnings += inc.amount * proportion;
+                }
             }
-        }
-    });
-
-    stats.forEach(stat => {
-        stat.net = stat.gross * 0.7;
+        });
+        
+        stats.set(teacher.id, {
+            studentCount: taughtStudents.length,
+            netEarnings: grossEarnings * 0.7,
+        });
     });
 
     return stats;
@@ -128,20 +130,20 @@ export default function TeachersPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+    <div class="flex flex-col gap-6">
+      <div class="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Teachers</h1>
-          <p className="text-muted-foreground">
+          <h1 class="text-2xl font-bold tracking-tight">Teachers</h1>
+          <p class="text-muted-foreground">
             View teacher profiles and their earnings.
           </p>
         </div>
-         <div className="flex items-center gap-2">
-             <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+         <div class="flex items-center gap-2">
+             <div class="relative">
+                <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search teachers..." 
-                  className="pl-8 w-64" 
+                  class="pl-8 w-64" 
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
@@ -149,7 +151,7 @@ export default function TeachersPage() {
             <Dialog open={dialogState.isAddOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isAddOpen: isOpen })}>
               <DialogTrigger asChild>
                 <Button>
-                  <PlusCircle className="mr-2"/>
+                  <PlusCircle class="mr-2"/>
                   Add Teacher
                 </Button>
               </DialogTrigger>
@@ -158,27 +160,27 @@ export default function TeachersPage() {
          </div>
       </div>
       
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {loading ? null : (
             filteredTeachers.map((teacher) => {
-              const stats = teacherStats.get(teacher.id) || { gross: 0, net: 0 };
+              const stats = teacherStats.get(teacher.id) || { studentCount: 0, netEarnings: 0 };
               return (
                  <AlertDialog key={teacher.id}>
-                    <Card className="flex flex-col">
-                        <CardHeader className="flex-row gap-4 items-start">
-                            <Avatar className="w-12 h-12 border-2 border-primary">
+                    <Card class="flex flex-col">
+                        <CardHeader class="flex-row gap-4 items-start">
+                            <Avatar class="w-12 h-12 border-2 border-primary">
                               <AvatarImage src={teacher.imageUrl} alt={teacher.name} />
                               <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-lg">{teacher.name}</h3>
-                                <p className="text-sm text-muted-foreground">{teacher.phone}</p>
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg">{teacher.name}</h3>
+                                <p class="text-sm text-muted-foreground">{teacher.phone}</p>
                             </div>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
+                                    <MoreHorizontal class="h-4 w-4" />
+                                    <span class="sr-only">Toggle menu</span>
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -187,39 +189,39 @@ export default function TeachersPage() {
                                     View Profile & Pay
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleEditClick(teacher)}>
-                                    <Edit className="mr-2 h-4 w-4" />
+                                    <Edit class="mr-2 h-4 w-4" />
                                     Edit
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleQrClick(teacher)}>
-                                      <QrCode className="mr-2 h-4 w-4" />
+                                      <QrCode class="mr-2 h-4 w-4" />
                                       QR Code
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                      <Trash className="mr-2 h-4 w-4" />
+                                    <DropdownMenuItem class="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                      <Trash class="mr-2 h-4 w-4" />
                                       Delete
                                     </DropdownMenuItem>
                                   </AlertDialogTrigger>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </CardHeader>
-                        <CardContent className="space-y-4 flex-1">
-                           <div className="flex flex-wrap gap-1">
-                            {(teacher.subjects || []).map(s => <Badge key={s} variant="secondary" className="font-normal">{s}</Badge>)}
+                        <CardContent class="space-y-4 flex-1">
+                           <div class="flex flex-wrap gap-1">
+                            {(teacher.subjects || []).map(s => <Badge key={s} variant="secondary" class="font-normal">{s}</Badge>)}
                           </div>
                            <div>
-                                <p className="text-xs text-muted-foreground">Current Net Earnings (70%)</p>
-                                <p className="text-2xl font-bold text-green-600">{stats.net.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                                <p class="text-xs text-muted-foreground">Current Net Earnings (70%)</p>
+                                <p class="text-2xl font-bold text-green-600">{stats.netEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                           </div>
+                           <div>
+                                <p class="text-xs text-muted-foreground">Students Taught</p>
+                                <p class="text-2xl font-bold">{stats.studentCount}</p>
                            </div>
                         </CardContent>
-                        <CardFooter className="flex gap-2">
-                           <Button className="w-full" variant="outline" size="sm" onClick={() => router.push(`/teachers/${teacher.id}`)}>
+                        <CardFooter class="flex gap-2">
+                           <Button class="w-full" variant="outline" size="sm" onClick={() => router.push(`/teachers/${teacher.id}`)}>
                                 View Profile
-                            </Button>
-                            <Button className="w-full" variant="outline" size="sm" onClick={() => handleQrClick(teacher)}>
-                                <QrCode className="mr-2 h-4 w-4" />
-                                QR Code
                             </Button>
                         </CardFooter>
                     </Card>
@@ -227,12 +229,12 @@ export default function TeachersPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the teacher record for <span className="font-bold">{teacher.name}</span>. This will NOT affect past payouts.
+                            This action cannot be undone. This will permanently delete the teacher record for <span class="font-bold">{teacher.name}</span>. This will NOT affect past payouts.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleConfirmDelete(teacher)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                          <AlertDialogAction onClick={() => handleConfirmDelete(teacher)} class="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                  </AlertDialog>
@@ -240,8 +242,8 @@ export default function TeachersPage() {
             })
           )}
            {!loading && filteredTeachers.length === 0 && (
-            <div className="col-span-full text-center py-10">
-              <p className="text-muted-foreground">No teachers found.</p>
+            <div class="col-span-full text-center py-10">
+              <p class="text-muted-foreground">No teachers found.</p>
             </div>
           )}
        </div>
@@ -261,5 +263,3 @@ export default function TeachersPage() {
     </div>
   );
 }
-
-    

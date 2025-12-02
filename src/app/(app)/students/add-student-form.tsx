@@ -181,25 +181,25 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
     const currentClass = classes.find(c => c.id === selectedClassId);
 
   return (
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent class="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Add New Student</DialogTitle>
           <DialogDescription>
             Fill in the details to add a new student.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
-          <div className="space-y-2">
+        <div class="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
+          <div class="space-y-2">
             <Label htmlFor="imageUrl">Photo URL</Label>
-             <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full border flex items-center justify-center bg-muted overflow-hidden">
+             <div class="flex items-center gap-4">
+                <div class="w-20 h-20 rounded-full border flex items-center justify-center bg-muted overflow-hidden">
                     {imageUrl ? (
-                        <img src={imageUrl} alt="Student" className="w-full h-full object-cover" />
+                        <img src={imageUrl} alt="Student" class="w-full h-full object-cover" />
                     ) : (
-                        <User className="w-10 h-10 text-muted-foreground" />
+                        <User class="w-10 h-10 text-muted-foreground" />
                     )}
                 </div>
-                <div className="flex-1 space-y-2">
+                <div class="flex-1 space-y-2">
                     <Input 
                         id="imageUrl" 
                         placeholder="https://example.com/photo.png"
@@ -210,58 +210,58 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                         type="file" 
                         ref={fileInputRef}
                         onChange={handleImageFileChange}
-                        className="hidden"
+                        class="hidden"
                         accept="image/*"
                     />
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
-                        <Upload className="mr-2" />
+                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} class="w-full">
+                        <Upload class="mr-2" />
                         Upload from Computer
                     </Button>
                 </div>
             </div>
           </div>
           {/* Personal Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="grid gap-2">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid gap-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input id="name" placeholder="Enter student's full name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-            <div className="grid gap-2">
+            <div class="grid gap-2">
                 <Label htmlFor="fatherName">Father's Name</Label>
                 <Input id="fatherName" placeholder="Enter father's name" value={fatherName} onChange={(e) => setFatherName(e.target.value)} />
             </div>
-            <div className="grid gap-2">
+            <div class="grid gap-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input id="phone" type="tel" placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
-            <div className="grid gap-2">
+            <div class="grid gap-2">
                 <Label htmlFor="college">School / College Name</Label>
                 <Input id="college" placeholder="Enter school or college name" value={college} onChange={(e) => setCollege(e.target.value)} />
             </div>
-             <div className="grid gap-2">
+             <div class="grid gap-2">
                 <Label>Gender</Label>
-                 <RadioGroup defaultValue="male" onValueChange={setGender} value={gender} className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2">
+                 <RadioGroup defaultValue="male" onValueChange={setGender} value={gender} class="flex items-center gap-4">
+                    <div class="flex items-center space-x-2">
                         <RadioGroupItem value="male" id="male" />
-                        <Label htmlFor="male" className="font-normal">Male</Label>
+                        <Label htmlFor="male" class="font-normal">Male</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2">
                         <RadioGroupItem value="female" id="female" />
-                        <Label htmlFor="female" className="font-normal">Female</Label>
+                        <Label htmlFor="female" class="font-normal">Female</Label>
                     </div>
                 </RadioGroup>
             </div>
-            <div className="grid gap-2">
+            <div class="grid gap-2">
               <Label htmlFor="address">Address</Label>
               <Textarea id="address" placeholder="Enter student's address" value={address} onChange={(e) => setAddress(e.target.value)} />
             </div>
           </div>
           
-          <div className="border-t my-2"></div>
+          <div class="border-t my-2"></div>
 
           {/* Academic Info */}
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="grid gap-2">
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid gap-2">
                 <Label htmlFor="class">Class</Label>
                 <Select onValueChange={handleClassChange} value={selectedClassId || undefined}>
                     <SelectTrigger>
@@ -274,7 +274,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                     </SelectContent>
                 </Select>
             </div>
-            <div className="grid gap-2">
+            <div class="grid gap-2">
                 <Label htmlFor="monthlyFee">Total Monthly Fee (PKR)</Label>
                 <Input 
                     id="monthlyFee" 
@@ -285,7 +285,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                 />
             </div>
             {currentClass && currentClass.sections && currentClass.sections.length > 0 && (
-                 <div className="grid gap-2">
+                 <div class="grid gap-2">
                     <Label htmlFor="section">Section (Optional)</Label>
                     <Select onValueChange={setSelectedSection} value={selectedSection}>
                         <SelectTrigger>
@@ -302,21 +302,21 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
           </div>
           
           {currentClass && (
-            <div className="grid gap-4">
+            <div class="grid gap-4">
                 <Label>Subjects &amp; Teachers</Label>
-                <div className="grid gap-3 rounded-md border p-4">
+                <div class="grid gap-3 rounded-md border p-4">
                     {currentClass.subjects.map(subject => {
                         const selection = selectedSubjects.find(s => s.subject.id === subject.id);
                         const availableTeachers = teachers.filter(t => (t.subjects || []).includes(subject.name));
                         
                         return (
-                            <div key={subject.id} className="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-3">
+                            <div key={subject.id} class="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-3">
                                 <Checkbox 
                                     id={`subject-${subject.id}`} 
                                     onCheckedChange={() => handleSubjectCheckedChange(subject)}
                                     checked={!!selection}
                                 />
-                                <Label htmlFor={`subject-${subject.id}`} className="font-normal">{subject.name}</Label>
+                                <Label htmlFor={`subject-${subject.id}`} class="font-normal">{subject.name}</Label>
                                 
                                 {selection && (
                                   <>
@@ -333,11 +333,11 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                                                     <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
                                                 ))
                                             ) : (
-                                                <div className="text-sm text-muted-foreground p-2">No teacher for this subject.</div>
+                                                <div class="text-sm text-muted-foreground p-2">No teacher for this subject.</div>
                                             )}
                                         </SelectContent>
                                     </Select>
-                                    <div className="text-sm text-muted-foreground text-right">
+                                    <div class="text-sm text-muted-foreground text-right">
                                         {feeShare > 0 ? `${feeShare.toFixed(0)} PKR` : ''}
                                     </div>
                                   </>
@@ -354,12 +354,10 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
                 <Button type="button" variant="ghost">Cancel</Button>
             </DialogClose>
             <Button type="button" onClick={handleSubmit} disabled={isSaving}>
-                {isSaving && <Loader2 className="animate-spin mr-2"/>}
+                {isSaving && <Loader2 class="animate-spin mr-2"/>}
                 {isSaving ? 'Adding Student...' : 'Add Student'}
             </Button>
         </DialogFooter>
       </DialogContent>
   )
 }
-
-    

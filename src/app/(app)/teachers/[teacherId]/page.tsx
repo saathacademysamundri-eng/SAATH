@@ -266,23 +266,23 @@ export default function TeacherProfilePage() {
 
   if (loading || isAppLoading) {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Skeleton className="h-20 w-20 rounded-lg" />
-                <div className="space-y-2">
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-4 w-32" />
+        <div class="space-y-6">
+            <div class="flex items-center gap-4">
+                <Skeleton class="h-20 w-20 rounded-lg" />
+                <div class="space-y-2">
+                    <Skeleton class="h-6 w-48" />
+                    <Skeleton class="h-4 w-32" />
                 </div>
             </div>
             <Card>
                 <CardHeader>
-                    <Skeleton className="h-8 w-1/2" />
+                    <Skeleton class="h-8 w-1/2" />
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
+                    <div class="space-y-4">
+                        <Skeleton class="h-10 w-full" />
+                        <Skeleton class="h-10 w-full" />
+                        <Skeleton class="h-10 w-full" />
                     </div>
                 </CardContent>
             </Card>
@@ -292,15 +292,15 @@ export default function TeacherProfilePage() {
 
   if (!teacher) {
     return (
-      <div className="text-center py-10">
-        <h2 className="text-2xl font-bold">Teacher not found</h2>
-        <p className="text-muted-foreground">The teacher with ID "{teacherId}" could not be found.</p>
+      <div class="text-center py-10">
+        <h2 class="text-2xl font-bold">Teacher not found</h2>
+        <p class="text-muted-foreground">The teacher with ID "{teacherId}" could not be found.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div class="flex flex-col gap-6">
       <TeacherEarningsClient 
         teacherId={teacher.id} 
         teacherName={teacher.name}
@@ -309,16 +309,16 @@ export default function TeacherProfilePage() {
       
       <div id="print-area">
         <Card>
-            <CardHeader className='flex-row items-center gap-4 space-y-0 pb-4'>
-                <Avatar className="h-20 w-20">
+            <CardHeader class='flex-row items-center gap-4 space-y-0 pb-4'>
+                <Avatar class="h-20 w-20">
                     <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className='grid gap-1'>
-                    <CardTitle className="text-2xl">{teacher.name}</CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                        <Phone className="h-4 w-4" /> {teacher.phone}
+                <div class='grid gap-1'>
+                    <CardTitle class="text-2xl">{teacher.name}</CardTitle>
+                    <CardDescription class="flex items-center gap-2">
+                        <Phone class="h-4 w-4" /> {teacher.phone}
                     </CardDescription>
-                    <div className="flex flex-wrap gap-2 pt-2">
+                    <div class="flex flex-wrap gap-2 pt-2">
                         {teacher.subjects && teacher.subjects.map(subject => (
                             <Badge key={subject} variant="secondary">{subject}</Badge>
                         ))}
@@ -327,48 +327,48 @@ export default function TeacherProfilePage() {
             </CardHeader>
         </Card>
         
-        <Tabs defaultValue="earnings" className="mt-4">
-            <TabsList className="print:hidden grid w-full grid-cols-3">
+        <Tabs defaultValue="earnings" class="mt-4">
+            <TabsList class="print:hidden grid w-full grid-cols-3">
                 <TabsTrigger value="earnings">Current Earnings</TabsTrigger>
                 <TabsTrigger value="payouts">Payout History</TabsTrigger>
                 <TabsTrigger value="profile">Profile Details</TabsTrigger>
             </TabsList>
-            <TabsContent value="earnings" className="mt-4">
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <div className="lg:col-span-1 space-y-6">
+            <TabsContent value="earnings" class="mt-4">
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div class="lg:col-span-1 space-y-6">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Gross Earnings (from Paid Fees)</CardTitle>
                                 <CardDescription>Teacher's share from all student fees that have been collected but not yet paid out.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <p data-stat="gross-earnings" className="text-3xl font-bold">{totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                                <p data-stat="gross-earnings" class="text-3xl font-bold">{totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
                             </CardContent>
                         </Card>
-                        <Card className="border-green-500/50">
+                        <Card class="border-green-500/50">
                             <CardHeader>
                                 <CardTitle>Teacher's Share (70%)</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p data-stat="teacher-share" className="text-3xl font-bold text-green-600">{teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                                <p data-stat="teacher-share" class="text-3xl font-bold text-green-600">{teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
                             </CardContent>
                              <CardContent>
                                 <Button onClick={handlePayout} disabled={isPaying || teacherShare <= 0}>
-                                    {isPaying ? <Loader2 className="mr-2 animate-spin" /> : <Wallet className="mr-2" />}
+                                    {isPaying ? <Loader2 class="mr-2 animate-spin" /> : <Wallet class="mr-2" />}
                                     {isPaying ? 'Processing...' : 'Pay Teacher & Reset'}
                                 </Button>
                             </CardContent>
                         </Card>
-                        <Card className="border-blue-500/50">
+                        <Card class="border-blue-500/50">
                             <CardHeader>
                                 <CardTitle>Academy's Share (30%)</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p data-stat="academy-share" className="text-3xl font-bold text-blue-600">{academyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                                <p data-stat="academy-share" class="text-3xl font-bold text-blue-600">{academyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
                             </CardContent>
                         </Card>
                     </div>
-                    <div className="lg:col-span-2">
+                    <div class="lg:col-span-2">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Contribution from Paid Fees</CardTitle>
@@ -381,7 +381,7 @@ export default function TeacherProfilePage() {
                                             <TableHead>Student</TableHead>
                                             <TableHead>Fee Date</TableHead>
                                             <TableHead>Subject</TableHead>
-                                            <TableHead className="text-right">Share from Fee</TableHead>
+                                            <TableHead class="text-right">Share from Fee</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -389,21 +389,21 @@ export default function TeacherProfilePage() {
                                             studentEarnings.map(({ student, earnedShare, subjectName, incomeId, incomeDate }, index) => (
                                                 <TableRow key={`${incomeId}-${index}`}>
                                                     <TableCell>
-                                                        <div className="flex items-center gap-3">
+                                                        <div class="flex items-center gap-3">
                                                            <div>
-                                                                <div className="font-medium">{student.name}</div>
-                                                                <div className="text-xs text-muted-foreground">{student.id}</div>
+                                                                <div class="font-medium">{student.name}</div>
+                                                                <div class="text-xs text-muted-foreground">{student.id}</div>
                                                             </div>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell>{format(incomeDate, 'PPP')}</TableCell>
                                                     <TableCell>{subjectName}</TableCell>
-                                                    <TableCell className="text-right">{earnedShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
+                                                    <TableCell class="text-right">{earnedShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
                                                 </TableRow>
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                                                <TableCell colSpan={4} class="text-center text-muted-foreground h-24">
                                                     No collected fees waiting for payout for this teacher.
                                                 </TableCell>
                                             </TableRow>
@@ -427,7 +427,7 @@ export default function TeacherProfilePage() {
                                 <TableRow>
                                     <TableHead>Payout Date</TableHead>
                                     <TableHead>Amount Paid</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead class="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -435,10 +435,10 @@ export default function TeacherProfilePage() {
                                     payouts.map((payout) => (
                                         <TableRow key={payout.id}>
                                             <TableCell>{format(payout.payoutDate, 'PPP')}</TableCell>
-                                            <TableCell className="font-medium">{payout.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell class="font-medium">{payout.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
+                                            <TableCell class="text-right">
                                                 <Button variant="outline" size="sm" onClick={() => handlePrintHistory(payout)} disabled={!payout.report || isSettingsLoading}>
-                                                    <Printer className="mr-2 h-4 w-4" />
+                                                    <Printer class="mr-2 h-4 w-4" />
                                                     Print
                                                 </Button>
                                             </TableCell>
@@ -446,7 +446,7 @@ export default function TeacherProfilePage() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                        <TableCell colSpan={3} class="h-24 text-center text-muted-foreground">
                                             No payout history for this teacher.
                                         </TableCell>
                                     </TableRow>
@@ -462,40 +462,40 @@ export default function TeacherProfilePage() {
                         <CardTitle>Teacher Information</CardTitle>
                         <CardDescription>Personal and contact details for {teacher.name}.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex items-center gap-3 rounded-md border p-3">
-                                <User className="h-5 w-5 text-muted-foreground" />
+                    <CardContent class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex items-center gap-3 rounded-md border p-3">
+                                <User class="h-5 w-5 text-muted-foreground" />
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Father's Name</p>
-                                    <p className="font-medium">{teacher.fatherName}</p>
+                                    <p class="text-sm text-muted-foreground">Father's Name</p>
+                                    <p class="font-medium">{teacher.fatherName}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 rounded-md border p-3">
-                                <Phone className="h-5 w-5 text-muted-foreground" />
+                            <div class="flex items-center gap-3 rounded-md border p-3">
+                                <Phone class="h-5 w-5 text-muted-foreground" />
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Phone</p>
-                                    <p className="font-medium">{teacher.phone}</p>
+                                    <p class="text-sm text-muted-foreground">Phone</p>
+                                    <p class="font-medium">{teacher.phone}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 rounded-md border p-3">
-                                <Mail className="h-5 w-5 text-muted-foreground" />
+                            <div class="flex items-center gap-3 rounded-md border p-3">
+                                <Mail class="h-5 w-5 text-muted-foreground" />
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Email</p>
-                                    <p className="font-medium">{teacher.email || 'Not provided'}</p>
+                                    <p class="text-sm text-muted-foreground">Email</p>
+                                    <p class="font-medium">{teacher.email || 'Not provided'}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 rounded-md border p-3">
-                                <Home className="h-5 w-5 text-muted-foreground" />
+                            <div class="flex items-center gap-3 rounded-md border p-3">
+                                <Home class="h-5 w-5 text-muted-foreground" />
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Address</p>
-                                    <p className="font-medium">{teacher.address}</p>
+                                    <p class="text-sm text-muted-foreground">Address</p>
+                                    <p class="font-medium">{teacher.address}</p>
                                 </div>
                             </div>
                         </div>
                          <div>
-                            <p className="text-sm font-medium mb-2">Subjects Taught</p>
-                            <div className="flex flex-wrap gap-2">
+                            <p class="text-sm font-medium mb-2">Subjects Taught</p>
+                            <div class="flex flex-wrap gap-2">
                                 {teacher.subjects && teacher.subjects.map(subject => (
                                     <Badge key={subject} variant="secondary">{subject}</Badge>
                                 ))}
@@ -509,9 +509,3 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
