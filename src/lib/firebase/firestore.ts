@@ -815,12 +815,12 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
             batch.update(incomeRef, { [`paidOutTo.${teacherId}`]: payoutRef.id });
         });
 
-        // Expense Record
-        const expenseRef = doc(collection(db, 'expenses'));
-        batch.set(expenseRef, { 
+        // Expense Record - set to the last day of the earnings month
+        const expenseDate = endOfMonth(earningsMonth);
+        batch.set(doc(collection(db, 'expenses')), { 
             description: `Payout to ${teacherName} for ${formatDate(earningsMonth, 'MMMM yyyy')}`, 
             amount, 
-            date: Timestamp.fromDate(earningsMonth), // Use earnings month for expense date
+            date: Timestamp.fromDate(expenseDate),
             source: 'payout', 
             payoutId: payoutRef.id, 
             category: 'Salaries' 
@@ -1312,3 +1312,4 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+
