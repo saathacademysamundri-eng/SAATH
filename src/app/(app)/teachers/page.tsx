@@ -72,20 +72,24 @@ export default function TeachersPage() {
             student.subjects.some(sub => sub.teacher_id === teacher.id)
         );
         
-        const unpaidIncome = income.filter(i => !i.isPaidOut);
+        // Filter for income that has NOT been paid out to THIS teacher
+        const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
+        
         let grossEarnings = 0;
 
         unpaidIncome.forEach(inc => {
             const student = allStudents.find(s => s.id === inc.studentId);
             if (student && student.subjects.some(sub => sub.teacher_id === teacher.id)) {
                 const relevantSubjects = student.subjects.filter(s => s.teacher_id === teacher.id);
-                const totalFeeShare = student.subjects.reduce((acc, s) => acc + s.fee_share, 0);
-
-                if (totalFeeShare > 0) {
-                    const teacherFeeShare = relevantSubjects.reduce((acc, s) => acc + s.fee_share, 0);
-                    const proportion = teacherFeeShare / totalFeeShare;
-                    grossEarnings += inc.amount * proportion;
-                }
+                
+                relevantSubjects.forEach(subject => {
+                    const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                    if (student.monthlyFee > 0) {
+                      const proportion = feeShareForSubject / student.monthlyFee;
+                      const earnedShare = inc.amount * proportion;
+                      grossEarnings += earnedShare;
+                    }
+                 });
             }
         });
         
