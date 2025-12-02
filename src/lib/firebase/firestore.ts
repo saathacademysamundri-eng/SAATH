@@ -210,12 +210,16 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
                 } else {
                     updateData.feeStatus = 'Pending';
                 }
+            } else if (studentData.class && studentData.class !== oldStudentData.class) {
+                await logActivity('student_updated', `Promoted student ${oldStudentData.name} (ID: ${studentId}) from ${oldStudentData.class} to ${studentData.class}.`, `/students/${studentId}`);
             }
+
 
             transaction.update(docRef, updateData);
         });
-
-        await logActivity('student_updated', `Updated details for student ${studentData.name} (ID: ${studentId}).`, `/students/${studentId}`);
+        if (!studentData.class) {
+             await logActivity('student_updated', `Updated details for student ${studentData.name} (ID: ${studentId}).`, `/students/${studentId}`);
+        }
         return { success: true, message: "Student updated successfully." };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: studentData });
@@ -1241,4 +1245,3 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
-

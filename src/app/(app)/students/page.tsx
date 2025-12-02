@@ -28,10 +28,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, PlusCircle, Search, Trash, Edit, Archive, GraduationCap } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Search, Trash, Edit, Archive, GraduationCap, ChevronRight, Printer, ChevronsRight } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
 import { Dialog, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -53,6 +53,10 @@ import { updateStudentStatus } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PromoteStudentDialog } from './promote-student-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { BulkPromoteDialog } from './bulk-promote-dialog';
+import { useSettings } from '@/hooks/use-settings';
 
 export default function StudentsPage() {
   const { students: studentList, classes, loading, refreshData } = useAppContext();
@@ -60,30 +64,46 @@ export default function StudentsPage() {
   const [classFilter, setClassFilter] = useState('all');
   const router = useRouter();
   const { toast } = useToast();
+  const { settings, isSettingsLoading } = useSettings();
+
+  const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
+  const [isBulkPromoteOpen, setIsBulkPromoteOpen] = useState(false);
+  const [isBulkGraduateOpen, setIsBulkGraduateOpen] = useState(false);
 
   const [dialogState, setDialogState] = useState<{
     isAddOpen: boolean;
     isEditOpen: boolean;
     isArchiveOpen: boolean;
     isGraduateOpen: boolean;
+    isPromoteOpen: boolean;
     selectedStudent: Student | null;
   }>({
     isAddOpen: false,
     isEditOpen: false,
     isArchiveOpen: false,
     isGraduateOpen: false,
+    isPromoteOpen: false,
     selectedStudent: null,
   });
 
-  const filteredStudents = studentList.filter(student => {
-    const searchMatch = student.name.toLowerCase().includes(search.toLowerCase()) || 
-      student.id.toLowerCase().includes(search.toLowerCase()) ||
-      student.fatherName.toLowerCase().includes(search.toLowerCase());
-    
-    const classMatch = classFilter === 'all' || student.class === classes.find(c => c.id === classFilter)?.name;
+  const filteredStudents = useMemo(() => {
+    return studentList.filter(student => {
+        const searchMatch = student.name.toLowerCase().includes(search.toLowerCase()) || 
+          student.id.toLowerCase().includes(search.toLowerCase()) ||
+          student.fatherName.toLowerCase().includes(search.toLowerCase());
+        
+        const classMatch = classFilter === 'all' || student.class === classes.find(c => c.id === classFilter)?.name;
 
-    return searchMatch && classMatch;
-  });
+        return searchMatch && classMatch;
+    });
+  }, [studentList, search, classFilter, classes]);
+  
+  useEffect(() => {
+    // When filters change, clear selection if a selected student is no longer visible
+    const visibleStudentIds = new Set(filteredStudents.map(s => s.id));
+    setSelectedStudents(prev => prev.filter(s => visibleStudentIds.has(s.id)));
+  }, [search, classFilter]);
+
 
   const handleEditClick = (student: Student) => {
     setDialogState({ ...dialogState, isEditOpen: true, selectedStudent: student });
@@ -93,12 +113,16 @@ export default function StudentsPage() {
     setDialogState({ ...dialogState, isArchiveOpen: open, selectedStudent: student });
   }
   
-  const handleGraduateAction = (student: Student, open: boolean) => {
+  const handleGraduateAction = (student: Student | null, open: boolean) => {
      setDialogState({ ...dialogState, isGraduateOpen: open, selectedStudent: student });
   }
 
+  const handlePromoteClick = (student: Student) => {
+    setDialogState({ ...dialogState, isPromoteOpen: true, selectedStudent: student });
+  }
+
   const closeDialogs = () => {
-    setDialogState({ isAddOpen: false, isEditOpen: false, isArchiveOpen: false, isGraduateOpen: false, selectedStudent: null });
+    setDialogState({ isAddOpen: false, isEditOpen: false, isArchiveOpen: false, isGraduateOpen: false, isPromoteOpen: false, selectedStudent: null });
   };
 
   const onStudentAdded = () => {
@@ -109,6 +133,8 @@ export default function StudentsPage() {
   const onStudentUpdated = () => {
     refreshData();
     closeDialogs();
+    setSelectedStudents([]);
+    setIsBulkPromoteOpen(false);
   };
   
   const handleConfirmAction = async (student: Student | null, status: 'archived' | 'graduated') => {
@@ -121,8 +147,81 @@ export default function StudentsPage() {
       toast({ variant: "destructive", title: "Action Failed", description: result.message });
     }
     closeDialogs();
+    setIsBulkGraduateOpen(false);
+    setSelectedStudents([]);
   }
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedStudents(filteredStudents);
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
+  const handleSelectStudent = (student: Student, checked: boolean) => {
+    if (checked) {
+      setSelectedStudents(prev => [...prev, student]);
+    } else {
+      setSelectedStudents(prev => prev.filter(s => s.id !== student.id));
+    }
+  };
+  
+  const handlePrintSelected = () => {
+    if (selectedStudents.length === 0) {
+      toast({ variant: 'destructive', title: 'No Students Selected', description: 'Please select students to print.' });
+      return;
+    }
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    const tableRows = selectedStudents.map(s => `
+        <tr>
+          <td>${s.id}</td>
+          <td>${s.name}</td>
+          <td>${s.fatherName}</td>
+          <td>${s.phone}</td>
+        </tr>
+      `).join('');
+
+    const printHtml = `
+      <html>
+        <head>
+          <title>Selected Students List</title>
+          <style>
+            @media print { @page { size: A4; margin: 0.75in; } }
+            body { font-family: 'Segoe UI', sans-serif; }
+            .report-container { max-width: 800px; margin: auto; }
+            .academy-details { text-align: center; margin-bottom: 1rem; }
+            h1 { font-size: 1.5rem; }
+            table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          <div class="report-container">
+             <div class="academy-details">
+                ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
+                <h1>${settings.name}</h1>
+                <p>${settings.phone}</p>
+            </div>
+            <h2>Selected Students List</h2>
+            <table>
+              <thead><tr><th>Roll #</th><th>Name</th><th>Father's Name</th><th>Phone</th></tr></thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+  }
+  
+  const showBulkActions = classFilter !== 'all';
+  const is12thGrade = classes.find(c => c.id === classFilter)?.name === '12th Grade';
 
   return (
     <div className="flex flex-col gap-6">
@@ -178,11 +277,56 @@ export default function StudentsPage() {
               </SelectContent>
             </Select>
           </div>
+          {showBulkActions && selectedStudents.length > 0 && (
+            <div className="flex items-center gap-4 border-t pt-4 mt-4">
+                <p className="text-sm text-muted-foreground">{selectedStudents.length} student(s) selected</p>
+                {is12thGrade ? (
+                    <AlertDialog open={isBulkGraduateOpen} onOpenChange={setIsBulkGraduateOpen}>
+                        <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="secondary">
+                                <GraduationCap className="mr-2 h-4 w-4" />
+                                Graduate Selected
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Graduate Selected Students?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will move {selectedStudents.length} student(s) to the Alumni list. This action cannot be easily undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleConfirmAction(selectedStudents[0], 'graduated')}>
+                                    Confirm Graduation
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                ) : (
+                    <Button size="sm" onClick={() => setIsBulkPromoteOpen(true)}>
+                        <ChevronsRight className="mr-2 h-4 w-4" />
+                        Promote Selected
+                    </Button>
+                )}
+                <Button size="sm" variant="outline" onClick={handlePrintSelected}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print Selected
+                </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                 {showBulkActions && <TableHead className="w-12">
+                    <Checkbox
+                        checked={selectedStudents.length > 0 && selectedStudents.length === filteredStudents.length && filteredStudents.length > 0}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all"
+                    />
+                 </TableHead>}
                 <TableHead>Student</TableHead>
                 <TableHead>Father's Name</TableHead>
                 <TableHead>Fee Status</TableHead>
@@ -197,6 +341,7 @@ export default function StudentsPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
+                    {showBulkActions && <TableCell><Checkbox disabled /></TableCell>}
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-10 w-10 rounded-full" />
@@ -215,7 +360,14 @@ export default function StudentsPage() {
                 ))
               ) : (
                 filteredStudents.map((student) => (
-                  <TableRow key={student.id}>
+                  <TableRow key={student.id} data-state={selectedStudents.some(s => s.id === student.id) && "selected"}>
+                    {showBulkActions && <TableCell>
+                        <Checkbox
+                            checked={selectedStudents.some(s => s.id === student.id)}
+                            onCheckedChange={(checked) => handleSelectStudent(student, !!checked)}
+                            aria-label={`Select ${student.name}`}
+                        />
+                    </TableCell>}
                     <TableCell>
                       <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
@@ -262,6 +414,17 @@ export default function StudentsPage() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
+                              {is12thGrade ? (
+                                <DropdownMenuItem onSelect={() => handleGraduateAction(student, true)}>
+                                    <GraduationCap className="mr-2 h-4 w-4" />
+                                    Mark as Graduated
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={() => handlePromoteClick(student)}>
+                                    <ChevronRight className="mr-2 h-4 w-4" />
+                                    Promote Student
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
                                <DropdownMenuItem onSelect={() => handleGraduateAction(student, true)}>
                                 <GraduationCap className="mr-2 h-4 w-4" />
@@ -335,6 +498,23 @@ export default function StudentsPage() {
               />
           </Dialog>
       )}
+       {dialogState.selectedStudent && !is12thGrade && (
+          <Dialog open={dialogState.isPromoteOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isPromoteOpen: isOpen, selectedStudent: isOpen ? dialogState.selectedStudent : null })}>
+              <PromoteStudentDialog 
+                  student={dialogState.selectedStudent}
+                  onStudentPromoted={onStudentUpdated}
+              />
+          </Dialog>
+      )}
+      {selectedStudents.length > 0 && !is12thGrade && (
+          <Dialog open={isBulkPromoteOpen} onOpenChange={setIsBulkPromoteOpen}>
+              <BulkPromoteDialog
+                  students={selectedStudents}
+                  onStudentsPromoted={onStudentUpdated}
+              />
+          </Dialog>
+      )}
     </div>
   );
 }
+
