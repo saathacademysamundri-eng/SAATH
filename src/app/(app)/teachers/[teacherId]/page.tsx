@@ -68,8 +68,10 @@ export default function TeacherProfilePage() {
     }
     
     setTeacher(teacherData);
+    
+    // Filter for income that has NOT been paid out to THIS teacher
+    const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
 
-    const unpaidIncome = income.filter(i => !i.isPaidOut);
     const earningsByMonth: { [key: string]: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> & { year: number, monthIndex: number } } = {};
 
     unpaidIncome.forEach(inc => {
@@ -77,35 +79,34 @@ export default function TeacherProfilePage() {
         if (student) {
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
             if (relevantSubjects.length > 0) {
-              const totalFeeShare = student.subjects.reduce((acc, s) => acc + s.fee_share, 0);
-              if (totalFeeShare > 0) {
                  relevantSubjects.forEach(subject => {
                     const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
-                    const proportion = feeShareForSubject / student.monthlyFee;
-                    const earnedShare = inc.amount * proportion;
-                    
-                    const monthKey = format(inc.date, 'yyyy-MM');
-                    if (!earningsByMonth[monthKey]) {
-                        earningsByMonth[monthKey] = {
-                            totalGross: 0,
-                            teacherShare: 0,
-                            academyShare: 0,
-                            studentEarnings: [],
-                            year: getYear(inc.date),
-                            monthIndex: getMonth(inc.date),
-                        };
-                    }
+                    if (student.monthlyFee > 0) {
+                      const proportion = feeShareForSubject / student.monthlyFee;
+                      const earnedShare = inc.amount * proportion;
+                      
+                      const monthKey = format(inc.date, 'yyyy-MM');
+                      if (!earningsByMonth[monthKey]) {
+                          earningsByMonth[monthKey] = {
+                              totalGross: 0,
+                              teacherShare: 0,
+                              academyShare: 0,
+                              studentEarnings: [],
+                              year: getYear(inc.date),
+                              monthIndex: getMonth(inc.date),
+                          };
+                      }
 
-                    earningsByMonth[monthKey].totalGross += earnedShare;
-                    earningsByMonth[monthKey].studentEarnings.push({
-                        student: student,
-                        earnedShare: earnedShare,
-                        subjectName: subject.subject_name,
-                        incomeId: inc.id,
-                        incomeDate: inc.date,
-                    });
+                      earningsByMonth[monthKey].totalGross += earnedShare;
+                      earningsByMonth[monthKey].studentEarnings.push({
+                          student: student,
+                          earnedShare: earnedShare,
+                          subjectName: subject.subject_name,
+                          incomeId: inc.id,
+                          incomeDate: inc.date,
+                      });
+                    }
                  });
-              }
             }
         }
     });

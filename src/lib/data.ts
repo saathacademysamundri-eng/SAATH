@@ -86,8 +86,7 @@ export type Income = {
     studentId: string;
     amount: number;
     date: Date;
-    isPaidOut?: boolean; // New field to track payout status
-    payoutId?: string; // Reference to the payout record
+    paidOutTo?: { [teacherId: string]: string }; // Tracks which teacher has been paid for this income via which payout
 }
 
 export type TeacherPayout = {
@@ -362,7 +361,3 @@ export const subjectTeacherMap: { [subjectName: string]: string } = {
 };
 
     
-
-
-
-

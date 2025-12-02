@@ -748,7 +748,8 @@ export async function deleteExpense(expenseId: string) {
                 if (payoutDoc.exists()) {
                     const payoutData = payoutDoc.data() as TeacherPayout;
                     for (const incomeId of payoutData.incomeIds) {
-                        transaction.update(doc(db, 'income', incomeId), { isPaidOut: false, payoutId: deleteField() });
+                        const incomeRef = doc(db, 'income', incomeId);
+                        transaction.update(incomeRef, { [`paidOutTo.${payoutData.teacherId}`]: deleteField() });
                     }
                     const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payoutRef.id), limit(1));
                     const reportSnap = await getDocs(reportQuery); 
@@ -805,7 +806,10 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
             });
         }
 
-        incomeIds.forEach(id => batch.update(doc(db, 'income', id), { isPaidOut: true, payoutId: payoutRef.id }));
+        incomeIds.forEach(id => {
+            const incomeRef = doc(db, 'income', id);
+            batch.update(incomeRef, { [`paidOutTo.${teacherId}`]: payoutRef.id });
+        });
 
         const expenseRef = doc(collection(db, 'expenses'));
         batch.set(expenseRef, { description: `Payout to ${teacherName}`, amount, date: payoutTimestamp, source: 'payout', payoutId: payoutRef.id, category: 'Salaries' });
@@ -838,7 +842,7 @@ export async function deletePayout(payoutId: string) {
             // Mark associated income records as not paid out
             for (const incomeId of payoutData.incomeIds) {
                 const incomeRef = doc(db, 'income', incomeId);
-                transaction.update(incomeRef, { isPaidOut: false, payoutId: deleteField() });
+                transaction.update(incomeRef, { [`paidOutTo.${payoutData.teacherId}`]: deleteField() });
             }
 
             // Find and delete the associated expense record
