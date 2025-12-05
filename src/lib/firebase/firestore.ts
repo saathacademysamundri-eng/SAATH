@@ -7,7 +7,7 @@ import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format as formatDate } from 'date-fns';
-import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
+import { sendWhatsappMessage } from '@/lib/whatsapp';
 
 const db = getFirestore(app);
 
@@ -956,6 +956,42 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
     try {
         await setDoc(docRef, attendanceData, { merge: true });
         await logActivity('attendance_marked', `Marked attendance for class ${attendanceData.className}.`);
+        
+        // Send WhatsApp messages for absent students
+        const settings = await getSettings('details');
+        if (settings && settings.absentMsg && settings.whatsappProvider !== 'none') {
+            const absentStudents: { id: string, name: string, phone: string }[] = [];
+            
+            for (const studentId in attendanceData.records) {
+                if (attendanceData.records[studentId] === 'Absent') {
+                    const student = await getStudent(studentId);
+                    if (student && student.phone) {
+                        absentStudents.push({ id: student.id, name: student.name, phone: student.phone });
+                    }
+                }
+            }
+
+            if (absentStudents.length > 0) {
+                const apiUrl = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgApiUrl : settings.officialApiUrl;
+                const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
+                
+                if (apiUrl && token) {
+                    for (const student of absentStudents) {
+                        let messageBody = settings.absentTemplate || 'Dear parent, your child {student_name} (Roll No: {student_id}) was absent today.';
+                        messageBody = messageBody.replace(/{student_name}/g, student.name);
+                        messageBody = messageBody.replace(/{student_id}/g, student.id);
+                        
+                        await sendWhatsappMessage({
+                            to: student.phone,
+                            body: messageBody,
+                            apiUrl: apiUrl,
+                            token: token,
+                        });
+                    }
+                }
+            }
+        }
+
         return { success: true, message: 'Attendance saved successfully.' };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'write', requestResourceData: attendanceData });
@@ -963,6 +999,7 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
         return { success: false, message: (serverError as Error).message };
     }
 }
+
 
 export async function getTodaysAttendanceSummary(): Promise<{ present: number, absent: number, classes: { [classId: string]: { present: number, absent: number } } }> {
     try {
@@ -1312,4 +1349,3 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
-
