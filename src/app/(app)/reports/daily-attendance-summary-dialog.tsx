@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -48,7 +49,8 @@ export function DailyAttendanceSummaryDialog() {
                     <title>Daily Attendance Summary - ${format(new Date(), 'PPP')}</title>
                     <style>
                         body { font-family: 'Segoe UI', sans-serif; margin: 20px; }
-                        .report-container { max-width: 800px; margin: auto; }
+                        .report-container { max-width: 800px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+                        .content-wrap { flex: 1; }
                         .academy-details { text-align: center; margin-bottom: 1.5rem; }
                         .academy-details img { max-height: 60px; margin-bottom: 0.5rem; }
                         h1 { font-size: 1.5rem; }
@@ -65,10 +67,12 @@ export function DailyAttendanceSummaryDialog() {
                         .absent-list p { font-weight: bold; }
                         .absent-list ul { list-style: none; padding-left: 0; column-count: 2; }
                         .teacher-section ul { list-style: none; padding-left: 0; }
+                        .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
                     </style>
                 </head>
                 <body>
                     <div class="report-container">
+                      <div class="content-wrap">
                         <div class="academy-details">
                             ${settings.logo ? `<img src="${settings.logo}" alt="Logo">` : ''}
                             <h1>${settings.name}</h1>
@@ -114,6 +118,10 @@ export function DailyAttendanceSummaryDialog() {
                                 </div>
                             ` : ''}
                         </div>
+                      </div>
+                      <div class="footer">
+                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+                      </div>
                     </div>
                 </body>
             </html>
@@ -191,4 +199,3 @@ export function DailyAttendanceSummaryDialog() {
         </DialogContent>
     );
 }
-

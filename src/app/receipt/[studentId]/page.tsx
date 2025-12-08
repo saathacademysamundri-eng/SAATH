@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useSettings } from '@/hooks/use-settings';
@@ -36,7 +37,8 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
                             main > div { width: 100% !important; margin: 0 !important; }
                         }
                         body { font-family: 'PT Sans', sans-serif; background-color: white; color: black; }
-                        .receipt-container { width: 80mm; margin: auto; padding: 2mm; }
+                        .receipt-container { width: 80mm; margin: auto; padding: 2mm; display: flex; flex-direction: column; min-height: 98%; }
+                        .content-wrap { flex: 1; }
                         .text-center { text-align: center; }
                         .text-right { text-align: right; }
                         .font-bold { font-weight: bold; }
@@ -63,72 +65,75 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
                         .py-0\\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
                         .font-medium { font-weight: 500; }
                         .mt-4 { margin-top: 1rem; }
+                        .footer { text-align: center; font-size: 0.7rem; color: #555; }
                     </style>
                 </head>
                 <body>
                     <div class="receipt-container">
-                        <div class="text-center space-y-1">
-                            <div class="flex justify-center">
-                                <div class="h-16 w-16">
-                                    <img src="${settings.logo}" alt="Academy Logo" class="h-full w-full object-contain" />
+                        <div class="content-wrap">
+                            <div class="text-center space-y-1">
+                                <div class="flex justify-center">
+                                    <div class="h-16 w-16">
+                                        <img src="${settings.logo}" alt="Academy Logo" class="h-full w-full object-contain" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <h1 class='text-lg font-bold'>${settings.name}</h1>
+                                    <p class='text-xs'>${settings.address}</p>
+                                    <p class='text-xs'>Phone: ${settings.phone}</p>
                                 </div>
                             </div>
-                            <div>
-                                <h1 class='text-lg font-bold'>${settings.name}</h1>
-                                <p class='text-xs'>${settings.address}</p>
-                                <p class='text-xs'>Phone: ${settings.phone}</p>
+                            
+                            <div class="border-t border-b my-2 py-1 text-xs">
+                                <div class='flex justify-between'>
+                                    <span>Receipt #: ${receiptId}</span>
+                                    <span>Date: ${receiptDate}</span>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="border-t border-b my-2 py-1 text-xs">
-                            <div class='flex justify-between'>
-                                <span>Receipt #: ${receiptId}</span>
-                                <span>Date: ${receiptDate}</span>
+
+                            <div class='text-xs mb-2'>
+                                <p><strong>Student:</strong> ${student.name} (${student.id})</p>
+                                <p><strong>Class:</strong> ${student.class}</p>
                             </div>
-                        </div>
 
-                        <div class='text-xs mb-2'>
-                            <p><strong>Student:</strong> ${student.name} (${student.id})</p>
-                            <p><strong>Class:</strong> ${student.class}</p>
-                        </div>
-
-                        <table class="w-full text-xs">
-                            <thead>
-                                <tr class='border-t border-b'>
-                                    <th class="py-1 text-left font-semibold">Description</th>
-                                    <th class="py-1 text-right font-semibold">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class='border-b'>
-                                    <td class="py-1">Tuition Fee</td>
-                                    <td class="py-1 text-right">${totalFee.toLocaleString()}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        
-                        <div class='flex justify-end mt-2'>
-                            <table class="w-1/2 ml-auto text-xs">
+                            <table class="w-full text-xs">
+                                <thead>
+                                    <tr class='border-t border-b'>
+                                        <th class="py-1 text-left font-semibold">Description</th>
+                                        <th class="py-1 text-right font-semibold">Amount</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="py-0.5">Total Due:</td>
-                                        <td class="py-0.5 text-right font-medium">${totalFee.toLocaleString()}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="py-0.5">Amount Paid:</td>
-                                        <td class="py-0.5 text-right font-medium">${paidAmount.toLocaleString()}</td>
-                                    </tr>
-                                    <tr class="font-bold border-t">
-                                        <td class="py-1">Balance:</td>
-                                        <td class="py-1 text-right">${balance.toLocaleString()}</td>
+                                    <tr class='border-b'>
+                                        <td class="py-1">Tuition Fee</td>
+                                        <td class="py-1 text-right">${totalFee.toLocaleString()}</td>
                                     </tr>
                                 </tbody>
                             </table>
+                            
+                            <div class='flex justify-end mt-2'>
+                                <table class="w-1/2 ml-auto text-xs">
+                                    <tbody>
+                                        <tr>
+                                            <td class="py-0.5">Total Due:</td>
+                                            <td class="py-0.5 text-right font-medium">${totalFee.toLocaleString()}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-0.5">Amount Paid:</td>
+                                            <td class="py-0.5 text-right font-medium">${paidAmount.toLocaleString()}</td>
+                                        </tr>
+                                        <tr class="font-bold border-t">
+                                            <td class="py-1">Balance:</td>
+                                            <td class="py-1 text-right">${balance.toLocaleString()}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        <div class='text-center text-xs mt-4 space-y-1'>
+                        <div class='footer mt-4 space-y-1'>
                             <p>*** Thank you for your payment! ***</p>
-                            <p>&copy; ${new Date().getFullYear()} ${settings.name}.</p>
+                            <p>Developed by SchoolUP</p>
                         </div>
                     </div>
                 </body>

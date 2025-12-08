@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -302,7 +303,7 @@ export default function ExpensesPage() {
     }
     
     const handleSetDialog = (id: string, type: 'edit' | 'delete' | null) => {
-        setOpenDialogs(prev => ({ ...Object.fromEntries(Object.keys(prev).map(k => [k, null])), [id]: type }));
+        setOpenDialogs(prev => ({ ...prev, [id]: type }));
     }
 
     const amountToWords = (num: number) => {
@@ -330,7 +331,8 @@ export default function ExpensesPage() {
                 <head><title>Expense Voucher - ${expense.id}</title>
                  <style>
                     body { font-family: 'Segoe UI', sans-serif; margin: 20px; font-size: 12pt; }
-                    .voucher-container { border: 2px solid #000; padding: 20px; max-width: 800px; margin: auto; }
+                    .voucher-container { border: 2px solid #000; padding: 20px; max-width: 800px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+                    .content-wrap { flex: 1; }
                     .header { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
                     .header img { max-height: 60px; margin-bottom: 10px; }
                     .header h1 { margin: 0; font-size: 1.5rem; }
@@ -342,10 +344,12 @@ export default function ExpensesPage() {
                     .amount-in-words { margin-bottom: 30px; }
                     .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 50px; text-align: center; }
                     .signatures > div { border-top: 1px solid #000; padding-top: 8px; font-weight: bold; }
+                    .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
                 </style>
                 </head>
                 <body>
                     <div class="voucher-container">
+                      <div class="content-wrap">
                         <div class="header">
                             ${settings.logo ? `<img src="${settings.logo}" alt="Logo">` : ''}
                             <h1>${settings.name}</h1>
@@ -372,6 +376,10 @@ export default function ExpensesPage() {
                             <div>Approved By</div>
                             <div>Received By</div>
                         </div>
+                      </div>
+                      <div class="footer">
+                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+                      </div>
                     </div>
                 </body>
             </html>
@@ -406,7 +414,8 @@ export default function ExpensesPage() {
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                   }
                   body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
-                  .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+                  .report-container { max-width: 1000px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
+                  .content-wrap { flex: 1; }
                   .academy-details { text-align: center; margin-bottom: 2rem; }
                   .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
                   .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
@@ -417,26 +426,32 @@ export default function ExpensesPage() {
                   th, td { padding: 8px 10px; border: 1px solid #ddd; }
                   th { font-weight: bold; background-color: #f2f2f2; }
                   tr:nth-child(even) { background-color: #f9f9f9; }
+                  .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
                 </style>
               </head>
               <body>
                 <div class="report-container">
-                  <div class="academy-details">
-                    ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
-                    <h1>${settings.name}</h1>
-                    <p>${settings.address}</p>
-                    <p>Phone: ${settings.phone}</p>
-                  </div>
-                  <div class="report-title">
-                    <h2>Expense Report</h2>
-                  </div>
-                  <table>
-                    <thead>
-                        <tr><th>Date</th><th>Description</th><th>Category</th><th>Source</th><th style="text-align: right;">Amount</th></tr>
-                    </thead>
-                    <tbody>${tableRows}</tbody>
-                  </table>
-                  <h3 style="text-align: right; margin-top: 1rem;">Total Expenses: ${totalExpenses.toLocaleString()} PKR</h3>
+                    <div class="content-wrap">
+                      <div class="academy-details">
+                        ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                        <h1>${settings.name}</h1>
+                        <p>${settings.address}</p>
+                        <p>Phone: ${settings.phone}</p>
+                      </div>
+                      <div class="report-title">
+                        <h2>Expense Report</h2>
+                      </div>
+                      <table>
+                        <thead>
+                            <tr><th>Date</th><th>Description</th><th>Category</th><th>Source</th><th style="text-align: right;">Amount</th></tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                      </table>
+                      <h3 style="text-align: right; margin-top: 1rem;">Total Expenses: ${totalExpenses.toLocaleString()} PKR</h3>
+                    </div>
+                    <div class="footer">
+                        Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+                    </div>
                 </div>
               </body>
             </html>
@@ -552,5 +567,3 @@ export default function ExpensesPage() {
     </div>
   );
 }
-
-    

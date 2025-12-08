@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -120,7 +121,8 @@ export function ClassAttendanceReport() {
                             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 8pt; }
                         }
                         body { font-family: 'Segoe UI', sans-serif; }
-                        .report-container { max-width: 1100px; margin: auto; }
+                        .report-container { max-width: 1100px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+                        .content-wrap { flex: 1; }
                         .academy-details { text-align: center; margin-bottom: 1rem; }
                         .academy-details h1 { font-size: 1.5rem; }
                         .report-title { text-align: center; margin-bottom: 1rem; }
@@ -130,31 +132,37 @@ export function ClassAttendanceReport() {
                         td.p { background-color: #d1fae5; color: #065f46; }
                         td.a { background-color: #fee2e2; color: #991b1b; }
                         td.l { background-color: #fef9c3; color: #854d0e; }
+                        .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
                      </style>
                 </head>
                 <body>
                     <div class="report-container">
-                        <div class="academy-details">
-                            ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
-                            <h1>${settings.name}</h1>
-                            <p>${settings.phone}</p>
+                        <div class="content-wrap">
+                            <div class="academy-details">
+                                ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
+                                <h1>${settings.name}</h1>
+                                <p>${settings.phone}</p>
+                            </div>
+                            <div class="report-title">
+                                <h2>Class Attendance Report</h2>
+                                <p>${className} - ${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}</p>
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="min-width: 120px;">Student Name</th>
+                                        ${thDays}
+                                        <th style="background-color: #d1fae5;">P</th>
+                                        <th style="background-color: #fee2e2;">A</th>
+                                        <th style="background-color: #fef9c3;">L</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${tbodyRows}</tbody>
+                            </table>
                         </div>
-                        <div class="report-title">
-                            <h2>Class Attendance Report</h2>
-                            <p>${className} - ${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}</p>
+                        <div class="footer">
+                            Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
                         </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="min-width: 120px;">Student Name</th>
-                                    ${thDays}
-                                    <th style="background-color: #d1fae5;">P</th>
-                                    <th style="background-color: #fee2e2;">A</th>
-                                    <th style="background-color: #fef9c3;">L</th>
-                                </tr>
-                            </thead>
-                            <tbody>${tbodyRows}</tbody>
-                        </table>
                     </div>
                 </body>
             </html>
@@ -196,7 +204,8 @@ export function ClassAttendanceReport() {
                             body { font-size: 8pt; }
                         }
                         body { font-family: 'Segoe UI', sans-serif; }
-                        .report-container { max-width: 1100px; margin: auto; }
+                        .report-container { max-width: 1100px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+                        .content-wrap { flex: 1; }
                         .academy-details { text-align: center; margin-bottom: 1rem; }
                         .academy-details h1 { font-size: 1.5rem; margin: 0; }
                         .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
@@ -206,30 +215,36 @@ export function ClassAttendanceReport() {
                         table { width: 100%; border-collapse: collapse; }
                         th, td { border: 1px solid #333; padding: 4px; text-align: center; }
                         th { background-color: #f2f2f2; }
+                        .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
                      </style>
                 </head>
                 <body>
                     <div class="report-container">
-                        <div class="academy-details">
-                            ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
-                            <h1>${settings.name}</h1>
-                            <p>${settings.address}</p>
-                            <p>${settings.phone}</p>
+                        <div class="content-wrap">
+                            <div class="academy-details">
+                                ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
+                                <h1>${settings.name}</h1>
+                                <p>${settings.address}</p>
+                                <p>${settings.phone}</p>
+                            </div>
+                            <div class="report-title">
+                                <h2>Attendance Sheet</h2>
+                                <p>${className} - ${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}</p>
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="min-width: 60px; text-align: left;">Roll #</th>
+                                        <th style="min-width: 120px; text-align: left;">Student Name</th>
+                                        ${thDays}
+                                    </tr>
+                                </thead>
+                                <tbody>${tbodyRows}</tbody>
+                            </table>
                         </div>
-                        <div class="report-title">
-                            <h2>Attendance Sheet</h2>
-                            <p>${className} - ${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}</p>
+                        <div class="footer">
+                            Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
                         </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="min-width: 60px; text-align: left;">Roll #</th>
-                                    <th style="min-width: 120px; text-align: left;">Student Name</th>
-                                    ${thDays}
-                                </tr>
-                            </thead>
-                            <tbody>${tbodyRows}</tbody>
-                        </table>
                     </div>
                 </body>
             </html>
@@ -327,5 +342,3 @@ export function ClassAttendanceReport() {
         </div>
     );
 }
-
-    

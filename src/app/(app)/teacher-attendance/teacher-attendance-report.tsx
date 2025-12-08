@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -81,7 +82,8 @@ export function TeacherAttendanceReport() {
                   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
                 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
-                .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+                .report-container { max-width: 1000px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
+                .content-wrap { flex: 1; }
                 .academy-details { text-align: center; margin-bottom: 2rem; }
                 .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
                 .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
@@ -107,42 +109,47 @@ export function TeacherAttendanceReport() {
                 .summary-card { padding: 1rem; border-radius: 8px; }
                 .summary-card .label { font-size: 0.9rem; }
                 .summary-card .count { font-size: 2rem; font-weight: bold; }
-                
+                .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
               </style>
             </head>
             <body>
               <div class="report-container">
-                <div class="academy-details">
-                  ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
-                  <h1>${settings.name}</h1>
-                  <p>${settings.address}</p>
-                  <p>Phone: ${settings.phone}</p>
-                </div>
-                <div class="report-title">
-                  <h2>Teacher Attendance Report</h2>
-                   <p>${selectedTeacher.name}</p>
-                  <p style="font-size: 1rem;">${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}</p>
-                </div>
+                <div class="content-wrap">
+                    <div class="academy-details">
+                    ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                    <h1>${settings.name}</h1>
+                    <p>${settings.address}</p>
+                    <p>Phone: ${settings.phone}</p>
+                    </div>
+                    <div class="report-title">
+                    <h2>Teacher Attendance Report</h2>
+                    <p>${selectedTeacher.name}</p>
+                    <p style="font-size: 1rem;">${months.find(m => m.value === selectedMonth)?.label}, ${selectedYear}</p>
+                    </div>
 
-                <div class="grid-container">
-                    <div>${calendarHtml}</div>
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-semibold">Attendance Summary</h3>
-                        <div class="summary-grid">
-                            <div class="summary-card bg-green-100">
-                                <p class="label text-green-800">Present</p>
-                                <p class="count text-green-700">${summary.Present || 0}</p>
-                            </div>
-                            <div class="summary-card bg-red-100">
-                                <p class="label text-red-800">Absent</p>
-                                <p class="count text-red-700">${summary.Absent || 0}</p>
-                            </div>
-                            <div class="summary-card bg-yellow-100">
-                                <p class="label text-yellow-800">Leave</p>
-                                <p class="count text-yellow-700">${summary.Leave || 0}</p>
+                    <div class="grid-container">
+                        <div>${calendarHtml}</div>
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-semibold">Attendance Summary</h3>
+                            <div class="summary-grid">
+                                <div class="summary-card bg-green-100">
+                                    <p class="label text-green-800">Present</p>
+                                    <p class="count text-green-700">${summary.Present || 0}</p>
+                                </div>
+                                <div class="summary-card bg-red-100">
+                                    <p class="label text-red-800">Absent</p>
+                                    <p class="count text-red-700">${summary.Absent || 0}</p>
+                                </div>
+                                <div class="summary-card bg-yellow-100">
+                                    <p class="label text-yellow-800">Leave</p>
+                                    <p class="count text-yellow-700">${summary.Leave || 0}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="footer">
+                    Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
                 </div>
               </div>
             </body>
@@ -248,5 +255,3 @@ export function TeacherAttendanceReport() {
         </div>
     );
 }
-
-    

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -92,7 +93,8 @@ export default function SeatingPlanPage() {
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
             body { font-family: 'Segoe UI', sans-serif; }
-            .report-container { max-width: 1100px; margin: auto; }
+            .report-container { max-width: 1100px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+            .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 1rem; }
             .academy-details h1 { font-size: 1.5rem; }
             .report-title { text-align: center; margin-bottom: 1rem; }
@@ -102,25 +104,31 @@ export default function SeatingPlanPage() {
             th, td { border: 1px solid #000; padding: 8px; text-align: center; vertical-align: middle; }
             th { font-weight: bold; background-color: #f2f2f2; }
             td { height: 80px; }
+            .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
           </style>
         </head>
         <body>
           <div class="report-container">
-            <div class="academy-details">
-              ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
-              <h1>${settings.name}</h1>
-               <p>${settings.phone}</p>
+            <div class="content-wrap">
+              <div class="academy-details">
+                ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
+                <h1>${settings.name}</h1>
+                <p>${settings.phone}</p>
+              </div>
+              <div class="report-title">
+                <h2>Seating Plan</h2>
+                <p><strong>Exam:</strong> ${examName}</p>
+                <p><strong>Class:</strong> ${className}</p>
+                <p><strong>Date:</strong> ${currentDate}</p>
+              </div>
+              <table>
+                ${tableHeader}
+                <tbody>${tableRows}</tbody>
+              </table>
             </div>
-            <div class="report-title">
-              <h2>Seating Plan</h2>
-              <p><strong>Exam:</strong> ${examName}</p>
-              <p><strong>Class:</strong> ${className}</p>
-              <p><strong>Date:</strong> ${currentDate}</p>
+            <div class="footer">
+                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
             </div>
-            <table>
-              ${tableHeader}
-              <tbody>${tableRows}</tbody>
-            </table>
           </div>
         </body>
       </html>
@@ -222,5 +230,3 @@ export default function SeatingPlanPage() {
     </div>
   );
 }
-
-    

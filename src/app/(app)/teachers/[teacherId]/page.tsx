@@ -223,7 +223,8 @@ export default function TeacherProfilePage() {
               color: #000;
               font-size: 10pt;
             }
-            .report-container { max-width: 800px; margin: auto; }
+            .report-container { max-width: 800px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+            .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
             .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
             .academy-details h1 { font-size: 1.5em; font-weight: bold; margin: 0; }
@@ -241,47 +242,52 @@ export default function TeacherProfilePage() {
             table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9em; }
             th, td { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; }
             th { font-weight: bold; color: #6b7280; }
-            .footer { text-align: right; margin-top: 2rem; font-size: 0.8rem; color: #6b7280; }
+            .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
           </style>
         </head>
         <body>
           <div class="report-container">
-            <div class="academy-details">
-              ${logo ? `<img src="${logo}" alt="Academy Logo" />` : ''}
-              <h1>${name}</h1>
-              <p>${address}</p>
-              <p>Phone: ${phone}</p>
+            <div class="content-wrap">
+              <div class="academy-details">
+                ${logo ? `<img src="${logo}" alt="Academy Logo" />` : ''}
+                <h1>${name}</h1>
+                <p>${address}</p>
+                <p>Phone: ${phone}</p>
+              </div>
+              <div class="report-title">
+                <h2>${title}</h2>
+                <p>For: ${teacherName} | Date: ${formattedReportDate}</p>
+              </div>
+              <div class="stats-grid">
+                  <div class="stat-card">
+                      <p>Total Gross Earnings</p>
+                      <p class="amount">${grossEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                  </div>
+                  <div class="stat-card">
+                      <p>Teacher's Share (70%)</p>
+                      <p class="amount teacher-share">${teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                  </div>
+                  <div class="stat-card">
+                      <p>Academy's Share (30%)</p>
+                      <p class="amount academy-share">${academyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                  </div>
+              </div>
+              <h3 class="breakdown-title">Student Breakdown</h3>
+              <table>
+                  <thead>
+                      <tr>
+                          <th>Student</th>
+                          <th>Class</th>
+                          <th>Subject</th>
+                          <th style="text-align: right;">Fee Share</th>
+                      </tr>
+                  </thead>
+                  <tbody>${studentRows}</tbody>
+              </table>
             </div>
-            <div class="report-title">
-              <h2>${title}</h2>
-              <p>For: ${teacherName} | Date: ${formattedReportDate}</p>
+            <div class="footer">
+                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
             </div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <p>Total Gross Earnings</p>
-                    <p class="amount">${grossEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
-                </div>
-                <div class="stat-card">
-                    <p>Teacher's Share (70%)</p>
-                    <p class="amount teacher-share">${teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
-                </div>
-                <div class="stat-card">
-                    <p>Academy's Share (30%)</p>
-                    <p class="amount academy-share">${academyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
-                </div>
-            </div>
-            <h3 class="breakdown-title">Student Breakdown</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Class</th>
-                        <th>Subject</th>
-                        <th style="text-align: right;">Fee Share</th>
-                    </tr>
-                </thead>
-                <tbody>${studentRows}</tbody>
-            </table>
           </div>
         </body>
       </html>

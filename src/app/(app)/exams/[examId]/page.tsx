@@ -14,6 +14,8 @@ import { getExam, getStudentsByClass, saveExamResults } from '@/lib/firebase/fir
 import { Loader2, Printer } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 type EnhancedResult = {
     studentId: string;
@@ -34,6 +36,7 @@ export default function ExamResultsPage() {
   const [results, setResults] = useState<{ [studentId: string]: StudentResult }>({});
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPosition, setShowPosition] = useState(true);
 
   useEffect(() => {
     if (!examId) return;
@@ -43,6 +46,11 @@ export default function ExamResultsPage() {
       const examData = await getExam(examId);
       if (examData) {
         setExam(examData);
+        if (examData.subjects.length <= 1) {
+            setShowPosition(false);
+        } else {
+            setShowPosition(true);
+        }
         const studentData = await getStudentsByClass(examData.className);
         // Sort students by ID to ensure a consistent order
         const sortedStudents = studentData.sort((a, b) => a.id.localeCompare(b.id));
@@ -201,7 +209,7 @@ export default function ExamResultsPage() {
                 ${marksCells}
                 ${exam.subjects.length > 1 ? `<td style="text-align: center; font-weight: bold;">${enhanced?.totalMarks ?? 0}</td>` : ''}
                 <td style="text-align: center;">${enhanced?.percentage.toFixed(2) ?? '0.00'}%</td>
-                <td style="text-align: center; font-weight: bold;">${enhanced?.position ?? '-'}</td>
+                ${showPosition ? `<td style="text-align: center; font-weight: bold;">${enhanced?.position ?? '-'}</td>` : ''}
             </tr>
         `;
     }).join('');
@@ -223,7 +231,8 @@ export default function ExamResultsPage() {
               color: #000;
               font-size: 10pt;
             }
-            .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+            .report-container { max-width: 1000px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
+            .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
             .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
@@ -235,37 +244,43 @@ export default function ExamResultsPage() {
             th, td { padding: 8px 10px; border: 1px solid #ddd; }
             th { font-weight: bold; background-color: #f2f2f2; text-align: center; }
             tr:nth-child(even) { background-color: #f9f9f9; }
+            .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
           </style>
         </head>
         <body>
           <div class="report-container">
-            <div class="academy-details">
-              ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
-              <h1>${settings.name}</h1>
-              <p>${settings.address}</p>
-              <p>Phone: ${settings.phone}</p>
+            <div class="content-wrap">
+              <div class="academy-details">
+                ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                <h1>${settings.name}</h1>
+                <p>${settings.address}</p>
+                <p>Phone: ${settings.phone}</p>
+              </div>
+              <div class="report-title">
+                <h2>Exam Results</h2>
+                <p>${exam.name} - ${exam.className}</p>
+                <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Roll #</th>
+                    <th>Student Name</th>
+                    <th>Father's Name</th>
+                    ${tableHeader}
+                    ${exam.subjects.length > 1 ? `<th>Total</th>` : ''}
+                    <th>%age</th>
+                    ${showPosition ? '<th>Pos.</th>' : ''}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRows}
+                </tbody>
+              </table>
             </div>
-            <div class="report-title">
-              <h2>Exam Results</h2>
-              <p>${exam.name} - ${exam.className}</p>
-              <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
+             <div class="footer">
+                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Roll #</th>
-                  <th>Student Name</th>
-                  <th>Father's Name</th>
-                  ${tableHeader}
-                  ${exam.subjects.length > 1 ? `<th>Total</th>` : ''}
-                  <th>%age</th>
-                  <th>Pos.</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${tableRows}
-              </tbody>
-            </table>
           </div>
         </body>
       </html>
@@ -290,12 +305,16 @@ export default function ExamResultsPage() {
       </div>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <CardTitle>Enter Marks</CardTitle>
               <CardDescription>Enter the marks obtained or 'A' for absent students.</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-4">
+               <div className="flex items-center space-x-2">
+                <Switch id="show-position" checked={showPosition} onCheckedChange={setShowPosition} />
+                <Label htmlFor="show-position">Show Position</Label>
+              </div>
               <Button onClick={handleSaveResults} disabled={isSaving}>
                 {isSaving && <Loader2 className="mr-2 animate-spin" />}
                 Save Results
@@ -320,7 +339,7 @@ export default function ExamResultsPage() {
                   {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Obtained</TableHead>}
                   {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Total</TableHead>}
                   <TableHead className="text-center font-bold">%</TableHead>
-                  <TableHead className="text-center font-bold">Pos.</TableHead>
+                  {showPosition && <TableHead className="text-center font-bold">Pos.</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -336,7 +355,7 @@ export default function ExamResultsPage() {
                     {exam.subjects.length > 1 && <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>}
                     {exam.subjects.length > 1 && <TableCell></TableCell>}
                     <TableCell></TableCell>
-                    <TableCell></TableCell>
+                    {showPosition && <TableCell></TableCell>}
                 </TableRow>
                 {students.map(student => {
                    const enhanced = getStudentEnhancedResult(student.id);
@@ -361,7 +380,7 @@ export default function ExamResultsPage() {
                         {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>}
                         {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>}
                         <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
-                        <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>
+                        {showPosition && <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>}
                     </TableRow>
                    )
                 })}
