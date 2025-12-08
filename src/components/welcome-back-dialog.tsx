@@ -20,7 +20,7 @@ export function WelcomeBackDialog() {
     if (showWelcomeBack) {
       const timer = setTimeout(() => {
         setShowWelcomeBack(false);
-      }, 2000); // Auto-close after 2 seconds
+      }, 5000); // Auto-close after 5 seconds
 
       return () => clearTimeout(timer);
     }
@@ -38,7 +38,7 @@ export function WelcomeBackDialog() {
           <DialogTitle className="text-2xl font-bold">
             Welcome Back
           </DialogTitle>
-          <DialogDescription>Developed by SchoolUP</DialogDescription>
+          <DialogDescription>Developed by Mian Mudassar</DialogDescription>
         </DialogHeader>
       </DialogContent>
     </Dialog>
