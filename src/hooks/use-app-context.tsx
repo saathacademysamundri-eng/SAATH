@@ -70,16 +70,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async (isInitialLoad = false) => {
-    // Only show loader on initial hard load
-    if (sessionStorage.getItem('appContextCache') === null) {
-      setLoading(true);
-    } else {
-        setLoading(false);
-    }
+    const hasCache = sessionStorage.getItem('appContextCache') !== null;
+    setLoading(!hasCache);
 
     try {
       if (isInitialLoad) {
-        // Run fee generation check on the very first load.
         await checkAndGenerateMonthlyFees();
       }
 
@@ -131,7 +126,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error) {
       console.error("Failed to fetch app data:", error);
-      // Handle error appropriately, maybe show a toast
     } finally {
        setLoading(false);
     }
