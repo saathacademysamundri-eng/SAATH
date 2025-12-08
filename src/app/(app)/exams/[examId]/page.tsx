@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -231,7 +232,8 @@ export default function ExamResultsPage() {
               color: #000;
               font-size: 10pt;
             }
-            .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+            .report-container { max-width: 1000px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
+            .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
             .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
@@ -243,37 +245,43 @@ export default function ExamResultsPage() {
             th, td { padding: 8px 10px; border: 1px solid #ddd; }
             th { font-weight: bold; background-color: #f2f2f2; text-align: center; }
             tr:nth-child(even) { background-color: #f9f9f9; }
+            .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
           </style>
         </head>
         <body>
           <div class="report-container">
-            <div class="academy-details">
-              ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
-              <h1>${settings.name}</h1>
-              <p>${settings.address}</p>
-              <p>Phone: ${settings.phone}</p>
+            <div class="content-wrap">
+              <div class="academy-details">
+                ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                <h1>${settings.name}</h1>
+                <p>${settings.address}</p>
+                <p>Phone: ${settings.phone}</p>
+              </div>
+              <div class="report-title">
+                <h2>Exam Results</h2>
+                <p>${exam.name} - ${exam.className}</p>
+                <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Roll #</th>
+                    <th>Student Name</th>
+                    <th>Father's Name</th>
+                    ${tableHeader}
+                    ${exam.subjects.length > 1 ? `<th>Total</th>` : ''}
+                    <th>%age</th>
+                    ${showPosition ? '<th>Pos.</th>' : ''}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRows}
+                </tbody>
+              </table>
             </div>
-            <div class="report-title">
-              <h2>Exam Results</h2>
-              <p>${exam.name} - ${exam.className}</p>
-              <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
+             <div class="footer">
+                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by Mian Mudassar.
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Roll #</th>
-                  <th>Student Name</th>
-                  <th>Father's Name</th>
-                  ${tableHeader}
-                  ${exam.subjects.length > 1 ? `<th>Total</th>` : ''}
-                  <th>%age</th>
-                  ${showPosition ? '<th>Pos.</th>' : ''}
-                </tr>
-              </thead>
-              <tbody>
-                ${tableRows}
-              </tbody>
-            </table>
           </div>
         </body>
       </html>
@@ -385,3 +393,4 @@ export default function ExamResultsPage() {
     </div>
   );
 }
+

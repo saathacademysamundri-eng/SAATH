@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,7 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { TrendingUp, Printer, X, TrendingDown, Wallet, BookOpen } from 'lucide-react';
+import { TrendingUp, Printer, X, TrendingDown, Wallet, BookOpen, UserCheck, ChevronsRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,7 @@ const months = [
 ];
 
 export default function AcademySharePage() {
-  const { income, expenses, loading: isAppLoading } = useAppContext();
+  const { allPayouts, loading: isAppLoading, expenses } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const router = useRouter();
@@ -34,32 +35,34 @@ export default function AcademySharePage() {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
   const availableYears = useMemo(() => {
-    const years = new Set(income.map(p => p.date.getFullYear().toString()));
+    const years = new Set(allPayouts.map(p => p.payoutDate.getFullYear().toString()));
     return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
-  }, [income]);
+  }, [allPayouts]);
 
-  const filteredIncome = useMemo(() => {
-    if (!selectedYear) return income;
+  const filteredPayouts = useMemo(() => {
+    if (!selectedYear) return allPayouts;
 
-    return income.filter(inc => {
-      const incYear = inc.date.getFullYear().toString();
-      const incMonth = (inc.date.getMonth() + 1).toString();
+    return allPayouts.filter(payout => {
+      const payoutYear = payout.payoutDate.getFullYear().toString();
+      const payoutMonth = (payout.payoutDate.getMonth() + 1).toString();
       
       if (selectedYear && !selectedMonth) {
-        return incYear === selectedYear;
+        return payoutYear === selectedYear;
       }
       if (selectedYear && selectedMonth) {
-        return incYear === selectedYear && incMonth === selectedMonth;
+        return payoutYear === selectedYear && payoutMonth === selectedMonth;
       }
       return true;
     });
-  }, [income, selectedYear, selectedMonth]);
+  }, [allPayouts, selectedYear, selectedMonth]);
 
-  const totalAcademyEarnings = useMemo(() => {
-    // Academy gets 30% of all income from student fees
-    const grossEarnings = filteredIncome.reduce((acc, curr) => acc + curr.amount, 0);
-    return grossEarnings * 0.3;
-  }, [filteredIncome]);
+  const totalAcademyShare = useMemo(() => {
+    return filteredPayouts.reduce((acc, curr) => acc + (curr.academyShare || 0), 0);
+  }, [filteredPayouts]);
+  
+  const totalTeacherPayouts = useMemo(() => {
+    return filteredPayouts.reduce((acc, curr) => acc + curr.amount, 0);
+  }, [filteredPayouts]);
 
    const filteredManualExpenses = useMemo(() => {
     const manualExpenses = expenses.filter(e => e.source === 'manual');
@@ -79,7 +82,7 @@ export default function AcademySharePage() {
     return filteredManualExpenses.reduce((acc, curr) => acc + curr.amount, 0);
   }, [filteredManualExpenses]);
 
-  const netAcademyEarnings = totalAcademyEarnings - totalManualExpenses;
+  const netAcademyEarnings = totalAcademyShare - totalManualExpenses - totalTeacherPayouts;
 
   const handleClearFilters = () => {
       setSelectedYear(null);
@@ -115,6 +118,15 @@ export default function AcademySharePage() {
           <td style="text-align: right;">${item.amount.toLocaleString()} PKR</td>
         </tr>
       `).join('');
+      
+    const payoutTableHeaders = ["Teacher", "Payout Date", "Amount"];
+    const payoutTableRows = filteredPayouts.map(item => `
+        <tr>
+          <td>${item.teacherName}</td>
+          <td>${format(item.payoutDate, 'PPP')}</td>
+          <td style="text-align: right;">${item.amount.toLocaleString()} PKR</td>
+        </tr>
+      `).join('');
 
     const printHtml = `
       <html>
@@ -126,7 +138,8 @@ export default function AcademySharePage() {
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
-            .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+            .report-container { max-width: 1000px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
+            .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
             .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
@@ -134,7 +147,7 @@ export default function AcademySharePage() {
             .report-title { text-align: center; margin: 2rem 0; }
             .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0 0 0.5rem 0; }
             .report-title p { font-size: 1rem; color: #555; }
-            .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; text-align: center; }
+            .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; text-align: center; }
             .summary-card { padding: 1.5rem; border-radius: 8px; }
             .summary-card p { margin: 0; font-size: 1.1rem; color: #555; }
             .summary-card .amount { font-size: 2rem; font-weight: bold; margin-top: 0.5rem; }
@@ -142,6 +155,8 @@ export default function AcademySharePage() {
             .income .amount { color: #2e7d32; }
             .expense { background-color: #ffebee; }
             .expense .amount { color: #c62828; }
+            .payout { background-color: #fff3e0; }
+            .payout .amount { color: #e65100; }
             .net { background-color: #e3f2fd; }
             .net .amount { color: #1565c0; }
             table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; margin-bottom: 2rem; }
@@ -152,53 +167,75 @@ export default function AcademySharePage() {
              .final-summary th { text-align: left; }
              .final-summary td { text-align: right; }
              h3.table-title { font-size: 1.2rem; font-weight: bold; margin: 2rem 0 1rem 0; }
+             .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
           </style>
         </head>
         <body>
           <div class="report-container">
-            <div class="academy-details">
-              ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
-              <h1>${settings.name}</h1>
-              <p>${settings.address}</p>
-              <p>Phone: ${settings.phone}</p>
-            </div>
-            <div class="report-title">
-              <h2>${reportTitle}</h2>
-              <p>${dateRangeString}</p>
-            </div>
-             <div class="summary-grid">
-                <div class="summary-card income">
-                    <p>Total Academy Share (30%)</p>
-                    <p class="amount">${totalAcademyEarnings.toLocaleString()} PKR</p>
+            <div class="content-wrap">
+                <div class="academy-details">
+                ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                <h1>${settings.name}</h1>
+                <p>${settings.address}</p>
+                <p>Phone: ${settings.phone}</p>
                 </div>
-                 <div class="summary-card expense">
-                    <p>Total Manual Expenses</p>
-                    <p class="amount">${totalManualExpenses.toLocaleString()} PKR</p>
+                <div class="report-title">
+                <h2>${reportTitle}</h2>
+                <p>${dateRangeString}</p>
                 </div>
-                <div class="summary-card net">
-                    <p>Net Academy Profit</p>
-                    <p class="amount">${netAcademyEarnings.toLocaleString()} PKR</p>
+                <div class="summary-grid">
+                    <div class="summary-card income">
+                        <p>Total Academy Share</p>
+                        <p class="amount">${totalAcademyShare.toLocaleString()} PKR</p>
+                    </div>
+                    <div class="summary-card payout">
+                        <p>Total Teacher Payouts</p>
+                        <p class="amount">${totalTeacherPayouts.toLocaleString()} PKR</p>
+                    </div>
+                    <div class="summary-card expense">
+                        <p>Total Manual Expenses</p>
+                        <p class="amount">${totalManualExpenses.toLocaleString()} PKR</p>
+                    </div>
+                    <div class="summary-card net">
+                        <p>Net Academy Profit</p>
+                        <p class="amount">${netAcademyEarnings.toLocaleString()} PKR</p>
+                    </div>
                 </div>
-            </div>
-            
-             <h3 class="table-title">Manual Expense Breakdown</h3>
-             <table>
-              <thead>
-                <tr>
-                  ${expenseTableHeaders.map(h => `<th>${h}</th>`).join('')}
-                </tr>
-              </thead>
-              <tbody>
-                ${expenseTableRows.length > 0 ? expenseTableRows : `<tr><td colspan="${expenseTableHeaders.length}" style="text-align: center;">No manual expenses for this period.</td></tr>`}
-              </tbody>
-            </table>
+                
+                <h3 class="table-title">Teacher Payout Breakdown</h3>
+                <table>
+                    <thead>
+                        <tr>
+                        ${payoutTableHeaders.map(h => `<th>${h}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${payoutTableRows.length > 0 ? payoutTableRows : `<tr><td colspan="${payoutTableHeaders.length}" style="text-align: center;">No teacher payouts for this period.</td></tr>`}
+                    </tbody>
+                </table>
+                
+                <h3 class="table-title">Manual Expense Breakdown</h3>
+                <table>
+                <thead>
+                    <tr>
+                    ${expenseTableHeaders.map(h => `<th>${h}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${expenseTableRows.length > 0 ? expenseTableRows : `<tr><td colspan="${expenseTableHeaders.length}" style="text-align: center;">No manual expenses for this period.</td></tr>`}
+                </tbody>
+                </table>
 
-            <table class="final-summary">
-                <tr><th>Total Academy Share</th><td>${totalAcademyEarnings.toLocaleString()} PKR</td></tr>
-                <tr><th>Total Manual Expenses</th><td>-${totalManualExpenses.toLocaleString()} PKR</td></tr>
-                <tr style="font-weight: bold; border-top: 2px solid #333;"><th>Net Profit</th><td>${netAcademyEarnings.toLocaleString()} PKR</td></tr>
-            </table>
-
+                <table class="final-summary">
+                    <tr><th>Total Academy Share</th><td>${totalAcademyShare.toLocaleString()} PKR</td></tr>
+                    <tr><th>Total Teacher Payouts</th><td>-${totalTeacherPayouts.toLocaleString()} PKR</td></tr>
+                    <tr><th>Total Manual Expenses</th><td>-${totalManualExpenses.toLocaleString()} PKR</td></tr>
+                    <tr style="font-weight: bold; border-top: 2px solid #333;"><th>Net Profit</th><td>${netAcademyEarnings.toLocaleString()} PKR</td></tr>
+                </table>
+            </div>
+            <div class="footer">
+                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by Mian Mudassar.
+            </div>
           </div>
         </body>
       </html>
@@ -213,7 +250,7 @@ export default function AcademySharePage() {
         <div>
             <h1 className="text-2xl font-bold tracking-tight">Academy Share</h1>
             <p className="text-muted-foreground">
-                An overview of the academy's 30% share from collected student fees.
+                An overview of the academy's share from collected student fees after payouts.
             </p>
         </div>
         <div className="flex items-center gap-2">
@@ -247,7 +284,7 @@ export default function AcademySharePage() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -255,12 +292,26 @@ export default function AcademySharePage() {
                   Total Academy Share
               </CardTitle>
               <CardDescription>
-                  The cumulative 30% share from all collected student fees for the selected period.
+                  The cumulative 30% share from all payouts for the selected period.
               </CardDescription>
           </CardHeader>
           <CardContent>
-              <p className="text-4xl font-bold text-primary">{totalAcademyEarnings.toLocaleString()} PKR</p>
+              <p className="text-4xl font-bold text-primary">{totalAcademyShare.toLocaleString()} PKR</p>
           </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <UserCheck className="text-orange-600" />
+                    Total Teacher Payouts
+                </CardTitle>
+                <CardDescription>
+                    The total amount paid out to teachers for the selected period.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="text-4xl font-bold text-orange-600">{totalTeacherPayouts.toLocaleString()} PKR</p>
+            </CardContent>
         </Card>
         <Card>
           <CardHeader>
@@ -283,7 +334,7 @@ export default function AcademySharePage() {
                   Net Academy Profit
               </CardTitle>
               <CardDescription>
-                  The academy's final profit after deducting manual expenses.
+                  The academy's final profit after deducting all expenses.
               </CardDescription>
           </CardHeader>
           <CardContent>
@@ -292,7 +343,47 @@ export default function AcademySharePage() {
         </Card>
       </div>
 
-    <div className="grid grid-cols-1">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+       <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <ChevronsRight />
+                    Teacher Payout Breakdown
+                </CardTitle>
+                <CardDescription>
+                    A detailed list of all teacher salary payouts for the selected period.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Teacher</TableHead>
+                            <TableHead>Payout Date</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredPayouts.map((payout) => (
+                            <TableRow key={payout.id}>
+                                <TableCell className="font-medium">{payout.teacherName}</TableCell>
+                                <TableCell>{format(payout.payoutDate, 'PPP')}</TableCell>
+                                <TableCell className="text-right font-medium">
+                                    {payout.amount.toLocaleString()} PKR
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                        {filteredPayouts.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
+                                    No teacher payouts for this period.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+       </Card>
        <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
