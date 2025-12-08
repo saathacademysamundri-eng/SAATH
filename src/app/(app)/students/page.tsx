@@ -192,26 +192,33 @@ export default function StudentsPage() {
           <style>
             @media print { @page { size: A4; margin: 0.75in; } }
             body { font-family: 'Segoe UI', sans-serif; }
-            .report-container { max-width: 800px; margin: auto; }
+            .report-container { max-width: 800px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+            .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 1rem; }
             h1 { font-size: 1.5rem; }
             table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
             th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
             th { background-color: #f2f2f2; }
+            .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
           </style>
         </head>
         <body>
           <div class="report-container">
-             <div class="academy-details">
-                ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
-                <h1>${settings.name}</h1>
-                <p>${settings.phone}</p>
+            <div class="content-wrap">
+              <div class="academy-details">
+                  ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 50px; margin: auto;">` : ''}
+                  <h1>${settings.name}</h1>
+                  <p>${settings.phone}</p>
+              </div>
+              <h2>Selected Students List</h2>
+              <table>
+                <thead><tr><th>Roll #</th><th>Name</th><th>Father's Name</th><th>Phone</th></tr></thead>
+                <tbody>${tableRows}</tbody>
+              </table>
             </div>
-            <h2>Selected Students List</h2>
-            <table>
-              <thead><tr><th>Roll #</th><th>Name</th><th>Father's Name</th><th>Phone</th></tr></thead>
-              <tbody>${tableRows}</tbody>
-            </table>
+            <div class="footer">
+                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+            </div>
           </div>
         </body>
       </html>
@@ -517,4 +524,3 @@ export default function StudentsPage() {
     </div>
   );
 }
-

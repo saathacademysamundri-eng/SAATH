@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -119,7 +120,8 @@ export function BlankSheetDialog() {
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
-            .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+            .report-container { max-width: 1000px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
+            .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
             .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
@@ -130,30 +132,36 @@ export function BlankSheetDialog() {
             table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
             th, td { padding: 8px 10px; border: 1px solid #333; }
             th { font-weight: bold; background-color: #f2f2f2; text-align: center; }
+            .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
           </style>
         </head>
         <body>
           <div class="report-container">
-            <div class="academy-details">
-              ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
-              <h1>${settings.name}</h1>
-              <p>${settings.address}</p>
-              <p>Phone: ${settings.phone}</p>
+            <div class="content-wrap">
+              <div class="academy-details">
+                ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                <h1>${settings.name}</h1>
+                <p>${settings.address}</p>
+                <p>Phone: ${settings.phone}</p>
+              </div>
+              <div class="report-title">
+                <h2>${reportTitle}</h2>
+                ${subTitle}
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    ${tableHeaders.map(h => `<th>${h}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRows}
+                </tbody>
+              </table>
             </div>
-            <div class="report-title">
-              <h2>${reportTitle}</h2>
-              ${subTitle}
+            <div class="footer">
+                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
             </div>
-            <table>
-              <thead>
-                <tr>
-                  ${tableHeaders.map(h => `<th>${h}</th>`).join('')}
-                </tr>
-              </thead>
-              <tbody>
-                ${tableRows}
-              </tbody>
-            </table>
           </div>
         </body>
       </html>

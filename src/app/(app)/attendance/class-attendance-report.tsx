@@ -161,7 +161,7 @@ export function ClassAttendanceReport() {
                             </table>
                         </div>
                         <div class="footer">
-                            Developed by SchoolUP
+                            Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
                         </div>
                     </div>
                 </body>
@@ -243,7 +243,7 @@ export function ClassAttendanceReport() {
                             </table>
                         </div>
                         <div class="footer">
-                            Developed by SchoolUP
+                            Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
                         </div>
                     </div>
                 </body>
@@ -342,5 +342,3 @@ export function ClassAttendanceReport() {
         </div>
     );
 }
-
-    
