@@ -1,6 +1,5 @@
 
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -280,7 +279,7 @@ export default function ExamResultsPage() {
               </table>
             </div>
              <div class="footer">
-                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by Mian Mudassar.
+                Developed by SchoolUP
             </div>
           </div>
         </body>
@@ -393,4 +392,3 @@ export default function ExamResultsPage() {
     </div>
   );
 }
-

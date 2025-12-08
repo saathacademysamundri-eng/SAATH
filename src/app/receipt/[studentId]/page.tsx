@@ -133,7 +133,7 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
 
                         <div class='footer mt-4 space-y-1'>
                             <p>*** Thank you for your payment! ***</p>
-                            <p>Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by Mian Mudassar.</p>
+                            <p>Developed by SchoolUP</p>
                         </div>
                     </div>
                 </body>

@@ -39,7 +39,7 @@ export function WelcomeDialog() {
           <DialogTitle className="text-2xl font-bold">
             Welcome to {settings.name}
           </DialogTitle>
-          <DialogDescription>Developed by Mian Mudassar.</DialogDescription>
+          <DialogDescription>Developed by SchoolUP</DialogDescription>
           <DialogDescription>{currentDate}</DialogDescription>
         </DialogHeader>
       </DialogContent>

@@ -38,7 +38,7 @@ export function WelcomeBackDialog() {
           <DialogTitle className="text-2xl font-bold">
             Welcome Back
           </DialogTitle>
-          <DialogDescription>Developed by Mian Mudassar.</DialogDescription>
+          <DialogDescription>Developed by SchoolUP</DialogDescription>
         </DialogHeader>
       </DialogContent>
     </Dialog>

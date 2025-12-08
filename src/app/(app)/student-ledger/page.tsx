@@ -154,7 +154,7 @@ export default function StudentLedgerPage() {
                 </table>
             </div>
              <div class="footer">
-                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by Mian Mudassar.
+                Developed by SchoolUP
             </div>
           </div>
         </body>
