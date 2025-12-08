@@ -14,6 +14,8 @@ import { getExam, getStudentsByClass, saveExamResults } from '@/lib/firebase/fir
 import { Loader2, Printer } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 type EnhancedResult = {
     studentId: string;
@@ -34,6 +36,7 @@ export default function ExamResultsPage() {
   const [results, setResults] = useState<{ [studentId: string]: StudentResult }>({});
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPosition, setShowPosition] = useState(true);
 
   useEffect(() => {
     if (!examId) return;
@@ -43,6 +46,11 @@ export default function ExamResultsPage() {
       const examData = await getExam(examId);
       if (examData) {
         setExam(examData);
+        if (examData.subjects.length <= 1) {
+            setShowPosition(false);
+        } else {
+            setShowPosition(true);
+        }
         const studentData = await getStudentsByClass(examData.className);
         // Sort students by ID to ensure a consistent order
         const sortedStudents = studentData.sort((a, b) => a.id.localeCompare(b.id));
@@ -201,7 +209,7 @@ export default function ExamResultsPage() {
                 ${marksCells}
                 ${exam.subjects.length > 1 ? `<td style="text-align: center; font-weight: bold;">${enhanced?.totalMarks ?? 0}</td>` : ''}
                 <td style="text-align: center;">${enhanced?.percentage.toFixed(2) ?? '0.00'}%</td>
-                <td style="text-align: center; font-weight: bold;">${enhanced?.position ?? '-'}</td>
+                ${showPosition ? `<td style="text-align: center; font-weight: bold;">${enhanced?.position ?? '-'}</td>` : ''}
             </tr>
         `;
     }).join('');
@@ -259,7 +267,7 @@ export default function ExamResultsPage() {
                   ${tableHeader}
                   ${exam.subjects.length > 1 ? `<th>Total</th>` : ''}
                   <th>%age</th>
-                  <th>Pos.</th>
+                  ${showPosition ? '<th>Pos.</th>' : ''}
                 </tr>
               </thead>
               <tbody>
@@ -290,12 +298,16 @@ export default function ExamResultsPage() {
       </div>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <CardTitle>Enter Marks</CardTitle>
               <CardDescription>Enter the marks obtained or 'A' for absent students.</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-4">
+               <div className="flex items-center space-x-2">
+                <Switch id="show-position" checked={showPosition} onCheckedChange={setShowPosition} />
+                <Label htmlFor="show-position">Show Position</Label>
+              </div>
               <Button onClick={handleSaveResults} disabled={isSaving}>
                 {isSaving && <Loader2 className="mr-2 animate-spin" />}
                 Save Results
@@ -320,7 +332,7 @@ export default function ExamResultsPage() {
                   {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Obtained</TableHead>}
                   {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Total</TableHead>}
                   <TableHead className="text-center font-bold">%</TableHead>
-                  <TableHead className="text-center font-bold">Pos.</TableHead>
+                  {showPosition && <TableHead className="text-center font-bold">Pos.</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -336,7 +348,7 @@ export default function ExamResultsPage() {
                     {exam.subjects.length > 1 && <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>}
                     {exam.subjects.length > 1 && <TableCell></TableCell>}
                     <TableCell></TableCell>
-                    <TableCell></TableCell>
+                    {showPosition && <TableCell></TableCell>}
                 </TableRow>
                 {students.map(student => {
                    const enhanced = getStudentEnhancedResult(student.id);
@@ -361,7 +373,7 @@ export default function ExamResultsPage() {
                         {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>}
                         {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>}
                         <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
-                        <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>
+                        {showPosition && <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>}
                     </TableRow>
                    )
                 })}
