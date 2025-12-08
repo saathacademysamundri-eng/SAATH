@@ -88,7 +88,7 @@ export function LockScreen() {
         </div>
 
         <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Developed by "SchoolUP"</p>
+          <p>Developed by "Mian Mudassar"</p>
           <div className="mt-2 flex justify-center gap-4">
              <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer">
                 <Facebook className="h-4 w-4" />

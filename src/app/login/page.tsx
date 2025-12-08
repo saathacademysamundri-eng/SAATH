@@ -65,7 +65,7 @@ export default function LoginPage() {
             </div>
             <LoginForm />
             <div className="mt-8 text-center text-sm text-gray-500">
-              <p>Developed by "SchoolUP"</p>
+              <p>Developed by "Mian Mudassar"</p>
               <div className="mt-2 flex justify-center gap-4">
                  <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-900">
                     <Facebook className="h-4 w-4" />
