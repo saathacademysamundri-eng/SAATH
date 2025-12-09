@@ -11,12 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { type Exam, type Student, type StudentResult } from '@/lib/data';
 import { getExam, getStudentsByClass, saveExamResults } from '@/lib/firebase/firestore';
-import { Loader2, Printer, MoreHorizontal, FileImage } from 'lucide-react';
+import { Loader2, Printer, FileImage } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import html2canvas from 'html2canvas';
 
 type EnhancedResult = {
@@ -174,40 +173,44 @@ export default function ExamResultsPage() {
     return enhancedResults.find(r => r.studentId === studentId);
   }
 
-  const generatePrintContent = (output: 'print' | 'image') => {
+  const generatePrintContent = () => {
     if (isSettingsLoading || !exam || !students.length || !printRef.current) {
         toast({ variant: 'destructive', title: 'Cannot Proceed', description: 'Data is not fully loaded.' });
         return;
     }
     
     const element = printRef.current;
-    const isPrinting = output === 'print';
-
-    if (isPrinting) {
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please allow popups for this site.' });
-            return;
-        }
-        printWindow.document.write('<html><head><title>Print</title>');
-        const styles = Array.from(document.styleSheets)
-            .map(s => `<link rel="stylesheet" href="${s.href}">`)
-            .join('');
-        printWindow.document.write(styles);
-        printWindow.document.write(`<style>
-            @media print { @page { size: A4; margin: 0.75in; } }
-            body { -webkit-print-color-adjust: exact; }
-            .printable-content { margin: 0; padding: 0; }
-        </style>`);
-        printWindow.document.write('</head><body>');
-        printWindow.document.write(element.innerHTML);
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => printWindow.print(), 500);
-
-    } else { // Save as image
-        html2canvas(element, { 
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please allow popups for this site.' });
+        return;
+    }
+    printWindow.document.write('<html><head><title>Print</title>');
+    const styles = Array.from(document.styleSheets)
+        .map(s => `<link rel="stylesheet" href="${s.href}">`)
+        .join('');
+    printWindow.document.write(styles);
+    printWindow.document.write(`<style>
+        @media print { @page { size: A4; margin: 0.75in; } }
+        body { -webkit-print-color-adjust: exact; }
+        .printable-content { margin: 0; padding: 0; }
+    </style>`);
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(element.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 500);
+  };
+  
+  const generateImage = () => {
+    if (isSettingsLoading || !exam || !students.length || !printRef.current) {
+        toast({ variant: 'destructive', title: 'Cannot Proceed', description: 'Data is not fully loaded.' });
+        return;
+    }
+    const element = printRef.current;
+     html2canvas(element, { 
             scale: 2, // for higher quality
             useCORS: true,
             backgroundColor: 'white',
@@ -217,8 +220,7 @@ export default function ExamResultsPage() {
             link.href = canvas.toDataURL('image/jpeg', 0.95);
             link.click();
         });
-    }
-};
+  }
 
  const printableTableHeaders = useMemo(() => {
     if (!exam) return '';
@@ -303,12 +305,12 @@ export default function ExamResultsPage() {
                 {settings.logo && <img src={settings.logo} alt="Academy Logo" />}
                 <h1>{settings.name}</h1>
                 <p>{settings.address}</p>
-                <p>Phone: {settings.phone}</p>
+                <p>Phone: ${settings.phone}</p>
               </div>
               <div className="report-title">
                 <h2>Exam Results</h2>
-                <p>{exam.name} - {exam.className}</p>
-                <p style={{fontSize: '0.9rem', color: '#555'}}>Total Marks: {totalMaxMarks}</p>
+                <p>${exam.name} - ${exam.className}</p>
+                <p style={{fontSize: '0.9rem', color: '#555'}}>Total Marks: ${totalMaxMarks}</p>
               </div>
               <table>
                  <thead dangerouslySetInnerHTML={{ __html: `<tr>${printableTableHeaders}</tr>` }} />
@@ -319,8 +321,8 @@ export default function ExamResultsPage() {
 
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{exam.name}</h1>
-          <p className="text-muted-foreground">Enter marks for students of {exam.className}.</p>
+          <h1 className="text-2xl font-bold tracking-tight">${exam.name}</h1>
+          <p className="text-muted-foreground">Enter marks for students of ${exam.className}.</p>
         </div>
         <Card>
           <CardHeader>
@@ -338,23 +340,14 @@ export default function ExamResultsPage() {
                   {isSaving && <Loader2 className="mr-2 animate-spin" />}
                   Save Results
                 </Button>
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                            <MoreHorizontal />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                         <DropdownMenuItem onSelect={() => generatePrintContent('print')}>
-                            <Printer className="mr-2 h-4 w-4" />
-                            Print Results
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => generatePrintContent('image')}>
-                            <FileImage className="mr-2 h-4 w-4" />
-                            Save as JPG
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="outline" onClick={generatePrintContent}>
+                    <Printer className="mr-2" />
+                    Print Results
+                </Button>
+                <Button variant="outline" onClick={generateImage}>
+                    <FileImage className="mr-2" />
+                    Save as JPG
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -365,57 +358,57 @@ export default function ExamResultsPage() {
                   <TableRow>
                     <TableHead className="min-w-[150px]">Student</TableHead>
                     <TableHead className="min-w-[150px]">Father's Name</TableHead>
-                    {exam.subjects.map(subject => (
-                      <TableHead key={subject} className="text-center">{subject}</TableHead>
-                    ))}
-                    {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Obtained</TableHead>}
-                    {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Total</TableHead>}
+                    ${exam.subjects.map(subject => (
+                      `<th key=${subject} class="text-center">${subject}</th>`
+                    )).join('')}
+                    ${exam.subjects.length > 1 ? '<th class="text-center font-bold">Obtained</th>' : ''}
+                    ${exam.subjects.length > 1 ? '<th class="text-center font-bold">Total</th>' : ''}
                     <TableHead className="text-center font-bold">%</TableHead>
-                    {showPosition && <TableHead className="text-center font-bold">Pos.</TableHead>}
+                    ${showPosition ? '<th class="text-center font-bold">Pos.</th>' : ''}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   <TableRow className="bg-muted/50 hover:bg-muted/50">
                       <TableCell colSpan={2} className="font-semibold">Total Marks</TableCell>
-                      {exam.subjects.map(subject => (
-                          <TableCell key={subject} className="text-center font-semibold">
-                            <div className="flex justify-center">
-                                  <div className="w-20 rounded-md bg-background py-1 px-2">{exam.totalMarks}</div>
+                      ${exam.subjects.map(subject => (
+                          `<td key=${subject} class="text-center font-semibold">
+                            <div class="flex justify-center">
+                                  <div class="w-20 rounded-md bg-background py-1 px-2">${exam.totalMarks}</div>
                             </div>
-                          </TableCell>
-                      ))}
-                      {exam.subjects.length > 1 && <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>}
-                      {exam.subjects.length > 1 && <TableCell></TableCell>}
+                          </td>`
+                      )).join('')}
+                      ${exam.subjects.length > 1 ? `<td class="text-center font-bold">${totalMaxMarks}</td>` : ''}
+                      ${exam.subjects.length > 1 ? '<td></td>' : ''}
                       <TableCell></TableCell>
-                      {showPosition && <TableCell></TableCell>}
+                      ${showPosition ? '<td></td>' : ''}
                   </TableRow>
-                  {students.map(student => {
+                  ${students.map(student => {
                     const enhanced = getStudentEnhancedResult(student.id);
-                    return(
-                      <TableRow key={student.id}>
-                          <TableCell className="font-medium">{student.name}<br/><span className="text-xs text-muted-foreground">{student.id}</span></TableCell>
-                          <TableCell className="font-medium">{student.fatherName}</TableCell>
-                          {exam.subjects.map(subject => {
+                    return`
+                      <tr key=${student.id}>
+                          <td class="font-medium">${student.name}<br/><span class="text-xs text-muted-foreground">${student.id}</span></td>
+                          <td class="font-medium">${student.fatherName}</td>
+                          ${exam.subjects.map(subject => {
                             const marks = results[student.id]?.marks[subject] ?? '';
-                            return (
-                              <TableCell key={subject}>
-                                <Input
+                            return `
+                              <td key=${subject}>
+                                <input
                                   type="text"
                                   placeholder="-"
-                                  className="max-w-[80px] mx-auto text-center"
-                                  value={marks}
-                                  onChange={e => handleMarksChange(student.id, subject, e.target.value)}
+                                  class="max-w-[80px] mx-auto text-center form-input"
+                                  value=${marks}
+                                  onchange=${(e: any) => handleMarksChange(student.id, subject, e.target.value)}
                                 />
-                              </TableCell>
-                            )
-                          })}
-                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>}
-                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>}
-                          <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
-                          {showPosition && <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>}
-                      </TableRow>
-                    )
-                  })}
+                              </td>
+                            `
+                          }).join('')}
+                          ${exam.subjects.length > 1 ? `<td class="text-center font-medium">${enhanced?.totalMarks}</td>` : ''}
+                          ${exam.subjects.length > 1 ? `<td class="text-center font-medium">${totalMaxMarks}</td>` : ''}
+                          <td class="text-center font-medium">${enhanced?.percentage.toFixed(2)}%</td>
+                          ${showPosition ? `<td class="text-center font-bold text-lg">${enhanced?.position}</td>` : ''}
+                      </tr>
+                    `
+                  }).join('')}
                 </TableBody>
               </Table>
             </div>

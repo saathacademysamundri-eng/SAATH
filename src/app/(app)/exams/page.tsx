@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
 import { deleteExam, getExams } from '@/lib/firebase/firestore';
-import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File } from 'lucide-react';
+import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { CreateExamDialog } from './create-exam-dialog';
@@ -91,6 +91,11 @@ export default function ExamsPage() {
     } else {
         toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
     }
+  }
+  
+  const handlePrintResults = (examId: string) => {
+      // This is a simplified navigation. A full implementation might fetch the data and generate a printable view directly.
+      router.push(`/exams/${examId}?print=true`);
   }
 
   const filteredExams = useMemo(() => {
@@ -257,6 +262,10 @@ export default function ExamsPage() {
                               <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
+                              </DropdownMenuItem>
+                               <DropdownMenuItem onClick={() => handlePrintResults(exam.id)}>
+                                <Printer className="mr-2 h-4 w-4" />
+                                Print Results
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <AlertDialogTrigger asChild>
