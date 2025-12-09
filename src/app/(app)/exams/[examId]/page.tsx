@@ -237,7 +237,7 @@ export default function ExamResultsPage() {
     if (showPosition) {
         headers += `<th>Pos.</th>`;
     }
-    return headers;
+    return `<tr>${headers}</tr>`;
   }, [exam, showPosition]);
 
   const printableTableBody = useMemo(() => {
@@ -303,8 +303,8 @@ export default function ExamResultsPage() {
               margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt;
             }
             .report-container { max-width: 1000px; margin: auto; padding: 20px; }
-            .academy-details { text-align: center; margin-bottom: 2rem; }
-            .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
+            .academy-details { display: flex; align-items: center; justify-content: center; text-align: center; margin-bottom: 2rem; }
+            .academy-details img { height: 60px; object-fit: contain; margin-right: 1.5rem; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
             .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
             .report-title { text-align: center; margin: 2rem 0; }
@@ -318,9 +318,11 @@ export default function ExamResultsPage() {
           <div className="report-container printable-content">
               <div className="academy-details">
                 {settings.logo && <img src={settings.logo} alt="Academy Logo" />}
-                <h1>${settings.name}</h1>
-                <p>${settings.address}</p>
-                <p>Phone: ${settings.phone}</p>
+                <div>
+                    <h1>${settings.name}</h1>
+                    <p>${settings.address}</p>
+                    <p>Phone: ${settings.phone}</p>
+                </div>
               </div>
               <div className="report-title">
                 <h2>Exam Results</h2>
@@ -328,7 +330,7 @@ export default function ExamResultsPage() {
                 <p style={{fontSize: '0.9rem', color: '#555'}}>Total Marks: ${totalMaxMarks}</p>
               </div>
               <table>
-                 <thead dangerouslySetInnerHTML={{ __html: `<tr>${printableTableHeaders}</tr>` }} />
+                 <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
                  <tbody dangerouslySetInnerHTML={{ __html: printableTableBody }} />
               </table>
           </div>
@@ -392,7 +394,7 @@ export default function ExamResultsPage() {
                             </div>
                           </TableCell>
                       ))}
-                      {exam.subjects.length > 1 && <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>}
+                      {exam.subjects.length > 1 && <TableCell className="text-center font-bold">${totalMaxMarks}</TableCell>}
                       {exam.subjects.length > 1 && <TableCell></TableCell>}
                       <TableCell></TableCell>
                       {showPosition && <TableCell></TableCell>}
@@ -417,10 +419,10 @@ export default function ExamResultsPage() {
                               </TableCell>
                             )
                           })}
-                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>}
-                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>}
-                          <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
-                          {showPosition && <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>}
+                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">${enhanced?.totalMarks}</TableCell>}
+                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">${totalMaxMarks}</TableCell>}
+                          <TableCell className="text-center font-medium">${enhanced?.percentage.toFixed(2)}%</TableCell>
+                          {showPosition && <TableCell className="text-center font-bold text-lg">${enhanced?.position}</TableCell>}
                       </TableRow>
                     )
                   })}
