@@ -172,7 +172,7 @@ export default function ExamResultsPage() {
   const getStudentEnhancedResult = (studentId: string) => {
     return enhancedResults.find(r => r.studentId === studentId);
   }
-
+  
   const generatePrintContent = () => {
     if (isSettingsLoading || !exam || !students.length || !printRef.current) {
         toast({ variant: 'destructive', title: 'Cannot Proceed', description: 'Data is not fully loaded.' });
@@ -269,6 +269,24 @@ export default function ExamResultsPage() {
     }).join('');
   }, [exam, students, results, enhancedResults, showPosition]);
 
+  const printableHeaderHtml = useMemo(() => {
+    if (!exam) return '';
+    const logoHtml = settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" style="display: block; margin: 0 auto 0.5rem auto; height: 60px; object-fit: contain;" />` : '';
+    return `
+      <div class="academy-details">
+        ${logoHtml}
+        <h1>${settings.name}</h1>
+        <p>${settings.address}</p>
+        <p>${settings.phone}</p>
+      </div>
+      <div class="report-title">
+        <h2>Exam Results</h2>
+        <p>${exam.name} - ${exam.className}</p>
+        <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
+      </div>
+    `;
+  }, [settings, exam, totalMaxMarks]);
+
 
   if (loading) {
     return (
@@ -304,7 +322,6 @@ export default function ExamResultsPage() {
             }
             .report-container { max-width: 1000px; margin: auto; padding: 20px; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
-            .academy-details img { height: 60px; margin: 0 auto 0.5rem auto; display: block; object-fit: contain; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
             .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
             .report-title { text-align: center; margin: 2rem 0; }
@@ -316,17 +333,7 @@ export default function ExamResultsPage() {
             .printable-content tr:nth-child(even) { background-color: #f9f9f9; }
           `}</style>
           <div className="report-container printable-content">
-              <div className="academy-details">
-                ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
-                <h1>${settings.name}</h1>
-                <p>${settings.address}</p>
-                <p>Phone: ${settings.phone}</p>
-              </div>
-              <div className="report-title">
-                <h2>Exam Results</h2>
-                <p>${exam.name} - ${exam.className}</p>
-                <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
-              </div>
+              <div dangerouslySetInnerHTML={{ __html: printableHeaderHtml }} />
               <table>
                  <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
                  <tbody dangerouslySetInnerHTML={{ __html: printableTableBody }} />
