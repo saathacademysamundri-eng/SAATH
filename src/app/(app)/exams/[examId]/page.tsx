@@ -17,8 +17,6 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import html2canvas from 'html2canvas';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal } from 'lucide-react';
 
 type EnhancedResult = {
     studentId: string;
@@ -181,7 +179,11 @@ export default function ExamResultsPage() {
         return;
     }
     
-    const element = printRef.current;
+    const elementToPrint = printRef.current.cloneNode(true) as HTMLElement;
+    const logoImg = elementToPrint.querySelector('.academy-details img');
+    if (logoImg) {
+      logoImg.setAttribute('src', settings.logo);
+    }
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -199,7 +201,7 @@ export default function ExamResultsPage() {
         .printable-content { margin: 0; padding: 0; }
     </style>`);
     printWindow.document.write('</head><body>');
-    printWindow.document.write(element.innerHTML);
+    printWindow.document.write(elementToPrint.innerHTML);
     printWindow.document.write('</body></html>');
     printWindow.document.close();
     printWindow.focus();
@@ -319,7 +321,7 @@ export default function ExamResultsPage() {
           `}</style>
           <div className="report-container printable-content">
               <div className="academy-details">
-                {settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                {settings.logo ? <img src={settings.logo} alt="Academy Logo" /> : ''}
                 <h1>{settings.name}</h1>
                 <p>{settings.address}</p>
                 <p>Phone: {settings.phone}</p>
