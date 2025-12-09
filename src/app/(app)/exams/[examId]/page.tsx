@@ -172,14 +172,14 @@ export default function ExamResultsPage() {
   const getStudentEnhancedResult = (studentId: string) => {
     return enhancedResults.find(r => r.studentId === studentId);
   }
-
+  
   const generatePrintContent = () => {
     if (isSettingsLoading || !exam || !students.length || !printRef.current) {
         toast({ variant: 'destructive', title: 'Cannot Proceed', description: 'Data is not fully loaded.' });
         return;
     }
     
-    const element = printRef.current;
+    const elementToPrint = printRef.current;
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -197,7 +197,7 @@ export default function ExamResultsPage() {
         .printable-content { margin: 0; padding: 0; }
     </style>`);
     printWindow.document.write('</head><body>');
-    printWindow.document.write(element.innerHTML);
+    printWindow.document.write(elementToPrint.innerHTML);
     printWindow.document.write('</body></html>');
     printWindow.document.close();
     printWindow.focus();
@@ -237,7 +237,7 @@ export default function ExamResultsPage() {
     if (showPosition) {
         headers += `<th>Pos.</th>`;
     }
-    return headers;
+    return `<tr>${headers}</tr>`;
   }, [exam, showPosition]);
 
   const printableTableBody = useMemo(() => {
@@ -268,6 +268,24 @@ export default function ExamResultsPage() {
       `;
     }).join('');
   }, [exam, students, results, enhancedResults, showPosition]);
+
+  const printableHeaderHtml = useMemo(() => {
+    if (!exam) return '';
+    const logoHtml = settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" style="display: block; margin: 0 auto 0.5rem auto; height: 60px; object-fit: contain;" />` : '';
+    return `
+      <div class="academy-details">
+        ${logoHtml}
+        <h1>${settings.name}</h1>
+        <p>${settings.address}</p>
+        <p>${settings.phone}</p>
+      </div>
+      <div class="report-title">
+        <h2>Exam Results</h2>
+        <p>${exam.name} - ${exam.className}</p>
+        <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
+      </div>
+    `;
+  }, [settings, exam, totalMaxMarks]);
 
 
   if (loading) {
@@ -304,7 +322,6 @@ export default function ExamResultsPage() {
             }
             .report-container { max-width: 1000px; margin: auto; padding: 20px; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
-            .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
             .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
             .report-title { text-align: center; margin: 2rem 0; }
@@ -316,19 +333,9 @@ export default function ExamResultsPage() {
             .printable-content tr:nth-child(even) { background-color: #f9f9f9; }
           `}</style>
           <div className="report-container printable-content">
-              <div className="academy-details">
-                {settings.logo && <img src={settings.logo} alt="Academy Logo" />}
-                <h1>${settings.name}</h1>
-                <p>${settings.address}</p>
-                <p>Phone: ${settings.phone}</p>
-              </div>
-              <div className="report-title">
-                <h2>Exam Results</h2>
-                <p>${exam.name} - ${exam.className}</p>
-                <p style={{fontSize: '0.9rem', color: '#555'}}>Total Marks: ${totalMaxMarks}</p>
-              </div>
+              <div dangerouslySetInnerHTML={{ __html: printableHeaderHtml }} />
               <table>
-                 <thead dangerouslySetInnerHTML={{ __html: `<tr>${printableTableHeaders}</tr>` }} />
+                 <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
                  <tbody dangerouslySetInnerHTML={{ __html: printableTableBody }} />
               </table>
           </div>
@@ -336,8 +343,8 @@ export default function ExamResultsPage() {
 
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">${exam.name}</h1>
-          <p className="text-muted-foreground">Enter marks for students of ${exam.className}.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{exam.name}</h1>
+          <p className="text-muted-foreground">Enter marks for students of {exam.className}.</p>
         </div>
         <Card>
           <CardHeader>
