@@ -148,14 +148,7 @@ export async function getStudentsByClass(className: string): Promise<Student[]> 
 }
 
 export async function getStudent(id: string): Promise<Student | null> {
-    let searchId = id.toUpperCase();
-    
-    // If the search term is purely numeric, format it as a student ID
-    if (/^\d+$/.test(id)) {
-        searchId = `S${id.padStart(3, '0')}`;
-    }
-
-    const studentDocRef = doc(db, 'students', searchId);
+    const studentDocRef = doc(db, 'students', id);
     const studentDoc = await getDoc(studentDocRef);
 
     if (studentDoc.exists()) {
@@ -983,10 +976,10 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
         const settings = await getSettings('details');
         if (settings && settings.absentMsg && settings.whatsappProvider !== 'none') {
             const absentStudents: { id: string, name: string, phone: string }[] = [];
-            
+            const allStudents = await getStudents();
             for (const studentId in attendanceData.records) {
                 if (attendanceData.records[studentId] === 'Absent') {
-                    const student = await getStudent(studentId);
+                    const student = allStudents.find(s => s.id === studentId);
                     if (student && student.phone) {
                         absentStudents.push({ id: student.id, name: student.name, phone: student.phone });
                     }
@@ -1406,3 +1399,4 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+

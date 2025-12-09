@@ -13,9 +13,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student } from '@/lib/data';
-import { getStudent, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
+import { getStudents, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
 import { Printer, Search, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -24,8 +24,60 @@ import { format, addDays } from 'date-fns';
 import { PaidStamp } from '@/components/paid-stamp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendWhatsappMessage } from '@/lib/whatsapp';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type PrintFormat = 'thermal' | 'a4';
+
+function StudentSearchResultsDialog({
+  open,
+  onOpenChange,
+  students,
+  onStudentSelect,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  students: Student[];
+  onStudentSelect: (student: Student) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Student Search Results</DialogTitle>
+          <DialogDescription>Multiple students found. Please select the correct one.</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto">
+          <Table>
+            <TableBody>
+              {students.map((student) => (
+                <TableRow key={student.id} onClick={() => onStudentSelect(student)} className="cursor-pointer">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={student.imageUrl} alt={student.name} />
+                        <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{student.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {student.id} | {student.class}
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{student.fatherName}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 export default function FeeCollectionPage() {
   const [search, setSearch] = useState('');
@@ -34,36 +86,64 @@ export default function FeeCollectionPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [printFormat, setPrintFormat] = useState<PrintFormat>('a4');
+  const [searchResults, setSearchResults] = useState<Student[]>([]);
+  const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
   
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
-  const { refreshData } = useAppContext();
+  const { students, refreshData } = useAppContext();
 
   const handleSearch = async () => {
     if (!search.trim()) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Please enter a student roll number to search.',
+        description: 'Please enter a student name or roll number to search.',
       });
       setSearchedStudent(null);
       return;
     }
+
     setIsSearching(true);
-    const student = await getStudent(search.trim());
-    if (student) {
-      setSearchedStudent(student);
-      setPaidAmount(0); // Reset paid amount for new search
+    setSearchedStudent(null);
+    setSearchResults([]);
+
+    const searchTerm = search.trim().toLowerCase();
+    
+    const isRollNumber = /^(s|S)?\d+$/.test(searchTerm);
+    let potentialRollNumber = searchTerm;
+    if (/^\d+$/.test(searchTerm)) {
+        potentialRollNumber = `S${searchTerm.padStart(3, '0')}`;
+    }
+
+    const results = students.filter(student => 
+        student.id.toLowerCase() === potentialRollNumber.toLowerCase() ||
+        student.name.toLowerCase().includes(searchTerm)
+    );
+
+    if (results.length === 1) {
+      setSearchedStudent(results[0]);
+      setPaidAmount(0);
+    } else if (results.length > 1) {
+      setSearchResults(results);
+      setIsSearchResultsOpen(true);
     } else {
       toast({
         variant: 'destructive',
         title: 'Not Found',
-        description: 'No student found with that roll number.',
+        description: 'No student found matching your search.',
       });
-      setSearchedStudent(null);
     }
+
     setIsSearching(false);
   };
+  
+  const handleStudentSelect = (student: Student) => {
+    setSearchedStudent(student);
+    setPaidAmount(0);
+    setIsSearchResultsOpen(false);
+  };
+
 
   const handlePayment = async () => {
     if (!searchedStudent) return;
@@ -465,7 +545,7 @@ export default function FeeCollectionPage() {
             <CardHeader>
             <CardTitle>Collect Fee</CardTitle>
             <CardDescription>
-                Enter a student roll number to view outstanding dues and collect
+                Enter a student's name or roll number to view outstanding dues and collect
                 fees.
             </CardDescription>
             </CardHeader>
@@ -474,7 +554,7 @@ export default function FeeCollectionPage() {
                 <div className="flex-grow max-w-sm">
                     <Input
                         type="text"
-                        placeholder="Enter student roll number..."
+                        placeholder="Enter name or roll number..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -488,6 +568,13 @@ export default function FeeCollectionPage() {
             </div>
             </CardContent>
         </Card>
+
+      <StudentSearchResultsDialog
+        open={isSearchResultsOpen}
+        onOpenChange={setIsSearchResultsOpen}
+        students={searchResults}
+        onStudentSelect={handleStudentSelect}
+      />
 
       {searchedStudent && (
         <div className="grid gap-6">
