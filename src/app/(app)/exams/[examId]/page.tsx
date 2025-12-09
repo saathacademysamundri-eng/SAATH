@@ -17,6 +17,8 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import html2canvas from 'html2canvas';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal } from 'lucide-react';
 
 type EnhancedResult = {
     studentId: string;
@@ -317,15 +319,15 @@ export default function ExamResultsPage() {
           `}</style>
           <div className="report-container printable-content">
               <div className="academy-details">
-                ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
-                <h1>${settings.name}</h1>
-                <p>${settings.address}</p>
-                <p>Phone: ${settings.phone}</p>
+                {settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                <h1>{settings.name}</h1>
+                <p>{settings.address}</p>
+                <p>Phone: {settings.phone}</p>
               </div>
               <div className="report-title">
                 <h2>Exam Results</h2>
-                <p>${exam.name} - ${exam.className}</p>
-                <p style={{fontSize: '0.9rem', color: '#555'}}>Total Marks: ${totalMaxMarks}</p>
+                <p>{exam.name} - {exam.className}</p>
+                <p style={{fontSize: '0.9rem', color: '#555'}}>Total Marks: {totalMaxMarks}</p>
               </div>
               <table>
                  <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
@@ -336,8 +338,8 @@ export default function ExamResultsPage() {
 
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">${exam.name}</h1>
-          <p className="text-muted-foreground">Enter marks for students of ${exam.className}.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{exam.name}</h1>
+          <p className="text-muted-foreground">Enter marks for students of {exam.className}.</p>
         </div>
         <Card>
           <CardHeader>
@@ -392,7 +394,7 @@ export default function ExamResultsPage() {
                             </div>
                           </TableCell>
                       ))}
-                      {exam.subjects.length > 1 && <TableCell className="text-center font-bold">${totalMaxMarks}</TableCell>}
+                      {exam.subjects.length > 1 && <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>}
                       {exam.subjects.length > 1 && <TableCell></TableCell>}
                       <TableCell></TableCell>
                       {showPosition && <TableCell></TableCell>}
@@ -417,10 +419,10 @@ export default function ExamResultsPage() {
                               </TableCell>
                             )
                           })}
-                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">${enhanced?.totalMarks}</TableCell>}
-                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">${totalMaxMarks}</TableCell>}
-                          <TableCell className="text-center font-medium">${enhanced?.percentage.toFixed(2)}%</TableCell>
-                          {showPosition && <TableCell className="text-center font-bold text-lg">${enhanced?.position}</TableCell>}
+                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>}
+                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>}
+                          <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
+                          {showPosition && <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>}
                       </TableRow>
                     )
                   })}
