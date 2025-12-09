@@ -303,8 +303,8 @@ export default function ExamResultsPage() {
               margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt;
             }
             .report-container { max-width: 1000px; margin: auto; padding: 20px; }
-            .academy-details { display: flex; align-items: center; justify-content: center; text-align: center; margin-bottom: 2rem; }
-            .academy-details img { height: 60px; object-fit: contain; margin-right: 1.5rem; }
+            .academy-details { text-align: center; margin-bottom: 2rem; }
+            .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
             .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
             .report-title { text-align: center; margin: 2rem 0; }
@@ -317,12 +317,10 @@ export default function ExamResultsPage() {
           `}</style>
           <div className="report-container printable-content">
               <div className="academy-details">
-                {settings.logo && <img src={settings.logo} alt="Academy Logo" />}
-                <div>
-                    <h1>${settings.name}</h1>
-                    <p>${settings.address}</p>
-                    <p>Phone: ${settings.phone}</p>
-                </div>
+                ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                <h1>${settings.name}</h1>
+                <p>${settings.address}</p>
+                <p>Phone: ${settings.phone}</p>
               </div>
               <div className="report-title">
                 <h2>Exam Results</h2>
