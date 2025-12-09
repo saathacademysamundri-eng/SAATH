@@ -175,7 +175,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const [user, authLoading] = useAuthState(auth);
   const { isSettingsLoading } = useSettings();
   const router = useRouter();
-  const { isLocked } = useLock();
+  const { isLocked, isLockReady } = useLock();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -198,7 +198,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   }, [router]);
 
 
-  if (authLoading || isSettingsLoading) {
+  if (authLoading || isSettingsLoading || !isLockReady) {
       return <GlobalPreloader />;
   }
   

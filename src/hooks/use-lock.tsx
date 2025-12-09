@@ -9,6 +9,7 @@ const LOCK_STORAGE_KEY = 'app_lock_state';
 
 interface LockContextType {
   isLocked: boolean;
+  isLockReady: boolean;
   lock: () => void;
   unlock: (pin: string) => boolean;
   showWelcomeBack: boolean;
@@ -25,16 +26,23 @@ export const LockProvider = ({ children }: { children: ReactNode }) => {
     return false;
   });
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
-  const { settings } = useSettings();
+  const { settings, isSettingsLoading } = useSettings();
+  const [isLockReady, setIsLockReady] = useState(false);
+
+  useEffect(() => {
+    if (!isSettingsLoading) {
+        setIsLockReady(true);
+    }
+  }, [isSettingsLoading]);
 
   const handleIdle = useCallback(() => {
-    if (settings.autoLockEnabled && settings.securityPin) {
+    if (isLockReady && settings.autoLockEnabled && settings.securityPin) {
       setIsLocked(true);
       sessionStorage.setItem(LOCK_STORAGE_KEY, 'locked');
     }
-  }, [settings.autoLockEnabled, settings.securityPin]);
+  }, [settings.autoLockEnabled, settings.securityPin, isLockReady]);
   
-  const timeout = settings.autoLockEnabled ? (settings.autoLockTimeout || 60) * 1000 : 0;
+  const timeout = isLockReady && settings.autoLockEnabled ? (settings.autoLockTimeout || 60) * 1000 : 0;
   useIdleTimer(handleIdle, timeout);
 
 
@@ -64,7 +72,7 @@ export const LockProvider = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const value = { isLocked, lock, unlock, showWelcomeBack, setShowWelcomeBack };
+  const value = { isLocked, isLockReady, lock, unlock, showWelcomeBack, setShowWelcomeBack };
 
   return (
     <LockContext.Provider value={value}>

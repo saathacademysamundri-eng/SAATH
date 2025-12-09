@@ -71,7 +71,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchData = useCallback(async (isInitialLoad = false) => {
     const hasCache = sessionStorage.getItem('appContextCache') !== null;
-    setLoading(!hasCache);
+    if (hasCache && isInitialLoad) {
+      setLoading(false); // If there's a cache on initial load, don't show the main loader
+    } else {
+      setLoading(true);
+    }
+
 
     try {
       if (isInitialLoad) {
