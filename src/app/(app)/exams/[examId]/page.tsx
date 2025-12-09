@@ -179,11 +179,7 @@ export default function ExamResultsPage() {
         return;
     }
     
-    const elementToPrint = printRef.current.cloneNode(true) as HTMLElement;
-    const logoImg = elementToPrint.querySelector('.academy-details img');
-    if (logoImg) {
-      logoImg.setAttribute('src', settings.logo);
-    }
+    const elementToPrint = printRef.current;
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -308,7 +304,7 @@ export default function ExamResultsPage() {
             }
             .report-container { max-width: 1000px; margin: auto; padding: 20px; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
-            .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
+            .academy-details img { height: 60px; margin: 0 auto 0.5rem auto; display: block; object-fit: contain; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
             .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
             .report-title { text-align: center; margin: 2rem 0; }
@@ -321,15 +317,15 @@ export default function ExamResultsPage() {
           `}</style>
           <div className="report-container printable-content">
               <div className="academy-details">
-                {settings.logo ? <img src={settings.logo} alt="Academy Logo" /> : ''}
-                <h1>{settings.name}</h1>
-                <p>{settings.address}</p>
-                <p>Phone: {settings.phone}</p>
+                ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
+                <h1>${settings.name}</h1>
+                <p>${settings.address}</p>
+                <p>Phone: ${settings.phone}</p>
               </div>
               <div className="report-title">
                 <h2>Exam Results</h2>
-                <p>{exam.name} - {exam.className}</p>
-                <p style={{fontSize: '0.9rem', color: '#555'}}>Total Marks: {totalMaxMarks}</p>
+                <p>${exam.name} - ${exam.className}</p>
+                <p style={{fontSize: '0.9rem', color: '#555'}}>Total Marks: ${totalMaxMarks}</p>
               </div>
               <table>
                  <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
