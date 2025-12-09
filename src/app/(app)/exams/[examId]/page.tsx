@@ -220,6 +220,54 @@ export default function ExamResultsPage() {
     }
 };
 
+ const printableTableHeaders = useMemo(() => {
+    if (!exam) return '';
+    let headers = `
+        <th>Roll #</th>
+        <th>Student Name</th>
+        <th>Father's Name</th>
+    `;
+    headers += exam.subjects.map(s => `<th>${s}<br>(${exam.totalMarks})</th>`).join('');
+    if (exam.subjects.length > 1) {
+        headers += `<th>Total</th>`;
+    }
+    headers += `<th>%age</th>`;
+    if (showPosition) {
+        headers += `<th>Pos.</th>`;
+    }
+    return headers;
+  }, [exam, showPosition]);
+
+  const printableTableBody = useMemo(() => {
+    if (!exam || !students.length) return '';
+    return students.map(student => {
+      const enhanced = getStudentEnhancedResult(student.id);
+      const marksCells = exam.subjects.map(subject => {
+        const marks = results[student.id]?.marks[subject];
+        const isAbsent = marks === 'A';
+        const cellStyle = isAbsent ? 'background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;' : 'text-align: center;';
+        return `<td style="${cellStyle}">${marks ?? '-'}</td>`;
+      }).join('');
+      
+      const totalCell = exam.subjects.length > 1 ? `<td style="text-align: center; font-weight: bold;">${enhanced?.totalMarks ?? 0}</td>` : '';
+      const percentageCell = `<td style="text-align: center;">${enhanced?.percentage.toFixed(2) ?? '0.00'}%</td>`;
+      const positionCell = showPosition ? `<td style="text-align: center; font-weight: bold;">${enhanced?.position ?? '-'}</td>` : '';
+
+      return `
+        <tr>
+          <td>${student.id}</td>
+          <td>${student.name}</td>
+          <td>${student.fatherName}</td>
+          ${marksCells}
+          ${totalCell}
+          ${percentageCell}
+          ${positionCell}
+        </tr>
+      `;
+    }).join('');
+  }, [exam, students, results, enhancedResults, showPosition]);
+
+
   if (loading) {
     return null;
   }
@@ -263,37 +311,8 @@ export default function ExamResultsPage() {
                 <p style={{fontSize: '0.9rem', color: '#555'}}>Total Marks: {totalMaxMarks}</p>
               </div>
               <table>
-                <thead>
-                  <tr>
-                    <th>Roll #</th>
-                    <th>Student Name</th>
-                    <th>Father's Name</th>
-                    {exam.subjects.map(s => `<th key=${s}>${s}<br>(${exam.totalMarks})</th>`)}
-                    {exam.subjects.length > 1 && `<th>Total</th>`}
-                    <th>%age</th>
-                    {showPosition && '<th>Pos.</th>'}
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map(student => {
-                     const enhanced = getStudentEnhancedResult(student.id);
-                     return (`
-                        <tr key=${student.id}>
-                            <td>${student.id}</td>
-                            <td>${student.name}</td>
-                            <td>${student.fatherName}</td>
-                            ${exam.subjects.map(subject => {
-                                const marks = results[student.id]?.marks[subject];
-                                const isAbsent = marks === 'A';
-                                const cellStyle = isAbsent ? 'background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;' : 'text-align: center;';
-                                return `<td style="${cellStyle}">${marks ?? '-'}</td>`;
-                            }).join('')}
-                            ${exam.subjects.length > 1 ? `<td style="text-align: center; font-weight: bold;">${enhanced?.totalMarks ?? 0}</td>` : ''}
-                            <td style="text-align: center;">${enhanced?.percentage.toFixed(2) ?? '0.00'}%</td>
-                            ${showPosition ? `<td style="text-align: center; font-weight: bold;">${enhanced?.position ?? '-'}</td>` : ''}
-                        </tr>
-                    `)}).join('')}
-                </tbody>
+                 <thead dangerouslySetInnerHTML={{ __html: `<tr>${printableTableHeaders}</tr>` }} />
+                 <tbody dangerouslySetInnerHTML={{ __html: printableTableBody }} />
               </table>
           </div>
         </div>
