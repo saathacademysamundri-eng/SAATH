@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -95,7 +96,8 @@ export default function ExamsPage() {
   
   const handlePrintResults = (examId: string) => {
       // This is a simplified navigation. A full implementation might fetch the data and generate a printable view directly.
-      router.push(`/exams/${examId}?print=true`);
+      const printUrl = `/exams/${examId}?print=true`;
+      window.open(printUrl, '_blank');
   }
 
   const filteredExams = useMemo(() => {

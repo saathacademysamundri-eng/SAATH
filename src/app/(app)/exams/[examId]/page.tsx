@@ -271,7 +271,22 @@ export default function ExamResultsPage() {
 
 
   if (loading) {
-    return null;
+    return (
+        <div className="space-y-6">
+            <div className="space-y-2">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-5 w-80" />
+            </div>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-10 w-full" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-96 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    );
   }
 
   if (!exam) {
@@ -303,8 +318,8 @@ export default function ExamResultsPage() {
           <div className="report-container printable-content">
               <div className="academy-details">
                 {settings.logo && <img src={settings.logo} alt="Academy Logo" />}
-                <h1>{settings.name}</h1>
-                <p>{settings.address}</p>
+                <h1>${settings.name}</h1>
+                <p>${settings.address}</p>
                 <p>Phone: ${settings.phone}</p>
               </div>
               <div className="report-title">
@@ -358,57 +373,57 @@ export default function ExamResultsPage() {
                   <TableRow>
                     <TableHead className="min-w-[150px]">Student</TableHead>
                     <TableHead className="min-w-[150px]">Father's Name</TableHead>
-                    ${exam.subjects.map(subject => (
-                      `<th key=${subject} class="text-center">${subject}</th>`
-                    )).join('')}
-                    ${exam.subjects.length > 1 ? '<th class="text-center font-bold">Obtained</th>' : ''}
-                    ${exam.subjects.length > 1 ? '<th class="text-center font-bold">Total</th>' : ''}
+                    {exam.subjects.map(subject => (
+                      <TableHead key={subject} className="text-center">{subject}</TableHead>
+                    ))}
+                    {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Obtained</TableHead>}
+                    {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Total</TableHead>}
                     <TableHead className="text-center font-bold">%</TableHead>
-                    ${showPosition ? '<th class="text-center font-bold">Pos.</th>' : ''}
+                    {showPosition && <TableHead className="text-center font-bold">Pos.</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   <TableRow className="bg-muted/50 hover:bg-muted/50">
                       <TableCell colSpan={2} className="font-semibold">Total Marks</TableCell>
-                      ${exam.subjects.map(subject => (
-                          `<td key=${subject} class="text-center font-semibold">
-                            <div class="flex justify-center">
-                                  <div class="w-20 rounded-md bg-background py-1 px-2">${exam.totalMarks}</div>
+                      {exam.subjects.map(subject => (
+                          <TableCell key={subject} className="text-center font-semibold">
+                            <div className="flex justify-center">
+                                  <div className="w-20 rounded-md bg-background py-1 px-2">{exam.totalMarks}</div>
                             </div>
-                          </td>`
-                      )).join('')}
-                      ${exam.subjects.length > 1 ? `<td class="text-center font-bold">${totalMaxMarks}</td>` : ''}
-                      ${exam.subjects.length > 1 ? '<td></td>' : ''}
+                          </TableCell>
+                      ))}
+                      {exam.subjects.length > 1 && <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>}
+                      {exam.subjects.length > 1 && <TableCell></TableCell>}
                       <TableCell></TableCell>
-                      ${showPosition ? '<td></td>' : ''}
+                      {showPosition && <TableCell></TableCell>}
                   </TableRow>
-                  ${students.map(student => {
+                  {students.map(student => {
                     const enhanced = getStudentEnhancedResult(student.id);
-                    return`
-                      <tr key=${student.id}>
-                          <td class="font-medium">${student.name}<br/><span class="text-xs text-muted-foreground">${student.id}</span></td>
-                          <td class="font-medium">${student.fatherName}</td>
-                          ${exam.subjects.map(subject => {
+                    return(
+                      <TableRow key={student.id}>
+                          <TableCell className="font-medium">{student.name}<br/><span className="text-xs text-muted-foreground">{student.id}</span></TableCell>
+                          <TableCell className="font-medium">{student.fatherName}</TableCell>
+                          {exam.subjects.map(subject => {
                             const marks = results[student.id]?.marks[subject] ?? '';
-                            return `
-                              <td key=${subject}>
-                                <input
+                            return (
+                              <TableCell key={subject}>
+                                <Input
                                   type="text"
                                   placeholder="-"
-                                  class="max-w-[80px] mx-auto text-center form-input"
-                                  value=${marks}
-                                  onchange=${(e: any) => handleMarksChange(student.id, subject, e.target.value)}
+                                  className="max-w-[80px] mx-auto text-center"
+                                  value={marks}
+                                  onChange={(e) => handleMarksChange(student.id, subject, e.target.value)}
                                 />
-                              </td>
-                            `
-                          }).join('')}
-                          ${exam.subjects.length > 1 ? `<td class="text-center font-medium">${enhanced?.totalMarks}</td>` : ''}
-                          ${exam.subjects.length > 1 ? `<td class="text-center font-medium">${totalMaxMarks}</td>` : ''}
-                          <td class="text-center font-medium">${enhanced?.percentage.toFixed(2)}%</td>
-                          ${showPosition ? `<td class="text-center font-bold text-lg">${enhanced?.position}</td>` : ''}
-                      </tr>
-                    `
-                  }).join('')}
+                              </TableCell>
+                            )
+                          })}
+                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>}
+                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>}
+                          <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
+                          {showPosition && <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>}
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
