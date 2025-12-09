@@ -23,6 +23,7 @@ import QRCode from 'qrcode';
 import { format, addDays } from 'date-fns';
 import { PaidStamp } from '@/components/paid-stamp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { sendWhatsappMessage } from '@/lib/whatsapp';
 
 type PrintFormat = 'thermal' | 'a4';
 
@@ -125,6 +126,18 @@ export default function FeeCollectionPage() {
         title: 'Payment Recorded',
         description: `Paid ${paidAmount} for ${searchedStudent.name}. New balance is ${newTotalFee}.`,
       });
+
+      if (settings.paymentReceiptMsg && searchedStudent.phone) {
+        let messageBody = settings.paymentReceiptTemplate || 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!';
+        messageBody = messageBody.replace(/{student_name}/g, searchedStudent.name)
+                                  .replace(/{amount}/g, paidAmount.toLocaleString() + ' PKR');
+
+        const apiUrl = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgApiUrl : settings.officialApiUrl;
+        const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
+        if (apiUrl && token) {
+          sendWhatsappMessage({ to: searchedStudent.phone, body: messageBody, apiUrl, token });
+        }
+      }
       
       handlePrintPaidReceipt(paidAmount, newTotalFee, originalTotal, receiptId);
       setPaidAmount(0);
