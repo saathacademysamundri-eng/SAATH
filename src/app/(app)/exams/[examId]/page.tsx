@@ -325,7 +325,7 @@ export default function ExamResultsPage() {
               <div className="report-title">
                 <h2>Exam Results</h2>
                 <p>${exam.name} - ${exam.className}</p>
-                <p style={{fontSize: '0.9rem', color: '#555'}}>Total Marks: ${totalMaxMarks}</p>
+                <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
               </div>
               <table>
                  <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
