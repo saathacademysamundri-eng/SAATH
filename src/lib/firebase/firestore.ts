@@ -1,5 +1,4 @@
 
-
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary } from '@/lib/data';
@@ -613,13 +612,12 @@ export async function seedDatabase() {
 }
 
 // Income Functions
-export async function addIncome(incomeData: Omit<Income, 'id' | 'date'>) {
+export async function addIncome(incomeData: Omit<Income, 'id' | 'date'> & { receiptId: string }) {
     try {
-        const receiptId = `RCPT-${Date.now()}`;
-        const dataToSave = { ...incomeData, receiptId, date: serverTimestamp() };
+        const dataToSave = { ...incomeData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'income'), dataToSave);
         await logActivity('fee_payment', `Payment of ${incomeData.amount} PKR received from ${incomeData.studentName}.`, `/student-ledger?search=${incomeData.studentId}`);
-        return { success: true, message: 'Income record added.', id: docRef.id, receiptId };
+        return { success: true, message: 'Income record added.', id: docRef.id };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'income/[auto-id]', operation: 'create', requestResourceData: incomeData });
         errorEmitter.emit('permission-error', permissionError);

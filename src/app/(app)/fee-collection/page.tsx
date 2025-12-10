@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -181,14 +182,18 @@ export default function FeeCollectionPage() {
       newFeeStatus = 'Paid';
     }
 
+    // Generate receiptId before saving
+    const receiptId = `RCPT-${Date.now()}`;
+
     // Add to income collection first
     const incomeResult = await addIncome({
         studentName: searchedStudent.name,
         studentId: searchedStudent.id,
         amount: paidAmount,
+        receiptId: receiptId,
     });
       
-    if (!incomeResult.success || !incomeResult.receiptId) {
+    if (!incomeResult.success || !incomeResult.id) {
         toast({
             variant: "destructive",
             title: "Payment Failed",
@@ -197,8 +202,6 @@ export default function FeeCollectionPage() {
         setIsProcessingPayment(false);
         return;
     }
-
-    const { receiptId } = incomeResult;
 
     const result = await updateStudentFeeStatus(searchedStudent.id, newTotalFee, newFeeStatus);
 
@@ -244,7 +247,7 @@ export default function FeeCollectionPage() {
   const handlePrintPaidReceipt = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
     if (isSettingsLoading || !searchedStudent) return;
     
-    const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
+    const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
     let qrCodeDataUrl = '';
     try {
         qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
@@ -304,7 +307,7 @@ export default function FeeCollectionPage() {
                              </table>
                         </div>
                          <div style="text-align: center; margin-top: 3rem;">
-                            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p>Scan to verify</p>` : ''}
+                            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p>Scan for live fee status</p>` : ''}
                             <p style="margin-top: 2rem;">*** Thank you for your payment! ***</p>
                             <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
                         </div>
@@ -412,7 +415,7 @@ export default function FeeCollectionPage() {
                       </div>
                         <div class="footer">
                           ${qrCodeDataUrl ? `
-                              <p class='font-bold'>Scan to Verify</p>
+                              <p class='font-bold'>Scan for Status</p>
                               <div class='flex justify-center'>
                                 <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
                               </div>
@@ -437,7 +440,7 @@ export default function FeeCollectionPage() {
   const getA4HtmlWithStyles = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
     if (isSettingsLoading || !searchedStudent) return '';
     
-    const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
+    const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
     let qrCodeDataUrl = '';
     try {
         qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
@@ -479,7 +482,7 @@ export default function FeeCollectionPage() {
              </table>
         </div>
          <div style="text-align: center; margin-top: 3rem; color: black;">
-            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p style="color: black;">Scan to verify</p>` : ''}
+            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p style="color: black;">Scan for live fee status</p>` : ''}
             <p style="margin-top: 2rem; color: black;">*** Thank you for your payment! ***</p>
             <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
         </div>
@@ -498,24 +501,25 @@ export default function FeeCollectionPage() {
     
     // Recalculate the state at the time of the last payment
     const amountPaid = lastPayment.amount;
-    const balanceBeforePayment = searchedStudent.totalFee + amountPaid;
     const balanceAfterPayment = searchedStudent.totalFee;
+    const balanceBeforePayment = balanceAfterPayment + amountPaid;
+    const originalReceiptId = lastPayment.receiptId || lastPayment.id;
 
     if (printFormat === 'jpg') {
-        const a4Html = await getA4HtmlWithStyles(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
+        const a4Html = await getA4HtmlWithStyles(amountPaid, balanceAfterPayment, balanceBeforePayment, originalReceiptId, lastPayment.date);
         
         if (printRef.current) {
             printRef.current.innerHTML = a4Html;
             html2canvas(printRef.current.firstElementChild as HTMLElement, { scale: 2, useCORS: true, backgroundColor: 'white' }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `receipt-${searchedStudent.id}-${lastPayment.receiptId}.jpg`;
+                link.download = `receipt-${searchedStudent.id}-${originalReceiptId}.jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
                 link.click();
                 printRef.current!.innerHTML = ''; // Clear after use
             });
         }
     } else {
-      handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
+      handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, originalReceiptId, lastPayment.date);
     }
   };
   
