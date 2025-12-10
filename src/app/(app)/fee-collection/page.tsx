@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -500,24 +501,25 @@ export default function FeeCollectionPage() {
     
     // Recalculate the state at the time of the last payment
     const amountPaid = lastPayment.amount;
-    const balanceBeforePayment = searchedStudent.totalFee + amountPaid;
     const balanceAfterPayment = searchedStudent.totalFee;
+    const balanceBeforePayment = balanceAfterPayment + amountPaid;
+    const originalReceiptId = lastPayment.receiptId || lastPayment.id;
 
     if (printFormat === 'jpg') {
-        const a4Html = await getA4HtmlWithStyles(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
+        const a4Html = await getA4HtmlWithStyles(amountPaid, balanceAfterPayment, balanceBeforePayment, originalReceiptId, lastPayment.date);
         
         if (printRef.current) {
             printRef.current.innerHTML = a4Html;
             html2canvas(printRef.current.firstElementChild as HTMLElement, { scale: 2, useCORS: true, backgroundColor: 'white' }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `receipt-${searchedStudent.id}-${lastPayment.receiptId}.jpg`;
+                link.download = `receipt-${searchedStudent.id}-${originalReceiptId}.jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
                 link.click();
                 printRef.current!.innerHTML = ''; // Clear after use
             });
         }
     } else {
-      handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
+      handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, originalReceiptId, lastPayment.date);
     }
   };
   
