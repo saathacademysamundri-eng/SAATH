@@ -254,6 +254,12 @@ export default function FeeCollectionPage() {
     const dateToPrint = receiptDate || new Date();
     
     let receiptHtml = '';
+    
+    const paidStampHtml = `
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); opacity: 0.1; pointer-events: none; width: ${printFormat === 'a4' ? '300px' : '150px'}; height: ${printFormat === 'a4' ? '300px' : '150px'};">
+        <img src="https://i.postimg.cc/25bFSj1P/Whats-App-Image-2025-11-07-at-2-10-20-PM.jpg" alt="Paid Stamp" style="width: 100%; height: 100%; object-fit: contain;">
+      </div>
+    `;
 
     if (printFormat === 'a4') {
         receiptHtml = `
@@ -264,14 +270,11 @@ export default function FeeCollectionPage() {
                         @page { size: A4; margin: 0.75in; }
                         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                         .receipt-container { position: relative; max-width: 800px; margin: auto; padding: 2rem; border: 1px solid #ddd; }
-                        .paid-stamp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); opacity: 0.1; pointer-events: none; }
                     </style>
                 </head>
                 <body>
                     <div class="receipt-container">
-                        <div class="paid-stamp">
-                           ${PaidStamp({ academyName: settings.name, academyPhone: settings.phone, date: dateToPrint, className: "w-96 h-96"})}
-                        </div>
+                        ${paidStampHtml}
                         <div style="text-align: center; margin-bottom: 2rem;">
                             ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 80px; margin: auto; object-fit: contain;">` : ''}
                             <h1 style="font-size: 2rem; margin: 0.5rem 0;">${settings.name}</h1>
@@ -341,7 +344,6 @@ export default function FeeCollectionPage() {
                         flex-direction: column;
                         position: relative;
                       }
-                      .paid-stamp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); opacity: 0.1; pointer-events: none; }
                       .text-center { text-align: center; }
                       .font-bold { font-weight: bold; }
                       .text-lg { font-size: 1.125rem; }
@@ -369,9 +371,7 @@ export default function FeeCollectionPage() {
               </head>
               <body>
                   <div class="receipt-container">
-                      <div class="paid-stamp">
-                        ${PaidStamp({ academyName: settings.name, academyPhone: settings.phone, date: dateToPrint, className: 'w-48 h-48' })}
-                      </div>
+                      ${paidStampHtml}
                       <div class="text-center space-y-1">
                           <div class="flex justify-center" style="height: 4rem;">
                               ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" style="height: 100%; object-fit: contain;" />` : ''}
@@ -569,4 +569,3 @@ export default function FeeCollectionPage() {
     </div>
   );
 }
-

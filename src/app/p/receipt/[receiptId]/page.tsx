@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -133,12 +132,11 @@ export default function ReceiptVerificationPage() {
                 </header>
 
                 <Card className="relative overflow-hidden">
+                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 pointer-events-none">
+                       <PaidStamp className="w-80 h-80" />
+                    </div>
                      <CardHeader className="items-center text-center space-y-4">
-                        <PaidStamp
-                            academyName={settings.name}
-                            academyPhone={settings.phone}
-                            date={income.date}
-                        />
+                        <CheckCircle2 className="w-16 h-16 text-green-500" />
                         <CardTitle className="text-2xl font-bold">Payment Verified</CardTitle>
                     </CardHeader>
                     <CardContent className="mt-2 divide-y">
