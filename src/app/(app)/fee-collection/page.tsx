@@ -256,8 +256,8 @@ export default function FeeCollectionPage() {
     let receiptHtml = '';
     
     const paidStampHtml = `
-      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); opacity: 0.1; pointer-events: none; width: ${printFormat === 'a4' ? '300px' : '150px'}; height: ${printFormat === 'a4' ? '300px' : '150px'};">
-        <img src="https://i.postimg.cc/prpyQ22C/Paid-Stamp-Saath-Academy.png" alt="Paid Stamp" style="width: 100%; height: 100%; object-fit: contain;">
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); opacity: 0.1; font-size: ${printFormat === 'a4' ? '10rem' : '5rem'}; font-weight: bold; color: #000; pointer-events: none; z-index: -1;">
+        PAID
       </div>
     `;
 
