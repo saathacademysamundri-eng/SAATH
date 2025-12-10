@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { type Student } from '@/lib/data';
+import { type Student, type Income } from '@/lib/data';
 import { getStudents, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
 import { Printer, Search, Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -25,6 +25,7 @@ import { sendWhatsappMessage } from '@/lib/whatsapp';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PaidStamp } from '@/components/paid-stamp';
 
 type PrintFormat = 'thermal' | 'a4';
 
@@ -89,7 +90,15 @@ export default function FeeCollectionPage() {
   
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
-  const { students, refreshData } = useAppContext();
+  const { students, income, refreshData } = useAppContext();
+  
+  const lastPayment = useMemo(() => {
+    if (!searchedStudent) return null;
+    return income
+      .filter(i => i.studentId === searchedStudent.id)
+      .sort((a, b) => b.date.getTime() - a.date.getTime())[0] || null;
+  }, [searchedStudent, income]);
+
 
   const handleSearch = async () => {
     if (!search.trim()) {
@@ -231,7 +240,7 @@ export default function FeeCollectionPage() {
     setIsProcessingPayment(false);
   };
 
-  const handlePrintPaidReceipt = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string) => {
+  const handlePrintPaidReceipt = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
     if (isSettingsLoading || !searchedStudent) return;
     
     const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
@@ -242,115 +251,179 @@ export default function FeeCollectionPage() {
         console.error('QR code generation failed:', error);
     }
         
-    const receiptHtml = `
-      <html>
-          <head>
-              <title>Fee Receipt - ${searchedStudent.name}</title>
-              <link rel="preconnect" href="https://fonts.googleapis.com">
-              <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-              <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
-              <style>
-                  @page { 
-                    size: 3in 5in;
-                    margin: 0; 
-                  }
-                  body { 
-                    font-family: 'Calibri', sans-serif;
-                    margin: 0;
-                    padding: 0;
-                    -webkit-print-color-adjust: exact !important; 
-                    print-color-adjust: exact !important;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    height: 100%;
-                  }
-                  .receipt-container { 
-                    width: 3in;
-                    height: 5in;
-                    padding: 2mm;
-                    box-sizing: border-box;
-                    display: flex;
-                    flex-direction: column;
-                  }
-                  .text-center { text-align: center; }
-                  .font-bold { font-weight: bold; }
-                  .text-lg { font-size: 1.125rem; }
-                  .text-xs { font-size: 0.75rem; line-height: 1.2; }
-                  .space-y-1 > * + * { margin-top: 0.25rem; }
-                  .flex { display: flex; }
-                  .justify-center { justify-content: center; }
-                  .justify-between { justify-content: space-between; }
-                  .object-contain { object-fit: contain; }
-                  .border-t { border-top: 1px dashed black; }
-                  .border-b { border-bottom: 1px dashed black; }
-                  .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
-                  .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-                  .mb-2 { margin-bottom: 0.5rem; }
-                  .w-full { width: 100%; }
-                  .font-semibold { font-weight: 600; }
-                  .text-left { text-align: left; }
-                  .mt-2 { margin-top: 0.5rem; }
-                  .w-1\\/2 { width: 50%; }
-                  .ml-auto { margin-left: auto; }
-                  .py-0\\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
-                  .font-medium { font-weight: 500; }
-                  .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: auto; padding-top: 1rem; border-top: 1px solid #ddd; }
-              </style>
-          </head>
-          <body>
-              <div class="receipt-container">
-                  <div class="text-center space-y-1">
-                      <div class="flex justify-center" style="height: 4rem;">
-                          ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" style="height: 100%; object-fit: contain;" />` : ''}
-                      </div>
-                      <div>
-                          <h1 class='text-lg font-bold'>${settings.name}</h1>
-                          <p class='text-xs'>${settings.address}</p>
-                          <p class='text-xs'>Phone: ${settings.phone}</p>
-                      </div>
-                  </div>
-                  
-                  <div class="border-t border-b my-2 py-1 text-xs">
-                      <div class='flex justify-between'>
-                          <span>Receipt #: ${receiptId}</span>
-                          <span>${format(new Date(), 'PPP')}</span>
-                      </div>
-                  </div>
+    const dateToPrint = receiptDate || new Date();
+    
+    let receiptHtml = '';
 
-                  <div class='text-xs mb-2'>
-                      <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                      <p><strong>Class:</strong> ${searchedStudent.class}</p>
-                  </div>
-
-                  <table class="w-full text-xs">
-                      <thead><tr class='border-t border-b'><th class="py-1 text-left font-semibold">Description</th><th class="py-1 text-right font-semibold">Amount (PKR)</th></tr></thead>
-                      <tbody><tr class='border-b'><td class="py-1">Tuition Fee</td><td class="py-1 text-right">${originalTotal.toLocaleString()}</td></tr></tbody>
-                  </table>
-                  
-                  <div class='flex justify-end mt-2'>
-                      <table class="w-1/2 ml-auto text-xs">
-                          <tbody>
-                              <tr><td class="py-0.5">Total Due:</td><td class="py-0.5 text-right font-medium">${originalTotal.toLocaleString()}</td></tr>
-                              <tr><td class="py-0.5">Amount Paid:</td><td class="py-0.5 text-right font-medium">${currentPaidAmount.toLocaleString()}</td></tr>
-                              <tr class="font-bold border-t"><td class="py-1">Balance:</td><td class="py-1 text-right">${newBalance.toLocaleString()}</td></tr>
-                          </tbody>
-                      </table>
-                  </div>
-                    <div class="footer">
-                      ${qrCodeDataUrl ? `
-                          <p class='font-bold'>Scan to Verify</p>
-                          <div class='flex justify-center'>
-                            <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
+    if (printFormat === 'a4') {
+        receiptHtml = `
+             <html>
+                <head>
+                    <title>Fee Receipt - ${searchedStudent.name}</title>
+                    <style>
+                        @page { size: A4; margin: 0.75in; }
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                        .receipt-container { position: relative; max-width: 800px; margin: auto; padding: 2rem; border: 1px solid #ddd; }
+                        .paid-stamp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); opacity: 0.1; pointer-events: none; }
+                    </style>
+                </head>
+                <body>
+                    <div class="receipt-container">
+                        <div class="paid-stamp">
+                           ${PaidStamp({ academyName: settings.name, academyPhone: settings.phone, date: dateToPrint, className: "w-96 h-96"})}
+                        </div>
+                        <div style="text-align: center; margin-bottom: 2rem;">
+                            ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 80px; margin: auto; object-fit: contain;">` : ''}
+                            <h1 style="font-size: 2rem; margin: 0.5rem 0;">${settings.name}</h1>
+                            <p>${settings.address}</p>
+                            <p>${settings.phone}</p>
+                        </div>
+                        <h2 style="text-align: center; font-size: 1.5rem; margin-bottom: 2rem;">Fee Receipt</h2>
+                        <table style="width: 100%; margin-bottom: 1rem;">
+                          <tr><td><strong>Receipt #:</strong> ${receiptId}</td><td style="text-align: right;"><strong>Date:</strong> ${format(dateToPrint, 'PPP')}</td></tr>
+                          <tr><td colspan="2"><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</td></tr>
+                           <tr><td colspan="2"><strong>Class:</strong> ${searchedStudent.class}</td></tr>
+                        </table>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem;">
+                            <thead style="background-color: #f2f2f2;">
+                                <tr><th style="padding: 10px; text-align: left;">Description</th><th style="padding: 10px; text-align: right;">Amount (PKR)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">Tuition Fee</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${originalTotal.toLocaleString()}</td></tr>
+                            </tbody>
+                        </table>
+                        <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                             <table style="width: 50%;">
+                                <tr><td>Total Due:</td><td style="text-align: right;">${originalTotal.toLocaleString()}</td></tr>
+                                <tr><td>Amount Paid:</td><td style="text-align: right;">${currentPaidAmount.toLocaleString()}</td></tr>
+                                <tr style="font-weight: bold; border-top: 2px solid #333;"><td>Balance:</td><td style="text-align: right;">${newBalance.toLocaleString()}</td></tr>
+                             </table>
+                        </div>
+                         <div style="text-align: center; margin-top: 3rem;">
+                            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p>Scan to verify</p>` : ''}
+                            <p style="margin-top: 2rem;">*** Thank you for your payment! ***</p>
+                            <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
+                        </div>
+                    </div>
+                </body>
+             </html>
+        `;
+    } else { // thermal
+        receiptHtml = `
+          <html>
+              <head>
+                  <title>Fee Receipt - ${searchedStudent.name}</title>
+                  <link rel="preconnect" href="https://fonts.googleapis.com">
+                  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                  <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
+                  <style>
+                      @page { 
+                        size: 3in 5in;
+                        margin: 0; 
+                      }
+                      body { 
+                        font-family: 'Calibri', sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        -webkit-print-color-adjust: exact !important; 
+                        print-color-adjust: exact !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100%;
+                      }
+                      .receipt-container { 
+                        width: 3in;
+                        height: 5in;
+                        padding: 2mm;
+                        box-sizing: border-box;
+                        display: flex;
+                        flex-direction: column;
+                        position: relative;
+                      }
+                      .paid-stamp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); opacity: 0.1; pointer-events: none; }
+                      .text-center { text-align: center; }
+                      .font-bold { font-weight: bold; }
+                      .text-lg { font-size: 1.125rem; }
+                      .text-xs { font-size: 0.75rem; line-height: 1.2; }
+                      .space-y-1 > * + * { margin-top: 0.25rem; }
+                      .flex { display: flex; }
+                      .justify-center { justify-content: center; }
+                      .justify-between { justify-content: space-between; }
+                      .object-contain { object-fit: contain; }
+                      .border-t { border-top: 1px dashed black; }
+                      .border-b { border-bottom: 1px dashed black; }
+                      .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+                      .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+                      .mb-2 { margin-bottom: 0.5rem; }
+                      .w-full { width: 100%; }
+                      .font-semibold { font-weight: 600; }
+                      .text-left { text-align: left; }
+                      .mt-2 { margin-top: 0.5rem; }
+                      .w-1\\/2 { width: 50%; }
+                      .ml-auto { margin-left: auto; }
+                      .py-0\\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+                      .font-medium { font-weight: 500; }
+                      .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: auto; padding-top: 1rem; border-top: 1px solid #ddd; }
+                  </style>
+              </head>
+              <body>
+                  <div class="receipt-container">
+                      <div class="paid-stamp">
+                        ${PaidStamp({ academyName: settings.name, academyPhone: settings.phone, date: dateToPrint, className: 'w-48 h-48' })}
+                      </div>
+                      <div class="text-center space-y-1">
+                          <div class="flex justify-center" style="height: 4rem;">
+                              ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" style="height: 100%; object-fit: contain;" />` : ''}
                           </div>
-                      ` : ''}
-                       <p>*** Thank you for your payment! ***</p>
-                      Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
+                          <div>
+                              <h1 class='text-lg font-bold'>${settings.name}</h1>
+                              <p class='text-xs'>${settings.address}</p>
+                              <p class='text-xs'>Phone: ${settings.phone}</p>
+                          </div>
+                      </div>
+                      
+                      <div class="border-t border-b my-2 py-1 text-xs">
+                          <div class='flex justify-between'>
+                              <span>Receipt #: ${receiptId}</span>
+                              <span>${format(dateToPrint, 'PPP')}</span>
+                          </div>
+                      </div>
+
+                      <div class='text-xs mb-2'>
+                          <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
+                          <p><strong>Class:</strong> ${searchedStudent.class}</p>
+                      </div>
+
+                      <table class="w-full text-xs">
+                          <thead><tr class='border-t border-b'><th class="py-1 text-left font-semibold">Description</th><th class="py-1 text-right font-semibold">Amount (PKR)</th></tr></thead>
+                          <tbody><tr class='border-b'><td class="py-1">Tuition Fee</td><td class="py-1 text-right">${originalTotal.toLocaleString()}</td></tr></tbody>
+                      </table>
+                      
+                      <div class='flex justify-end mt-2'>
+                          <table class="w-1/2 ml-auto text-xs">
+                              <tbody>
+                                  <tr><td class="py-0.5">Total Due:</td><td class="py-0.5 text-right font-medium">${originalTotal.toLocaleString()}</td></tr>
+                                  <tr><td class="py-0.5">Amount Paid:</td><td class="py-0.5 text-right font-medium">${currentPaidAmount.toLocaleString()}</td></tr>
+                                  <tr class="font-bold border-t"><td class="py-1">Balance:</td><td class="py-1 text-right">${newBalance.toLocaleString()}</td></tr>
+                              </tbody>
+                          </table>
+                      </div>
+                        <div class="footer">
+                          ${qrCodeDataUrl ? `
+                              <p class='font-bold'>Scan to Verify</p>
+                              <div class='flex justify-center'>
+                                <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
+                              </div>
+                          ` : ''}
+                           <p>*** Thank you for your payment! ***</p>
+                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
+                      </div>
                   </div>
-              </div>
-          </body>
-      </html>
-    `;
+              </body>
+          </html>
+        `;
+    }
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -358,6 +431,24 @@ export default function FeeCollectionPage() {
         printWindow.document.close();
         setTimeout(() => printWindow.print(), 250);
     }
+  };
+
+  const handleReprintLastReceipt = () => {
+    if (!searchedStudent || !lastPayment) {
+        toast({
+            variant: "destructive",
+            title: "No Payment Found",
+            description: "No previous payment record exists for this student.",
+        });
+        return;
+    }
+    
+    // Recalculate the state at the time of the last payment
+    const amountPaid = lastPayment.amount;
+    const balanceBeforePayment = searchedStudent.totalFee + amountPaid;
+    const balanceAfterPayment = searchedStudent.totalFee;
+
+    handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
   };
   
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
@@ -403,10 +494,29 @@ export default function FeeCollectionPage() {
         <div className="grid gap-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Fee Details for {searchedStudent.name}</CardTitle>
-                    <CardDescription>
-                        Roll #: {searchedStudent.id} | Class: {searchedStudent.class}
-                    </CardDescription>
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <CardTitle>Fee Details for {searchedStudent.name}</CardTitle>
+                            <CardDescription>
+                                Roll #: {searchedStudent.id} | Class: {searchedStudent.class}
+                            </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Select value={printFormat} onValueChange={(v) => setPrintFormat(v as PrintFormat)}>
+                                <SelectTrigger className="w-[150px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="thermal">Thermal Printer</SelectItem>
+                                    <SelectItem value="a4">A4 Page</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button onClick={handleReprintLastReceipt} variant="outline" disabled={!lastPayment}>
+                                <Printer className="mr-2" />
+                                Print Last Receipt
+                            </Button>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent className="grid gap-6">
                      <div className="grid grid-cols-2 gap-4 text-center">
@@ -459,3 +569,4 @@ export default function FeeCollectionPage() {
     </div>
   );
 }
+
