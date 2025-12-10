@@ -20,7 +20,6 @@ import { useSettings } from '@/hooks/use-settings';
 import { useAppContext } from '@/hooks/use-app-context';
 import QRCode from 'qrcode';
 import { format, addDays } from 'date-fns';
-import { PaidStamp } from '@/components/paid-stamp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendWhatsappMessage } from '@/lib/whatsapp';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -296,7 +295,7 @@ export default function FeeCollectionPage() {
                   .ml-auto { margin-left: auto; }
                   .py-0\\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
                   .font-medium { font-weight: 500; }
-                  .footer { margin-top: auto; }
+                  .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: auto; padding-top: 1rem; border-top: 1px solid #ddd; }
               </style>
           </head>
           <body>
@@ -338,15 +337,15 @@ export default function FeeCollectionPage() {
                           </tbody>
                       </table>
                   </div>
-
-                  <div class='footer text-center text-xs'>
+                    <div class="footer">
                       ${qrCodeDataUrl ? `
                           <p class='font-bold'>Scan to Verify</p>
                           <div class='flex justify-center'>
                             <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
                           </div>
                       ` : ''}
-                      <p>*** Thank you for your payment! ***</p>
+                       <p>*** Thank you for your payment! ***</p>
+                      Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
                   </div>
               </div>
           </body>
@@ -424,6 +423,7 @@ export default function FeeCollectionPage() {
                         background: #fff;
                         padding: 0 5px;
                     }
+                    .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
                      @media print {
                       @page {
                         size: A4 portrait;
@@ -474,6 +474,9 @@ export default function FeeCollectionPage() {
                             <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
                             <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
                         </div>
+                        <div class="footer">
+                            Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+                        </div>
                     </div>
                 </body>
             </html>
@@ -486,7 +489,8 @@ export default function FeeCollectionPage() {
                   <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
                   <style>
                       @page { size: 80mm; margin: 0; }
-                      body { font-family: 'Calibri', sans-serif; margin: 0; padding: 2mm; -webkit-print-color-adjust: exact; }
+                      body { font-family: 'Calibri', sans-serif; margin: 0; padding: 2mm; -webkit-print-color-adjust: exact; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
+                      .content-wrap { flex: 1; }
                       .text-center { text-align: center; }
                       .font-bold { font-weight: bold; }
                       .text-lg { font-size: 1.125rem; }
@@ -498,32 +502,38 @@ export default function FeeCollectionPage() {
                       .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
                       .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
                       .mt-4 { margin-top: 1rem; }
+                      .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: auto; padding-top: 1rem; border-top: 1px solid #ddd; }
                   </style>
               </head>
               <body>
-                  <div class="text-center">
-                      ${settings.logo ? `<img src="${settings.logo}" alt="logo" style="height: 4rem; object-fit: contain; margin: auto;">` : ''}
-                      <h1 class='text-lg font-bold'>${settings.name}</h1>
-                      <p class='text-xs'>${settings.address}</p>
-                      <p class='text-xs'>Phone: ${settings.phone}</p>
+                  <div class="content-wrap">
+                      <div class="text-center">
+                          ${settings.logo ? `<img src="${settings.logo}" alt="logo" style="height: 4rem; object-fit: contain; margin: auto;">` : ''}
+                          <h1 class='text-lg font-bold'>${settings.name}</h1>
+                          <p class='text-xs'>${settings.address}</p>
+                          <p class='text-xs'>Phone: ${settings.phone}</p>
+                      </div>
+                      <div class="border-t border-b my-2 py-1 text-xs">
+                          <div class='flex justify-between'><span>Voucher</span><span>${format(issueDate, 'PPP')}</span></div>
+                      </div>
+                      <div class='text-xs'>
+                          <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
+                          <p><strong>Class:</strong> ${searchedStudent.class}</p>
+                      </div>
+                      <div class="border-t my-2"></div>
+                      <div class='flex justify-between font-bold text-xs'><span>Total Due:</span><span>${searchedStudent.totalFee.toLocaleString()} PKR</span></div>
+                      <p class='text-center text-xs mt-4'>Please pay by: ${format(dueDate, 'PPP')}</p>
+                      <div class='text-center mt-4'>
+                          ${qrCodeDataUrl ? `
+                              <p class='font-bold text-xs'>Scan to check status</p>
+                              <div style='display:flex; justify-content:center;'>
+                                <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
+                              </div>
+                          ` : ''}
+                      </div>
                   </div>
-                  <div class="border-t border-b my-2 py-1 text-xs">
-                      <div class='flex justify-between'><span>Voucher</span><span>${format(issueDate, 'PPP')}</span></div>
-                  </div>
-                  <div class='text-xs'>
-                      <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                      <p><strong>Class:</strong> ${searchedStudent.class}</p>
-                  </div>
-                  <div class="border-t my-2"></div>
-                  <div class='flex justify-between font-bold text-xs'><span>Total Due:</span><span>${searchedStudent.totalFee.toLocaleString()} PKR</span></div>
-                  <p class='text-center text-xs mt-4'>Please pay by: ${format(dueDate, 'PPP')}</p>
-                   <div class='text-center mt-4'>
-                      ${qrCodeDataUrl ? `
-                          <p class='font-bold text-xs'>Scan to check status</p>
-                          <div style='display:flex; justify-content:center;'>
-                            <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
-                          </div>
-                      ` : ''}
+                  <div class="footer">
+                      Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
                   </div>
               </body>
             </html>
@@ -603,8 +613,8 @@ export default function FeeCollectionPage() {
                                     <SelectValue placeholder="Select format" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="thermal">Thermal Voucher</SelectItem>
                                     <SelectItem value="a4">A4 Voucher</SelectItem>
+                                    <SelectItem value="thermal">Thermal Voucher</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -653,5 +663,3 @@ export default function FeeCollectionPage() {
     </div>
   );
 }
-
-    

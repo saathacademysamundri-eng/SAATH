@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -101,6 +100,9 @@ export default function VouchersPage() {
                 <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
                 <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
             </div>
+             <div class="footer">
+                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+            </div>
         </div>
       `;
       allVouchersHtml += voucherHtml;
@@ -151,6 +153,7 @@ export default function VouchersPage() {
                     background: #fff;
                     padding: 0 5px;
                 }
+                .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
                 @media print {
                   @page {
                     size: A4 portrait;
