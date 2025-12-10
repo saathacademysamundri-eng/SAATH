@@ -9,21 +9,30 @@ import { useToast } from '@/hooks/use-toast';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useSettings } from '@/hooks/use-settings';
 import { format, addDays } from 'date-fns';
-import { Newspaper, Printer, CalendarIcon } from 'lucide-react';
+import { Newspaper, Printer, CalendarIcon, Search, Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import QRCode from 'qrcode';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
+import { getStudent } from '@/lib/firebase/firestore';
+import type { Student } from '@/lib/data';
 
 export default function VouchersPage() {
   const { classes, students, loading: appLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
 
+  // State for class vouchers
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [issueDate, setIssueDate] = useState<Date>(new Date());
   const [dueDate, setDueDate] = useState<Date>(addDays(new Date(), 10));
+
+  // State for individual vouchers
+  const [search, setSearch] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchedStudent, setSearchedStudent] = useState<Student | null>(null);
 
   const studentsInClass = useMemo(() => {
     if (!selectedClassId) return [];
@@ -31,16 +40,101 @@ export default function VouchersPage() {
     return students.filter(student => student.class === className);
   }, [selectedClassId, students, classes]);
 
-  const handlePrintVouchers = async () => {
-    if (!selectedClassId) {
-      toast({ variant: 'destructive', title: 'No Class Selected', description: 'Please select a class to generate vouchers.' });
+  const handleSearch = async () => {
+    if (!search) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Please enter a student roll number.' });
       return;
     }
-    if (studentsInClass.length === 0) {
-      toast({ variant: 'destructive', title: 'No Students Found', description: 'The selected class has no students to generate vouchers for.' });
-      return;
+    setIsSearching(true);
+    const student = await getStudent(search);
+    if (student) {
+      setSearchedStudent(student);
+    } else {
+      toast({ variant: 'destructive', title: 'Not Found', description: 'No student found with that roll number.' });
+      setSearchedStudent(null);
     }
+    setIsSearching(false);
+  };
+  
+  const generateVoucherHtml = async (student: Student) => {
+    const verificationUrl = `${window.location.origin}/p/student/${student.id}`;
+    let qrCodeDataUrl = '';
+    try {
+      qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
+    } catch (error) {
+      console.error('QR code generation failed:', error);
+    }
+  
+    return `
+      <div class="voucher-container">
+          <!-- Student Copy -->
+          <div class="main-content">
+            <div class="header">
+                ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
+                <h1>${settings.name}</h1>
+                <p>${settings.address}</p>
+                <p>Phone: ${settings.phone}</p>
+            </div>
+            <h2>Fee Voucher (Student Copy)</h2>
+            <table class="details">
+                <tr><td><strong>Student Name:</strong></td><td>${student.name}</td><td><strong>Roll No:</strong></td><td>${student.id}</td></tr>
+                <tr><td><strong>Father's Name:</strong></td><td>${student.fatherName}</td><td><strong>Class:</strong></td><td>${student.class}</td></tr>
+                <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
+            </table>
+            <table class="fee-details">
+                <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
+                <tbody><tr><td>Tuition Fee</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tbody>
+                <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tfoot>
+            </table>
+            <div class="qr-section">
+              ${qrCodeDataUrl ? `
+                    <p><strong>Scan to check status online</strong></p>
+                    <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
+                ` : ''}
+            </div>
+          </div>
 
+          <div class="cut-line">
+              <div class="cut-line-icon">&#x2702;</div>
+          </div>
+
+          <!-- Academy Copy -->
+          <div class="slip">
+              <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
+              <p><strong>Student:</strong> ${student.name} (${student.id})</p>
+              <p><strong>Father's Name:</strong> ${student.fatherName}</p>
+              <p><strong>Class:</strong> ${student.class}</p>
+              <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
+              <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
+          </div>
+           <div class="footer">
+              Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
+          </div>
+      </div>
+    `;
+  };
+
+  const handlePrint = async (target: 'class' | 'individual') => {
+    let vouchersToPrint: Student[] = [];
+
+    if (target === 'class') {
+      if (!selectedClassId) {
+        toast({ variant: 'destructive', title: 'No Class Selected', description: 'Please select a class.' });
+        return;
+      }
+      if (studentsInClass.length === 0) {
+        toast({ variant: 'destructive', title: 'No Students Found', description: 'The selected class has no students.' });
+        return;
+      }
+      vouchersToPrint = studentsInClass;
+    } else if (target === 'individual') {
+      if (!searchedStudent) {
+        toast({ variant: 'destructive', title: 'No Student Found', description: 'Please search for a student first.' });
+        return;
+      }
+      vouchersToPrint = [searchedStudent];
+    }
+    
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Please allow popups for this site.' });
@@ -48,69 +142,13 @@ export default function VouchersPage() {
     }
 
     let allVouchersHtml = '';
-
-    for (const student of studentsInClass) {
-      const verificationUrl = `${window.location.origin}/p/student/${student.id}`;
-      let qrCodeDataUrl = '';
-      try {
-        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
-      } catch (error) {
-        console.error('QR code generation failed:', error);
-      }
-
-      const voucherHtml = `
-        <div class="voucher-container">
-            <!-- Student Copy -->
-            <div class="main-content">
-              <div class="header">
-                  ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
-                  <h1>${settings.name}</h1>
-                  <p>${settings.address}</p>
-                  <p>Phone: ${settings.phone}</p>
-              </div>
-              <h2>Fee Voucher (Student Copy)</h2>
-              <table class="details">
-                  <tr><td><strong>Student Name:</strong></td><td>${student.name}</td><td><strong>Roll No:</strong></td><td>${student.id}</td></tr>
-                  <tr><td><strong>Father's Name:</strong></td><td>${student.fatherName}</td><td><strong>Class:</strong></td><td>${student.class}</td></tr>
-                  <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
-              </table>
-              <table class="fee-details">
-                  <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
-                  <tbody><tr><td>Tuition Fee</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tbody>
-                  <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tfoot>
-              </table>
-              <div class="qr-section">
-                ${qrCodeDataUrl ? `
-                      <p><strong>Scan to check status online</strong></p>
-                      <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
-                  ` : ''}
-              </div>
-            </div>
-
-            <div class="cut-line">
-                <div class="cut-line-icon">&#x2702;</div>
-            </div>
-
-            <!-- Academy Copy -->
-            <div class="slip">
-                <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
-                <p><strong>Student:</strong> ${student.name} (${student.id})</p>
-                <p><strong>Father's Name:</strong> ${student.fatherName}</p>
-                <p><strong>Class:</strong> ${student.class}</p>
-                <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
-                <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
-            </div>
-             <div class="footer">
-                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
-            </div>
-        </div>
-      `;
-      allVouchersHtml += voucherHtml;
+    for (const student of vouchersToPrint) {
+      allVouchersHtml += await generateVoucherHtml(student);
     }
     
-    const finalHtml = `
+     const finalHtml = `
         <html>
-            <head><title>Class Fee Vouchers - ${classes.find(c => c.id === selectedClassId)?.name}</title>
+            <head><title>Fee Vouchers</title>
              <style>
                 body { font-family: Calibri, sans-serif; }
                 .voucher-container { 
@@ -178,15 +216,47 @@ export default function VouchersPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Generate Class Vouchers</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Fee Vouchers</h1>
         <p className="text-muted-foreground">
-          Create and print A4 fee vouchers for an entire class at once.
+          Generate and print fee vouchers for individual students or entire classes.
         </p>
       </div>
 
-      <Card className="max-w-4xl">
+       <Card>
         <CardHeader>
-          <CardTitle>Voucher Generation</CardTitle>
+          <CardTitle>Individual Fee Voucher</CardTitle>
+          <CardDescription>Search for a student by their roll number to print a single voucher.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="flex w-full max-w-sm items-center space-x-2">
+                <Input
+                    type="text"
+                    placeholder="Enter student roll number..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    disabled={isSearching}
+                />
+                <Button onClick={handleSearch} disabled={isSearching}>
+                    {isSearching ? <Loader2 className="animate-spin" /> : <Search />}
+                    Search
+                </Button>
+            </div>
+            {searchedStudent && (
+                 <div className="p-4 bg-muted rounded-md">
+                    <p className="font-semibold">{searchedStudent.name} - {searchedStudent.class}</p>
+                    <p className="text-sm text-muted-foreground">Outstanding Fee: {searchedStudent.totalFee.toLocaleString()} PKR</p>
+                    <Button size="sm" variant="secondary" className="mt-2" onClick={() => handlePrint('individual')}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print Voucher
+                    </Button>
+                </div>
+            )}
+        </CardContent>
+       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Bulk Class Vouchers</CardTitle>
           <CardDescription>Select a class and set dates to generate fee vouchers for all its students.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -239,7 +309,7 @@ export default function VouchersPage() {
               </Popover>
             </div>
           </div>
-           <Button onClick={handlePrintVouchers} disabled={!selectedClassId || isSettingsLoading} size="lg">
+           <Button onClick={() => handlePrint('class')} disabled={!selectedClassId || isSettingsLoading} size="lg">
               <Printer className="mr-2" />
               Print Vouchers ({studentsInClass.length} Students)
             </Button>

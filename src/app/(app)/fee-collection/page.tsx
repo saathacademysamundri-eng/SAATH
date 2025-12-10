@@ -83,7 +83,7 @@ export default function FeeCollectionPage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [printFormat, setPrintFormat] = useState<PrintFormat>('a4');
+  const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
   
@@ -345,7 +345,7 @@ export default function FeeCollectionPage() {
                           </div>
                       ` : ''}
                        <p>*** Thank you for your payment! ***</p>
-                      Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+                      Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
                   </div>
               </div>
           </body>
@@ -360,192 +360,6 @@ export default function FeeCollectionPage() {
     }
   };
   
-  const handlePrintVoucher = async () => {
-    if (isSettingsLoading || !searchedStudent) return;
-    
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    
-    const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
-    let qrCodeDataUrl = '';
-    try {
-        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
-    } catch (error) {
-        console.error('QR code generation failed:', error);
-    }
-
-    let voucherHtml = '';
-    const issueDate = new Date();
-    const dueDate = addDays(issueDate, 10);
-
-    if (printFormat === 'a4') {
-        voucherHtml = `
-            <html>
-                <head><title>Fee Voucher - ${searchedStudent.name}</title></head>
-                <style>
-                    body { font-family: Calibri, sans-serif; margin: 0; }
-                    .container { 
-                        width: 100%;
-                        max-width: 800px; 
-                        margin: auto; 
-                        padding: 20px; 
-                        border: 1px solid #ccc; 
-                        display: flex;
-                        flex-direction: column;
-                        box-sizing: border-box;
-                    }
-                    .main-content { flex-grow: 1; }
-                    .header { text-align: center; margin-bottom: 20px; }
-                    .header img { max-height: 80px; margin-bottom: 10px; }
-                    .header h1 { margin: 0; }
-                    .details, .fee-details { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    .details td, .fee-details th, .fee-details td { border: 1px solid #ccc; padding: 8px; }
-                    .fee-details th { background-color: #f2f2f2; text-align: left;}
-                    .text-right { text-align: right; }
-                    .total-row td { font-weight: bold; }
-                    .slip-container { display: flex; justify-content: space-between; gap: 20px; }
-                    .slip { border: 1px solid #000; padding: 10px; width: 100%; text-align: center; }
-                    .qr-section { text-align: center; margin-top: 20px; }
-                    .qr-section img { margin: auto; }
-                    .cut-line { 
-                        display: flex;
-                        align-items: center;
-                        text-align: center;
-                        margin: 20px 0;
-                        border-top: 2px dashed #888;
-                        position: relative;
-                    }
-                    .cut-line-icon {
-                        font-size: 20px;
-                        position: absolute;
-                        left: 10px;
-                        transform: translateY(-50%);
-                        background: #fff;
-                        padding: 0 5px;
-                    }
-                    .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
-                     @media print {
-                      @page {
-                        size: A4 portrait;
-                        margin: 0.5in;
-                      }
-                      body { -webkit-print-color-adjust: exact; }
-                    }
-                </style>
-                <body>
-                    <div class="container">
-                        <!-- Student Copy -->
-                        <div class="main-content">
-                            <div class="header">
-                                ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
-                                <h1>${settings.name}</h1>
-                                <p>${settings.address}</p>
-                                <p>Phone: ${settings.phone}</p>
-                            </div>
-                            <h2>Fee Voucher (Student Copy)</h2>
-                            <table class="details">
-                                <tr><td><strong>Student Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
-                                <tr><td><strong>Father's Name:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
-                                <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
-                            </table>
-                            <table class="fee-details">
-                                <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
-                                <tbody><tr><td>Tuition Fee</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tbody>
-                                <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tfoot>
-                            </table>
-                             <div class="qr-section">
-                               ${qrCodeDataUrl ? `
-                                    <p><strong>Scan to check status online</strong></p>
-                                    <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
-                                ` : ''}
-                            </div>
-                        </div>
-
-                        <div class="cut-line">
-                            <div class="cut-line-icon">&#x2702;</div>
-                        </div>
-
-                        <!-- Academy Copy -->
-                         <div class="slip">
-                            <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
-                            <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                            <p><strong>Father's Name:</strong> ${searchedStudent.fatherName}</p>
-                            <p><strong>Class:</strong> ${searchedStudent.class}</p>
-                            <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
-                            <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
-                        </div>
-                        <div class="footer">
-                            Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
-                        </div>
-                    </div>
-                </body>
-            </html>
-        `;
-    } else { // thermal
-        voucherHtml = `
-           <html>
-              <head>
-                  <title>Fee Voucher - ${searchedStudent.name}</title>
-                  <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
-                  <style>
-                      @page { size: 80mm; margin: 0; }
-                      body { font-family: 'Calibri', sans-serif; margin: 0; padding: 2mm; -webkit-print-color-adjust: exact; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
-                      .content-wrap { flex: 1; }
-                      .text-center { text-align: center; }
-                      .font-bold { font-weight: bold; }
-                      .text-lg { font-size: 1.125rem; }
-                      .text-xs { font-size: 0.75rem; line-height: 1.2; }
-                      .flex { display: flex; }
-                      .justify-between { justify-content: space-between; }
-                      .border-t { border-top: 1px dashed black; }
-                      .border-b { border-bottom: 1px dashed black; }
-                      .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
-                      .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-                      .mt-4 { margin-top: 1rem; }
-                      .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: auto; padding-top: 1rem; border-top: 1px solid #ddd; }
-                  </style>
-              </head>
-              <body>
-                  <div class="content-wrap">
-                      <div class="text-center">
-                          ${settings.logo ? `<img src="${settings.logo}" alt="logo" style="height: 4rem; object-fit: contain; margin: auto;">` : ''}
-                          <h1 class='text-lg font-bold'>${settings.name}</h1>
-                          <p class='text-xs'>${settings.address}</p>
-                          <p class='text-xs'>Phone: ${settings.phone}</p>
-                      </div>
-                      <div class="border-t border-b my-2 py-1 text-xs">
-                          <div class='flex justify-between'><span>Voucher</span><span>${format(issueDate, 'PPP')}</span></div>
-                      </div>
-                      <div class='text-xs'>
-                          <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                          <p><strong>Class:</strong> ${searchedStudent.class}</p>
-                      </div>
-                      <div class="border-t my-2"></div>
-                      <div class='flex justify-between font-bold text-xs'><span>Total Due:</span><span>${searchedStudent.totalFee.toLocaleString()} PKR</span></div>
-                      <p class='text-center text-xs mt-4'>Please pay by: ${format(dueDate, 'PPP')}</p>
-                      <div class='text-center mt-4'>
-                          ${qrCodeDataUrl ? `
-                              <p class='font-bold text-xs'>Scan to check status</p>
-                              <div style='display:flex; justify-content:center;'>
-                                <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
-                              </div>
-                          ` : ''}
-                      </div>
-                  </div>
-                  <div class="footer">
-                      Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
-                  </div>
-              </body>
-            </html>
-        `;
-    }
-
-    printWindow.document.write(voucherHtml);
-    printWindow.document.close();
-    setTimeout(() => printWindow.print(), 250);
-  };
-
-
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
   
   return (
@@ -604,24 +418,6 @@ export default function FeeCollectionPage() {
                             <p className='text-sm text-muted-foreground'>Status</p>
                             <p className='text-2xl font-bold'>{searchedStudent.feeStatus}</p>
                         </div>
-                    </div>
-                     <div className="flex flex-wrap items-end gap-4">
-                        <div className="space-y-2">
-                            <Label>Print Voucher Format</Label>
-                            <Select value={printFormat} onValueChange={(v) => setPrintFormat(v as PrintFormat)}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Select format" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="a4">A4 Voucher</SelectItem>
-                                    <SelectItem value="thermal">Thermal Voucher</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <Button variant="outline" onClick={handlePrintVoucher} disabled={isSettingsLoading || searchedStudent.totalFee === 0}>
-                            <Printer className="mr-2"/>
-                            Print Voucher
-                        </Button>
                     </div>
                 </CardContent>
             </Card>

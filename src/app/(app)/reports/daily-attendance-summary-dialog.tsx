@@ -120,7 +120,7 @@ export function DailyAttendanceSummaryDialog() {
                         </div>
                       </div>
                       <div class="footer">
-                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
                       </div>
                     </div>
                 </body>
