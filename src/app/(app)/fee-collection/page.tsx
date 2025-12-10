@@ -11,23 +11,23 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { type Student } from '@/lib/data';
+import { type Student, type Income } from '@/lib/data';
 import { getStudents, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
 import { Printer, Search, Loader2 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useAppContext } from '@/hooks/use-app-context';
 import QRCode from 'qrcode';
 import { format, addDays } from 'date-fns';
-import { PaidStamp } from '@/components/paid-stamp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendWhatsappMessage } from '@/lib/whatsapp';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import html2canvas from 'html2canvas';
 
-type PrintFormat = 'thermal' | 'a4';
+type PrintFormat = 'thermal' | 'a4' | 'jpg';
 
 function StudentSearchResultsDialog({
   open,
@@ -84,13 +84,22 @@ export default function FeeCollectionPage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [printFormat, setPrintFormat] = useState<PrintFormat>('a4');
+  const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
-  const { students, refreshData } = useAppContext();
+  const { students, income, refreshData } = useAppContext();
+  
+  const lastPayment = useMemo(() => {
+    if (!searchedStudent) return null;
+    return income
+      .filter(i => i.studentId === searchedStudent.id)
+      .sort((a, b) => b.date.getTime() - a.date.getTime())[0] || null;
+  }, [searchedStudent, income]);
+
 
   const handleSearch = async () => {
     if (!search.trim()) {
@@ -232,7 +241,7 @@ export default function FeeCollectionPage() {
     setIsProcessingPayment(false);
   };
 
-  const handlePrintPaidReceipt = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string) => {
+  const handlePrintPaidReceipt = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
     if (isSettingsLoading || !searchedStudent) return;
     
     const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
@@ -243,115 +252,179 @@ export default function FeeCollectionPage() {
         console.error('QR code generation failed:', error);
     }
         
-    const receiptHtml = `
-      <html>
-          <head>
-              <title>Fee Receipt - ${searchedStudent.name}</title>
-              <link rel="preconnect" href="https://fonts.googleapis.com">
-              <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-              <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
-              <style>
-                  @page { 
-                    size: 3in 5in;
-                    margin: 0; 
-                  }
-                  body { 
-                    font-family: 'Calibri', sans-serif;
-                    margin: 0;
-                    padding: 0;
-                    -webkit-print-color-adjust: exact !important; 
-                    print-color-adjust: exact !important;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    height: 100%;
-                  }
-                  .receipt-container { 
-                    width: 3in;
-                    height: 5in;
-                    padding: 2mm;
-                    box-sizing: border-box;
-                    display: flex;
-                    flex-direction: column;
-                  }
-                  .text-center { text-align: center; }
-                  .font-bold { font-weight: bold; }
-                  .text-lg { font-size: 1.125rem; }
-                  .text-xs { font-size: 0.75rem; line-height: 1.2; }
-                  .space-y-1 > * + * { margin-top: 0.25rem; }
-                  .flex { display: flex; }
-                  .justify-center { justify-content: center; }
-                  .justify-between { justify-content: space-between; }
-                  .object-contain { object-fit: contain; }
-                  .border-t { border-top: 1px dashed black; }
-                  .border-b { border-bottom: 1px dashed black; }
-                  .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
-                  .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-                  .mb-2 { margin-bottom: 0.5rem; }
-                  .w-full { width: 100%; }
-                  .font-semibold { font-weight: 600; }
-                  .text-left { text-align: left; }
-                  .mt-2 { margin-top: 0.5rem; }
-                  .w-1\\/2 { width: 50%; }
-                  .ml-auto { margin-left: auto; }
-                  .py-0\\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
-                  .font-medium { font-weight: 500; }
-                  .footer { margin-top: auto; }
-              </style>
-          </head>
-          <body>
-              <div class="receipt-container">
-                  <div class="text-center space-y-1">
-                      <div class="flex justify-center" style="height: 4rem;">
-                          ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" style="height: 100%; object-fit: contain;" />` : ''}
-                      </div>
-                      <div>
-                          <h1 class='text-lg font-bold'>${settings.name}</h1>
-                          <p class='text-xs'>${settings.address}</p>
-                          <p class='text-xs'>Phone: ${settings.phone}</p>
-                      </div>
-                  </div>
-                  
-                  <div class="border-t border-b my-2 py-1 text-xs">
-                      <div class='flex justify-between'>
-                          <span>Receipt #: ${receiptId}</span>
-                          <span>${format(new Date(), 'PPP')}</span>
-                      </div>
-                  </div>
-
-                  <div class='text-xs mb-2'>
-                      <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                      <p><strong>Class:</strong> ${searchedStudent.class}</p>
-                  </div>
-
-                  <table class="w-full text-xs">
-                      <thead><tr class='border-t border-b'><th class="py-1 text-left font-semibold">Description</th><th class="py-1 text-right font-semibold">Amount (PKR)</th></tr></thead>
-                      <tbody><tr class='border-b'><td class="py-1">Tuition Fee</td><td class="py-1 text-right">${originalTotal.toLocaleString()}</td></tr></tbody>
-                  </table>
-                  
-                  <div class='flex justify-end mt-2'>
-                      <table class="w-1/2 ml-auto text-xs">
-                          <tbody>
-                              <tr><td class="py-0.5">Total Due:</td><td class="py-0.5 text-right font-medium">${originalTotal.toLocaleString()}</td></tr>
-                              <tr><td class="py-0.5">Amount Paid:</td><td class="py-0.5 text-right font-medium">${currentPaidAmount.toLocaleString()}</td></tr>
-                              <tr class="font-bold border-t"><td class="py-1">Balance:</td><td class="py-1 text-right">${newBalance.toLocaleString()}</td></tr>
-                          </tbody>
-                      </table>
-                  </div>
-
-                  <div class='footer text-center text-xs'>
-                      ${qrCodeDataUrl ? `
-                          <p class='font-bold'>Scan to Verify</p>
-                          <div class='flex justify-center'>
-                            <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
-                          </div>
-                      ` : ''}
-                      <p>*** Thank you for your payment! ***</p>
-                  </div>
-              </div>
-          </body>
-      </html>
+    const dateToPrint = receiptDate || new Date();
+    
+    let receiptHtml = '';
+    
+    const paidStampHtml = `
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); opacity: 0.1; font-size: ${printFormat === 'a4' ? '10rem' : '5rem'}; font-weight: bold; color: #000; pointer-events: none; z-index: -1;">
+        PAID
+      </div>
     `;
+
+    if (printFormat === 'a4') {
+        receiptHtml = `
+             <html>
+                <head>
+                    <title>Receiving Receipt - ${searchedStudent.name}</title>
+                    <style>
+                        @page { size: A4; margin: 0.75in; }
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                        .receipt-container { position: relative; max-width: 800px; margin: auto; padding: 2rem; border: 1px solid #ddd; }
+                    </style>
+                </head>
+                <body>
+                    <div class="receipt-container">
+                        ${paidStampHtml}
+                        <div style="text-align: center; margin-bottom: 2rem;">
+                            ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 80px; margin: auto; object-fit: contain;">` : ''}
+                            <h1 style="font-size: 2rem; margin: 0.5rem 0;">${settings.name}</h1>
+                            <p>${settings.address}</p>
+                            <p>${settings.phone}</p>
+                        </div>
+                        <h2 style="text-align: center; font-size: 1.5rem; margin-bottom: 2rem;">Receiving Receipt</h2>
+                        <table style="width: 100%; margin-bottom: 1rem;">
+                          <tr><td><strong>Receipt #:</strong> ${receiptId}</td><td style="text-align: right;"><strong>Date:</strong> ${format(dateToPrint, 'PPP')}</td></tr>
+                          <tr><td colspan="2"><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</td></tr>
+                           <tr><td colspan="2"><strong>Class:</strong> ${searchedStudent.class}</td></tr>
+                        </table>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem;">
+                            <thead style="background-color: #f2f2f2;">
+                                <tr><th style="padding: 10px; text-align: left;">Description</th><th style="padding: 10px; text-align: right;">Amount (PKR)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">Tuition Fee</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${originalTotal.toLocaleString()}</td></tr>
+                            </tbody>
+                        </table>
+                        <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                             <table style="width: 50%;">
+                                <tr><td>Total Due:</td><td style="text-align: right;">${originalTotal.toLocaleString()}</td></tr>
+                                <tr><td>Amount Paid:</td><td style="text-align: right;">${currentPaidAmount.toLocaleString()}</td></tr>
+                                <tr style="font-weight: bold; border-top: 2px solid #333;"><td>Balance:</td><td style="text-align: right;">${newBalance.toLocaleString()}</td></tr>
+                             </table>
+                        </div>
+                         <div style="text-align: center; margin-top: 3rem;">
+                            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p>Scan to verify</p>` : ''}
+                            <p style="margin-top: 2rem;">*** Thank you for your payment! ***</p>
+                            <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
+                        </div>
+                    </div>
+                </body>
+             </html>
+        `;
+    } else { // thermal
+        receiptHtml = `
+          <html>
+              <head>
+                  <title>Receiving Receipt - ${searchedStudent.name}</title>
+                  <link rel="preconnect" href="https://fonts.googleapis.com">
+                  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                  <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
+                  <style>
+                      @page { 
+                        size: 3in 5in;
+                        margin: 0; 
+                      }
+                      body { 
+                        font-family: 'Calibri', sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        -webkit-print-color-adjust: exact !important; 
+                        print-color-adjust: exact !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100%;
+                      }
+                      .receipt-container { 
+                        width: 3in;
+                        height: 5in;
+                        padding: 2mm;
+                        box-sizing: border-box;
+                        display: flex;
+                        flex-direction: column;
+                        position: relative;
+                      }
+                      .text-center { text-align: center; }
+                      .font-bold { font-weight: bold; }
+                      .text-lg { font-size: 1.125rem; }
+                      .text-xs { font-size: 0.75rem; line-height: 1.2; }
+                      .space-y-1 > * + * { margin-top: 0.25rem; }
+                      .flex { display: flex; }
+                      .justify-center { justify-content: center; }
+                      .justify-between { justify-content: space-between; }
+                      .object-contain { object-fit: contain; }
+                      .border-t { border-top: 1px dashed black; }
+                      .border-b { border-bottom: 1px dashed black; }
+                      .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+                      .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+                      .mb-2 { margin-bottom: 0.5rem; }
+                      .w-full { width: 100%; }
+                      .font-semibold { font-weight: 600; }
+                      .text-left { text-align: left; }
+                      .mt-2 { margin-top: 0.5rem; }
+                      .w-1\\/2 { width: 50%; }
+                      .ml-auto { margin-left: auto; }
+                      .py-0\\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+                      .font-medium { font-weight: 500; }
+                      .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: auto; padding-top: 1rem; border-top: 1px solid #ddd; }
+                  </style>
+              </head>
+              <body>
+                  <div class="receipt-container">
+                      ${paidStampHtml}
+                      <div class="text-center space-y-1">
+                          <div class="flex justify-center" style="height: 4rem;">
+                              ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" style="height: 100%; object-fit: contain;" />` : ''}
+                          </div>
+                          <div>
+                              <h1 class='text-lg font-bold'>${settings.name}</h1>
+                              <p class='text-xs'>${settings.address}</p>
+                              <p class='text-xs'>Phone: ${settings.phone}</p>
+                          </div>
+                      </div>
+                      
+                      <div class="border-t border-b my-2 py-1 text-xs">
+                          <div class='flex justify-between'>
+                              <span>Receipt #: ${receiptId}</span>
+                              <span>${format(dateToPrint, 'PPP')}</span>
+                          </div>
+                      </div>
+
+                      <div class='text-xs mb-2'>
+                          <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
+                          <p><strong>Class:</strong> ${searchedStudent.class}</p>
+                      </div>
+
+                      <table class="w-full text-xs">
+                          <thead><tr class='border-t border-b'><th class="py-1 text-left font-semibold">Description</th><th class="py-1 text-right font-semibold">Amount (PKR)</th></tr></thead>
+                          <tbody><tr class='border-b'><td class="py-1">Tuition Fee</td><td class="py-1 text-right">${originalTotal.toLocaleString()}</td></tr></tbody>
+                      </table>
+                      
+                      <div class='flex justify-end mt-2'>
+                          <table class="w-1/2 ml-auto text-xs">
+                              <tbody>
+                                  <tr><td class="py-0.5">Total Due:</td><td class="py-0.5 text-right font-medium">${originalTotal.toLocaleString()}</td></tr>
+                                  <tr><td class="py-0.5">Amount Paid:</td><td class="py-0.5 text-right font-medium">${currentPaidAmount.toLocaleString()}</td></tr>
+                                  <tr class="font-bold border-t"><td class="py-1">Balance:</td><td class="py-1 text-right">${newBalance.toLocaleString()}</td></tr>
+                              </tbody>
+                          </table>
+                      </div>
+                        <div class="footer">
+                          ${qrCodeDataUrl ? `
+                              <p class='font-bold'>Scan to Verify</p>
+                              <div class='flex justify-center'>
+                                <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
+                              </div>
+                          ` : ''}
+                           <p>*** Thank you for your payment! ***</p>
+                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
+                      </div>
+                  </div>
+              </body>
+          </html>
+        `;
+    }
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -360,298 +433,212 @@ export default function FeeCollectionPage() {
         setTimeout(() => printWindow.print(), 250);
     }
   };
-  
-  const handlePrintVoucher = async () => {
-    if (isSettingsLoading || !searchedStudent) return;
+
+  const getA4HtmlWithStyles = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
+    if (isSettingsLoading || !searchedStudent) return '';
     
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    
-    const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
+    const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
     let qrCodeDataUrl = '';
     try {
         qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
     } catch (error) {
         console.error('QR code generation failed:', error);
     }
+        
+    const dateToPrint = receiptDate || new Date();
+    
+    const paidStampHtml = `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); opacity: 0.1; font-size: 10rem; font-weight: bold; color: #000; pointer-events: none; z-index: -1;">PAID</div>`;
 
-    let voucherHtml = '';
-    const issueDate = new Date();
-    const dueDate = addDays(issueDate, 10);
-
-    if (printFormat === 'a4') {
-        voucherHtml = `
-            <html>
-                <head><title>Fee Voucher - ${searchedStudent.name}</title></head>
-                <style>
-                    body { font-family: Calibri, sans-serif; margin: 0; }
-                    .container { 
-                        width: 100%;
-                        max-width: 800px; 
-                        margin: auto; 
-                        padding: 20px; 
-                        border: 1px solid #ccc; 
-                        display: flex;
-                        flex-direction: column;
-                        box-sizing: border-box;
-                    }
-                    .main-content { flex-grow: 1; }
-                    .header { text-align: center; margin-bottom: 20px; }
-                    .header img { max-height: 80px; margin-bottom: 10px; }
-                    .header h1 { margin: 0; }
-                    .details, .fee-details { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    .details td, .fee-details th, .fee-details td { border: 1px solid #ccc; padding: 8px; }
-                    .fee-details th { background-color: #f2f2f2; text-align: left;}
-                    .text-right { text-align: right; }
-                    .total-row td { font-weight: bold; }
-                    .slip-container { display: flex; justify-content: space-between; gap: 20px; }
-                    .slip { border: 1px solid #000; padding: 10px; width: 100%; text-align: center; }
-                    .qr-section { text-align: center; margin-top: 20px; }
-                    .qr-section img { margin: auto; }
-                    .cut-line { 
-                        display: flex;
-                        align-items: center;
-                        text-align: center;
-                        margin: 20px 0;
-                        border-top: 2px dashed #888;
-                        position: relative;
-                    }
-                    .cut-line-icon {
-                        font-size: 20px;
-                        position: absolute;
-                        left: 10px;
-                        transform: translateY(-50%);
-                        background: #fff;
-                        padding: 0 5px;
-                    }
-                     @media print {
-                      @page {
-                        size: A4 portrait;
-                        margin: 0.5in;
-                      }
-                      body { -webkit-print-color-adjust: exact; }
-                    }
-                </style>
-                <body>
-                    <div class="container">
-                        <!-- Student Copy -->
-                        <div class="main-content">
-                            <div class="header">
-                                ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
-                                <h1>${settings.name}</h1>
-                                <p>${settings.address}</p>
-                                <p>Phone: ${settings.phone}</p>
-                            </div>
-                            <h2>Fee Voucher (Student Copy)</h2>
-                            <table class="details">
-                                <tr><td><strong>Student Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
-                                <tr><td><strong>Father's Name:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
-                                <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
-                            </table>
-                            <table class="fee-details">
-                                <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
-                                <tbody><tr><td>Tuition Fee</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tbody>
-                                <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${searchedStudent.totalFee.toLocaleString()}</td></tr></tfoot>
-                            </table>
-                             <div class="qr-section">
-                               ${qrCodeDataUrl ? `
-                                    <p><strong>Scan to check status online</strong></p>
-                                    <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
-                                ` : ''}
-                            </div>
-                        </div>
-
-                        <div class="cut-line">
-                            <div class="cut-line-icon">&#x2702;</div>
-                        </div>
-
-                        <!-- Academy Copy -->
-                         <div class="slip">
-                            <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
-                            <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                            <p><strong>Father's Name:</strong> ${searchedStudent.fatherName}</p>
-                            <p><strong>Class:</strong> ${searchedStudent.class}</p>
-                            <p><strong>Amount:</strong> ${searchedStudent.totalFee.toLocaleString()} PKR</p>
-                            <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
-                        </div>
-                    </div>
-                </body>
-            </html>
-        `;
-    } else { // thermal
-        voucherHtml = `
-           <html>
-              <head>
-                  <title>Fee Voucher - ${searchedStudent.name}</title>
-                  <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
-                  <style>
-                      @page { size: 80mm; margin: 0; }
-                      body { font-family: 'Calibri', sans-serif; margin: 0; padding: 2mm; -webkit-print-color-adjust: exact; }
-                      .text-center { text-align: center; }
-                      .font-bold { font-weight: bold; }
-                      .text-lg { font-size: 1.125rem; }
-                      .text-xs { font-size: 0.75rem; line-height: 1.2; }
-                      .flex { display: flex; }
-                      .justify-between { justify-content: space-between; }
-                      .border-t { border-top: 1px dashed black; }
-                      .border-b { border-bottom: 1px dashed black; }
-                      .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
-                      .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-                      .mt-4 { margin-top: 1rem; }
-                  </style>
-              </head>
-              <body>
-                  <div class="text-center">
-                      ${settings.logo ? `<img src="${settings.logo}" alt="logo" style="height: 4rem; object-fit: contain; margin: auto;">` : ''}
-                      <h1 class='text-lg font-bold'>${settings.name}</h1>
-                      <p class='text-xs'>${settings.address}</p>
-                      <p class='text-xs'>Phone: ${settings.phone}</p>
-                  </div>
-                  <div class="border-t border-b my-2 py-1 text-xs">
-                      <div class='flex justify-between'><span>Voucher</span><span>${format(issueDate, 'PPP')}</span></div>
-                  </div>
-                  <div class='text-xs'>
-                      <p><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</p>
-                      <p><strong>Class:</strong> ${searchedStudent.class}</p>
-                  </div>
-                  <div class="border-t my-2"></div>
-                  <div class='flex justify-between font-bold text-xs'><span>Total Due:</span><span>${searchedStudent.totalFee.toLocaleString()} PKR</span></div>
-                  <p class='text-center text-xs mt-4'>Please pay by: ${format(dueDate, 'PPP')}</p>
-                   <div class='text-center mt-4'>
-                      ${qrCodeDataUrl ? `
-                          <p class='font-bold text-xs'>Scan to check status</p>
-                          <div style='display:flex; justify-content:center;'>
-                            <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
-                          </div>
-                      ` : ''}
-                  </div>
-              </body>
-            </html>
-        `;
-    }
-
-    printWindow.document.write(voucherHtml);
-    printWindow.document.close();
-    setTimeout(() => printWindow.print(), 250);
+    return `<div style="font-family: 'Segoe UI', sans-serif; color: black; background: white; padding: 2rem; max-width: 800px; margin: auto; border: 1px solid #ddd; position: relative;">
+        ${paidStampHtml}
+        <div style="text-align: center; margin-bottom: 2rem;">
+            ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 80px; margin: auto; object-fit: contain;">` : ''}
+            <h1 style="font-size: 2rem; margin: 0.5rem 0; color: black;">${settings.name}</h1>
+            <p style="color: #555; margin: 0;">${settings.address}</p>
+            <p style="color: #555; margin: 0;">${settings.phone}</p>
+        </div>
+        <h2 style="text-align: center; font-size: 1.5rem; margin-bottom: 2rem; color: black;">Receiving Receipt</h2>
+        <table style="width: 100%; margin-bottom: 1rem; color: black;">
+          <tr><td style="color: black;"><strong>Receipt #:</strong> ${receiptId}</td><td style="text-align: right; color: black;"><strong>Date:</strong> ${format(dateToPrint, 'PPP')}</td></tr>
+          <tr><td colspan="2" style="color: black;"><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</td></tr>
+           <tr><td colspan="2" style="color: black;"><strong>Class:</strong> ${searchedStudent.class}</td></tr>
+        </table>
+        <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem; color: black;">
+            <thead style="background-color: #f2f2f2;">
+                <tr><th style="padding: 10px; text-align: left; color: black;">Description</th><th style="padding: 10px; text-align: right; color: black;">Amount (PKR)</th></tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: black;">Tuition Fee</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; color: black;">${originalTotal.toLocaleString()}</td></tr>
+            </tbody>
+        </table>
+        <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+             <table style="width: 50%; color: black;">
+                <tr><td style="color: black;">Total Due:</td><td style="text-align: right; color: black;">${originalTotal.toLocaleString()}</td></tr>
+                <tr><td style="color: black;">Amount Paid:</td><td style="text-align: right; color: black;">${currentPaidAmount.toLocaleString()}</td></tr>
+                <tr style="font-weight: bold; border-top: 2px solid #333;"><td style="color: black;">Balance:</td><td style="text-align: right; color: black;">${newBalance.toLocaleString()}</td></tr>
+             </table>
+        </div>
+         <div style="text-align: center; margin-top: 3rem; color: black;">
+            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p style="color: black;">Scan to verify</p>` : ''}
+            <p style="margin-top: 2rem; color: black;">*** Thank you for your payment! ***</p>
+            <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
+        </div>
+    </div>`;
   };
 
+  const handleReprint = async () => {
+    if (!searchedStudent || !lastPayment) {
+        toast({
+            variant: "destructive",
+            title: "No Payment Found",
+            description: "No previous payment record exists for this student.",
+        });
+        return;
+    }
+    
+    // Recalculate the state at the time of the last payment
+    const amountPaid = lastPayment.amount;
+    const balanceBeforePayment = searchedStudent.totalFee + amountPaid;
+    const balanceAfterPayment = searchedStudent.totalFee;
 
+    if (printFormat === 'jpg') {
+        const a4Html = await getA4HtmlWithStyles(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
+        
+        if (printRef.current) {
+            printRef.current.innerHTML = a4Html;
+            html2canvas(printRef.current.firstElementChild as HTMLElement, { scale: 2, useCORS: true, backgroundColor: 'white' }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `receipt-${searchedStudent.id}-${lastPayment.receiptId}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.click();
+                printRef.current!.innerHTML = ''; // Clear after use
+            });
+        }
+    } else {
+      handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
+    }
+  };
+  
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
   
   return (
-    <div className="flex flex-col gap-6">
-       <Card>
-            <CardHeader>
-            <CardTitle>Collect Fee</CardTitle>
-            <CardDescription>
-                Enter a student's name or roll number to view outstanding dues and collect
-                fees.
-            </CardDescription>
-            </CardHeader>
-            <CardContent>
-            <div className="flex w-full items-center space-x-2">
-                <div className="flex-grow max-w-sm">
-                    <Input
-                        type="text"
-                        placeholder="Enter name or roll number..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        disabled={isSearching}
-                    />
-                </div>
-                <Button onClick={handleSearch} disabled={isSearching}>
-                    {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                    {isSearching ? 'Searching...' : 'Search'}
-                </Button>
-            </div>
-            </CardContent>
-        </Card>
+    <>
+      <div className="absolute -left-[9999px] top-auto w-auto" ref={printRef} />
 
-      <StudentSearchResultsDialog
-        open={isSearchResultsOpen}
-        onOpenChange={setIsSearchResultsOpen}
-        students={searchResults}
-        onStudentSelect={handleStudentSelect}
-      />
+      <div className="flex flex-col gap-6">
+        <Card>
+              <CardHeader>
+              <CardTitle>Collect Fee</CardTitle>
+              <CardDescription>
+                  Enter a student's name or roll number to view outstanding dues and collect
+                  fees.
+              </CardDescription>
+              </CardHeader>
+              <CardContent>
+              <div className="flex w-full items-center space-x-2">
+                  <div className="flex-grow max-w-sm">
+                      <Input
+                          type="text"
+                          placeholder="Enter name or roll number..."
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                      />
+                  </div>
+                  <Button onClick={handleSearch} disabled={isSearching}>
+                      {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                      {isSearching ? 'Searching...' : 'Search'}
+                  </Button>
+              </div>
+              </CardContent>
+          </Card>
 
-      {searchedStudent && (
-        <div className="grid gap-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Fee Details for {searchedStudent.name}</CardTitle>
-                    <CardDescription>
-                        Roll #: {searchedStudent.id} | Class: {searchedStudent.class}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-6">
-                     <div className="grid grid-cols-2 gap-4 text-center">
-                        <div className='p-4 bg-secondary rounded-lg'>
-                            <p className='text-sm text-muted-foreground'>Total Fee Dues</p>
-                            <p className='text-2xl font-bold'>{searchedStudent.totalFee.toLocaleString()} PKR</p>
-                        </div>
-                         <div className='p-4 bg-secondary rounded-lg'>
-                            <p className='text-sm text-muted-foreground'>Status</p>
-                            <p className='text-2xl font-bold'>{searchedStudent.feeStatus}</p>
-                        </div>
-                    </div>
-                     <div className="flex flex-wrap items-end gap-4">
-                        <div className="space-y-2">
-                            <Label>Print Voucher Format</Label>
-                            <Select value={printFormat} onValueChange={(v) => setPrintFormat(v as PrintFormat)}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Select format" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="thermal">Thermal Voucher</SelectItem>
-                                    <SelectItem value="a4">A4 Voucher</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <Button variant="outline" onClick={handlePrintVoucher} disabled={isSettingsLoading || searchedStudent.totalFee === 0}>
-                            <Printer className="mr-2"/>
-                            Print Voucher
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+        <StudentSearchResultsDialog
+          open={isSearchResultsOpen}
+          onOpenChange={setIsSearchResultsOpen}
+          students={searchResults}
+          onStudentSelect={handleStudentSelect}
+        />
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Payment Collection</CardTitle>
-                </CardHeader>
-                 <CardContent className="grid md:grid-cols-3 gap-6">
-                     <div className="space-y-2">
-                        <Label>Total Dues (PKR)</Label>
-                        <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="paidAmount">Amount being Paid (PKR)</Label>
-                        <Input 
-                            id="paidAmount" 
-                            type="number"
-                            placeholder="Enter amount" 
-                            value={paidAmount || ''}
-                            onChange={(e) => setPaidAmount(Number(e.target.value))}
-                            disabled={isProcessingPayment || searchedStudent.totalFee === 0}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Remaining Dues (PKR)</Label>
-                        <Input value={(balance - paidAmount).toLocaleString()} readOnly disabled />
-                    </div>
-                 </CardContent>
-                 <CardContent className='flex gap-2'>
-                    <Button onClick={handlePayment} disabled={isProcessingPayment || searchedStudent.totalFee === 0 || paidAmount <= 0}>
-                        {isProcessingPayment ? <Loader2 className="animate-spin" /> : null}
-                        {isProcessingPayment ? 'Processing...' : 'Collect & Print Receipt'}
-                    </Button>
-                 </CardContent>
-            </Card>
-        </div>
-      )}
-    </div>
+        {searchedStudent && (
+          <div className="grid gap-6">
+              <Card>
+                  <CardHeader>
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                          <div>
+                              <CardTitle>Fee Details for {searchedStudent.name}</CardTitle>
+                              <CardDescription>
+                                  Roll #: {searchedStudent.id} | Class: {searchedStudent.class}
+                              </CardDescription>
+                          </div>
+                          <div className="flex items-center gap-2">
+                              <Select value={printFormat} onValueChange={(v) => setPrintFormat(v as PrintFormat)}>
+                                  <SelectTrigger className="w-[150px]">
+                                      <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      <SelectItem value="thermal">Thermal Printer</SelectItem>
+                                      <SelectItem value="a4">A4 Page</SelectItem>
+                                      <SelectItem value="jpg">JPG Image</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                              <Button onClick={handleReprint} variant="outline" disabled={!lastPayment}>
+                                  <Printer className="mr-2" />
+                                  Reprint Last Receipt
+                              </Button>
+                          </div>
+                      </div>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                      <div className="grid grid-cols-2 gap-4 text-center">
+                          <div className='p-4 bg-secondary rounded-lg'>
+                              <p className='text-sm text-muted-foreground'>Total Fee Dues</p>
+                              <p className='text-2xl font-bold'>{searchedStudent.totalFee.toLocaleString()} PKR</p>
+                          </div>
+                          <div className='p-4 bg-secondary rounded-lg'>
+                              <p className='text-sm text-muted-foreground'>Status</p>
+                              <p className='text-2xl font-bold'>{searchedStudent.feeStatus}</p>
+                          </div>
+                      </div>
+                  </CardContent>
+              </Card>
+
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Payment Collection</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid md:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                          <Label>Total Dues (PKR)</Label>
+                          <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="paidAmount">Amount being Paid (PKR)</Label>
+                          <Input 
+                              id="paidAmount" 
+                              type="number"
+                              placeholder="Enter amount" 
+                              value={paidAmount || ''}
+                              onChange={(e) => setPaidAmount(Number(e.target.value))}
+                              disabled={isProcessingPayment || searchedStudent.totalFee === 0}
+                          />
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Remaining Dues (PKR)</Label>
+                          <Input value={(balance - paidAmount).toLocaleString()} readOnly disabled />
+                      </div>
+                  </CardContent>
+                  <CardContent className='flex gap-2'>
+                      <Button onClick={handlePayment} disabled={isProcessingPayment || searchedStudent.totalFee === 0 || paidAmount <= 0}>
+                          {isProcessingPayment ? <Loader2 className="animate-spin" /> : null}
+                          {isProcessingPayment ? 'Processing...' : 'Collect & Print Receipt'}
+                      </Button>
+                  </CardContent>
+              </Card>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
-
-    

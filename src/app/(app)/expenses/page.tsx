@@ -378,7 +378,7 @@ export default function ExpensesPage() {
                         </div>
                       </div>
                       <div class="footer">
-                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
                       </div>
                     </div>
                 </body>
@@ -450,7 +450,7 @@ export default function ExpensesPage() {
                       <h3 style="text-align: right; margin-top: 1rem;">Total Expenses: ${totalExpenses.toLocaleString()} PKR</h3>
                     </div>
                     <div class="footer">
-                        Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+                        Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
                     </div>
                 </div>
               </body>
