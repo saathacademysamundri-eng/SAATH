@@ -18,6 +18,59 @@ import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { getStudent } from '@/lib/firebase/firestore';
 import type { Student } from '@/lib/data';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+
+function StudentSearchResultsDialog({
+  open,
+  onOpenChange,
+  students,
+  onStudentSelect,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  students: Student[];
+  onStudentSelect: (student: Student) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Student Search Results</DialogTitle>
+          <DialogDescription>Multiple students found. Please select the correct one.</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto">
+          <Table>
+            <TableBody>
+              {students.map((student) => (
+                <TableRow key={student.id} onClick={() => onStudentSelect(student)} className="cursor-pointer">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={student.imageUrl} alt={student.name} />
+                        <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{student.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {student.id} | {student.class}
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{student.fatherName}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 export default function VouchersPage() {
   const { classes, students, loading: appLoading } = useAppContext();
@@ -26,13 +79,17 @@ export default function VouchersPage() {
 
   // State for class vouchers
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-  const [issueDate, setIssueDate] = useState<Date>(new Date());
-  const [dueDate, setDueDate] = useState<Date>(addDays(new Date(), 10));
+  const [bulkIssueDate, setBulkIssueDate] = useState<Date>(new Date());
+  const [bulkDueDate, setBulkDueDate] = useState<Date>(addDays(new Date(), 10));
 
   // State for individual vouchers
   const [search, setSearch] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchedStudent, setSearchedStudent] = useState<Student | null>(null);
+  const [searchResults, setSearchResults] = useState<Student[]>([]);
+  const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
+  const [individualIssueDate, setIndividualIssueDate] = useState<Date>(new Date());
+  const [individualDueDate, setIndividualDueDate] = useState<Date>(addDays(new Date(), 10));
 
   const studentsInClass = useMemo(() => {
     if (!selectedClassId) return [];
@@ -41,22 +98,43 @@ export default function VouchersPage() {
   }, [selectedClassId, students, classes]);
 
   const handleSearch = async () => {
-    if (!search) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Please enter a student roll number.' });
+    if (!search.trim()) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Please enter a student name or roll number.' });
       return;
     }
     setIsSearching(true);
-    const student = await getStudent(search);
-    if (student) {
-      setSearchedStudent(student);
+    setSearchedStudent(null);
+    setSearchResults([]);
+
+    const searchTerm = search.trim().toLowerCase();
+    const isRollNumber = /^\d+$/.test(searchTerm);
+    let potentialRollNumber = searchTerm;
+    if (isRollNumber) {
+        potentialRollNumber = `S${searchTerm.padStart(3, '0')}`;
+    }
+
+    const results = students.filter(student => 
+        student.id.toLowerCase() === potentialRollNumber.toLowerCase() ||
+        student.name.toLowerCase().includes(searchTerm)
+    );
+    
+    if (results.length === 1) {
+      setSearchedStudent(results[0]);
+    } else if (results.length > 1) {
+      setSearchResults(results);
+      setIsSearchResultsOpen(true);
     } else {
-      toast({ variant: 'destructive', title: 'Not Found', description: 'No student found with that roll number.' });
-      setSearchedStudent(null);
+      toast({ variant: 'destructive', title: 'Not Found', description: 'No student found matching your search.' });
     }
     setIsSearching(false);
   };
   
-  const generateVoucherHtml = async (student: Student) => {
+  const handleStudentSelect = (student: Student) => {
+    setSearchedStudent(student);
+    setIsSearchResultsOpen(false);
+  };
+  
+  const generateVoucherHtml = async (student: Student, issueDate: Date, dueDate: Date) => {
     const verificationUrl = `${window.location.origin}/p/student/${student.id}`;
     let qrCodeDataUrl = '';
     try {
@@ -116,6 +194,7 @@ export default function VouchersPage() {
 
   const handlePrint = async (target: 'class' | 'individual') => {
     let vouchersToPrint: Student[] = [];
+    let issueDateToUse: Date, dueDateToUse: Date;
 
     if (target === 'class') {
       if (!selectedClassId) {
@@ -127,12 +206,18 @@ export default function VouchersPage() {
         return;
       }
       vouchersToPrint = studentsInClass;
+      issueDateToUse = bulkIssueDate;
+      dueDateToUse = bulkDueDate;
     } else if (target === 'individual') {
       if (!searchedStudent) {
         toast({ variant: 'destructive', title: 'No Student Found', description: 'Please search for a student first.' });
         return;
       }
       vouchersToPrint = [searchedStudent];
+      issueDateToUse = individualIssueDate;
+      dueDateToUse = individualDueDate;
+    } else {
+        return;
     }
     
     const printWindow = window.open('', '_blank');
@@ -143,7 +228,7 @@ export default function VouchersPage() {
 
     let allVouchersHtml = '';
     for (const student of vouchersToPrint) {
-      allVouchersHtml += await generateVoucherHtml(student);
+      allVouchersHtml += await generateVoucherHtml(student, issueDateToUse, dueDateToUse);
     }
     
      const finalHtml = `
@@ -225,15 +310,16 @@ export default function VouchersPage() {
        <Card>
         <CardHeader>
           <CardTitle>Individual Fee Voucher</CardTitle>
-          <CardDescription>Search for a student by their roll number to print a single voucher.</CardDescription>
+          <CardDescription>Search for a student by their name or roll number to print a single voucher.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="flex w-full max-w-sm items-center space-x-2">
                 <Input
                     type="text"
-                    placeholder="Enter student roll number..."
+                    placeholder="Enter student name or roll number..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     disabled={isSearching}
                 />
                 <Button onClick={handleSearch} disabled={isSearching}>
@@ -242,17 +328,54 @@ export default function VouchersPage() {
                 </Button>
             </div>
             {searchedStudent && (
-                 <div className="p-4 bg-muted rounded-md">
-                    <p className="font-semibold">{searchedStudent.name} - {searchedStudent.class}</p>
-                    <p className="text-sm text-muted-foreground">Outstanding Fee: {searchedStudent.totalFee.toLocaleString()} PKR</p>
-                    <Button size="sm" variant="secondary" className="mt-2" onClick={() => handlePrint('individual')}>
-                        <Printer className="mr-2 h-4 w-4" />
-                        Print Voucher
-                    </Button>
+                <div className="p-4 bg-muted rounded-lg border space-y-4">
+                    <div>
+                        <p className="font-semibold">{searchedStudent.name} - {searchedStudent.class}</p>
+                        <p className="text-sm text-muted-foreground">Outstanding Fee: {searchedStudent.totalFee.toLocaleString()} PKR</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="individualIssueDate">Issue Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                <Button id="individualIssueDate" variant={"outline"} className={cn("w-full justify-start text-left font-normal", !individualIssueDate && "text-muted-foreground")}>
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {individualIssueDate ? format(individualIssueDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={individualIssueDate} onSelect={(d) => setIndividualIssueDate(d || new Date())} initialFocus /></PopoverContent>
+                            </Popover>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="individualDueDate">Due Date</Label>
+                             <Popover>
+                                <PopoverTrigger asChild>
+                                <Button id="individualDueDate" variant={"outline"} className={cn("w-full justify-start text-left font-normal", !individualDueDate && "text-muted-foreground")}>
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {individualDueDate ? format(individualDueDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={individualDueDate} onSelect={(d) => setIndividualDueDate(d || new Date())} initialFocus /></PopoverContent>
+                            </Popover>
+                        </div>
+                         <div className="flex items-end">
+                            <Button className="w-full" size="sm" variant="secondary" onClick={() => handlePrint('individual')}>
+                                <Printer className="mr-2 h-4 w-4" />
+                                Print Voucher
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
         </CardContent>
        </Card>
+
+      <StudentSearchResultsDialog
+        open={isSearchResultsOpen}
+        onOpenChange={setIsSearchResultsOpen}
+        students={searchResults}
+        onStudentSelect={handleStudentSelect}
+      />
 
       <Card>
         <CardHeader>
@@ -279,14 +402,14 @@ export default function VouchersPage() {
                   <Button
                     id="issueDate"
                     variant={"outline"}
-                    className={cn("w-full justify-start text-left font-normal", !issueDate && "text-muted-foreground")}
+                    className={cn("w-full justify-start text-left font-normal", !bulkIssueDate && "text-muted-foreground")}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {issueDate ? format(issueDate, "PPP") : <span>Pick a date</span>}
+                    {bulkIssueDate ? format(bulkIssueDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={issueDate} onSelect={(d) => setIssueDate(d || new Date())} initialFocus />
+                  <Calendar mode="single" selected={bulkIssueDate} onSelect={(d) => setBulkIssueDate(d || new Date())} initialFocus />
                 </PopoverContent>
               </Popover>
             </div>
@@ -297,14 +420,14 @@ export default function VouchersPage() {
                   <Button
                     id="dueDate"
                     variant={"outline"}
-                    className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                    className={cn("w-full justify-start text-left font-normal", !bulkDueDate && "text-muted-foreground")}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                    {bulkDueDate ? format(bulkDueDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={dueDate} onSelect={(d) => setDueDate(d || new Date())} initialFocus />
+                  <Calendar mode="single" selected={bulkDueDate} onSelect={(d) => setBulkDueDate(d || new Date())} initialFocus />
                 </PopoverContent>
               </Popover>
             </div>
