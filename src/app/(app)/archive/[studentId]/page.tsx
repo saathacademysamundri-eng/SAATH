@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getStudent, getTeachers } from '@/lib/firebase/firestore';
-import { Student, Teacher } from '@/lib/data';
-import { BookOpenCheck, ArrowLeft } from 'lucide-react';
+import { getStudent, getTeachers, getIncome } from '@/lib/firebase/firestore';
+import { Student, Teacher, Income } from '@/lib/data';
+import { BookOpenCheck, ArrowLeft, Wallet } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { format } from 'date-fns';
 
 export default function ArchivedStudentProfilePage() {
@@ -19,6 +19,7 @@ export default function ArchivedStudentProfilePage() {
   const studentId = params.studentId as string;
   const [student, setStudent] = useState<Student | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [incomeRecords, setIncomeRecords] = useState<Income[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,20 +27,26 @@ export default function ArchivedStudentProfilePage() {
 
     async function fetchData() {
         setLoading(true);
-        const [studentData, teachersData] = await Promise.all([
+        const [studentData, teachersData, incomeData] = await Promise.all([
             getStudent(studentId),
-            getTeachers()
+            getTeachers(),
+            getIncome()
         ]);
         
         if (studentData && studentData.status === 'archived') {
             setStudent(studentData);
             setTeachers(teachersData);
+            setIncomeRecords(incomeData.filter(i => i.studentId === studentId));
         }
         
         setLoading(false);
     }
     fetchData();
   }, [studentId]);
+
+  const totalPaid = useMemo(() => {
+    return incomeRecords.reduce((sum, record) => sum + record.amount, 0);
+  }, [incomeRecords]);
 
   const getTeacherName = (teacherId: string) => {
     return teachers.find(t => t.id === teacherId)?.name || 'N/A';
@@ -55,10 +62,16 @@ export default function ArchivedStudentProfilePage() {
                 <Skeleton className="h-5 w-32" />
             </div>
         </div>
-        <Card>
-            <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
-            <CardContent><Skeleton className="h-24 w-full" /></CardContent>
-        </Card>
+        <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+                <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
+                <CardContent><Skeleton className="h-24 w-full" /></CardContent>
+            </Card>
+             <Card>
+                <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
+                <CardContent><Skeleton className="h-24 w-full" /></CardContent>
+            </Card>
+        </div>
       </div>
     );
   }
@@ -100,7 +113,8 @@ export default function ArchivedStudentProfilePage() {
           </div>
         </CardHeader>
       </Card>
-
+      
+    <div className="grid md:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -134,6 +148,26 @@ export default function ArchivedStudentProfilePage() {
             </Table>
         </CardContent>
       </Card>
+       <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet />
+              Financial Summary
+            </CardTitle>
+            <CardDescription>Fee status at the time of archival.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-4 text-center">
+            <div className="p-4 bg-green-100 dark:bg-green-900 rounded-md">
+                <p className="text-sm font-medium text-green-800 dark:text-green-200">Total Paid</p>
+                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{totalPaid.toLocaleString()} PKR</p>
+            </div>
+            <div className="p-4 bg-red-100 dark:bg-red-900 rounded-md">
+                <p className="text-sm font-medium text-red-800 dark:text-red-200">Outstanding Dues</p>
+                <p className="text-3xl font-bold text-red-700 dark:text-red-300">{student.totalFee.toLocaleString()} PKR</p>
+            </div>
+        </CardContent>
+      </Card>
+      </div>
     </div>
   );
 }
