@@ -434,6 +434,58 @@ export default function FeeCollectionPage() {
     }
   };
 
+  const getA4HtmlWithStyles = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
+    if (isSettingsLoading || !searchedStudent) return '';
+    
+    const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
+    let qrCodeDataUrl = '';
+    try {
+        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
+    } catch (error) {
+        console.error('QR code generation failed:', error);
+    }
+        
+    const dateToPrint = receiptDate || new Date();
+    
+    const paidStampHtml = `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); opacity: 0.1; font-size: 10rem; font-weight: bold; color: #000; pointer-events: none; z-index: -1;">PAID</div>`;
+
+    return `<div style="font-family: 'Segoe UI', sans-serif; color: black; background: white; padding: 2rem; max-width: 800px; margin: auto; border: 1px solid #ddd; position: relative;">
+        ${paidStampHtml}
+        <div style="text-align: center; margin-bottom: 2rem;">
+            ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 80px; margin: auto; object-fit: contain;">` : ''}
+            <h1 style="font-size: 2rem; margin: 0.5rem 0; color: black;">${settings.name}</h1>
+            <p style="color: #555; margin: 0;">${settings.address}</p>
+            <p style="color: #555; margin: 0;">${settings.phone}</p>
+        </div>
+        <h2 style="text-align: center; font-size: 1.5rem; margin-bottom: 2rem; color: black;">Receiving Receipt</h2>
+        <table style="width: 100%; margin-bottom: 1rem; color: black;">
+          <tr><td style="color: black;"><strong>Receipt #:</strong> ${receiptId}</td><td style="text-align: right; color: black;"><strong>Date:</strong> ${format(dateToPrint, 'PPP')}</td></tr>
+          <tr><td colspan="2" style="color: black;"><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</td></tr>
+           <tr><td colspan="2" style="color: black;"><strong>Class:</strong> ${searchedStudent.class}</td></tr>
+        </table>
+        <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem; color: black;">
+            <thead style="background-color: #f2f2f2;">
+                <tr><th style="padding: 10px; text-align: left; color: black;">Description</th><th style="padding: 10px; text-align: right; color: black;">Amount (PKR)</th></tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: black;">Tuition Fee</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; color: black;">${originalTotal.toLocaleString()}</td></tr>
+            </tbody>
+        </table>
+        <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+             <table style="width: 50%; color: black;">
+                <tr><td style="color: black;">Total Due:</td><td style="text-align: right; color: black;">${originalTotal.toLocaleString()}</td></tr>
+                <tr><td style="color: black;">Amount Paid:</td><td style="text-align: right; color: black;">${currentPaidAmount.toLocaleString()}</td></tr>
+                <tr style="font-weight: bold; border-top: 2px solid #333;"><td style="color: black;">Balance:</td><td style="text-align: right; color: black;">${newBalance.toLocaleString()}</td></tr>
+             </table>
+        </div>
+         <div style="text-align: center; margin-top: 3rem; color: black;">
+            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p style="color: black;">Scan to verify</p>` : ''}
+            <p style="margin-top: 2rem; color: black;">*** Thank you for your payment! ***</p>
+            <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
+        </div>
+    </div>`;
+  };
+
   const handleReprint = async () => {
     if (!searchedStudent || !lastPayment) {
         toast({
@@ -450,11 +502,11 @@ export default function FeeCollectionPage() {
     const balanceAfterPayment = searchedStudent.totalFee;
 
     if (printFormat === 'jpg') {
-        const a4Html = await getA4Html(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
+        const a4Html = await getA4HtmlWithStyles(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
         
         if (printRef.current) {
             printRef.current.innerHTML = a4Html;
-            html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: 'white' }).then(canvas => {
+            html2canvas(printRef.current.firstElementChild as HTMLElement, { scale: 2, useCORS: true, backgroundColor: 'white' }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `receipt-${searchedStudent.id}-${lastPayment.receiptId}.jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
@@ -466,64 +518,12 @@ export default function FeeCollectionPage() {
       handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
     }
   };
-
-  const getA4Html = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
-    if (isSettingsLoading || !searchedStudent) return '';
-    
-    const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
-    let qrCodeDataUrl = '';
-    try {
-        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
-    } catch (error) {
-        console.error('QR code generation failed:', error);
-    }
-        
-    const dateToPrint = receiptDate || new Date();
-    
-    const paidStampHtml = `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); opacity: 0.1; font-size: 10rem; font-weight: bold; color: #000; pointer-events: none; z-index: -1;">PAID</div>`;
-
-    return `<div class="receipt-container" style="position: relative; max-width: 800px; margin: auto; padding: 2rem; border: 1px solid #ddd; background: white;">
-        ${paidStampHtml}
-        <div style="text-align: center; margin-bottom: 2rem;">
-            ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 80px; margin: auto; object-fit: contain;">` : ''}
-            <h1 style="font-size: 2rem; margin: 0.5rem 0;">${settings.name}</h1>
-            <p>${settings.address}</p>
-            <p>${settings.phone}</p>
-        </div>
-        <h2 style="text-align: center; font-size: 1.5rem; margin-bottom: 2rem;">Receiving Receipt</h2>
-        <table style="width: 100%; margin-bottom: 1rem;">
-          <tr><td><strong>Receipt #:</strong> ${receiptId}</td><td style="text-align: right;"><strong>Date:</strong> ${format(dateToPrint, 'PPP')}</td></tr>
-          <tr><td colspan="2"><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</td></tr>
-           <tr><td colspan="2"><strong>Class:</strong> ${searchedStudent.class}</td></tr>
-        </table>
-        <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem;">
-            <thead style="background-color: #f2f2f2;">
-                <tr><th style="padding: 10px; text-align: left;">Description</th><th style="padding: 10px; text-align: right;">Amount (PKR)</th></tr>
-            </thead>
-            <tbody>
-                <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">Tuition Fee</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${originalTotal.toLocaleString()}</td></tr>
-            </tbody>
-        </table>
-        <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
-             <table style="width: 50%;">
-                <tr><td>Total Due:</td><td style="text-align: right;">${originalTotal.toLocaleString()}</td></tr>
-                <tr><td>Amount Paid:</td><td style="text-align: right;">${currentPaidAmount.toLocaleString()}</td></tr>
-                <tr style="font-weight: bold; border-top: 2px solid #333;"><td>Balance:</td><td style="text-align: right;">${newBalance.toLocaleString()}</td></tr>
-             </table>
-        </div>
-         <div style="text-align: center; margin-top: 3rem;">
-            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p>Scan to verify</p>` : ''}
-            <p style="margin-top: 2rem;">*** Thank you for your payment! ***</p>
-            <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
-        </div>
-    </div>`;
-  }
   
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
   
   return (
     <>
-      <div className="absolute -left-[9999px] top-auto w-[800px] p-4 bg-white" ref={printRef} />
+      <div className="absolute -left-[9999px] top-auto w-auto" ref={printRef} />
 
       <div className="flex flex-col gap-6">
         <Card>
