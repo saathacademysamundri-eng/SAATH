@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { getArchivedStudents, updateStudentStatus, deleteStudentPermanently } from '@/lib/firebase/firestore';
 import { Student } from '@/lib/data';
-import { Search, UserCheck, Trash2 } from 'lucide-react';
+import { Search, UserCheck, Trash2, User as UserIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { useAppContext } from '@/hooks/use-app-context';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 export default function ArchivePage() {
   const [archivedStudents, setArchivedStudents] = useState<Student[]>([]);
@@ -24,6 +25,7 @@ export default function ArchivePage() {
   const [search, setSearch] = useState('');
   const { toast } = useToast();
   const { refreshData } = useAppContext();
+  const router = useRouter();
 
   const fetchArchived = async () => {
     setLoading(true);
@@ -147,6 +149,10 @@ export default function ArchivePage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
+                       <Button variant="outline" size="sm" onClick={() => router.push(`/archive/${student.id}`)}>
+                        <UserIcon className="mr-2 h-4 w-4" />
+                        View Profile
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => handleReactivate(student)}>
                         <UserCheck className="mr-2 h-4 w-4" />
                         Reactivate
@@ -155,7 +161,7 @@ export default function ArchivePage() {
                           <AlertDialogTrigger asChild>
                              <Button variant="destructive" size="sm">
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Permanently
+                                Delete
                               </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
