@@ -22,7 +22,7 @@ import { useAppContext } from '@/hooks/use-app-context';
 import QRCode from 'qrcode';
 import { format, addDays } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { sendWhatsappMessage } from '@/lib/whatsapp';
+import { sendWhatsappMessage as sendWhatsappMessageFlow } from '@/ai/flows/send-whatsapp-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -226,7 +226,7 @@ export default function FeeCollectionPage() {
         const apiUrl = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgApiUrl : settings.officialApiUrl;
         const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
         if (apiUrl && token) {
-          sendWhatsappMessage({ to: searchedStudent.phone, body: messageBody, apiUrl, token });
+          sendWhatsappMessageFlow({ to: searchedStudent.phone, body: messageBody, apiUrl, token });
         }
       }
       
