@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { type Student, type Income } from '@/lib/data';
 import { getStudents, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
 import { Printer, Search, Loader2 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -25,9 +25,9 @@ import { sendWhatsappMessage } from '@/lib/whatsapp';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { PaidStamp } from '@/components/paid-stamp';
+import html2canvas from 'html2canvas';
 
-type PrintFormat = 'thermal' | 'a4';
+type PrintFormat = 'thermal' | 'a4' | 'jpg';
 
 function StudentSearchResultsDialog({
   open,
@@ -87,6 +87,7 @@ export default function FeeCollectionPage() {
   const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
@@ -433,7 +434,7 @@ export default function FeeCollectionPage() {
     }
   };
 
-  const handleReprintLastReceipt = () => {
+  const handleReprint = async () => {
     if (!searchedStudent || !lastPayment) {
         toast({
             variant: "destructive",
@@ -448,124 +449,196 @@ export default function FeeCollectionPage() {
     const balanceBeforePayment = searchedStudent.totalFee + amountPaid;
     const balanceAfterPayment = searchedStudent.totalFee;
 
-    handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
+    if (printFormat === 'jpg') {
+        const a4Html = await getA4Html(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
+        
+        if (printRef.current) {
+            printRef.current.innerHTML = a4Html;
+            html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: 'white' }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `receipt-${searchedStudent.id}-${lastPayment.receiptId}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.click();
+                printRef.current!.innerHTML = ''; // Clear after use
+            });
+        }
+    } else {
+      handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, lastPayment.receiptId || lastPayment.id, lastPayment.date);
+    }
   };
+
+  const getA4Html = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
+    if (isSettingsLoading || !searchedStudent) return '';
+    
+    const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
+    let qrCodeDataUrl = '';
+    try {
+        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
+    } catch (error) {
+        console.error('QR code generation failed:', error);
+    }
+        
+    const dateToPrint = receiptDate || new Date();
+    
+    const paidStampHtml = `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); opacity: 0.1; font-size: 10rem; font-weight: bold; color: #000; pointer-events: none; z-index: -1;">PAID</div>`;
+
+    return `<div class="receipt-container" style="position: relative; max-width: 800px; margin: auto; padding: 2rem; border: 1px solid #ddd; background: white;">
+        ${paidStampHtml}
+        <div style="text-align: center; margin-bottom: 2rem;">
+            ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 80px; margin: auto; object-fit: contain;">` : ''}
+            <h1 style="font-size: 2rem; margin: 0.5rem 0;">${settings.name}</h1>
+            <p>${settings.address}</p>
+            <p>${settings.phone}</p>
+        </div>
+        <h2 style="text-align: center; font-size: 1.5rem; margin-bottom: 2rem;">Receiving Receipt</h2>
+        <table style="width: 100%; margin-bottom: 1rem;">
+          <tr><td><strong>Receipt #:</strong> ${receiptId}</td><td style="text-align: right;"><strong>Date:</strong> ${format(dateToPrint, 'PPP')}</td></tr>
+          <tr><td colspan="2"><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</td></tr>
+           <tr><td colspan="2"><strong>Class:</strong> ${searchedStudent.class}</td></tr>
+        </table>
+        <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem;">
+            <thead style="background-color: #f2f2f2;">
+                <tr><th style="padding: 10px; text-align: left;">Description</th><th style="padding: 10px; text-align: right;">Amount (PKR)</th></tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">Tuition Fee</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${originalTotal.toLocaleString()}</td></tr>
+            </tbody>
+        </table>
+        <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+             <table style="width: 50%;">
+                <tr><td>Total Due:</td><td style="text-align: right;">${originalTotal.toLocaleString()}</td></tr>
+                <tr><td>Amount Paid:</td><td style="text-align: right;">${currentPaidAmount.toLocaleString()}</td></tr>
+                <tr style="font-weight: bold; border-top: 2px solid #333;"><td>Balance:</td><td style="text-align: right;">${newBalance.toLocaleString()}</td></tr>
+             </table>
+        </div>
+         <div style="text-align: center; margin-top: 3rem;">
+            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p>Scan to verify</p>` : ''}
+            <p style="margin-top: 2rem;">*** Thank you for your payment! ***</p>
+            <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
+        </div>
+    </div>`;
+  }
   
   const balance = searchedStudent ? searchedStudent.totalFee : 0;
   
   return (
-    <div className="flex flex-col gap-6">
-       <Card>
-            <CardHeader>
-            <CardTitle>Collect Fee</CardTitle>
-            <CardDescription>
-                Enter a student's name or roll number to view outstanding dues and collect
-                fees.
-            </CardDescription>
-            </CardHeader>
-            <CardContent>
-            <div className="flex w-full items-center space-x-2">
-                <div className="flex-grow max-w-sm">
-                    <Input
-                        type="text"
-                        placeholder="Enter name or roll number..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        disabled={isSearching}
-                    />
-                </div>
-                <Button onClick={handleSearch} disabled={isSearching}>
-                    {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                    {isSearching ? 'Searching...' : 'Search'}
-                </Button>
-            </div>
-            </CardContent>
-        </Card>
+    <>
+      <div className="absolute -left-[9999px] top-auto w-[800px] p-4 bg-white" ref={printRef} />
 
-      <StudentSearchResultsDialog
-        open={isSearchResultsOpen}
-        onOpenChange={setIsSearchResultsOpen}
-        students={searchResults}
-        onStudentSelect={handleStudentSelect}
-      />
+      <div className="flex flex-col gap-6">
+        <Card>
+              <CardHeader>
+              <CardTitle>Collect Fee</CardTitle>
+              <CardDescription>
+                  Enter a student's name or roll number to view outstanding dues and collect
+                  fees.
+              </CardDescription>
+              </CardHeader>
+              <CardContent>
+              <div className="flex w-full items-center space-x-2">
+                  <div className="flex-grow max-w-sm">
+                      <Input
+                          type="text"
+                          placeholder="Enter name or roll number..."
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                          disabled={isSearching}
+                      />
+                  </div>
+                  <Button onClick={handleSearch} disabled={isSearching}>
+                      {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                      {isSearching ? 'Searching...' : 'Search'}
+                  </Button>
+              </div>
+              </CardContent>
+          </Card>
 
-      {searchedStudent && (
-        <div className="grid gap-6">
-            <Card>
-                <CardHeader>
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                            <CardTitle>Fee Details for {searchedStudent.name}</CardTitle>
-                            <CardDescription>
-                                Roll #: {searchedStudent.id} | Class: {searchedStudent.class}
-                            </CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Select value={printFormat} onValueChange={(v) => setPrintFormat(v as PrintFormat)}>
-                                <SelectTrigger className="w-[150px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="thermal">Thermal Printer</SelectItem>
-                                    <SelectItem value="a4">A4 Page</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Button onClick={handleReprintLastReceipt} variant="outline" disabled={!lastPayment}>
-                                <Printer className="mr-2" />
-                                Print Last Receipt
-                            </Button>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="grid gap-6">
-                     <div className="grid grid-cols-2 gap-4 text-center">
-                        <div className='p-4 bg-secondary rounded-lg'>
-                            <p className='text-sm text-muted-foreground'>Total Fee Dues</p>
-                            <p className='text-2xl font-bold'>{searchedStudent.totalFee.toLocaleString()} PKR</p>
-                        </div>
-                         <div className='p-4 bg-secondary rounded-lg'>
-                            <p className='text-sm text-muted-foreground'>Status</p>
-                            <p className='text-2xl font-bold'>{searchedStudent.feeStatus}</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+        <StudentSearchResultsDialog
+          open={isSearchResultsOpen}
+          onOpenChange={setIsSearchResultsOpen}
+          students={searchResults}
+          onStudentSelect={handleStudentSelect}
+        />
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Payment Collection</CardTitle>
-                </CardHeader>
-                 <CardContent className="grid md:grid-cols-3 gap-6">
-                     <div className="space-y-2">
-                        <Label>Total Dues (PKR)</Label>
-                        <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="paidAmount">Amount being Paid (PKR)</Label>
-                        <Input 
-                            id="paidAmount" 
-                            type="number"
-                            placeholder="Enter amount" 
-                            value={paidAmount || ''}
-                            onChange={(e) => setPaidAmount(Number(e.target.value))}
-                            disabled={isProcessingPayment || searchedStudent.totalFee === 0}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Remaining Dues (PKR)</Label>
-                        <Input value={(balance - paidAmount).toLocaleString()} readOnly disabled />
-                    </div>
-                 </CardContent>
-                 <CardContent className='flex gap-2'>
-                    <Button onClick={handlePayment} disabled={isProcessingPayment || searchedStudent.totalFee === 0 || paidAmount <= 0}>
-                        {isProcessingPayment ? <Loader2 className="animate-spin" /> : null}
-                        {isProcessingPayment ? 'Processing...' : 'Collect & Print Receipt'}
-                    </Button>
-                 </CardContent>
-            </Card>
-        </div>
-      )}
-    </div>
+        {searchedStudent && (
+          <div className="grid gap-6">
+              <Card>
+                  <CardHeader>
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                          <div>
+                              <CardTitle>Fee Details for {searchedStudent.name}</CardTitle>
+                              <CardDescription>
+                                  Roll #: {searchedStudent.id} | Class: {searchedStudent.class}
+                              </CardDescription>
+                          </div>
+                          <div className="flex items-center gap-2">
+                              <Select value={printFormat} onValueChange={(v) => setPrintFormat(v as PrintFormat)}>
+                                  <SelectTrigger className="w-[150px]">
+                                      <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      <SelectItem value="thermal">Thermal Printer</SelectItem>
+                                      <SelectItem value="a4">A4 Page</SelectItem>
+                                      <SelectItem value="jpg">JPG Image</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                              <Button onClick={handleReprint} variant="outline" disabled={!lastPayment}>
+                                  <Printer className="mr-2" />
+                                  Reprint Last Receipt
+                              </Button>
+                          </div>
+                      </div>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                      <div className="grid grid-cols-2 gap-4 text-center">
+                          <div className='p-4 bg-secondary rounded-lg'>
+                              <p className='text-sm text-muted-foreground'>Total Fee Dues</p>
+                              <p className='text-2xl font-bold'>{searchedStudent.totalFee.toLocaleString()} PKR</p>
+                          </div>
+                          <div className='p-4 bg-secondary rounded-lg'>
+                              <p className='text-sm text-muted-foreground'>Status</p>
+                              <p className='text-2xl font-bold'>{searchedStudent.feeStatus}</p>
+                          </div>
+                      </div>
+                  </CardContent>
+              </Card>
+
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Payment Collection</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid md:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                          <Label>Total Dues (PKR)</Label>
+                          <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="paidAmount">Amount being Paid (PKR)</Label>
+                          <Input 
+                              id="paidAmount" 
+                              type="number"
+                              placeholder="Enter amount" 
+                              value={paidAmount || ''}
+                              onChange={(e) => setPaidAmount(Number(e.target.value))}
+                              disabled={isProcessingPayment || searchedStudent.totalFee === 0}
+                          />
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Remaining Dues (PKR)</Label>
+                          <Input value={(balance - paidAmount).toLocaleString()} readOnly disabled />
+                      </div>
+                  </CardContent>
+                  <CardContent className='flex gap-2'>
+                      <Button onClick={handlePayment} disabled={isProcessingPayment || searchedStudent.totalFee === 0 || paidAmount <= 0}>
+                          {isProcessingPayment ? <Loader2 className="animate-spin" /> : null}
+                          {isProcessingPayment ? 'Processing...' : 'Collect & Print Receipt'}
+                      </Button>
+                  </CardContent>
+              </Card>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
