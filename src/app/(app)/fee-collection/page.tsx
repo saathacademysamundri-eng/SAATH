@@ -181,14 +181,18 @@ export default function FeeCollectionPage() {
       newFeeStatus = 'Paid';
     }
 
+    // Generate receiptId before saving
+    const receiptId = `RCPT-${Date.now()}`;
+
     // Add to income collection first
     const incomeResult = await addIncome({
         studentName: searchedStudent.name,
         studentId: searchedStudent.id,
         amount: paidAmount,
+        receiptId: receiptId,
     });
       
-    if (!incomeResult.success || !incomeResult.receiptId) {
+    if (!incomeResult.success || !incomeResult.id) {
         toast({
             variant: "destructive",
             title: "Payment Failed",
@@ -197,8 +201,6 @@ export default function FeeCollectionPage() {
         setIsProcessingPayment(false);
         return;
     }
-
-    const { receiptId } = incomeResult;
 
     const result = await updateStudentFeeStatus(searchedStudent.id, newTotalFee, newFeeStatus);
 
