@@ -149,7 +149,7 @@ export default function ArchivePage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                       <Button variant="outline" size="sm" onClick={() => router.push(`/students/${student.id}`)}>
+                       <Button variant="outline" size="sm" onClick={() => router.push(`/archive/${student.id}`)}>
                         <UserIcon className="mr-2 h-4 w-4" />
                         View Profile
                       </Button>
