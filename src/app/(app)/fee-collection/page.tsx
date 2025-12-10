@@ -247,7 +247,7 @@ export default function FeeCollectionPage() {
   const handlePrintPaidReceipt = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
     if (isSettingsLoading || !searchedStudent) return;
     
-    const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
+    const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
     let qrCodeDataUrl = '';
     try {
         qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
@@ -307,7 +307,7 @@ export default function FeeCollectionPage() {
                              </table>
                         </div>
                          <div style="text-align: center; margin-top: 3rem;">
-                            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p>Scan to verify</p>` : ''}
+                            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p>Scan for live fee status</p>` : ''}
                             <p style="margin-top: 2rem;">*** Thank you for your payment! ***</p>
                             <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
                         </div>
@@ -415,7 +415,7 @@ export default function FeeCollectionPage() {
                       </div>
                         <div class="footer">
                           ${qrCodeDataUrl ? `
-                              <p class='font-bold'>Scan to Verify</p>
+                              <p class='font-bold'>Scan for Status</p>
                               <div class='flex justify-center'>
                                 <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 80px; height: 80px;" />
                               </div>
@@ -440,7 +440,7 @@ export default function FeeCollectionPage() {
   const getA4HtmlWithStyles = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
     if (isSettingsLoading || !searchedStudent) return '';
     
-    const verificationUrl = `${window.location.origin}/p/receipt/${receiptId}`;
+    const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
     let qrCodeDataUrl = '';
     try {
         qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
@@ -482,7 +482,7 @@ export default function FeeCollectionPage() {
              </table>
         </div>
          <div style="text-align: center; margin-top: 3rem; color: black;">
-            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p style="color: black;">Scan to verify</p>` : ''}
+            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p style="color: black;">Scan for live fee status</p>` : ''}
             <p style="margin-top: 2rem; color: black;">*** Thank you for your payment! ***</p>
             <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
         </div>

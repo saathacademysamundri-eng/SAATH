@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -166,7 +167,7 @@ export default function VouchersPage() {
             </table>
             <div class="qr-section">
               ${qrCodeDataUrl ? `
-                    <p><strong>Scan to check status online</strong></p>
+                    <p><strong>Scan for live fee status</strong></p>
                     <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
                 ` : ''}
             </div>
