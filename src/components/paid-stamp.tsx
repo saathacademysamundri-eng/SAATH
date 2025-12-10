@@ -7,7 +7,7 @@ import Image from 'next/image';
 interface PaidStampProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 // The image URL provided by the user for the stamp
-const STAMP_IMAGE_URL = 'https://i.postimg.cc/25bFSj1P/Whats-App-Image-2025-11-07-at-2-10-20-PM.jpg';
+const STAMP_IMAGE_URL = 'https://i.postimg.cc/prpyQ22C/Paid-Stamp-Saath-Academy.png';
 
 export function PaidStamp({ className, ...props }: PaidStampProps) {
   return (

@@ -257,7 +257,7 @@ export default function FeeCollectionPage() {
     
     const paidStampHtml = `
       <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); opacity: 0.1; pointer-events: none; width: ${printFormat === 'a4' ? '300px' : '150px'}; height: ${printFormat === 'a4' ? '300px' : '150px'};">
-        <img src="https://i.postimg.cc/25bFSj1P/Whats-App-Image-2025-11-07-at-2-10-20-PM.jpg" alt="Paid Stamp" style="width: 100%; height: 100%; object-fit: contain;">
+        <img src="https://i.postimg.cc/prpyQ22C/Paid-Stamp-Saath-Academy.png" alt="Paid Stamp" style="width: 100%; height: 100%; object-fit: contain;">
       </div>
     `;
 
@@ -265,7 +265,7 @@ export default function FeeCollectionPage() {
         receiptHtml = `
              <html>
                 <head>
-                    <title>Fee Receipt - ${searchedStudent.name}</title>
+                    <title>Receiving Receipt - ${searchedStudent.name}</title>
                     <style>
                         @page { size: A4; margin: 0.75in; }
                         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -281,7 +281,7 @@ export default function FeeCollectionPage() {
                             <p>${settings.address}</p>
                             <p>${settings.phone}</p>
                         </div>
-                        <h2 style="text-align: center; font-size: 1.5rem; margin-bottom: 2rem;">Fee Receipt</h2>
+                        <h2 style="text-align: center; font-size: 1.5rem; margin-bottom: 2rem;">Receiving Receipt</h2>
                         <table style="width: 100%; margin-bottom: 1rem;">
                           <tr><td><strong>Receipt #:</strong> ${receiptId}</td><td style="text-align: right;"><strong>Date:</strong> ${format(dateToPrint, 'PPP')}</td></tr>
                           <tr><td colspan="2"><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</td></tr>
@@ -315,7 +315,7 @@ export default function FeeCollectionPage() {
         receiptHtml = `
           <html>
               <head>
-                  <title>Fee Receipt - ${searchedStudent.name}</title>
+                  <title>Receiving Receipt - ${searchedStudent.name}</title>
                   <link rel="preconnect" href="https://fonts.googleapis.com">
                   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
                   <link href="https://fonts.googleapis.com/css2?family=Calibri&display=swap" rel="stylesheet">
