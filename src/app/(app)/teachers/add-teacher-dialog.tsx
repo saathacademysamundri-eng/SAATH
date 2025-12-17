@@ -261,6 +261,9 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
                  </div>
             </div>
             <DialogFooter>
+                 <DialogClose asChild>
+                    <Button variant="ghost">Cancel</Button>
+                </DialogClose>
                 <Button onClick={handleSubmit} disabled={isSaving}>
                     {isSaving ? <Loader2 className="animate-spin mr-2" /> : null}
                     {isSaving ? 'Saving...' : 'Save Teacher'}

@@ -51,8 +51,8 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
     }
 
     const handleSubmit = async () => {
-        if (!name.trim() || !phone.trim() || !fatherName.trim() || !address.trim() || selectedSubjects.length === 0) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all required fields and select at least one subject.' });
+        if (!name.trim() || !phone.trim() || !fatherName.trim() || !address.trim() || !password.trim() || selectedSubjects.length === 0) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all required fields, including password and subjects.' });
             return;
         }
 
@@ -170,8 +170,8 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
                         <Label htmlFor="password">Password</Label>
                         <Input
                             id="password"
-                            type="password"
-                            placeholder="Set a secure password"
+                            type="text"
+                            placeholder="Set or change password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
