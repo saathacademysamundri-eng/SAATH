@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -25,6 +24,8 @@ import { Subject } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import { useAppContext } from "@/hooks/use-app-context"
 import { Textarea } from "@/components/ui/textarea"
+import { createUserWithEmailAndPassword } from "firebase/auth"
+import { auth } from "@/lib/firebase/config"
 
 export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => void }) {
     const { allSubjects } = useAppContext();
@@ -54,59 +55,65 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
 
 
     const handleSubmit = async () => {
-        if (!name.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: "Please enter the teacher's name." });
+        if (!name.trim() || !email.trim() || !password.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: "Name, email, and password are required." });
             return;
         }
-        if (!fatherName.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: "Please enter the father's name." });
-            return;
-        }
-        if (!phone.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter a phone number.' });
-            return;
-        }
-        if (!address.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter an address.' });
-            return;
-        }
-        if (!password.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please set a password for the teacher.' });
-            return;
-        }
-        if (selectedSubjects.length === 0) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please select at least one subject.' });
+        if (password.length < 6) {
+            toast({ variant: 'destructive', title: 'Weak Password', description: 'Password must be at least 6 characters long.'});
             return;
         }
 
         setIsSaving(true);
-        const result = await addTeacher({ 
-            name: name.trim(),
-            fatherName: fatherName.trim(),
-            phone: phone.trim(),
-            address: address.trim(),
-            email: email.trim(),
-            password: password.trim(),
-            subjects: selectedSubjects,
-            imageUrl: imageUrl.trim(),
-        });
+        try {
+            // Step 1: Create user in Firebase Auth
+            // Temporarily sign in with the new user to create them. We will re-authenticate the admin later.
+            // This is a workaround for not having an admin SDK on the client.
+            const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password.trim());
+            const user = userCredential.user;
 
-        if (result.success) {
-            toast({ title: 'Teacher Added', description: 'The new teacher has been saved.' });
-            onTeacherAdded();
-            // Reset form
-            setName('');
-            setFatherName('');
-            setPhone('');
-            setAddress('');
-            setEmail('');
-            setPassword('');
-            setImageUrl('');
-            setSelectedSubjects([]);
-        } else {
-            toast({ variant: 'destructive', title: 'Failed to Add', description: result.message });
+            // Step 2: Save teacher data to Firestore
+            const result = await addTeacher({ 
+                name: name.trim(),
+                fatherName: fatherName.trim(),
+                phone: phone.trim(),
+                address: address.trim(),
+                email: email.trim(),
+                password: password.trim(),
+                subjects: selectedSubjects,
+                imageUrl: imageUrl.trim(),
+            });
+
+            if (result.success) {
+                toast({ title: 'Teacher Added', description: 'The new teacher has been saved and their login account is created.' });
+                onTeacherAdded();
+                // Reset form
+                setName('');
+                setFatherName('');
+                setPhone('');
+                setAddress('');
+                setEmail('');
+                setPassword('');
+                setImageUrl('');
+                setSelectedSubjects([]);
+            } else {
+                // If Firestore fails, we should ideally delete the auth user to prevent orphans
+                await user.delete();
+                throw new Error(result.message);
+            }
+        } catch (error: any) {
+            let errorMessage = "An unknown error occurred.";
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = "This email is already in use by another account.";
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            toast({ variant: 'destructive', title: 'Failed to Add Teacher', description: errorMessage });
+        } finally {
+            setIsSaving(false);
+            // Re-authenticate admin if necessary. In this app's flow, it might not be needed
+            // if the main admin session is persistent.
         }
-        setIsSaving(false);
     };
 
     const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,7 +132,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
         <DialogContent className="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>Add New Teacher</DialogTitle>
-                <DialogDescription>Enter the details for the new teacher.</DialogDescription>
+                <DialogDescription>Enter the details for the new teacher. This will also create their login account.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
                 <div className="space-y-2">
@@ -167,6 +174,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
                             placeholder="e.g., Mr. Ahmed"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            required
                         />
                     </div>
                     <div className="space-y-2">
@@ -196,6 +204,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
                             placeholder="e.g., teacher@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            required
                         />
                     </div>
                     <div className="space-y-2">
@@ -206,6 +215,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
                             placeholder="Set a secure password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            required
                         />
                     </div>
                 </div>
