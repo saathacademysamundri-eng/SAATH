@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -27,8 +25,10 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogClose, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Activity } from '@/lib/data';
+import { Activity, Student } from '@/lib/data';
 import { format } from 'date-fns';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 function ClearHistoryDialog({ onConfirm }: { onConfirm: (pin: string) => Promise<boolean> }) {
   const [pin, setPin] = useState('');
@@ -232,6 +232,11 @@ export default function SettingsPage() {
   const [specificStudent, setSpecificStudent] = useState('');
   const [specificTeacher, setSpecificTeacher] = useState('');
   const [customNumbers, setCustomNumbers] = useState('');
+  
+  const [unpaidMessage, setUnpaidMessage] = useState('Dear parent, the fee for your child {student_name} is due. Please pay the outstanding amount of {dues} PKR at your earliest convenience. Thank you, {academy_name}.');
+  const [unpaidClass, setUnpaidClass] = useState('');
+  const [selectedUnpaidStudents, setSelectedUnpaidStudents] = useState<Student[]>([]);
+  const [isSendingUnpaid, setIsSendingUnpaid] = useState(false);
 
   useEffect(() => {
     if (!isSettingsLoading) {
@@ -276,6 +281,31 @@ export default function SettingsPage() {
     }
     return years;
   }, []);
+
+  const unpaidStudentsInClass = useMemo(() => {
+    if (!unpaidClass) return [];
+    const className = classes.find(c => c.id === unpaidClass)?.name;
+    return students.filter(s => s.class === className && s.totalFee > 0);
+  }, [unpaidClass, students, classes]);
+
+  useEffect(() => {
+    // When the class changes, automatically select all unpaid students
+    setSelectedUnpaidStudents(unpaidStudentsInClass);
+  }, [unpaidStudentsInClass]);
+
+  const handleSelectAllUnpaid = (checked: boolean) => {
+    if (checked) {
+      setSelectedUnpaidStudents(unpaidStudentsInClass);
+    } else {
+      setSelectedUnpaidStudents([]);
+    }
+  };
+
+  const handleSelectUnpaidStudent = (student: Student, checked: boolean) => {
+    setSelectedUnpaidStudents(prev => 
+      checked ? [...prev, student] : prev.filter(s => s.id !== student.id)
+    );
+  };
 
   const handleSaveGeneral = async () => {
     setIsSaving(true);
@@ -479,6 +509,61 @@ export default function SettingsPage() {
 
     setIsSendingCustom(false);
   }
+  
+   const handleSendUnpaidMessages = async () => {
+    if (selectedUnpaidStudents.length === 0) {
+      toast({ variant: 'destructive', title: 'No Students Selected', description: 'Please select students to send reminders to.' });
+      return;
+    }
+    
+    if (!unpaidMessage.trim()) {
+        toast({ variant: 'destructive', title: 'Message Empty', description: 'Cannot send an empty message.' });
+        return;
+    }
+
+    setIsSendingUnpaid(true);
+    
+    const studentsToSend = selectedUnpaidStudents.filter(s => s.phone);
+    
+    if (studentsToSend.length === 0) {
+      toast({ title: 'No Phone Numbers', description: 'The selected students do not have phone numbers on record.' });
+      setIsSendingUnpaid(false);
+      return;
+    }
+
+    const apiUrl = whatsappProvider === 'ultramsg' ? ultraMsgApiUrl : officialApiUrl;
+    const token = whatsappProvider === 'ultramsg' ? ultraMsgToken : officialApiToken;
+
+    toast({ title: `Sending ${studentsToSend.length} fee reminders...`, description: 'This may take a moment.' });
+    
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const student of studentsToSend) {
+      try {
+        let messageBody = unpaidMessage
+          .replace(/{student_name}/g, student.name)
+          .replace(/{dues}/g, student.totalFee.toLocaleString())
+          .replace(/{academy_name}/g, settings.name || '');
+
+        const result = await sendWhatsappMessage({ to: student.phone, body: messageBody, apiUrl, token });
+        if (result.success) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch {
+        errorCount++;
+      }
+    }
+
+    toast({
+      title: 'Fee Reminders Complete',
+      description: `${successCount} messages sent successfully. ${errorCount} failed.`,
+    });
+
+    setIsSendingUnpaid(false);
+  };
   
   return (
     <div className="flex flex-col gap-6">
@@ -776,6 +861,83 @@ export default function SettingsPage() {
                       {isSaving && <Loader2 className="mr-2 animate-spin" />}
                       {isSaving ? 'Saving...' : 'Save API Settings'}
                     </Button>
+                </CardFooter>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Bulk Fee Reminders</CardTitle>
+                  <CardDescription>Send WhatsApp fee reminders to students with unpaid dues in a selected class.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="unpaid-class-select">Select Class</Label>
+                      <Select value={unpaidClass} onValueChange={setUnpaidClass}>
+                        <SelectTrigger id="unpaid-class-select">
+                          <SelectValue placeholder="Select a class..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                   {unpaidStudentsInClass.length > 0 && unpaidClass && (
+                    <div className="border rounded-md p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                         <h4 className="font-semibold">Unpaid Students ({unpaidStudentsInClass.length})</h4>
+                         <div className="flex items-center gap-2 text-sm">
+                            <Checkbox 
+                                id="select-all-unpaid"
+                                checked={selectedUnpaidStudents.length === unpaidStudentsInClass.length}
+                                onCheckedChange={handleSelectAllUnpaid}
+                            />
+                            <Label htmlFor="select-all-unpaid">Select All</Label>
+                         </div>
+                      </div>
+                      <div className="max-h-60 overflow-y-auto pr-2">
+                        <Table>
+                            <TableBody>
+                                {unpaidStudentsInClass.map(student => (
+                                    <TableRow key={student.id}>
+                                        <TableCell className="w-12">
+                                            <Checkbox 
+                                                checked={selectedUnpaidStudents.some(s => s.id === student.id)}
+                                                onCheckedChange={(checked) => handleSelectUnpaidStudent(student, !!checked)}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarImage src={student.imageUrl} />
+                                                    <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-medium">{student.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{student.id}</p>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right font-mono text-destructive">{student.totalFee.toLocaleString()} PKR</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                   )}
+                  <div className="space-y-2">
+                    <Label htmlFor="unpaid-message">Reminder Message</Label>
+                    <Textarea id="unpaid-message" value={unpaidMessage} onChange={(e) => setUnpaidMessage(e.target.value)} placeholder="Type your reminder message here..." className="min-h-[100px]" />
+                    <p className="text-xs text-muted-foreground">Variables: {'{student_name}'}, {'{dues}'}, {'{academy_name}'}</p>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button onClick={handleSendUnpaidMessages} disabled={isSendingUnpaid || selectedUnpaidStudents.length === 0}>
+                    {isSendingUnpaid ? <Loader2 className="mr-2 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                    Send Reminders to {selectedUnpaidStudents.length} Student(s)
+                  </Button>
                 </CardFooter>
               </Card>
 
