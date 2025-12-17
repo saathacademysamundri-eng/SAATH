@@ -1,11 +1,12 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { Teacher } from '@/lib/data';
 import { getTeacherByEmail } from '@/lib/firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase/config';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 
 interface TeacherAuthContextType {
   teacher: Teacher | null;
@@ -24,38 +25,84 @@ export const TeacherAuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    try {
-      const storedTeacher = sessionStorage.getItem(TEACHER_SESSION_KEY);
-      if (storedTeacher) {
-        setTeacher(JSON.parse(storedTeacher));
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      if (user && user.email) {
+         try {
+          const storedTeacher = sessionStorage.getItem(TEACHER_SESSION_KEY);
+          if (storedTeacher) {
+            const parsed = JSON.parse(storedTeacher);
+            if (parsed.email === user.email) {
+              setTeacher(parsed);
+              setLoading(false);
+              return;
+            }
+          }
+          
+          // If no session or session mismatch, fetch from DB
+          const teacherData = await getTeacherByEmail(user.email);
+          if (teacherData) {
+            setTeacher(teacherData);
+            sessionStorage.setItem(TEACHER_SESSION_KEY, JSON.stringify(teacherData));
+          } else {
+            // This case might happen if the admin is logged in, but not a teacher
+            setTeacher(null);
+          }
+        } catch (error) {
+          console.error("Failed to process teacher session", error);
+          setTeacher(null);
+          sessionStorage.removeItem(TEACHER_SESSION_KEY);
+        }
+      } else {
+        setTeacher(null);
+        sessionStorage.removeItem(TEACHER_SESSION_KEY);
       }
-    } catch (error) {
-      console.error("Failed to parse teacher session data", error);
-      sessionStorage.removeItem(TEACHER_SESSION_KEY);
-    }
-    setLoading(false);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
+
 
   const login = useCallback(async (email: string, pass: string) => {
     setLoading(true);
-    const teacherData = await getTeacherByEmail(email);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      const user = userCredential.user;
 
-    if (teacherData && teacherData.password === pass) {
-      setTeacher(teacherData);
-      sessionStorage.setItem(TEACHER_SESSION_KEY, JSON.stringify(teacherData));
+      if (user.email) {
+        const teacherData = await getTeacherByEmail(user.email);
+        if (teacherData) {
+          setTeacher(teacherData);
+          sessionStorage.setItem(TEACHER_SESSION_KEY, JSON.stringify(teacherData));
+          setLoading(false);
+          router.push('/teacher/dashboard');
+          return { success: true, message: 'Login successful' };
+        } else {
+          // This user is not a teacher in the Firestore DB
+          await signOut(auth);
+          setLoading(false);
+          return { success: false, message: 'This account does not have teacher privileges.' };
+        }
+      }
+      throw new Error("User has no email.");
+    } catch (error: any) {
       setLoading(false);
-      router.push('/teacher/dashboard');
-      return { success: true, message: 'Login successful' };
-    } else {
-      setLoading(false);
-      return { success: false, message: 'Invalid email or password.' };
+      console.error("Teacher login failed: ", error.code);
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        return { success: false, message: 'Invalid email or password.' };
+      }
+      return { success: false, message: 'An unknown error occurred during login.' };
     }
   }, [router]);
 
-  const logout = useCallback(() => {
+
+  const logout = useCallback(async () => {
+    setLoading(true);
+    await signOut(auth);
     setTeacher(null);
     sessionStorage.removeItem(TEACHER_SESSION_KEY);
     router.push('/teacher/login');
+    setLoading(false);
   }, [router]);
 
   const value = { teacher, loading, login, logout };
