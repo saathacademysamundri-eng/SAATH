@@ -75,6 +75,7 @@ export type Teacher = {
   phone: string;
   address: string;
   email?: string;
+  password?: string;
   subjects: string[]; // Names of subjects
   imageUrl?: string;
 };

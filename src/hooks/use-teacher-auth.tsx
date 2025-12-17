@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -37,11 +38,9 @@ export const TeacherAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(async (email: string, pass: string) => {
     setLoading(true);
-    // In a real app, you would hash and compare the password.
-    // For this prototype, we'll fetch the teacher and do a simple check.
     const teacherData = await getTeacherByEmail(email);
 
-    if (teacherData && teacherData.phone === pass) { // Using phone as password for prototype
+    if (teacherData && teacherData.password === pass) {
       setTeacher(teacherData);
       sessionStorage.setItem(TEACHER_SESSION_KEY, JSON.stringify(teacherData));
       setLoading(false);

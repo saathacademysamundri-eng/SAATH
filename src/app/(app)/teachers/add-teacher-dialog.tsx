@@ -33,6 +33,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
     const [phone, setPhone] = useState('')
     const [address, setAddress] = useState('')
     const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
     const [imageUrl, setImageUrl] = useState('')
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
     const [isSaving, setIsSaving] = useState(false)
@@ -69,6 +70,10 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
             toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter an address.' });
             return;
         }
+        if (!password.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please set a password for the teacher.' });
+            return;
+        }
         if (selectedSubjects.length === 0) {
             toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please select at least one subject.' });
             return;
@@ -81,6 +86,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
             phone: phone.trim(),
             address: address.trim(),
             email: email.trim(),
+            password: password.trim(),
             subjects: selectedSubjects,
             imageUrl: imageUrl.trim(),
         });
@@ -94,6 +100,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
             setPhone('');
             setAddress('');
             setEmail('');
+            setPassword('');
             setImageUrl('');
             setSelectedSubjects([]);
         } else {
@@ -182,13 +189,23 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email (Optional)</Label>
+                        <Label htmlFor="email">Email (for login)</Label>
                         <Input
                             id="email"
                             type="email"
                             placeholder="e.g., teacher@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            placeholder="Set a secure password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
                 </div>

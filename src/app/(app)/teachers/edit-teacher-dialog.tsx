@@ -32,6 +32,7 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
     const [phone, setPhone] = useState(teacher.phone || '')
     const [address, setAddress] = useState(teacher.address || '')
     const [email, setEmail] = useState(teacher.email || '')
+    const [password, setPassword] = useState(teacher.password || '')
     const [imageUrl, setImageUrl] = useState(teacher.imageUrl || '');
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>(teacher.subjects || [])
     const [isSaving, setIsSaving] = useState(false)
@@ -62,6 +63,7 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
             phone: phone.trim(),
             address: address.trim(),
             email: email.trim(),
+            password: password.trim(),
             subjects: selectedSubjects,
             imageUrl: imageUrl.trim(),
         });
@@ -155,13 +157,23 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
                         />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="email">Email (Optional)</Label>
+                        <Label htmlFor="email">Email (for login)</Label>
                         <Input
                             id="email"
                             type="email"
                             placeholder="e.g., teacher@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            placeholder="Set a secure password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
                 </div>
