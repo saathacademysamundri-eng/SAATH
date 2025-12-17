@@ -8,6 +8,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format as formatDate } from 'date-fns';
 import { sendWhatsappMessage } from '@/lib/whatsapp';
+import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
 
 const db = getFirestore(app);
 
@@ -494,6 +495,41 @@ export async function deleteTeacher(teacherId: string) {
         const permissionError = new FirestorePermissionError({ path: teacherRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
+    }
+}
+
+export async function syncTeacherAuthAccounts() {
+    const auth = getAuth();
+    const teachers = await getTeachers();
+    let createdCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    try {
+        for (const teacher of teachers) {
+            if (!teacher.email || !teacher.password) {
+                skippedCount++;
+                continue;
+            }
+            
+            const signInMethods = await fetchSignInMethodsForEmail(auth, teacher.email);
+
+            if (signInMethods.length === 0) {
+                // User does not exist, create them
+                await createUserWithEmailAndPassword(auth, teacher.email, teacher.password);
+                createdCount++;
+            } else {
+                // User exists, for now we just skip.
+                // In a real scenario, you might want to handle password updates if they differ,
+                // but that requires admin privileges (not available client-side) or re-authentication.
+                skippedCount++;
+            }
+        }
+         await logActivity('settings_updated', `Synced teacher login accounts: ${createdCount} created, ${skippedCount} skipped.`);
+        return { success: true, createdCount, updatedCount, skippedCount };
+    } catch (error) {
+        console.error("Error syncing teacher auth accounts:", error);
+        return { success: false, message: (error as Error).message, createdCount, updatedCount, skippedCount };
     }
 }
 
@@ -1275,6 +1311,21 @@ export async function getExams(): Promise<Exam[]> {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
 }
 
+export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
+    const teacher = await getTeacher(teacherId);
+    if (!teacher || !teacher.subjects) return [];
+
+    const teacherSubjects = teacher.subjects;
+    
+    // Firestore doesn't support 'array-contains-any' for more than 10 items in a single query efficiently client-side without multiple queries.
+    // A better approach for scalability would be to denormalize data, but for now, we'll fetch all and filter client-side.
+    const allExams = await getExams();
+    
+    return allExams.filter(exam => 
+        exam.subjects.some(subject => teacherSubjects.includes(subject))
+    );
+}
+
 export async function getExam(examId: string): Promise<Exam | null> {
     const docRef = doc(db, 'exams', examId);
     const docSnap = await getDoc(docRef);
@@ -1408,3 +1459,4 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+
