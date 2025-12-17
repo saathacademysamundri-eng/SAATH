@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -74,7 +73,7 @@ function TeacherSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" isActive={pathname.endsWith(item.href.substring(item.href.lastIndexOf('/')))}
+              <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" isActive={pathname === item.href}
               >
                   <Link href={item.href}>
                     <item.icon className={cn("h-6 w-6")} />
