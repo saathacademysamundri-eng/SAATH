@@ -232,6 +232,10 @@ export default function SettingsPage() {
   const [specificStudent, setSpecificStudent] = useState('');
   const [specificTeacher, setSpecificTeacher] = useState('');
   const [customNumbers, setCustomNumbers] = useState('');
+  
+  const [unpaidMessage, setUnpaidMessage] = useState('Dear parent, the fee for your child {student_name} is due. Please pay the outstanding amount of {dues} PKR at your earliest convenience. Thank you, {academy_name}.');
+  const [unpaidClass, setUnpaidClass] = useState('');
+  const [isSendingUnpaid, setIsSendingUnpaid] = useState(false);
 
   useEffect(() => {
     if (!isSettingsLoading) {
@@ -479,6 +483,62 @@ export default function SettingsPage() {
 
     setIsSendingCustom(false);
   }
+  
+   const handleSendUnpaidMessages = async () => {
+    if (!unpaidClass) {
+      toast({ variant: 'destructive', title: 'No Class Selected', description: 'Please select a class.' });
+      return;
+    }
+    
+    if (!unpaidMessage.trim()) {
+        toast({ variant: 'destructive', title: 'Message Empty', description: 'Cannot send an empty message.' });
+        return;
+    }
+
+    setIsSendingUnpaid(true);
+    
+    const className = classes.find(c => c.id === unpaidClass)?.name;
+    const unpaidStudents = students.filter(s => s.class === className && s.totalFee > 0 && s.phone);
+    
+    if (unpaidStudents.length === 0) {
+      toast({ title: 'No Unpaid Students', description: 'All students in the selected class have paid their fees.' });
+      setIsSendingUnpaid(false);
+      return;
+    }
+
+    const apiUrl = whatsappProvider === 'ultramsg' ? ultraMsgApiUrl : officialApiUrl;
+    const token = whatsappProvider === 'ultramsg' ? ultraMsgToken : officialApiToken;
+
+    toast({ title: `Sending ${unpaidStudents.length} fee reminders...`, description: 'This may take a moment.' });
+    
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const student of unpaidStudents) {
+      try {
+        let messageBody = unpaidMessage
+          .replace(/{student_name}/g, student.name)
+          .replace(/{dues}/g, student.totalFee.toLocaleString())
+          .replace(/{academy_name}/g, settings.name || '');
+
+        const result = await sendWhatsappMessage({ to: student.phone, body: messageBody, apiUrl, token });
+        if (result.success) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch {
+        errorCount++;
+      }
+    }
+
+    toast({
+      title: 'Fee Reminders Complete',
+      description: `${successCount} messages sent successfully. ${errorCount} failed.`,
+    });
+
+    setIsSendingUnpaid(false);
+  };
   
   return (
     <div className="flex flex-col gap-6">
@@ -776,6 +836,39 @@ export default function SettingsPage() {
                       {isSaving && <Loader2 className="mr-2 animate-spin" />}
                       {isSaving ? 'Saving...' : 'Save API Settings'}
                     </Button>
+                </CardFooter>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Bulk Fee Reminders</CardTitle>
+                  <CardDescription>Send WhatsApp fee reminders to all students with unpaid dues in a selected class.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="unpaid-class-select">Select Class</Label>
+                      <Select value={unpaidClass} onValueChange={setUnpaidClass}>
+                        <SelectTrigger id="unpaid-class-select">
+                          <SelectValue placeholder="Select a class..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="unpaid-message">Reminder Message</Label>
+                    <Textarea id="unpaid-message" value={unpaidMessage} onChange={(e) => setUnpaidMessage(e.target.value)} placeholder="Type your reminder message here..." className="min-h-[100px]" />
+                    <p className="text-xs text-muted-foreground">Variables: {'{student_name}'}, {'{dues}'}, {'{academy_name}'}</p>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button onClick={handleSendUnpaidMessages} disabled={isSendingUnpaid || !unpaidClass}>
+                    {isSendingUnpaid ? <Loader2 className="mr-2 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                    Send Reminders
+                  </Button>
                 </CardFooter>
               </Card>
 
