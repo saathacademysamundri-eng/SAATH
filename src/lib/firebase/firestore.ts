@@ -1,4 +1,5 @@
 
+
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary } from '@/lib/data';
@@ -403,6 +404,16 @@ export async function getTeacher(id: string): Promise<Teacher | null> {
     const teacherDoc = await getDoc(doc(db, 'teachers', id));
     return teacherDoc.exists() ? teacherDoc.data() as Teacher : null;
 }
+
+export async function getTeacherByEmail(email: string): Promise<Teacher | null> {
+  const q = query(collection(db, "teachers"), where("email", "==", email), limit(1));
+  const querySnapshot = await getDocs(q);
+  if (querySnapshot.empty) {
+    return null;
+  }
+  return querySnapshot.docs[0].data() as Teacher;
+}
+
 
 export async function getNextTeacherId(): Promise<string> {
     const q = query(collection(db, "teachers"), orderBy("id", "desc"), limit(1));
@@ -970,7 +981,7 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
         await setDoc(docRef, attendanceData, { merge: true });
         await logActivity('attendance_marked', `Marked attendance for class ${attendanceData.className}.`);
         
-        // Send WhatsApp messages for absent students
+        // Send WhatsApp message for absent students
         const settings = await getSettings('details');
         if (settings && settings.absentMsg && settings.whatsappProvider !== 'none') {
             const absentStudents: { id: string, name: string, phone: string }[] = [];
