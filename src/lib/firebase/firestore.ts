@@ -1,7 +1,7 @@
 
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
-import { app } from './config';
+import { app, firebaseConfig } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -9,6 +9,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format as formatDate } from 'date-fns';
 import { sendWhatsappMessage } from '@/lib/whatsapp';
 import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
 
 const db = getFirestore(app);
 
@@ -429,22 +430,23 @@ export async function getNextTeacherId(): Promise<string> {
 }
 
 export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
-    const auth = getAuth();
+    // Unique name to avoid conflicts if called multiple times
+    const tempAppName = 'temp-auth-app-' + Date.now();
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+
     try {
         if (!teacherData.email || !teacherData.password) {
-            return { success: false, message: "Email and password are required." };
+            throw new Error("Email and password are required.");
         }
         
-        // Check if user already exists in Auth
-        const signInMethods = await fetchSignInMethodsForEmail(auth, teacherData.email);
+        const signInMethods = await fetchSignInMethodsForEmail(tempAuth, teacherData.email);
         if (signInMethods.length > 0) {
-            return { success: false, message: "A teacher with this email already exists." };
+            throw new Error("A teacher with this email already exists in the authentication system.");
         }
         
-        // Create user in Firebase Auth
-        await createUserWithEmailAndPassword(auth, teacherData.email, teacherData.password);
+        await createUserWithEmailAndPassword(tempAuth, teacherData.email, teacherData.password);
         
-        // Then add to Firestore
         const newTeacherId = await getNextTeacherId();
         const newTeacher: Teacher = { id: newTeacherId, ...teacherData };
         const docRef = doc(db, 'teachers', newTeacherId);
@@ -452,12 +454,10 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
         
         await logActivity('teacher_added', `Added new teacher: ${teacherData.name}.`, `/teachers/${newTeacherId}`);
         
-        // Send WhatsApp message if enabled
         const settings = await getSettings('details');
         if (settings && settings.newTeacherMsg && newTeacher.phone) {
             let messageBody = settings.newTeacherTemplate || 'Dear {teacher_name}, welcome to {academy_name}! We are excited to have you on our team.';
-            messageBody = messageBody.replace(/{teacher_name}/g, newTeacher.name);
-            messageBody = messageBody.replace(/{academy_name}/g, settings.name || '');
+            messageBody = messageBody.replace(/{teacher_name}/g, newTeacher.name).replace(/{academy_name}/g, settings.name || '');
 
             const apiUrl = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgApiUrl : settings.officialApiUrl;
             const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
@@ -467,16 +467,17 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
             }
         }
         
+        await deleteApp(tempApp);
         return { success: true, message: "Teacher added and account created successfully." };
+
     } catch (serverError: any) {
         let errorMessage = (serverError as Error).message;
-        if (serverError.code === 'auth/email-already-in-use') {
-            errorMessage = 'This email address is already in use by another account.';
-        } else if (serverError.code === 'auth/weak-password') {
+        if (serverError.code === 'auth/weak-password') {
             errorMessage = 'The password is too weak. It must be at least 6 characters long.';
         }
         
         console.error("Error adding teacher:", serverError);
+        await deleteApp(tempApp); // Ensure cleanup on error
         return { success: false, message: errorMessage };
     }
 }
