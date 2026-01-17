@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -77,7 +78,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
         if (result.success) {
             toast({ 
                 title: 'Teacher Added', 
-                description: 'The new teacher has been saved. Please go to Settings > Database and click "Sync Teacher Logins" to create their account.' 
+                description: 'The new teacher has been saved and their login account has been created.' 
             });
             onTeacherAdded();
             // Reset form

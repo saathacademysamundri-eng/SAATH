@@ -32,7 +32,6 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
     const [phone, setPhone] = useState(teacher.phone || '')
     const [address, setAddress] = useState(teacher.address || '')
     const [email, setEmail] = useState(teacher.email || '')
-    const [password, setPassword] = useState(teacher.password || '')
     const [imageUrl, setImageUrl] = useState(teacher.imageUrl || '');
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>(teacher.subjects || [])
     const [isSaving, setIsSaving] = useState(false)
@@ -51,8 +50,8 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
     }
 
     const handleSubmit = async () => {
-        if (!name.trim() || !phone.trim() || !fatherName.trim() || !address.trim() || !password.trim() || selectedSubjects.length === 0) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all required fields, including password and subjects.' });
+        if (!name.trim() || !phone.trim() || !fatherName.trim() || !address.trim() || selectedSubjects.length === 0) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all required fields, including subjects.' });
             return;
         }
 
@@ -63,7 +62,6 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
             phone: phone.trim(),
             address: address.trim(),
             email: email.trim(),
-            password: password.trim(),
             subjects: selectedSubjects,
             imageUrl: imageUrl.trim(),
         });
@@ -93,7 +91,9 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
         <DialogContent className="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>Edit Teacher: {teacher.name}</DialogTitle>
-                <DialogDescription>Update the details for this teacher.</DialogDescription>
+                <DialogDescription>
+                  Update the details for this teacher. Password can only be changed via the "Forgot Password" functionality on the login page.
+                </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
                  <div className="space-y-2">
@@ -164,17 +164,9 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
                             placeholder="e.g., teacher@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            disabled
                         />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <Input
-                            id="password"
-                            type="text"
-                            placeholder="Set or change password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
+                         <p className="text-xs text-muted-foreground">Email cannot be changed after creation.</p>
                     </div>
                 </div>
                  <div className="space-y-2">

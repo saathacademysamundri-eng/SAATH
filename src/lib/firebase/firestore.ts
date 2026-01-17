@@ -429,14 +429,27 @@ export async function getNextTeacherId(): Promise<string> {
 }
 
 export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
+    const auth = getAuth();
     try {
+        if (!teacherData.email || !teacherData.password) {
+            return { success: false, message: "Email and password are required." };
+        }
+        
+        // Check if user already exists in Auth
+        const signInMethods = await fetchSignInMethodsForEmail(auth, teacherData.email);
+        if (signInMethods.length > 0) {
+            return { success: false, message: "A teacher with this email already exists." };
+        }
+        
+        // Create user in Firebase Auth
+        await createUserWithEmailAndPassword(auth, teacherData.email, teacherData.password);
+        
+        // Then add to Firestore
         const newTeacherId = await getNextTeacherId();
-        const newTeacher: Teacher = {
-            id: newTeacherId,
-            ...teacherData
-        };
+        const newTeacher: Teacher = { id: newTeacherId, ...teacherData };
         const docRef = doc(db, 'teachers', newTeacherId);
         await setDoc(docRef, newTeacher);
+        
         await logActivity('teacher_added', `Added new teacher: ${teacherData.name}.`, `/teachers/${newTeacherId}`);
         
         // Send WhatsApp message if enabled
@@ -450,27 +463,30 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
             const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
             
             if (apiUrl && token) {
-                await sendWhatsappMessage({
-                    to: newTeacher.phone,
-                    body: messageBody,
-                    apiUrl: apiUrl,
-                    token: token
-                });
+                await sendWhatsappMessage({ to: newTeacher.phone, body: messageBody, apiUrl, token });
             }
         }
         
-        return { success: true, message: "Teacher added successfully." };
-    } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: `teachers/[auto-id]`, operation: 'create', requestResourceData: teacherData });
-        errorEmitter.emit('permission-error', permissionError);
-        return { success: false, message: (serverError as Error).message };
+        return { success: true, message: "Teacher added and account created successfully." };
+    } catch (serverError: any) {
+        let errorMessage = (serverError as Error).message;
+        if (serverError.code === 'auth/email-already-in-use') {
+            errorMessage = 'This email address is already in use by another account.';
+        } else if (serverError.code === 'auth/weak-password') {
+            errorMessage = 'The password is too weak. It must be at least 6 characters long.';
+        }
+        
+        console.error("Error adding teacher:", serverError);
+        return { success: false, message: errorMessage };
     }
 }
+
 
 export async function updateTeacher(teacherId: string, teacherData: Partial<Omit<Teacher, 'id'>>) {
     const docRef = doc(db, 'teachers', teacherId);
     try {
-        await updateDoc(docRef, teacherData);
+        const { password, ...restOfData } = teacherData;
+        await updateDoc(docRef, restOfData);
         await logActivity('teacher_updated', `Updated details for teacher ${teacherData.name}.`, `/teachers/${teacherId}`);
         return { success: true, message: "Teacher updated successfully." };
     } catch (serverError) {
@@ -520,8 +536,6 @@ export async function syncTeacherAuthAccounts() {
                 createdCount++;
             } else {
                 // User exists, for now we just skip.
-                // In a real scenario, you might want to handle password updates if they differ,
-                // but that requires admin privileges (not available client-side) or re-authentication.
                 skippedCount++;
             }
         }
@@ -1459,4 +1473,3 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
-
