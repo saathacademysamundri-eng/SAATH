@@ -145,12 +145,17 @@ function TeacherHeader() {
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const { teacher, loading } = useTeacherAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  if (pathname === '/teacher/login') {
+    return <>{children}</>;
+  }
 
   useEffect(() => {
     if (!loading && !teacher) {
       router.replace('/teacher/login');
     }
-  }, [teacher, loading, router]);
+  }, [teacher, loading, router, pathname]);
   
   if (loading || !teacher) {
     return <GlobalPreloader />;
