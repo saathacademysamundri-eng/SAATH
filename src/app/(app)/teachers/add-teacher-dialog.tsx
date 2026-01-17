@@ -24,8 +24,6 @@ import { Subject } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import { useAppContext } from "@/hooks/use-app-context"
 import { Textarea } from "@/components/ui/textarea"
-import { createUserWithEmailAndPassword } from "firebase/auth"
-import { auth } from "@/lib/firebase/config"
 
 export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => void }) {
     const { allSubjects } = useAppContext();
@@ -65,55 +63,36 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
         }
 
         setIsSaving(true);
-        try {
-            // Step 1: Create user in Firebase Auth
-            // Temporarily sign in with the new user to create them. We will re-authenticate the admin later.
-            // This is a workaround for not having an admin SDK on the client.
-            const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password.trim());
-            const user = userCredential.user;
+        const result = await addTeacher({
+            name: name.trim(),
+            fatherName: fatherName.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
+            email: email.trim(),
+            password: password.trim(),
+            subjects: selectedSubjects,
+            imageUrl: imageUrl.trim(),
+        });
 
-            // Step 2: Save teacher data to Firestore
-            const result = await addTeacher({ 
-                name: name.trim(),
-                fatherName: fatherName.trim(),
-                phone: phone.trim(),
-                address: address.trim(),
-                email: email.trim(),
-                password: password.trim(),
-                subjects: selectedSubjects,
-                imageUrl: imageUrl.trim(),
+        if (result.success) {
+            toast({ 
+                title: 'Teacher Added', 
+                description: 'The new teacher has been saved. Please go to Settings > Database and click "Sync Teacher Logins" to create their account.' 
             });
-
-            if (result.success) {
-                toast({ title: 'Teacher Added', description: 'The new teacher has been saved and their login account is created.' });
-                onTeacherAdded();
-                // Reset form
-                setName('');
-                setFatherName('');
-                setPhone('');
-                setAddress('');
-                setEmail('');
-                setPassword('');
-                setImageUrl('');
-                setSelectedSubjects([]);
-            } else {
-                // If Firestore fails, we should ideally delete the auth user to prevent orphans
-                await user.delete();
-                throw new Error(result.message);
-            }
-        } catch (error: any) {
-            let errorMessage = "An unknown error occurred.";
-            if (error.code === 'auth/email-already-in-use') {
-                errorMessage = "This email is already in use by another account.";
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-            toast({ variant: 'destructive', title: 'Failed to Add Teacher', description: errorMessage });
-        } finally {
-            setIsSaving(false);
-            // Re-authenticate admin if necessary. In this app's flow, it might not be needed
-            // if the main admin session is persistent.
+            onTeacherAdded();
+            // Reset form
+            setName('');
+            setFatherName('');
+            setPhone('');
+            setAddress('');
+            setEmail('');
+            setPassword('');
+            setImageUrl('');
+            setSelectedSubjects([]);
+        } else {
+            toast({ variant: 'destructive', title: 'Failed to Add Teacher', description: result.message });
         }
+        setIsSaving(false);
     };
 
     const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
