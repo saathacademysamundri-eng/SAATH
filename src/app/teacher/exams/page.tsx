@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -60,7 +61,7 @@ export default function TeacherExamsPage() {
 
   const handleExamCreated = (examId: string) => {
     fetchExams();
-    router.push(`/exams/${examId}`);
+    router.push(`/teacher/exams/${examId}`);
   };
   
   const handleExamUpdated = () => {
@@ -156,7 +157,7 @@ export default function TeacherExamsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/exams/${exam.id}`)}>
+                              <DropdownMenuItem onClick={() => router.push(`/teacher/exams/${exam.id}`)}>
                                 <ClipboardPenLine className="mr-2 h-4 w-4" />
                                 Enter Marks
                               </DropdownMenuItem>
