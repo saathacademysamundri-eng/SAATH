@@ -1332,18 +1332,10 @@ export async function getExams(): Promise<Exam[]> {
 
 export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
     try {
-        const q = query(collection(db, "exams"), where("teacherId", "==", teacherId), orderBy("date", "desc"));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
-    } catch (serverError) {
-        console.error("Error fetching exams by teacher:", serverError);
-        if (serverError instanceof Error && serverError.message.includes("The query requires an index")) {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `exams`,
-                operation: 'list',
-                requestResourceData: { query: `teacherId == ${teacherId}` }
-            }));
-        }
+        const allExams = await getExams();
+        return allExams.filter(exam => exam.teacherId === teacherId);
+    } catch (error) {
+        console.error("Error fetching or filtering exams by teacher:", error);
         return [];
     }
 }
