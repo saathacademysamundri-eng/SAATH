@@ -520,34 +520,44 @@ export async function deleteTeacher(teacherId: string) {
 }
 
 export async function syncTeacherAuthAccounts() {
-    const auth = getAuth();
-    const teachers = await getTeachers();
+    const tempAppName = 'temp-auth-app-' + Date.now();
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+    
     let createdCount = 0;
-    let updatedCount = 0;
+    const updatedCount = 0; // Not implemented
     let skippedCount = 0;
 
     try {
+        const teachers = await getTeachers();
+        const mainAuth = getAuth(app); // Use main auth for checking existence
+
         for (const teacher of teachers) {
             if (!teacher.email || !teacher.password) {
                 skippedCount++;
                 continue;
             }
             
-            const signInMethods = await fetchSignInMethodsForEmail(auth, teacher.email);
+            const signInMethods = await fetchSignInMethodsForEmail(mainAuth, teacher.email);
 
             if (signInMethods.length === 0) {
-                // User does not exist, create them
-                await createUserWithEmailAndPassword(auth, teacher.email, teacher.password);
+                // User does not exist, create them using the temporary auth instance
+                await createUserWithEmailAndPassword(tempAuth, teacher.email, teacher.password);
                 createdCount++;
             } else {
                 // User exists, for now we just skip.
                 skippedCount++;
             }
         }
-         await logActivity('settings_updated', `Synced teacher login accounts: ${createdCount} created, ${skippedCount} skipped.`);
+        await deleteApp(tempApp); // Clean up the temporary app
+        
+        if (createdCount > 0) {
+            await logActivity('settings_updated', `Synced teacher login accounts: ${createdCount} new accounts created.`);
+        }
         return { success: true, createdCount, updatedCount, skippedCount };
     } catch (error) {
         console.error("Error syncing teacher auth accounts:", error);
+        await deleteApp(tempApp); // Ensure cleanup on error
         return { success: false, message: (error as Error).message, createdCount, updatedCount, skippedCount };
     }
 }
@@ -1269,7 +1279,7 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
         const permissionError = new FirestorePermissionError({
             path: `teacher_attendance`,
             operation: 'list',
-        }, serverError as Error);
+        });
         errorEmitter.emit('permission-error', permissionError);
         return [];
     }
@@ -1342,7 +1352,7 @@ export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
         const permissionError = new FirestorePermissionError({
             path: 'exams', // Path for a collection query.
             operation: 'list',
-        }, serverError as Error);
+        });
         errorEmitter.emit('permission-error', permissionError);
         return [];
     }
