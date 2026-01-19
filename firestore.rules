@@ -39,10 +39,10 @@ service cloud.firestore {
         allow read, write: if isAuthenticated();
     }
     match /exams/{examId} {
-      // This rule allows any authenticated user to read and write exams.
-      // This is suitable for the current app structure but should be refined
-      // with more specific user roles in a production environment.
-      allow read, write: if isAuthenticated();
+      // Allow a user to read an exam if they are the assigned teacher.
+      // Allow any authenticated user (admin) to write/create exams.
+      allow read: if isAuthenticated() && (resource.data.teacherId == request.auth.uid);
+      allow write: if isAuthenticated();
     }
     match /attendance/{attendanceId} {
        allow read, write: if isAuthenticated();
