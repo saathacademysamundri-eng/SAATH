@@ -1265,14 +1265,12 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
         });
 
         return teacherAttendance;
-    } catch (error) {
-        console.error(`Error fetching teacher attendance for ${teacherId}:`, error);
-        if (error instanceof Error && error.message.includes("The query requires an index")) {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `teacher_attendance`,
-                operation: 'list',
-            }));
-        }
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: `teacher_attendance`,
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
         return [];
     }
 }
@@ -1339,11 +1337,12 @@ export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
         );
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
-    } catch (error) {
-        console.error("Error fetching exams for teacher:", error);
-        // This is a common error if the index is not created in Firestore.
-        // The error message in the browser console will be very specific and
-        // will include a link to create the required index.
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: 'exams', // Path for a collection query.
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
         return [];
     }
 }
