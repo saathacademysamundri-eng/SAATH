@@ -8,6 +8,7 @@ import { useMemo, useState } from 'react';
 import { format, getMonth, getYear } from 'date-fns';
 import { Student, Income } from '@/lib/data';
 import { MonthlyTeacherAttendance } from './monthly-attendance';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function TeacherDashboardPage() {
   const { teacher } = useTeacherAuth();
@@ -53,12 +54,18 @@ export default function TeacherDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Welcome, {teacher?.name}!</h1>
-        <p className="text-muted-foreground">
-          Here is an overview of your dashboard.
-        </p>
-      </div>
+       <Card className="bg-gradient-to-r from-primary/10 to-background border-primary/20">
+        <CardHeader className="flex flex-col sm:flex-row items-center gap-4">
+            <Avatar className="h-20 w-20 border-2 border-primary">
+                <AvatarImage src={teacher?.imageUrl} alt={teacher?.name} />
+                <AvatarFallback className="text-3xl">{teacher?.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="text-center sm:text-left">
+                <CardTitle className="text-3xl font-bold">Welcome, {teacher?.name}!</CardTitle>
+                <CardDescription className="mt-1 text-lg">Here is an overview of your dashboard.</CardDescription>
+            </div>
+        </CardHeader>
+       </Card>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map(stat => (
           <Card key={stat.title}>

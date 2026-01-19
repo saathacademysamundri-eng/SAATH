@@ -1,7 +1,7 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TakeStudentAttendance } from './take-student-attendance';
 
 export default function TeacherStudentAttendancePage() {

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -20,12 +19,19 @@ type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
 
 export function TakeStudentAttendance() {
     const { classes, students, loading } = useAppContext();
+    const { teacher } = useTeacherAuth();
     
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [attendance, setAttendance] = useState<{ [studentId: string]: AttendanceStatus }>({});
     const [loadingStudents, setLoadingStudents] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+
+    const teacherClasses = useMemo(() => {
+        if (!teacher) return [];
+        const teacherSubjectNames = new Set(teacher.subjects);
+        return classes.filter(c => c.subjects.some(s => teacherSubjectNames.has(s.name)));
+    }, [teacher, classes]);
 
     const handleClassChange = (classId: string) => {
         setSelectedClassId(classId);
@@ -37,8 +43,12 @@ export function TakeStudentAttendance() {
     const classStudents = useMemo(() => {
         if (!selectedClassId) return [];
         const currentClassName = classes.find(c => c.id === selectedClassId)?.name;
-        return students.filter(s => s.class === currentClassName);
-    }, [selectedClassId, students, classes]);
+        // Teachers should only see students in their class that they teach at least one subject to.
+        return students.filter(s => 
+            s.class === currentClassName && 
+            s.subjects.some(sub => sub.teacher_id === teacher?.id)
+        );
+    }, [selectedClassId, students, classes, teacher]);
 
     useEffect(() => {
         const initialAttendance: { [studentId: string]: AttendanceStatus } = {};
@@ -90,7 +100,7 @@ export function TakeStudentAttendance() {
                         {loading ? (
                             <SelectItem value="loading" disabled>Loading classes...</SelectItem>
                         ) : (
-                            classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
+                            teacherClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
                         )}
                     </SelectContent>
                 </Select>
@@ -99,73 +109,75 @@ export function TakeStudentAttendance() {
             {selectedClassId && (
                 <Card>
                     <CardHeader>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div>
                                 <CardTitle>
                                     Students of {classes.find(c => c.id === selectedClassId)?.name}
                                 </CardTitle>
                                 <CardDescription>Select the status for each student.</CardDescription>
                             </div>
-                            <Button onClick={handleSaveAttendance} disabled={isSaving || classStudents.length === 0}>
+                            <Button onClick={handleSaveAttendance} disabled={isSaving || classStudents.length === 0} className="w-full sm:w-auto">
                                 {isSaving && <Loader2 className="mr-2 animate-spin" />}
                                 Save Attendance
                             </Button>
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Roll #</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead className="text-right">Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {loadingStudents || loading ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell><Skeleton className="h-5 w-12" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-6 w-48 ml-auto" /></TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : classStudents.length > 0 ? (
-                                    classStudents.map((student) => (
-                                        <TableRow key={student.id}>
-                                            <TableCell className="font-medium">{student.id}</TableCell>
-                                            <TableCell>{student.name}</TableCell>
-                                            <TableCell className="text-right">
-                                                <RadioGroup
-                                                    value={attendance[student.id] || 'Present'}
-                                                    onValueChange={(value: AttendanceStatus) => handleAttendanceChange(student.id, value)}
-                                                    className="flex justify-end gap-4"
-                                                >
-                                                    <div className="flex items-center space-x-2">
-                                                        <RadioGroupItem value="Present" id={`present-${student.id}`} />
-                                                        <Label htmlFor={`present-${student.id}`} className="text-green-600">Present</Label>
-                                                    </div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <RadioGroupItem value="Absent" id={`absent-${student.id}`} />
-                                                        <Label htmlFor={`absent-${student.id}`} className="text-red-600">Absent</Label>
-                                                    </div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <RadioGroupItem value="Leave" id={`leave-${student.id}`} />
-                                                        <Label htmlFor={`leave-${student.id}`} className="text-yellow-600">Leave</Label>
-                                                    </div>
-                                                </RadioGroup>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Roll #</TableHead>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead className="text-right">Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {loadingStudents || loading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                <TableCell><Skeleton className="h-5 w-12" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                                <TableCell className="text-right"><Skeleton className="h-6 w-48 ml-auto" /></TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : classStudents.length > 0 ? (
+                                        classStudents.map((student) => (
+                                            <TableRow key={student.id}>
+                                                <TableCell className="font-medium">{student.id}</TableCell>
+                                                <TableCell>{student.name}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <RadioGroup
+                                                        value={attendance[student.id] || 'Present'}
+                                                        onValueChange={(value: AttendanceStatus) => handleAttendanceChange(student.id, value)}
+                                                        className="flex justify-end gap-2 sm:gap-4 flex-wrap"
+                                                    >
+                                                        <div className="flex items-center space-x-2">
+                                                            <RadioGroupItem value="Present" id={`present-${student.id}`} />
+                                                            <Label htmlFor={`present-${student.id}`} className="text-green-600">Present</Label>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <RadioGroupItem value="Absent" id={`absent-${student.id}`} />
+                                                            <Label htmlFor={`absent-${student.id}`} className="text-red-600">Absent</Label>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <RadioGroupItem value="Leave" id={`leave-${student.id}`} />
+                                                            <Label htmlFor={`leave-${student.id}`} className="text-yellow-600">Leave</Label>
+                                                        </div>
+                                                    </RadioGroup>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                                No students found for you in this class.
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
-                                            No students found in this class.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             )}

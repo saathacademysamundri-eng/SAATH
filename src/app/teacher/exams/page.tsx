@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -86,7 +84,7 @@ export default function TeacherExamsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">My Exams</h1>
           <p className="text-muted-foreground">Create and manage exams for your classes.</p>
@@ -108,99 +106,99 @@ export default function TeacherExamsPage() {
           <CardDescription>A list of all exams you have created.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Exam Name</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Subjects</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-                  </TableRow>
-                ))
-              ) : exams.length > 0 ? (
-                exams.map(exam => (
-                  <TableRow key={exam.id}>
-                    <TableCell>{format(exam.date, 'PPP')}</TableCell>
-                    <TableCell className="font-medium">{exam.name}</TableCell>
-                    <TableCell>{exam.className}</TableCell>
-                    <TableCell>
-                        <Badge variant={exam.examType === 'Single Subject' ? 'secondary' : 'default'}>
-                            {exam.examType}
-                        </Badge>
-                    </TableCell>
-                    <TableCell>
-                        <div className="flex flex-wrap gap-1 max-w-xs">
-                            {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
-                        </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <AlertDialog>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button aria-haspopup="true" size="icon" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/teacher/exams/${exam.id}`)}>
-                                <ClipboardPenLine className="mr-2 h-4 w-4" />
-                                Enter Marks
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                  <Trash className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                           <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete the exam "{exam.name}" and all of its associated results. This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    You have not created any exams yet.
-                  </TableCell>
+                  <TableHead>Exam Name</TableHead>
+                  <TableHead className="hidden sm:table-cell">Date</TableHead>
+                  <TableHead className="hidden md:table-cell">Class</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                      <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : exams.length > 0 ? (
+                  exams.map(exam => (
+                    <TableRow key={exam.id}>
+                      <TableCell className="font-medium">
+                        <div>{exam.name}</div>
+                        <div className="text-xs text-muted-foreground flex flex-wrap gap-1 mt-1">
+                          {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">{format(exam.date, 'PPP')}</TableCell>
+                      <TableCell className="hidden md:table-cell">{exam.className}</TableCell>
+                      <TableCell>
+                          <Badge variant={exam.examType === 'Single Subject' ? 'secondary' : 'default'}>
+                              {exam.examType}
+                          </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <AlertDialog>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => router.push(`/teacher/exams/${exam.id}`)}>
+                                  <ClipboardPenLine className="mr-2 h-4 w-4" />
+                                  Enter Marks
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete the exam "{exam.name}" and all of its associated results. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                      You have not created any exams yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
        {selectedExam && (
