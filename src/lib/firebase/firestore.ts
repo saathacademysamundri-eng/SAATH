@@ -529,25 +529,30 @@ export async function syncTeacherAuthAccounts() {
 
     try {
         const teachers = await getTeachers();
-        const mainAuth = getAuth(app); // Use main auth for checking existence
 
         for (const teacher of teachers) {
+            // We only attempt to create an account if both email and password are provided.
             if (!teacher.email || !teacher.password) {
                 skippedCount++;
                 continue;
             }
             
-            const signInMethods = await fetchSignInMethodsForEmail(mainAuth, teacher.email);
-
-            if (signInMethods.length === 0) {
-                // User does not exist, create them using the temporary auth instance
+            try {
+                // Directly attempt to create the user.
                 await createUserWithEmailAndPassword(tempAuth, teacher.email, teacher.password);
                 createdCount++;
-            } else {
-                // User exists, for now we just skip.
-                skippedCount++;
+            } catch (authError: any) {
+                if (authError.code === 'auth/email-already-in-use') {
+                    // This is an expected case if the user already exists. We can safely skip.
+                    skippedCount++;
+                } else {
+                    // For other errors (e.g., weak-password), we should log them.
+                    console.error(`Failed to create auth account for ${teacher.email}:`, authError.message);
+                    // We don't rethrow here, just log and continue with other teachers.
+                }
             }
         }
+        
         await deleteApp(tempApp); // Clean up the temporary app
         
         if (createdCount > 0) {
@@ -555,11 +560,12 @@ export async function syncTeacherAuthAccounts() {
         }
         return { success: true, createdCount, updatedCount, skippedCount };
     } catch (error) {
-        console.error("Error syncing teacher auth accounts:", error);
+        console.error("Error during teacher sync process:", error);
         await deleteApp(tempApp); // Ensure cleanup on error
         return { success: false, message: (error as Error).message, createdCount, updatedCount, skippedCount };
     }
 }
+
 
 async function getNextClassId(): Promise<string> {
     const q = query(collection(db, "classes"), orderBy("id", "desc"), limit(1));
@@ -1258,7 +1264,6 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
             collection(db, 'teacher_attendance'),
             where('teacherId', '==', teacherId),
         );
-
         const querySnapshot = await getDocs(q);
 
         const teacherAttendance: { date: Date, status: AttendanceStatus }[] = [];
@@ -1272,7 +1277,7 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
                 });
             }
         });
-
+        
         return teacherAttendance;
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({
