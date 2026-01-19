@@ -1332,13 +1332,22 @@ export async function getExams(): Promise<Exam[]> {
 
 export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
     try {
-        const allExams = await getExams();
-        return allExams.filter(exam => exam.teacherId === teacherId);
+        const q = query(
+            collection(db, 'exams'), 
+            where("teacherId", "==", teacherId),
+            orderBy("date", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
     } catch (error) {
-        console.error("Error fetching or filtering exams by teacher:", error);
+        console.error("Error fetching exams for teacher:", error);
+        // This is a common error if the index is not created in Firestore.
+        // The error message in the browser console will be very specific and
+        // will include a link to create the required index.
         return [];
     }
 }
+
 
 export async function getExam(examId: string): Promise<Exam | null> {
     const docRef = doc(db, 'exams', examId);
