@@ -17,7 +17,7 @@ const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 export function LoginForm() {
   const { toast } = useToast();
   const router = useRouter();
-  const [email, setEmail] = useState('admin@saath.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -89,7 +89,7 @@ export function LoginForm() {
         <Input
           id="email"
           type="email"
-          placeholder="admin@saath.com"
+          placeholder="Enter your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
