@@ -27,9 +27,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { createExam } from "@/lib/firebase/firestore"
 import { Loader2 } from "lucide-react"
 import { useAppContext } from "@/hooks/use-app-context"
+import { useSettings } from "@/hooks/use-settings"
 
 export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: string) => void }) {
     const { classes, teachers } = useAppContext();
+    const { settings } = useSettings();
     const [name, setName] = useState('');
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [examType, setExamType] = useState<'Single Subject' | 'Full Test' | 'Manual'>('Single Subject');
@@ -88,12 +90,13 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
         const examData = {
             name,
             className: currentClass!.name,
-            teacherId: selectedTeacherId,
+            teacherId: selectedTeacherId!,
             teacherName: selectedTeacher!.name,
             examType,
             subjects,
             totalMarks,
             results: [],
+            academicSession: settings.academicSession,
         };
 
         const result = await createExam(examData);

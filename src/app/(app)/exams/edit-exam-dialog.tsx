@@ -27,9 +27,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { updateExam } from "@/lib/firebase/firestore"
 import { Loader2 } from "lucide-react"
 import { useAppContext } from "@/hooks/use-app-context"
+import { useSettings } from "@/hooks/use-settings"
 
 export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpdated: () => void }) {
     const { classes, teachers } = useAppContext();
+    const { settings } = useSettings();
     const [name, setName] = useState(exam.name);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(() => classes.find(c => c.name === exam.className)?.id || null);
     const [examType, setExamType] = useState<Exam['examType']>(exam.examType);
@@ -37,9 +39,24 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
     const [manualSubjects, setManualSubjects] = useState(exam.examType === 'Manual' ? exam.subjects.join(', ') : '');
     const [totalMarks, setTotalMarks] = useState(exam.totalMarks || 100);
     const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(exam.teacherId);
+    const [academicSession, setAcademicSession] = useState(exam.academicSession || settings.academicSession);
     
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+
+    const academicSessions = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        const years = new Set<string>();
+        if (settings.academicSession) years.add(settings.academicSession);
+        if (exam.academicSession) years.add(exam.academicSession);
+
+        for (let i = -5; i < 10; i++) {
+            const startYear = currentYear + i;
+            const endYear = startYear + 1;
+            years.add(`${startYear}-${endYear}`);
+        }
+        return Array.from(years).sort((a,b) => b.localeCompare(a));
+    }, [settings.academicSession, exam.academicSession]);
 
     const handleClassChange = (value: string) => {
         setSelectedClassId(value);
@@ -86,14 +103,15 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
         const currentClass = classes.find(c => c.id === selectedClassId);
         const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
         
-        const examData = {
+        const examData: Partial<Exam> = {
             name,
             className: currentClass!.name,
-            teacherId: selectedTeacherId,
+            teacherId: selectedTeacherId!,
             teacherName: selectedTeacher!.name,
             examType,
             subjects,
             totalMarks,
+            academicSession,
         };
 
         const result = await updateExam(exam.id, examData);
@@ -125,10 +143,26 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
-            <div className="grid gap-2">
-                <Label htmlFor="name">Exam Name</Label>
-                <Input id="name" placeholder="e.g., Mid-Term Test, Weekly Physics Quiz" value={name} onChange={(e) => setName(e.target.value)} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="name">Exam Name</Label>
+                    <Input id="name" placeholder="e.g., Mid-Term Test, Weekly Physics Quiz" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                 <div className="grid gap-2">
+                    <Label htmlFor="session">Academic Session</Label>
+                    <Select onValueChange={setAcademicSession} value={academicSession}>
+                        <SelectTrigger id="session">
+                            <SelectValue placeholder="Select a session" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {academicSessions.map((session) => (
+                                <SelectItem key={session} value={session}>{session}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">

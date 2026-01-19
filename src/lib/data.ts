@@ -151,6 +151,7 @@ export type Exam = {
     totalMarks: number;
     date: Date;
     results?: StudentResult[];
+    academicSession: string;
 }
 
 
@@ -364,4 +365,3 @@ export const subjectTeacherMap: { [subjectName: string]: string } = {
 };
 
     
-
