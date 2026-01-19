@@ -168,6 +168,17 @@ function TeacherUserNav() {
 function TeacherHeader() {
     const pathname = usePathname();
     const router = useRouter();
+    const { settings } = useSettings();
+
+    useEffect(() => {
+        const academyName = settings.name || 'My Academy';
+        const pageName = pathname.split('/').filter(Boolean).pop() || 'dashboard';
+        let title = pageName.charAt(0).toUpperCase() + pageName.slice(1);
+        
+        if (pathname.includes('/teacher/exams/')) title = 'Exam Results';
+
+        document.title = `${title} | ${academyName}`;
+    }, [pathname, settings.name]);
 
     return (
          <header className="sticky top-0 z-10 flex h-20 w-full items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 print:hidden">
