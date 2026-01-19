@@ -20,37 +20,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useState, useEffect } from "react"
-import { type Class } from "@/lib/data"
+import { useState, useEffect, useMemo } from "react"
+import { type Class, type Teacher } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { createExam, getClasses } from "@/lib/firebase/firestore"
+import { createExam } from "@/lib/firebase/firestore"
 import { Loader2 } from "lucide-react"
+import { useAppContext } from "@/hooks/use-app-context"
+import { useSettings } from "@/hooks/use-settings"
 
 export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: string) => void }) {
+    const { classes, teachers } = useAppContext();
+    const { settings } = useSettings();
     const [name, setName] = useState('');
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [examType, setExamType] = useState<'Single Subject' | 'Full Test' | 'Manual'>('Single Subject');
     const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
     const [manualSubjects, setManualSubjects] = useState('');
     const [totalMarks, setTotalMarks] = useState(100);
+    const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
 
-    const [classes, setClasses] = useState<Class[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
-
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            const classesData = await getClasses();
-            setClasses(classesData);
-        };
-        fetchInitialData();
-    }, []);
 
     const handleClassChange = (value: string) => {
         setSelectedClassId(value);
         setSelectedSubject(null); // Reset subject when class changes
+        setSelectedTeacherId(null); // Reset teacher when class changes
     }
+    
+    const availableTeachers = useMemo(() => {
+        if (!selectedClassId) return [];
+        const currentClass = classes.find(c => c.id === selectedClassId);
+        if (!currentClass) return [];
+        
+        const subjectsInClass = new Set(currentClass.subjects.map(s => s.name));
+        
+        return teachers.filter(teacher => 
+            (teacher.subjects || []).some(subject => subjectsInClass.has(subject))
+        );
+    }, [selectedClassId, classes, teachers]);
 
     const handleSubmit = async () => {
         const subjects: string[] = [];
@@ -63,27 +72,31 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             subjects.push(...manualSubjects.split(',').map(s => s.trim()).filter(s => s));
         }
 
-        const hasMissingInfo = !name || !selectedClassId || subjects.length === 0 || totalMarks <= 0;
+        const hasMissingInfo = !name || !selectedClassId || !selectedTeacherId || subjects.length === 0 || totalMarks <= 0;
 
         if (hasMissingInfo) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Please fill out all required fields, including at least one subject and total marks.',
+                description: 'Please fill out all fields: name, class, teacher, subjects, and marks.',
             });
             return;
         }
 
         setIsSaving(true);
         const currentClass = classes.find(c => c.id === selectedClassId);
+        const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
         
         const examData = {
             name,
             className: currentClass!.name,
+            teacherId: selectedTeacherId!,
+            teacherName: selectedTeacher!.name,
             examType,
             subjects,
             totalMarks,
             results: [],
+            academicSession: settings.academicSession,
         };
 
         const result = await createExam(examData);
@@ -114,7 +127,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             Fill in the details to set up a new exam.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
             <div className="grid gap-2">
                 <Label htmlFor="name">Exam Name</Label>
                 <Input id="name" placeholder="e.g., Mid-Term Test, Weekly Physics Quiz" value={name} onChange={(e) => setName(e.target.value)} />
@@ -135,22 +148,36 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                     </Select>
                 </div>
                  <div className="grid gap-2">
-                    <Label>Exam Type</Label>
-                    <RadioGroup value={examType} onValueChange={(v: any) => setExamType(v)} className="flex items-center gap-4 pt-2">
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="Single Subject" id="single" />
-                            <Label htmlFor="single" className="font-normal">Single Subject</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="Full Test" id="full" />
-                            <Label htmlFor="full" className="font-normal">Full Test</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="Manual" id="manual" />
-                            <Label htmlFor="manual" className="font-normal">Manual</Label>
-                        </div>
-                    </RadioGroup>
+                    <Label htmlFor="teacher">Assign Teacher</Label>
+                    <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId || undefined} disabled={!selectedClassId}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a teacher" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableTeachers.map((t) => (
+                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
+            </div>
+            
+            <div className="grid gap-2">
+                <Label>Exam Type</Label>
+                <RadioGroup value={examType} onValueChange={(v: any) => setExamType(v)} className="flex items-center gap-4 pt-2">
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Single Subject" id="single" />
+                        <Label htmlFor="single" className="font-normal">Single Subject</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Full Test" id="full" />
+                        <Label htmlFor="full" className="font-normal">Full Test</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Manual" id="manual" />
+                        <Label htmlFor="manual" className="font-normal">Manual</Label>
+                    </div>
+                </RadioGroup>
             </div>
             
             {examType === 'Single Subject' && currentClass && (

@@ -139,7 +139,7 @@ export default function TeachersPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Teachers</h1>
           <p className="text-muted-foreground">
-            View teacher profiles and their earnings.
+            Manage teacher profiles and their earnings.
           </p>
         </div>
          <div className="flex items-center gap-2">

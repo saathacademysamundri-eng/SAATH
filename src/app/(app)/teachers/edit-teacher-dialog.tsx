@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { updateTeacher } from "@/lib/firebase/firestore"
+import { updateTeacher, syncTeacherAuthAccounts } from "@/lib/firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, X, User, Upload } from "lucide-react"
 import { useState, useRef } from "react"
@@ -32,6 +32,7 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
     const [phone, setPhone] = useState(teacher.phone || '')
     const [address, setAddress] = useState(teacher.address || '')
     const [email, setEmail] = useState(teacher.email || '')
+    const [password, setPassword] = useState('');
     const [imageUrl, setImageUrl] = useState(teacher.imageUrl || '');
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>(teacher.subjects || [])
     const [isSaving, setIsSaving] = useState(false)
@@ -50,13 +51,14 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
     }
 
     const handleSubmit = async () => {
-        if (!name.trim() || !phone.trim() || !fatherName.trim() || !address.trim() || selectedSubjects.length === 0) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all required fields and select at least one subject.' });
+        if (!name.trim() || !phone.trim() || !fatherName.trim() || !address.trim() || selectedSubjects.length === 0 || !email.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all required fields, including subjects and email.' });
             return;
         }
 
         setIsSaving(true);
-        const result = await updateTeacher(teacher.id, { 
+        
+        const teacherData: Partial<Teacher> = { 
             name: name.trim(), 
             fatherName: fatherName.trim(),
             phone: phone.trim(),
@@ -64,10 +66,36 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
             email: email.trim(),
             subjects: selectedSubjects,
             imageUrl: imageUrl.trim(),
-        });
+        };
+
+        if (password.trim()) {
+            if (password.trim().length < 6) {
+                toast({ variant: 'destructive', title: 'Weak Password', description: 'New password must be at least 6 characters long.' });
+                setIsSaving(false);
+                return;
+            }
+            teacherData.password = password.trim();
+        }
+
+        const result = await updateTeacher(teacher.id, teacherData);
 
         if (result.success) {
-            toast({ title: 'Teacher Updated', description: 'The teacher details have been updated.' });
+            toast({ title: 'Teacher Updated', description: 'Now syncing login account...' });
+            
+            const syncResult = await syncTeacherAuthAccounts();
+
+            if (syncResult.success) {
+                 toast({ 
+                    title: 'Sync Complete', 
+                    description: `${teacher.name} has been updated and login account is synced. ${syncResult.createdCount > 0 ? `${syncResult.createdCount} new account(s) created.` : ''}` 
+                });
+            } else {
+                 toast({ 
+                    variant: 'destructive',
+                    title: 'Sync Failed', 
+                    description: `Teacher details were saved, but syncing the login account failed: ${syncResult.message}` 
+                });
+            }
             onTeacherUpdated();
         } else {
             toast({ variant: 'destructive', title: 'Failed to Update', description: result.message });
@@ -91,7 +119,9 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
         <DialogContent className="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>Edit Teacher: {teacher.name}</DialogTitle>
-                <DialogDescription>Update the details for this teacher.</DialogDescription>
+                <DialogDescription>
+                  Update the details for this teacher.
+                </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
                  <div className="space-y-2">
@@ -155,13 +185,23 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
                         />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="email">Email (Optional)</Label>
+                        <Label htmlFor="email">Email (for login)</Label>
                         <Input
                             id="email"
                             type="email"
                             placeholder="e.g., teacher@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="password">New Password</Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            placeholder="Leave blank to keep unchanged"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
                 </div>

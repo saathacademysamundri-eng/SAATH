@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -36,20 +35,12 @@ export function SupportDialog() {
           At Schoolup - A Unique Platform for Smart Schools, we believe that
           every question deserves a clear answer and every problem
           deserves a quick solution. Our support team is always here to
-          guide you, whether it's about setting up your account, managing
-          attendance, handling finances, or exploring advanced features like
-          WhatsApp integration and live data management.
+          guide you.
         </p>
         <p>
-          We have designed Schoolup to be simple, reliable, and family-
-          focused, ensuring that schools can run smarter and parents can
-          stay more connected. If you ever face any issue, need detailed
+          If you ever face any issue, need detailed
           guidance, or want to unlock the full potential of our platform, our
           dedicated support team is just a message away.
-        </p>
-        <p>
-          Your trust matters to us, and we are committed to keeping your
-          school management experience smooth, efficient, and stress-free.
         </p>
       </div>
       <div className="flex justify-center">
@@ -60,9 +51,9 @@ export function SupportDialog() {
           </a>
         </Button>
       </div>
-      <div className="border-t border-gray-800 mt-6 pt-4 flex justify-between items-center text-xs text-gray-500">
-        <p>Schoolup – Because Smart Schools Deserve a Unique Platform.</p>
-        <div className="flex items-center gap-4">
+      <div className="border-t border-gray-800 mt-6 pt-4 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500 gap-4">
+        <p className="text-center sm:text-left">Schoolup – Because Smart Schools Deserve a Unique Platform.</p>
+        <div className="flex items-center gap-4 text-center sm:text-right">
           <p>Developed by "Mian Mudassar"</p>
           <Link href="https://api.whatsapp.com/send?phone=923099969535" target="_blank" className="hover:text-white"><MessageSquare className="h-4 w-4" /></Link>
           <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" className="hover:text-white"><Facebook className="h-4 w-4" /></Link>

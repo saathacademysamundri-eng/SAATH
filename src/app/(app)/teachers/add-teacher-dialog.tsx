@@ -33,6 +33,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
     const [phone, setPhone] = useState('')
     const [address, setAddress] = useState('')
     const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
     const [imageUrl, setImageUrl] = useState('')
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
     const [isSaving, setIsSaving] = useState(false)
@@ -53,40 +54,32 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
 
 
     const handleSubmit = async () => {
-        if (!name.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: "Please enter the teacher's name." });
+        if (!name.trim() || !email.trim() || !password.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: "Name, email, and password are required." });
             return;
         }
-        if (!fatherName.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: "Please enter the father's name." });
-            return;
-        }
-        if (!phone.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter a phone number.' });
-            return;
-        }
-        if (!address.trim()) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter an address.' });
-            return;
-        }
-        if (selectedSubjects.length === 0) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please select at least one subject.' });
+        if (password.length < 6) {
+            toast({ variant: 'destructive', title: 'Weak Password', description: 'Password must be at least 6 characters long.'});
             return;
         }
 
         setIsSaving(true);
-        const result = await addTeacher({ 
+        const result = await addTeacher({
             name: name.trim(),
             fatherName: fatherName.trim(),
             phone: phone.trim(),
             address: address.trim(),
             email: email.trim(),
+            password: password.trim(),
             subjects: selectedSubjects,
             imageUrl: imageUrl.trim(),
         });
 
         if (result.success) {
-            toast({ title: 'Teacher Added', description: 'The new teacher has been saved.' });
+            toast({ 
+                title: 'Teacher Added', 
+                description: 'The new teacher has been saved and their login account has been created.' 
+            });
             onTeacherAdded();
             // Reset form
             setName('');
@@ -94,10 +87,11 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
             setPhone('');
             setAddress('');
             setEmail('');
+            setPassword('');
             setImageUrl('');
             setSelectedSubjects([]);
         } else {
-            toast({ variant: 'destructive', title: 'Failed to Add', description: result.message });
+            toast({ variant: 'destructive', title: 'Failed to Add Teacher', description: result.message });
         }
         setIsSaving(false);
     };
@@ -118,7 +112,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
         <DialogContent className="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>Add New Teacher</DialogTitle>
-                <DialogDescription>Enter the details for the new teacher.</DialogDescription>
+                <DialogDescription>Enter the details for the new teacher. This will also create their login account.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
                 <div className="space-y-2">
@@ -160,6 +154,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
                             placeholder="e.g., Mr. Ahmed"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            required
                         />
                     </div>
                     <div className="space-y-2">
@@ -182,13 +177,25 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email (Optional)</Label>
+                        <Label htmlFor="email">Email (for login)</Label>
                         <Input
                             id="email"
                             type="email"
                             placeholder="e.g., teacher@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            placeholder="Set a secure password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
                         />
                     </div>
                 </div>
@@ -244,6 +251,9 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
                  </div>
             </div>
             <DialogFooter>
+                 <DialogClose asChild>
+                    <Button variant="ghost">Cancel</Button>
+                </DialogClose>
                 <Button onClick={handleSubmit} disabled={isSaving}>
                     {isSaving ? <Loader2 className="animate-spin mr-2" /> : null}
                     {isSaving ? 'Saving...' : 'Save Teacher'}

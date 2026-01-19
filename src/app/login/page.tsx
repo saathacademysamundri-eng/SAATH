@@ -7,11 +7,14 @@ import Image from 'next/image';
 import { Loader2, Facebook, Instagram, MessageSquare } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [isClient, setIsClient] = useState(false);
   const [bgImageId, setBgImageId] = useState(1);
   const [academyName, setAcademyName] = useState('SAATH Academy Samundri');
+  const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
@@ -57,13 +60,18 @@ export default function LoginPage() {
                     <h1 className="text-3xl font-bold tracking-tighter text-gray-900">{academyName}</h1>
                 </div>
               <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
-                Login to system
+                Admin Portal
               </h2>
               <p className="mt-1 text-sm text-gray-500">
                 Please enter your login information.
               </p>
             </div>
             <LoginForm />
+             <div className="mt-4 flex flex-col items-center justify-center text-sm">
+              <Button variant="link" onClick={() => router.push('/teacher/login')}>
+                Are you a teacher? Log in here.
+              </Button>
+            </div>
             <div className="mt-8 text-center text-sm text-gray-500">
               <p>Developed by "Mian Mudassar"</p>
               <div className="mt-2 flex justify-center gap-4">

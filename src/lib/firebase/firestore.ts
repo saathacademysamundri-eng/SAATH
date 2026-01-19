@@ -1,12 +1,15 @@
 
+
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
-import { app } from './config';
+import { app, firebaseConfig } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format as formatDate } from 'date-fns';
 import { sendWhatsappMessage } from '@/lib/whatsapp';
+import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
 
 const db = getFirestore(app);
 
@@ -404,6 +407,16 @@ export async function getTeacher(id: string): Promise<Teacher | null> {
     return teacherDoc.exists() ? teacherDoc.data() as Teacher : null;
 }
 
+export async function getTeacherByEmail(email: string): Promise<Teacher | null> {
+  const q = query(collection(db, "teachers"), where("email", "==", email), limit(1));
+  const querySnapshot = await getDocs(q);
+  if (querySnapshot.empty) {
+    return null;
+  }
+  return querySnapshot.docs[0].data() as Teacher;
+}
+
+
 export async function getNextTeacherId(): Promise<string> {
     const q = query(collection(db, "teachers"), orderBy("id", "desc"), limit(1));
     const querySnapshot = await getDocs(q);
@@ -417,43 +430,62 @@ export async function getNextTeacherId(): Promise<string> {
 }
 
 export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
+    // Unique name to avoid conflicts if called multiple times
+    const tempAppName = 'temp-auth-app-' + Date.now();
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+
     try {
+        if (!teacherData.email || !teacherData.password) {
+            throw new Error("Email and password are required.");
+        }
+        
+        // This check should use the main app's auth instance to be accurate
+        const mainAuth = getAuth(app);
+        const signInMethods = await fetchSignInMethodsForEmail(mainAuth, teacherData.email);
+        if (signInMethods.length > 0) {
+            throw new Error("A user with this email already exists.");
+        }
+        
+        await createUserWithEmailAndPassword(tempAuth, teacherData.email, teacherData.password);
+        
         const newTeacherId = await getNextTeacherId();
-        const newTeacher: Teacher = {
-            id: newTeacherId,
-            ...teacherData
-        };
+        const newTeacher: Teacher = { id: newTeacherId, ...teacherData };
         const docRef = doc(db, 'teachers', newTeacherId);
         await setDoc(docRef, newTeacher);
+        
         await logActivity('teacher_added', `Added new teacher: ${teacherData.name}.`, `/teachers/${newTeacherId}`);
         
-        // Send WhatsApp message if enabled
         const settings = await getSettings('details');
         if (settings && settings.newTeacherMsg && newTeacher.phone) {
             let messageBody = settings.newTeacherTemplate || 'Dear {teacher_name}, welcome to {academy_name}! We are excited to have you on our team.';
-            messageBody = messageBody.replace(/{teacher_name}/g, newTeacher.name);
-            messageBody = messageBody.replace(/{academy_name}/g, settings.name || '');
+            messageBody = messageBody.replace(/{teacher_name}/g, newTeacher.name).replace(/{academy_name}/g, settings.name || '');
 
             const apiUrl = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgApiUrl : settings.officialApiUrl;
             const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
             
             if (apiUrl && token) {
-                await sendWhatsappMessage({
-                    to: newTeacher.phone,
-                    body: messageBody,
-                    apiUrl: apiUrl,
-                    token: token
-                });
+                await sendWhatsappMessage({ to: newTeacher.phone, body: messageBody, apiUrl, token });
             }
         }
         
-        return { success: true, message: "Teacher added successfully." };
-    } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: `teachers/[auto-id]`, operation: 'create', requestResourceData: teacherData });
-        errorEmitter.emit('permission-error', permissionError);
-        return { success: false, message: (serverError as Error).message };
+        await deleteApp(tempApp);
+        return { success: true, message: "Teacher added and account created successfully." };
+
+    } catch (serverError: any) {
+        let errorMessage = (serverError as Error).message;
+        if (serverError.code === 'auth/weak-password') {
+            errorMessage = 'The password is too weak. It must be at least 6 characters long.';
+        } else if (serverError.code === 'auth/email-already-in-use') {
+            errorMessage = 'A user with this email already exists.';
+        }
+        
+        console.error("Error adding teacher:", serverError);
+        await deleteApp(tempApp); // Ensure cleanup on error
+        return { success: false, message: errorMessage };
     }
 }
+
 
 export async function updateTeacher(teacherId: string, teacherData: Partial<Omit<Teacher, 'id'>>) {
     const docRef = doc(db, 'teachers', teacherId);
@@ -485,6 +517,55 @@ export async function deleteTeacher(teacherId: string) {
         return { success: false, message: (serverError as Error).message };
     }
 }
+
+export async function syncTeacherAuthAccounts() {
+    const tempAppName = 'temp-auth-app-' + Date.now();
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+    
+    let createdCount = 0;
+    const updatedCount = 0; // Not implemented
+    let skippedCount = 0;
+
+    try {
+        const teachers = await getTeachers();
+
+        for (const teacher of teachers) {
+            // We only attempt to create an account if both email and password are provided.
+            if (!teacher.email || !teacher.password) {
+                skippedCount++;
+                continue;
+            }
+            
+            try {
+                // Directly attempt to create the user.
+                await createUserWithEmailAndPassword(tempAuth, teacher.email, teacher.password);
+                createdCount++;
+            } catch (authError: any) {
+                if (authError.code === 'auth/email-already-in-use') {
+                    // This is an expected case if the user already exists. We can safely skip.
+                    skippedCount++;
+                } else {
+                    // For other errors (e.g., weak-password), we should log them.
+                    console.error(`Failed to create auth account for ${teacher.email}:`, authError.message);
+                    // We don't rethrow here, just log and continue with other teachers.
+                }
+            }
+        }
+        
+        await deleteApp(tempApp); // Clean up the temporary app
+        
+        if (createdCount > 0) {
+            await logActivity('settings_updated', `Synced teacher login accounts: ${createdCount} new accounts created.`);
+        }
+        return { success: true, createdCount, updatedCount, skippedCount };
+    } catch (error) {
+        console.error("Error during teacher sync process:", error);
+        await deleteApp(tempApp); // Ensure cleanup on error
+        return { success: false, message: (error as Error).message, createdCount, updatedCount, skippedCount };
+    }
+}
+
 
 async function getNextClassId(): Promise<string> {
     const q = query(collection(db, "classes"), orderBy("id", "desc"), limit(1));
@@ -970,7 +1051,7 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
         await setDoc(docRef, attendanceData, { merge: true });
         await logActivity('attendance_marked', `Marked attendance for class ${attendanceData.className}.`);
         
-        // Send WhatsApp messages for absent students
+        // Send WhatsApp message for absent students
         const settings = await getSettings('details');
         if (settings && settings.absentMsg && settings.whatsappProvider !== 'none') {
             const absentStudents: { id: string, name: string, phone: string }[] = [];
@@ -1183,7 +1264,6 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
             collection(db, 'teacher_attendance'),
             where('teacherId', '==', teacherId),
         );
-
         const querySnapshot = await getDocs(q);
 
         const teacherAttendance: { date: Date, status: AttendanceStatus }[] = [];
@@ -1197,16 +1277,14 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
                 });
             }
         });
-
+        
         return teacherAttendance;
-    } catch (error) {
-        console.error(`Error fetching teacher attendance for ${teacherId}:`, error);
-        if (error instanceof Error && error.message.includes("The query requires an index")) {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `teacher_attendance`,
-                operation: 'list',
-            }));
-        }
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: `teacher_attendance`,
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
         return [];
     }
 }
@@ -1263,6 +1341,27 @@ export async function getExams(): Promise<Exam[]> {
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
 }
+
+export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
+    try {
+        const q = query(
+            collection(db, 'exams'), 
+            where("teacherId", "==", teacherId)
+        );
+        const querySnapshot = await getDocs(q);
+        const exams = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
+        // Sort client-side to avoid needing a composite index
+        return exams.sort((a, b) => b.date.getTime() - a.date.getTime());
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: 'exams', // Path for a collection query.
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        return [];
+    }
+}
+
 
 export async function getExam(examId: string): Promise<Exam | null> {
     const docRef = doc(db, 'exams', examId);

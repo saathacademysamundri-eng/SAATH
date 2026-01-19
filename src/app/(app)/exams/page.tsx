@@ -36,6 +36,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { EditExamDialog } from './edit-exam-dialog';
 import { useAppContext } from '@/hooks/use-app-context';
+import { useSettings } from '@/hooks/use-settings';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
@@ -49,6 +50,7 @@ export default function ExamsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { classes, loading: appLoading } = useAppContext();
+  const { settings } = useSettings();
 
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -57,6 +59,13 @@ export default function ExamsPage() {
   // Filter state
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [sessionFilter, setSessionFilter] = useState('');
+
+  useEffect(() => {
+    if (settings.academicSession) {
+      setSessionFilter(settings.academicSession);
+    }
+  }, [settings.academicSession]);
 
   const fetchExams = async () => {
     setLoading(true);
@@ -100,6 +109,14 @@ export default function ExamsPage() {
       window.open(printUrl, '_blank');
   }
 
+  const academicSessions = useMemo(() => {
+    const sessions = new Set(exams.map(exam => exam.academicSession).filter(Boolean));
+    if (settings.academicSession) {
+        sessions.add(settings.academicSession);
+    }
+    return Array.from(sessions).sort((a, b) => b.localeCompare(a));
+  }, [exams, settings.academicSession]);
+
   const filteredExams = useMemo(() => {
     return exams.filter(exam => {
         const classMatch = !selectedClass || exam.className === selectedClass;
@@ -111,13 +128,16 @@ export default function ExamsPage() {
             dateMatch = exam.date >= fromDate && exam.date < toDate;
         }
 
-        return classMatch && dateMatch;
+        const sessionMatch = !sessionFilter || exam.academicSession === sessionFilter;
+
+        return classMatch && dateMatch && sessionMatch;
     });
-  }, [exams, selectedClass, dateRange]);
+  }, [exams, selectedClass, dateRange, sessionFilter]);
 
   const clearFilters = () => {
     setSelectedClass(null);
     setDateRange(undefined);
+    setSessionFilter(settings.academicSession || '');
   }
 
   return (
@@ -164,6 +184,15 @@ export default function ExamsPage() {
                 </SelectContent>
             </Select>
 
+             <Select onValueChange={setSessionFilter} value={sessionFilter}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by session..." />
+                </SelectTrigger>
+                <SelectContent>
+                    {academicSessions.map(session => <SelectItem key={session} value={session}>{session}</SelectItem>)}
+                </SelectContent>
+            </Select>
+
             <Popover>
                 <PopoverTrigger asChild>
                     <Button
@@ -200,7 +229,7 @@ export default function ExamsPage() {
                 </PopoverContent>
             </Popover>
 
-            {(selectedClass || dateRange) && (
+            {(selectedClass || dateRange || sessionFilter !== settings.academicSession) && (
               <Button variant="ghost" onClick={clearFilters}>
                 <X className="mr-2 h-4 w-4" /> Clear Filters
               </Button>
@@ -214,6 +243,7 @@ export default function ExamsPage() {
                 <TableHead>Date</TableHead>
                 <TableHead>Exam Name</TableHead>
                 <TableHead>Class</TableHead>
+                <TableHead>Teacher</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Subjects</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -226,6 +256,7 @@ export default function ExamsPage() {
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
@@ -237,6 +268,7 @@ export default function ExamsPage() {
                     <TableCell>{format(exam.date, 'PPP')}</TableCell>
                     <TableCell className="font-medium">{exam.name}</TableCell>
                     <TableCell>{exam.className}</TableCell>
+                    <TableCell>{exam.teacherName}</TableCell>
                     <TableCell>
                         <Badge variant={exam.examType === 'Single Subject' ? 'secondary' : 'default'}>
                             {exam.examType}
@@ -298,7 +330,7 @@ export default function ExamsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     No exams found matching your criteria.
                   </TableCell>
                 </TableRow>

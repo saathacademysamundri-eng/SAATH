@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,16 +10,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History, Archive, GraduationCap, DollarSign } from 'lucide-react';
+import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History, Archive, GraduationCap, DollarSign, RefreshCw } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { seedDatabase, clearActivityHistory, getRecentActivities } from '@/lib/firebase/firestore';
+import { seedDatabase, clearActivityHistory, getRecentActivities, syncTeacherAuthAccounts } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAppContext } from '@/hooks/use-app-context';
 import { Preloader } from '@/components/ui/preloader';
 import { cn } from '@/lib/utils';
-import { sendWhatsappMessage } from '@/ai/flows/send-whatsapp-flow';
+import { sendWhatsappMessage as sendWhatsappMessageFlow } from '@/ai/flows/send-whatsapp-flow';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
@@ -187,6 +188,7 @@ export default function SettingsPage() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // General State
   const [name, setName] = useState('');
@@ -389,6 +391,24 @@ export default function SettingsPage() {
       setIsSeeding(false);
   }
 
+  const handleSyncTeachers = async () => {
+      setIsSyncing(true);
+      const result = await syncTeacherAuthAccounts();
+       if (result.success) {
+          toast({
+              title: "Teacher Accounts Synced",
+              description: `${result.createdCount} new login accounts created. ${result.updatedCount} updated. ${result.skippedCount} already up-to-date.`,
+          });
+      } else {
+          toast({
+              variant: "destructive",
+              title: "Sync Failed",
+              description: result.message,
+          });
+      }
+      setIsSyncing(false);
+  }
+
   const handleTestApi = async () => {
     if (!testPhoneNumber.trim()) {
         toast({ variant: 'destructive', title: 'API Test Failed', description: 'Please enter a phone number to send a test message to.' });
@@ -403,7 +423,7 @@ export default function SettingsPage() {
     const token = whatsappProvider === 'ultramsg' ? ultraMsgToken : officialApiToken;
     
     try {
-        const result = await sendWhatsappMessage({
+        const result = await sendWhatsappMessageFlow({
             to: testPhoneNumber,
             body: `This is a test message from your ${academyName} setup.`,
             apiUrl: apiUrl,
@@ -491,7 +511,7 @@ export default function SettingsPage() {
 
     for (const number of uniqueNumbers) {
       try {
-        const result = await sendWhatsappMessage({ to: number, body: customMessage, apiUrl, token });
+        const result = await sendWhatsappMessageFlow({ to: number, body: customMessage, apiUrl, token });
         if (result.success) {
           successCount++;
         } else {
@@ -546,7 +566,7 @@ export default function SettingsPage() {
           .replace(/{dues}/g, student.totalFee.toLocaleString())
           .replace(/{academy_name}/g, settings.name || '');
 
-        const result = await sendWhatsappMessage({ to: student.phone, body: messageBody, apiUrl, token });
+        const result = await sendWhatsappMessageFlow({ to: student.phone, body: messageBody, apiUrl, token });
         if (result.success) {
           successCount++;
         } else {
@@ -1128,6 +1148,16 @@ export default function SettingsPage() {
                             <Button variant="secondary" onClick={handleSeedDatabase} disabled={isSeeding}>
                                 <Database className='mr-2'/>
                                 {isSeeding ? 'Seeding...' : 'Seed Database'}
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="font-semibold">Sync Teacher Logins</Label>
+                        <div className="flex items-center justify-between rounded-md border p-3">
+                           <p className="text-sm text-muted-foreground">Create and sync login accounts for all teachers in the Firebase Authentication system. Run this if teachers are unable to log in.</p>
+                            <Button variant="secondary" onClick={handleSyncTeachers} disabled={isSyncing}>
+                                <RefreshCw className='mr-2'/>
+                                {isSyncing ? 'Syncing...' : 'Sync Teacher Logins'}
                             </Button>
                         </div>
                     </div>

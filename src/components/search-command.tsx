@@ -13,7 +13,6 @@ import { useAppContext } from "@/hooks/use-app-context"
 import { Users, FileText } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
-import { DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 export function SearchCommand({
   open,
@@ -44,8 +43,6 @@ export function SearchCommand({
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <DialogTitle className="sr-only">Search Students</DialogTitle>
-      <DialogDescription className="sr-only">Search for a student by name or roll number and navigate to their profile.</DialogDescription>
       <CommandInput placeholder="Search for a student by name or roll number..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
