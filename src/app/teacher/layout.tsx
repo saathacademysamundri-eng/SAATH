@@ -120,20 +120,25 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const router = useRouter();
   const pathname = usePathname();
 
-  if (pathname === '/teacher/login') {
-    return <>{children}</>;
-  }
-
   useEffect(() => {
-    if (!loading && !teacher) {
+    // Check if not loading, not a teacher, AND not already on the login page to prevent a redirect loop.
+    if (!loading && !teacher && pathname !== '/teacher/login') {
       router.replace('/teacher/login');
     }
   }, [teacher, loading, router, pathname]);
   
+  // If we are on the login page, we just render its content without the sidebar layout.
+  if (pathname === '/teacher/login') {
+    return <>{children}</>;
+  }
+
+  // If we are loading or there's no authenticated teacher (and we're not on the login page), show a preloader.
+  // The useEffect will handle the redirect.
   if (loading || !teacher) {
     return <GlobalPreloader />;
   }
   
+  // If everything is fine, render the full teacher layout.
   return (
     <SidebarProvider>
       <TeacherSidebar />
