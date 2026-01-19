@@ -38,16 +38,17 @@ service cloud.firestore {
     match /academy_share/{payoutId} {
         allow read, write: if isAuthenticated();
     }
-    match /exams/{examId} {
-      // Allow a user to read an exam if they are the assigned teacher.
-      // Allow any authenticated user (admin) to write/create exams.
-      allow read: if isAuthenticated() && (resource.data.teacherId == request.auth.uid);
-      allow write: if isAuthenticated();
+    match /exams/{document=**} {
+      // Allow any authenticated user to read/list exams, and write them.
+      // Client-side code will filter to show teachers only their assigned exams.
+      allow read, write: if isAuthenticated();
     }
     match /attendance/{attendanceId} {
        allow read, write: if isAuthenticated();
     }
-    match /teacher_attendance/{attendanceId} {
+    match /teacher_attendance/{document=**} {
+      // Allow any authenticated user to read/list teacher attendance.
+      // Client-side code will filter for the specific teacher.
        allow read, write: if isAuthenticated();
     }
     match /settings/{settingId} {
