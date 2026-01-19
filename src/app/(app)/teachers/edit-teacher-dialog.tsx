@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { updateTeacher } from "@/lib/firebase/firestore"
+import { updateTeacher, syncTeacherAuthAccounts } from "@/lib/firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, X, User, Upload } from "lucide-react"
 import { useState, useRef } from "react"
@@ -80,7 +80,22 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
         const result = await updateTeacher(teacher.id, teacherData);
 
         if (result.success) {
-            toast({ title: 'Teacher Updated', description: 'The teacher details have been updated.' });
+            toast({ title: 'Teacher Updated', description: 'Now syncing login account...' });
+            
+            const syncResult = await syncTeacherAuthAccounts();
+
+            if (syncResult.success) {
+                 toast({ 
+                    title: 'Sync Complete', 
+                    description: `${teacher.name} has been updated and login account is synced. ${syncResult.createdCount > 0 ? `${syncResult.createdCount} new account(s) created.` : ''}` 
+                });
+            } else {
+                 toast({ 
+                    variant: 'destructive',
+                    title: 'Sync Failed', 
+                    description: `Teacher details were saved, but syncing the login account failed: ${syncResult.message}` 
+                });
+            }
             onTeacherUpdated();
         } else {
             toast({ variant: 'destructive', title: 'Failed to Update', description: result.message });
