@@ -490,8 +490,7 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
 export async function updateTeacher(teacherId: string, teacherData: Partial<Omit<Teacher, 'id'>>) {
     const docRef = doc(db, 'teachers', teacherId);
     try {
-        const { password, ...restOfData } = teacherData;
-        await updateDoc(docRef, restOfData);
+        await updateDoc(docRef, teacherData);
         await logActivity('teacher_updated', `Updated details for teacher ${teacherData.name}.`, `/teachers/${teacherId}`);
         return { success: true, message: "Teacher updated successfully." };
     } catch (serverError) {

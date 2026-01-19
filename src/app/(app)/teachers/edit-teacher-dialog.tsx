@@ -32,6 +32,7 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
     const [phone, setPhone] = useState(teacher.phone || '')
     const [address, setAddress] = useState(teacher.address || '')
     const [email, setEmail] = useState(teacher.email || '')
+    const [password, setPassword] = useState('');
     const [imageUrl, setImageUrl] = useState(teacher.imageUrl || '');
     const [selectedSubjects, setSelectedSubjects] = useState<string[]>(teacher.subjects || [])
     const [isSaving, setIsSaving] = useState(false)
@@ -50,13 +51,14 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
     }
 
     const handleSubmit = async () => {
-        if (!name.trim() || !phone.trim() || !fatherName.trim() || !address.trim() || selectedSubjects.length === 0) {
-            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all required fields, including subjects.' });
+        if (!name.trim() || !phone.trim() || !fatherName.trim() || !address.trim() || selectedSubjects.length === 0 || !email.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please fill out all required fields, including subjects and email.' });
             return;
         }
 
         setIsSaving(true);
-        const result = await updateTeacher(teacher.id, { 
+        
+        const teacherData: Partial<Teacher> = { 
             name: name.trim(), 
             fatherName: fatherName.trim(),
             phone: phone.trim(),
@@ -64,7 +66,18 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
             email: email.trim(),
             subjects: selectedSubjects,
             imageUrl: imageUrl.trim(),
-        });
+        };
+
+        if (password.trim()) {
+            if (password.trim().length < 6) {
+                toast({ variant: 'destructive', title: 'Weak Password', description: 'New password must be at least 6 characters long.' });
+                setIsSaving(false);
+                return;
+            }
+            teacherData.password = password.trim();
+        }
+
+        const result = await updateTeacher(teacher.id, teacherData);
 
         if (result.success) {
             toast({ title: 'Teacher Updated', description: 'The teacher details have been updated.' });
@@ -92,7 +105,7 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
             <DialogHeader>
                 <DialogTitle>Edit Teacher: {teacher.name}</DialogTitle>
                 <DialogDescription>
-                  Update the details for this teacher. Password can only be changed via the "Forgot Password" functionality on the login page.
+                  Update the details for this teacher.
                 </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
@@ -164,9 +177,17 @@ export function EditTeacherDialog({ teacher, onTeacherUpdated }: { teacher: Teac
                             placeholder="e.g., teacher@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            disabled
                         />
-                         <p className="text-xs text-muted-foreground">Email cannot be changed after creation.</p>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="password">New Password</Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            placeholder="Leave blank to keep unchanged"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
                     </div>
                 </div>
                  <div className="space-y-2">
