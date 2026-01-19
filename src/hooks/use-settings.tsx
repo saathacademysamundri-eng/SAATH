@@ -163,8 +163,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [loadSettings]);
 
   const updateSettings = useCallback(async (newSettings: Partial<Settings>, logMessage?: string) => {
-    setSettingsState(prev => ({...prev, ...newSettings}));
-    sessionStorage.setItem('cachedSettings', JSON.stringify({...settings, ...newSettings}));
+    setSettingsState(currentSettings => {
+        const updatedSettings = { ...currentSettings, ...newSettings };
+        sessionStorage.setItem('cachedSettings', JSON.stringify(updatedSettings));
+        return updatedSettings;
+    });
 
     const { landingPage, ...otherSettings } = newSettings;
     
@@ -178,7 +181,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     if (logMessage) {
         await logActivity('settings_updated', logMessage, '/settings');
     }
-  }, [settings]);
+  }, []);
 
   return (
     <SettingsContext.Provider value={{ settings, updateSettings, isSettingsLoading }}>
