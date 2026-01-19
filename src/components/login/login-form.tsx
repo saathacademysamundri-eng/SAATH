@@ -7,15 +7,17 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase/config';
 import { getSettings } from '@/lib/firebase/firestore';
-import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence } from 'firebase/auth';
+import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence, signOut } from 'firebase/auth';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
+
 export function LoginForm() {
   const { toast } = useToast();
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('admin@saath.com');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,7 +29,19 @@ export function LoginForm() {
       // Set session persistence
       await setPersistence(auth, browserSessionPersistence);
       
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      if (user.uid !== ADMIN_UID) {
+        await signOut(auth);
+        toast({
+          variant: 'destructive',
+          title: 'Access Denied',
+          description: 'You do not have permission to access the admin panel.',
+        });
+        setIsLoading(false);
+        return;
+      }
 
       // Fetch and cache settings on login
       const details = await getSettings('details');
@@ -75,7 +89,7 @@ export function LoginForm() {
         <Input
           id="email"
           type="email"
-          placeholder="admin@example.com"
+          placeholder="admin@saath.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
