@@ -20,19 +20,12 @@ type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
 
 export function TakeStudentAttendance() {
     const { classes, students, loading } = useAppContext();
-    const { teacher } = useTeacherAuth();
     
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [attendance, setAttendance] = useState<{ [studentId: string]: AttendanceStatus }>({});
     const [loadingStudents, setLoadingStudents] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
-
-    const teacherClasses = useMemo(() => {
-        if (!teacher || !teacher.subjects) return [];
-        const teacherSubjectSet = new Set(teacher.subjects);
-        return classes.filter(c => c.subjects.some(s => teacherSubjectSet.has(s.name)));
-    }, [teacher, classes]);
 
     const handleClassChange = (classId: string) => {
         setSelectedClassId(classId);
@@ -89,7 +82,7 @@ export function TakeStudentAttendance() {
         <div className="space-y-4">
             <div className="max-w-xs space-y-2">
                 <Label htmlFor="class-select">Select Class</Label>
-                <Select onValueChange={handleClassChange} disabled={loading || !teacher}>
+                <Select onValueChange={handleClassChange} disabled={loading}>
                     <SelectTrigger id="class-select">
                         <SelectValue placeholder="Select a class..." />
                     </SelectTrigger>
@@ -97,7 +90,7 @@ export function TakeStudentAttendance() {
                         {loading ? (
                             <SelectItem value="loading" disabled>Loading classes...</SelectItem>
                         ) : (
-                            teacherClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
+                            classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
                         )}
                     </SelectContent>
                 </Select>

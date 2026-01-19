@@ -440,9 +440,11 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
             throw new Error("Email and password are required.");
         }
         
-        const signInMethods = await fetchSignInMethodsForEmail(tempAuth, teacherData.email);
+        // This check should use the main app's auth instance to be accurate
+        const mainAuth = getAuth(app);
+        const signInMethods = await fetchSignInMethodsForEmail(mainAuth, teacherData.email);
         if (signInMethods.length > 0) {
-            throw new Error("A teacher with this email already exists in the authentication system.");
+            throw new Error("A user with this email already exists.");
         }
         
         await createUserWithEmailAndPassword(tempAuth, teacherData.email, teacherData.password);
@@ -474,6 +476,8 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
         let errorMessage = (serverError as Error).message;
         if (serverError.code === 'auth/weak-password') {
             errorMessage = 'The password is too weak. It must be at least 6 characters long.';
+        } else if (serverError.code === 'auth/email-already-in-use') {
+            errorMessage = 'A user with this email already exists.';
         }
         
         console.error("Error adding teacher:", serverError);
@@ -1327,24 +1331,11 @@ export async function getExams(): Promise<Exam[]> {
 }
 
 export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
-    // This query requires a composite index on (teacherId, date).
-    // The Firestore console will provide a link to create it if it doesn't exist.
-    const q = query(
-        collection(db, "exams"), 
-        where("teacherId", "==", teacherId),
-        orderBy("date", "desc")
-    );
     try {
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
+        const allExams = await getExams();
+        const teacherExams = allExams.filter(exam => exam.teacherId === teacherId);
+        return teacherExams;
     } catch (serverError) {
-        if ((serverError as Error).message.includes("The query requires an index")) {
-            const permissionError = new FirestorePermissionError({
-                path: 'exams',
-                operation: 'list',
-            });
-             errorEmitter.emit('permission-error', permissionError);
-        }
         console.error("Error fetching exams by teacher:", serverError);
         return [];
     }
