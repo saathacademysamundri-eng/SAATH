@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Sidebar,
@@ -41,6 +41,7 @@ import { ThemeSwitcher } from '@/components/theme-switcher';
 import { TeacherWelcomeDialog } from './welcome-dialog';
 import { LiveDate, LiveTime } from '@/components/live-date-time';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AppProvider } from '@/hooks/use-app-context';
 
 
 function TeacherSidebar() {
@@ -224,14 +225,18 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   }
   
   return (
-    <SidebarProvider>
-      <TeacherWelcomeDialog />
-      <TeacherSidebar />
-      <SidebarInset>
-        <TeacherHeader />
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
-        <WhatsappSupportButton />
-      </SidebarInset>
-    </SidebarProvider>
+    <Suspense fallback={<GlobalPreloader />}>
+      <AppProvider>
+        <SidebarProvider>
+          <TeacherWelcomeDialog />
+          <TeacherSidebar />
+          <SidebarInset>
+            <TeacherHeader />
+            <main className="flex-1 p-4 sm:p-6">{children}</main>
+            <WhatsappSupportButton />
+          </SidebarInset>
+        </SidebarProvider>
+      </AppProvider>
+    </Suspense>
   );
 }
