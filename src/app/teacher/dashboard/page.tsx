@@ -9,28 +9,9 @@ import { format, getMonth, getYear } from 'date-fns';
 import { Student, Income } from '@/lib/data';
 import { MonthlyTeacherAttendance } from './monthly-attendance';
 
-type StudentEarning = {
-  student: Student;
-  earnedShare: number;
-  subjectName: string;
-  incomeId: string;
-  incomeDate: Date;
-};
-
-type MonthlyEarnings = {
-  month: string; // e.g., "July 2024"
-  year: number;
-  monthIndex: number;
-  totalGross: number;
-  teacherShare: number;
-  academyShare: number;
-  studentEarnings: StudentEarning[];
-};
-
-
 export default function TeacherDashboardPage() {
   const { teacher } = useTeacherAuth();
-  const { students, income, allPayouts } = useAppContext();
+  const { students, income } = useAppContext();
   
   const teacherStudents = useMemo(() => {
     if (!teacher) return [];
@@ -39,16 +20,46 @@ export default function TeacherDashboardPage() {
     );
   }, [teacher, students]);
 
-  const totalPaidToTeacher = useMemo(() => {
-    if (!teacher || !allPayouts) return 0;
-    return allPayouts
-      .filter(payout => payout.teacherId === teacher.id)
-      .reduce((sum, payout) => sum + payout.amount, 0);
-  }, [teacher, allPayouts]);
+  const currentMonthUnpaidEarnings = useMemo(() => {
+    if (!teacher) return 0;
+    
+    const currentMonth = getMonth(new Date());
+    const currentYear = getYear(new Date());
+
+    const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
+
+    let grossEarningsThisMonth = 0;
+
+    unpaidIncome.forEach(inc => {
+        const incDate = new Date(inc.date);
+        const incMonth = getMonth(incDate);
+        const incYear = getYear(incDate);
+
+        if (incMonth === currentMonth && incYear === currentYear) {
+            const student = students.find(s => s.id === inc.studentId);
+            if (student) {
+                const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacher.id);
+                if (relevantSubjects.length > 0) {
+                     relevantSubjects.forEach(subject => {
+                        const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                        if (student.monthlyFee > 0) {
+                          const proportion = feeShareForSubject / student.monthlyFee;
+                          const earnedShare = inc.amount * proportion;
+                          grossEarningsThisMonth += earnedShare;
+                        }
+                     });
+                }
+            }
+        }
+    });
+
+    return grossEarningsThisMonth * 0.7; // Teacher's share is 70%
+
+  }, [teacher, students, income]);
   
   const stats = [
     { title: 'Total Students', value: teacherStudents.length, icon: Users },
-    { title: "Total Earnings Paid", value: `${totalPaidToTeacher.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR`, icon: DollarSign },
+    { title: "Current Month's Earnings", value: `${currentMonthUnpaidEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR`, icon: DollarSign },
     { title: 'Subjects Taught', value: teacher?.subjects.length || 0, icon: BookCopy },
   ];
 

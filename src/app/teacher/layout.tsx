@@ -8,7 +8,8 @@ import {
     Users,
     ClipboardPenLine,
     BookCopy,
-    ClipboardCheck
+    ClipboardCheck,
+    ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -36,6 +37,7 @@ import { useTeacherAuth } from '@/hooks/use-teacher-auth';
 import { GlobalPreloader } from '@/components/global-preloader';
 import { AppProvider, useAppContext } from '@/hooks/use-app-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 
 function TeacherSidebar() {
   const pathname = usePathname();
@@ -106,10 +108,22 @@ function TeacherSidebar() {
 }
 
 function TeacherHeader() {
+    const pathname = usePathname();
+    const router = useRouter();
+
     return (
          <header className="sticky top-0 z-10 flex h-20 w-full items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 print:hidden">
             <div className="flex items-center gap-2">
                 <SidebarTrigger className="md:hidden" />
+                {pathname !== '/teacher/dashboard' && (
+                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => router.back()}>
+                    <ArrowLeft />
+                    <span className="sr-only">Go Back</span>
+                  </Button>
+                )}
+            </div>
+            <div className="flex items-center gap-4">
+                <ThemeSwitcher />
             </div>
          </header>
     )
