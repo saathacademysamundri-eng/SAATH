@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { MoreHorizontal, Printer, Search, PlusCircle, Edit, Trash, QrCode, RefreshCw } from 'lucide-react';
+import { MoreHorizontal, Printer, Search, PlusCircle, Edit, Trash, QrCode } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -42,7 +43,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { deleteTeacher, syncTeacherAuthAccounts } from '@/lib/firebase/firestore';
+import { deleteTeacher } from '@/lib/firebase/firestore';
 import { QrCodeDialog } from './qr-code-dialog';
 
 export default function TeachersPage() {
@@ -50,7 +51,6 @@ export default function TeachersPage() {
   const { teachers, students: allStudents, income, loading, refreshData } = useAppContext();
   const router = useRouter();
   const { toast } = useToast();
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const [dialogState, setDialogState] = useState<{
     isAddOpen: boolean;
@@ -133,24 +133,6 @@ export default function TeachersPage() {
     }
   }
 
-  const handleSyncLogins = async () => {
-    setIsSyncing(true);
-    const result = await syncTeacherAuthAccounts();
-    if (result.success) {
-        toast({
-            title: "Teacher Accounts Synced",
-            description: `${result.createdCount} new login accounts created. ${result.updatedCount} updated. ${result.skippedCount} already up-to-date.`,
-        });
-    } else {
-        toast({
-            variant: "destructive",
-            title: "Sync Failed",
-            description: result.message,
-        });
-    }
-    setIsSyncing(false);
-  };
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -181,21 +163,6 @@ export default function TeachersPage() {
             </Dialog>
          </div>
       </div>
-      
-      <Card>
-        <CardHeader>
-            <CardTitle>Teacher Account Sync</CardTitle>
-            <CardDescription>
-                Teachers log in with the email and password set during their creation. If a teacher is unable to log in, their authentication account might not exist. Use this button to create accounts for any teachers that are missing one.
-            </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Button onClick={handleSyncLogins} disabled={isSyncing}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {isSyncing ? 'Syncing...' : 'Sync Teacher Logins'}
-            </Button>
-        </CardContent>
-      </Card>
       
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {loading ? null : (
