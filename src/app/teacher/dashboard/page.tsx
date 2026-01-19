@@ -4,19 +4,35 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
-import { BookCopy, DollarSign, Users, Search } from 'lucide-react';
+import { BookCopy, DollarSign, Users, Search, ClipboardCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { useRouter } from 'next/navigation';
+import { format, getMonth, getYear } from 'date-fns';
+import { Student, Income } from '@/lib/data';
+import { MonthlyTeacherAttendance } from './monthly-attendance';
+
+type StudentEarning = {
+  student: Student;
+  earnedShare: number;
+  subjectName: string;
+  incomeId: string;
+  incomeDate: Date;
+};
+
+type MonthlyEarnings = {
+  month: string; // e.g., "July 2024"
+  year: number;
+  monthIndex: number;
+  totalGross: number;
+  teacherShare: number;
+  academyShare: number;
+  studentEarnings: StudentEarning[];
+};
+
 
 export default function TeacherDashboardPage() {
   const { teacher } = useTeacherAuth();
   const { students, income } = useAppContext();
-  const [search, setSearch] = useState('');
-  const router = useRouter();
-
+  
   const teacherStudents = useMemo(() => {
     if (!teacher) return [];
     return students.filter(student => 
@@ -24,33 +40,74 @@ export default function TeacherDashboardPage() {
     );
   }, [teacher, students]);
   
-  const filteredStudents = useMemo(() => {
-    return teacherStudents.filter(student =>
-      student.name.toLowerCase().includes(search.toLowerCase()) || 
-      student.id.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [teacherStudents, search]);
+  const monthlyEarnings = useMemo(() => {
+    if (!teacher) return [];
 
-  const totalEarnings = useMemo(() => {
-    if (!teacher) return 0;
-    // This is a simplified calculation. A more detailed one would be on the earnings page.
-    return income
-      .filter(i => i.paidOutTo && i.paidOutTo[teacher.id])
-      .reduce((acc, curr) => {
-          const student = students.find(s => s.id === curr.studentId);
-          if (!student) return acc;
-          const relevantSubject = student.subjects.find(s => s.teacher_id === teacher.id);
-          if (!relevantSubject) return acc;
+    const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
 
-          // Simplified share calculation
-          const share = curr.amount / student.subjects.length;
-          return acc + (share * 0.7); // 70% share
-      }, 0);
-  }, [teacher, income, students]);
+    const earningsByMonth: { [key: string]: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> & { year: number, monthIndex: number } } = {};
+
+    unpaidIncome.forEach(inc => {
+        const student = students.find(s => s.id === inc.studentId);
+        if (student) {
+            const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacher.id);
+            if (relevantSubjects.length > 0) {
+                 relevantSubjects.forEach(subject => {
+                    const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                    if (student.monthlyFee > 0) {
+                      const proportion = feeShareForSubject / student.monthlyFee;
+                      const earnedShare = inc.amount * proportion;
+                      
+                      const monthKey = format(inc.date, 'yyyy-MM');
+                      if (!earningsByMonth[monthKey]) {
+                          earningsByMonth[monthKey] = {
+                              totalGross: 0,
+                              teacherShare: 0,
+                              academyShare: 0,
+                              studentEarnings: [],
+                              year: getYear(inc.date),
+                              monthIndex: getMonth(inc.date),
+                          };
+                      }
+
+                      earningsByMonth[monthKey].totalGross += earnedShare;
+                      earningsByMonth[monthKey].studentEarnings.push({
+                          student: student,
+                          earnedShare: earnedShare,
+                          subjectName: subject.subject_name,
+                          incomeId: inc.id,
+                          incomeDate: inc.date,
+                      });
+                    }
+                 });
+            }
+        }
+    });
+
+    return Object.keys(earningsByMonth).map(key => {
+      const data = earningsByMonth[key];
+      return {
+        ...data,
+        month: format(new Date(data.year, data.monthIndex), 'MMMM yyyy'),
+        teacherShare: data.totalGross * 0.7,
+        academyShare: data.totalGross * 0.3,
+      };
+    }).sort((a,b) => b.year - a.year || b.monthIndex - a.monthIndex);
+  }, [teacher, students, income]);
+
+
+  const currentMonthData = useMemo(() => {
+    const now = new Date();
+    const currentMonthKey = format(now, 'MMMM yyyy');
+    return monthlyEarnings.find(m => m.month === currentMonthKey);
+  }, [monthlyEarnings]);
+  
+  const currentMonthEarningsValue = currentMonthData ? currentMonthData.teacherShare : 0;
+
 
   const stats = [
     { title: 'Total Students', value: teacherStudents.length, icon: Users },
-    { title: 'Total Earnings (All Time)', value: `${totalEarnings.toLocaleString()} PKR`, icon: DollarSign },
+    { title: "Current Month's Pending Payout", value: `${currentMonthEarningsValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR`, icon: DollarSign },
     { title: 'Subjects Taught', value: teacher?.subjects.length || 0, icon: BookCopy },
   ];
 
@@ -70,49 +127,9 @@ export default function TeacherDashboardPage() {
         ))}
       </div>
 
-       <Card>
-        <CardHeader>
-            <CardTitle>My Students</CardTitle>
-            <CardDescription>Search for your students by name or roll number.</CardDescription>
-             <div className="relative pt-4">
-              <Search className="absolute left-2.5 top-6 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search students..." 
-                className="pl-8"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-        </CardHeader>
-        <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Roll #</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Class</TableHead>
-                  <TableHead>Subjects</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStudents.map(student => (
-                  <TableRow key={student.id} className="cursor-pointer" onClick={() => router.push(`/students/${student.id}`)}>
-                    <TableCell>{student.id}</TableCell>
-                    <TableCell>{student.name}</TableCell>
-                    <TableCell>{student.class}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {student.subjects
-                          .filter(sub => sub.teacher_id === teacher?.id)
-                          .map(sub => <Badge key={sub.subject_name} variant="outline">{sub.subject_name}</Badge>)}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-        </CardContent>
-      </Card>
+       <div className="grid grid-cols-1 gap-6">
+          <MonthlyTeacherAttendance />
+       </div>
     </div>
   );
 }

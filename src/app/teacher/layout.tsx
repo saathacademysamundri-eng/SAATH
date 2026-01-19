@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -6,7 +7,8 @@ import {
     MessageCircleQuestion,
     Users,
     ClipboardPenLine,
-    BookCopy
+    BookCopy,
+    ClipboardCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -39,19 +41,13 @@ function TeacherSidebar() {
   const pathname = usePathname();
   const { settings } = useSettings();
   const { teacher, logout } = useTeacherAuth();
-  const { students } = useAppContext();
-
+  
   const menuItems = [
     { href: '/teacher/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/teacher/students', label: 'My Students', icon: Users },
     { href: '/teacher/exams', label: 'Exams', icon: ClipboardPenLine },
+    { href: '/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
   ];
-
-  const teacherStudents = useMemo(() => {
-    if (!teacher) return [];
-    return students.filter(student => 
-      student.subjects.some(sub => sub.teacher_id === teacher.id)
-    );
-  }, [teacher, students]);
 
   if (!teacher) return null;
 
@@ -73,7 +69,7 @@ function TeacherSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" isActive={pathname === item.href}
+              <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center" isActive={pathname.startsWith(item.href)}
               >
                   <Link href={item.href}>
                     <item.icon className={cn("h-6 w-6")} />
@@ -82,29 +78,6 @@ function TeacherSidebar() {
               </Button>
             </SidebarMenuItem>
           ))}
-          <Accordion type="single" collapsible>
-              <AccordionItem value="students" className="border-none">
-                  <AccordionTrigger className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center hover:no-underline hover:bg-accent hover:text-accent-foreground rounded-md px-2">
-                       <div className="flex items-center gap-2">
-                         <Users className={cn("h-6 w-6")} />
-                         <span className='group-data-[collapsible=icon]:hidden'>My Students</span>
-                       </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                      <SidebarMenu className="pl-4">
-                        {teacherStudents.map(student => (
-                           <SidebarMenuItem key={student.id}>
-                             <Button asChild variant="ghost" size="sm" className="w-full justify-start gap-2 h-8 group-data-[collapsible=icon]:justify-center" isActive={pathname.endsWith(student.id)}>
-                               <Link href={`/students/${student.id}`}>
-                                  <span className='group-data-[collapsible=icon]:hidden'>{student.name}</span>
-                               </Link>
-                             </Button>
-                           </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                  </AccordionContent>
-              </AccordionItem>
-          </Accordion>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>

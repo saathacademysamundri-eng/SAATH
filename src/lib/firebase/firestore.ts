@@ -1329,16 +1329,37 @@ export async function getExams(): Promise<Exam[]> {
 export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
     const teacher = await getTeacher(teacherId);
     if (!teacher || !teacher.subjects) return [];
-
-    const teacherSubjects = teacher.subjects;
-    
-    // Firestore doesn't support 'array-contains-any' for more than 10 items in a single query efficiently client-side without multiple queries.
-    // A better approach for scalability would be to denormalize data, but for now, we'll fetch all and filter client-side.
+  
+    const teacherSubjects = new Set(teacher.subjects);
+  
+    // Find classes the teacher teaches in
+    const allClasses = await getClasses();
+    const teacherClassNames = new Set<string>();
+    allClasses.forEach(c => {
+      if (c.subjects.some(s => teacherSubjects.has(s.name))) {
+        teacherClassNames.add(c.name);
+      }
+    });
+  
+    if (teacherClassNames.size === 0) return [];
+  
+    // Fetch all exams and filter client-side
+    // This is less efficient but necessary without complex backend queries or data denormalization.
     const allExams = await getExams();
-    
-    return allExams.filter(exam => 
-        exam.subjects.some(subject => teacherSubjects.includes(subject))
-    );
+  
+    // A teacher should see an exam if:
+    // 1. The exam is for a class they teach in.
+    // 2. AND the exam's subjects include at least one subject they teach (for single-subject/manual exams).
+    // For 'Full Test' exams, they should see it if they teach in that class.
+    return allExams.filter(exam => {
+      if (!teacherClassNames.has(exam.className)) {
+        return false;
+      }
+      if (exam.examType === 'Full Test') {
+        return true;
+      }
+      return exam.subjects.some(subject => teacherSubjects.has(subject));
+    });
 }
 
 export async function getExam(examId: string): Promise<Exam | null> {
