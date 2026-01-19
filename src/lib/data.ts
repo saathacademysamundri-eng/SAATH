@@ -144,6 +144,8 @@ export type Exam = {
     id: string;
     name: string;
     className: string;
+    teacherId: string;
+    teacherName: string;
     examType: 'Single Subject' | 'Full Test' | 'Manual';
     subjects: string[];
     totalMarks: number;

@@ -1327,39 +1327,27 @@ export async function getExams(): Promise<Exam[]> {
 }
 
 export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
-    const teacher = await getTeacher(teacherId);
-    if (!teacher || !teacher.subjects) return [];
-  
-    const teacherSubjects = new Set(teacher.subjects);
-  
-    // Find classes the teacher teaches in
-    const allClasses = await getClasses();
-    const teacherClassNames = new Set<string>();
-    allClasses.forEach(c => {
-      if (c.subjects.some(s => teacherSubjects.has(s.name))) {
-        teacherClassNames.add(c.name);
-      }
-    });
-  
-    if (teacherClassNames.size === 0) return [];
-  
-    // Fetch all exams and filter client-side
-    // This is less efficient but necessary without complex backend queries or data denormalization.
-    const allExams = await getExams();
-  
-    // A teacher should see an exam if:
-    // 1. The exam is for a class they teach in.
-    // 2. AND the exam's subjects include at least one subject they teach (for single-subject/manual exams).
-    // For 'Full Test' exams, they should see it if they teach in that class.
-    return allExams.filter(exam => {
-      if (!teacherClassNames.has(exam.className)) {
-        return false;
-      }
-      if (exam.examType === 'Full Test') {
-        return true;
-      }
-      return exam.subjects.some(subject => teacherSubjects.has(subject));
-    });
+    // This query requires a composite index on (teacherId, date).
+    // The Firestore console will provide a link to create it if it doesn't exist.
+    const q = query(
+        collection(db, "exams"), 
+        where("teacherId", "==", teacherId),
+        orderBy("date", "desc")
+    );
+    try {
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
+    } catch (serverError) {
+        if ((serverError as Error).message.includes("The query requires an index")) {
+            const permissionError = new FirestorePermissionError({
+                path: 'exams',
+                operation: 'list',
+            });
+             errorEmitter.emit('permission-error', permissionError);
+        }
+        console.error("Error fetching exams by teacher:", serverError);
+        return [];
+    }
 }
 
 export async function getExam(examId: string): Promise<Exam | null> {
