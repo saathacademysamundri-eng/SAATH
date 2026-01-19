@@ -38,6 +38,7 @@ import { GlobalPreloader } from '@/components/global-preloader';
 import { AppProvider, useAppContext } from '@/hooks/use-app-context';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ThemeSwitcher } from '@/components/theme-switcher';
+import { TeacherWelcomeDialog } from './welcome-dialog';
 
 function TeacherSidebar() {
   const pathname = usePathname();
@@ -155,6 +156,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   // If everything is fine, render the full teacher layout.
   return (
     <SidebarProvider>
+      <TeacherWelcomeDialog />
       <TeacherSidebar />
       <SidebarInset>
         <TeacherHeader />
