@@ -45,9 +45,9 @@ export function MonthlyTeacherAttendance() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><ClipboardCheck /> My Attendance This Month</CardTitle>
-                    <CardDescription>
+                    <div className="text-sm text-muted-foreground">
                         <Skeleton className="h-4 w-48" />
-                    </CardDescription>
+                    </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-3 gap-4 text-center">
                     <Skeleton className="h-20 w-full" />
