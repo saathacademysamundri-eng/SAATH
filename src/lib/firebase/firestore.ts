@@ -1269,7 +1269,7 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
         const permissionError = new FirestorePermissionError({
             path: `teacher_attendance`,
             operation: 'list',
-        });
+        }, serverError as Error);
         errorEmitter.emit('permission-error', permissionError);
         return [];
     }
@@ -1332,16 +1332,17 @@ export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
     try {
         const q = query(
             collection(db, 'exams'), 
-            where("teacherId", "==", teacherId),
-            orderBy("date", "desc")
+            where("teacherId", "==", teacherId)
         );
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
+        const exams = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
+        // Sort client-side to avoid needing a composite index
+        return exams.sort((a, b) => b.date.getTime() - a.date.getTime());
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({
             path: 'exams', // Path for a collection query.
             operation: 'list',
-        });
+        }, serverError as Error);
         errorEmitter.emit('permission-error', permissionError);
         return [];
     }

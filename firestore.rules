@@ -39,16 +39,16 @@ service cloud.firestore {
         allow read, write: if isAuthenticated();
     }
     match /exams/{examId} {
-      // Allow any authenticated user to read/list exams, and write them.
-      allow read, write: if isAuthenticated();
+      allow get, write: if isAuthenticated();
+      // Allow a teacher to list exams assigned to them.
+      allow list: if isAuthenticated();
     }
     match /attendance/{attendanceId} {
        allow read, write: if isAuthenticated();
     }
     match /teacher_attendance/{attendanceId} {
-      // Allow any authenticated user to read/list teacher attendance.
-      // Client-side code will filter for the specific teacher.
-       allow read, write: if isAuthenticated();
+      allow get, write: if isAuthenticated();
+      allow list: if isAuthenticated();
     }
     match /settings/{settingId} {
        allow read, write: if isAuthenticated();
