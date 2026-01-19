@@ -6,13 +6,14 @@ import { Teacher } from '@/lib/data';
 import { getTeacherByEmail } from '@/lib/firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 
 interface TeacherAuthContextType {
   teacher: Teacher | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
+  updatePassword: (currentPass: string, newPass: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const TeacherAuthContext = createContext<TeacherAuthContextType | undefined>(undefined);
@@ -38,13 +39,11 @@ export const TeacherAuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          // If no session or session mismatch, fetch from DB
           const teacherData = await getTeacherByEmail(user.email);
           if (teacherData) {
             setTeacher(teacherData);
             sessionStorage.setItem(TEACHER_SESSION_KEY, JSON.stringify(teacherData));
           } else {
-            // This case might happen if the admin is logged in, but not a teacher
             setTeacher(null);
           }
         } catch (error) {
@@ -78,7 +77,6 @@ export const TeacherAuthProvider = ({ children }: { children: ReactNode }) => {
           router.push('/teacher/dashboard');
           return { success: true, message: 'Login successful' };
         } else {
-          // This user is not a teacher in the Firestore DB
           await signOut(auth);
           setLoading(false);
           return { success: false, message: 'This account does not have teacher privileges.' };
@@ -95,7 +93,6 @@ export const TeacherAuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [router]);
 
-
   const logout = useCallback(async () => {
     setLoading(true);
     await signOut(auth);
@@ -105,7 +102,30 @@ export const TeacherAuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, [router]);
 
-  const value = { teacher, loading, login, logout };
+  const updatePassword = useCallback(async (currentPass: string, newPass: string) => {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      return { success: false, message: 'No authenticated user found.' };
+    }
+
+    try {
+      const credential = EmailAuthProvider.credential(user.email, currentPass);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPass);
+      return { success: true, message: 'Password updated successfully.' };
+    } catch (error: any) {
+      console.error('Password update failed:', error);
+      let errorMessage = 'An unexpected error occurred.';
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMessage = 'The current password you entered is incorrect.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many attempts. Please try again later.';
+      }
+      return { success: false, message: errorMessage };
+    }
+  }, []);
+
+  const value = { teacher, loading, login, logout, updatePassword };
 
   return (
     <TeacherAuthContext.Provider value={value}>

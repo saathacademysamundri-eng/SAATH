@@ -9,11 +9,12 @@ import {
     ClipboardPenLine,
     BookCopy,
     ClipboardCheck,
-    ArrowLeft
+    ArrowLeft,
+    User
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Sidebar,
@@ -32,13 +33,15 @@ import { Badge } from '@/components/ui/badge';
 import { useSettings } from '@/hooks/use-settings';
 import { SupportDialog } from '@/components/support-dialog';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { WhatsappSupportButton } from '@/components/whatsapp-support-button';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
 import { GlobalPreloader } from '@/components/global-preloader';
-import { AppProvider, useAppContext } from '@/hooks/use-app-context';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { TeacherWelcomeDialog } from './welcome-dialog';
+import { LiveDate, LiveTime } from '@/components/live-date-time';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 function TeacherSidebar() {
   const pathname = usePathname();
@@ -108,6 +111,60 @@ function TeacherSidebar() {
   );
 }
 
+function TeacherUserNav() {
+  const { teacher, logout } = useTeacherAuth();
+  const router = useRouter();
+
+  if (!teacher) return null;
+
+  return (
+    <Dialog>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+            <Avatar className="h-9 w-9">
+              <AvatarImage src={teacher.imageUrl} alt={teacher.name} />
+              <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{teacher.name}</p>
+              <p className="text-xs leading-none text-muted-foreground">
+                {teacher.email}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <Link href="/teacher/profile">
+              <DropdownMenuItem>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+            </Link>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DialogTrigger asChild>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              <MessageCircleQuestion className="mr-2 h-4 w-4" />
+              <span>Support</span>
+            </DropdownMenuItem>
+          </DialogTrigger>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={logout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <SupportDialog />
+    </Dialog>
+  );
+}
+
 function TeacherHeader() {
     const pathname = usePathname();
     const router = useRouter();
@@ -122,9 +179,15 @@ function TeacherHeader() {
                     <span className="sr-only">Go Back</span>
                   </Button>
                 )}
+                 <div className="h-10 w-auto md:hidden">
+                    <Logo noText={true} />
+                </div>
             </div>
             <div className="flex items-center gap-4">
+                <LiveDate />
+                <LiveTime />
                 <ThemeSwitcher />
+                <TeacherUserNav />
             </div>
          </header>
     )
@@ -136,24 +199,19 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
 
   useEffect(() => {
-    // Check if not loading, not a teacher, AND not already on the login page to prevent a redirect loop.
     if (!loading && !teacher && pathname !== '/teacher/login') {
       router.replace('/teacher/login');
     }
   }, [teacher, loading, router, pathname]);
   
-  // If we are on the login page, we just render its content without the sidebar layout.
   if (pathname === '/teacher/login') {
     return <>{children}</>;
   }
 
-  // If we are loading or there's no authenticated teacher (and we're not on the login page), show a preloader.
-  // The useEffect will handle the redirect.
   if (loading || !teacher) {
     return <GlobalPreloader />;
   }
   
-  // If everything is fine, render the full teacher layout.
   return (
     <SidebarProvider>
       <TeacherWelcomeDialog />
