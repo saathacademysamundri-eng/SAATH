@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useState, useEffect, useMemo } from "react"
-import { type Class, type Teacher } from "@/lib/data"
+import { type Class, type Teacher, Exam } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { createExam } from "@/lib/firebase/firestore"
@@ -39,6 +39,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     const [manualSubjects, setManualSubjects] = useState('');
     const [totalMarks, setTotalMarks] = useState(100);
     const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
+    const [scope, setScope] = useState<Exam['scope']>('class');
 
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
@@ -95,6 +96,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             examType,
             subjects,
             totalMarks,
+            scope,
             results: [],
             academicSession: settings.academicSession,
         };
@@ -161,6 +163,22 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                     </Select>
                 </div>
             </div>
+
+            {selectedTeacherId && (
+                <div className="grid gap-2">
+                    <Label>Exam For</Label>
+                    <RadioGroup value={scope} onValueChange={(v: any) => setScope(v)} className="flex items-center gap-4 pt-2">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="class" id="scope-class-create" />
+                            <Label htmlFor="scope-class-create" className="font-normal">Entire Class</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="teacher_students" id="scope-teacher-create" />
+                            <Label htmlFor="scope-teacher-create" className="font-normal">Teacher's Students Only</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+            )}
             
             <div className="grid gap-2">
                 <Label>Exam Type</Label>

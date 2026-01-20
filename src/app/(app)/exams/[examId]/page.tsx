@@ -53,7 +53,17 @@ export default function ExamResultsPage() {
         } else {
             setShowPosition(true);
         }
-        const studentData = await getStudentsByClass(examData.className);
+        const studentsInClass = await getStudentsByClass(examData.className);
+        let studentData: Student[];
+
+        if (examData.scope === 'teacher_students' && examData.teacherId) {
+            studentData = studentsInClass.filter(student => 
+                student.subjects.some(sub => sub.teacher_id === examData.teacherId)
+            );
+        } else {
+            studentData = studentsInClass;
+        }
+
         // Sort students by ID to ensure a consistent order
         const sortedStudents = studentData.sort((a, b) => a.id.localeCompare(b.id));
         setStudents(sortedStudents);

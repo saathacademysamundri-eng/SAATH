@@ -40,6 +40,7 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
     const [totalMarks, setTotalMarks] = useState(exam.totalMarks || 100);
     const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(exam.teacherId);
     const [academicSession, setAcademicSession] = useState(exam.academicSession || settings.academicSession);
+    const [scope, setScope] = useState<Exam['scope']>(exam.scope || 'class');
     
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
@@ -112,6 +113,7 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
             subjects,
             totalMarks,
             academicSession,
+            scope,
         };
 
         const result = await updateExam(exam.id, examData);
@@ -192,6 +194,22 @@ export function EditExamDialog({ exam, onExamUpdated }: { exam: Exam, onExamUpda
                     </Select>
                 </div>
             </div>
+
+            {selectedTeacherId && (
+                <div className="grid gap-2">
+                    <Label>Exam For</Label>
+                    <RadioGroup value={scope} onValueChange={(v: any) => setScope(v)} className="flex items-center gap-4 pt-2">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="class" id="scope-class-edit" />
+                            <Label htmlFor="scope-class-edit" className="font-normal">Entire Class</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="teacher_students" id="scope-teacher-edit" />
+                            <Label htmlFor="scope-teacher-edit" className="font-normal">Teacher's Students Only</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+            )}
 
             <div className="grid gap-2">
                 <Label>Exam Type</Label>
