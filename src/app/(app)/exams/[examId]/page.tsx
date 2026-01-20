@@ -13,7 +13,7 @@ import { type Exam, type Student, type StudentResult } from '@/lib/data';
 import { getExam, getStudentsByClass, saveExamResults } from '@/lib/firebase/firestore';
 import { Loader2, Printer, FileImage } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import html2canvas from 'html2canvas';
@@ -39,6 +39,7 @@ export default function ExamResultsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showPosition, setShowPosition] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!examId) return;
@@ -113,20 +114,48 @@ export default function ExamResultsPage() {
     }));
   };
   
-  const handleSaveResults = async () => {
+  const handleSaveResults = useCallback(async (isAutoSave = false) => {
     if (!examId || !exam) return;
     
-    setIsSaving(true);
+    if (!isAutoSave) {
+        setIsSaving(true);
+    }
     const resultsArray = Object.values(results);
     const result = await saveExamResults(examId, resultsArray);
 
     if (result.success) {
-      toast({ title: 'Results Saved', description: 'Student marks have been updated.' });
+      if (!isAutoSave) {
+        toast({ title: 'Results Saved', description: 'Student marks have been updated.' });
+      }
     } else {
-      toast({ variant: 'destructive', title: 'Save Failed', description: result.message });
+      if (!isAutoSave) {
+        toast({ variant: 'destructive', title: 'Save Failed', description: result.message });
+      }
     }
-    setIsSaving(false);
-  }
+    if (!isAutoSave) {
+        setIsSaving(false);
+    }
+  }, [exam, examId, results, toast]);
+
+  useEffect(() => {
+    if (loading) return; 
+
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    debounceTimeoutRef.current = setTimeout(() => {
+        if (Object.keys(results).length > 0) {
+            handleSaveResults(true);
+        }
+    }, 2000);
+
+    return () => {
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+    };
+  }, [results, loading, handleSaveResults]);
 
   const enhancedResults = useMemo((): EnhancedResult[] => {
     if (!exam) return [];
@@ -368,7 +397,7 @@ export default function ExamResultsPage() {
                   <Switch id="show-position" checked={showPosition} onCheckedChange={setShowPosition} />
                   <Label htmlFor="show-position">Show Position</Label>
                 </div>
-                <Button onClick={handleSaveResults} disabled={isSaving}>
+                <Button onClick={() => handleSaveResults(false)} disabled={isSaving}>
                   {isSaving && <Loader2 className="mr-2 animate-spin" />}
                   Save Results
                 </Button>
