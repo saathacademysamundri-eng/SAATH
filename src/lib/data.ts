@@ -150,6 +150,7 @@ export type Exam = {
     subjects: string[];
     totalMarks: number;
     date: Date;
+    status?: 'pending' | 'approved' | 'rejected';
     results?: StudentResult[];
     academicSession: string;
     scope?: 'class' | 'teacher_students';

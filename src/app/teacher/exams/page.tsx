@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ export default function TeacherExamsPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -57,9 +59,9 @@ export default function TeacherExamsPage() {
     fetchExams();
   }, [teacher]);
 
-  const handleExamCreated = (examId: string) => {
+  const handleExamCreated = () => {
     fetchExams();
-    router.push(`/teacher/exams/${examId}`);
+    setIsCreateDialogOpen(false);
   };
   
   const handleExamUpdated = () => {
@@ -89,7 +91,7 @@ export default function TeacherExamsPage() {
           <h1 className="text-2xl font-bold tracking-tight">My Exams</h1>
           <p className="text-muted-foreground">Create and manage exams for your classes.</p>
         </div>
-        <Dialog>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2" />
@@ -114,6 +116,7 @@ export default function TeacherExamsPage() {
                   <TableHead className="hidden sm:table-cell">Date</TableHead>
                   <TableHead className="hidden md:table-cell">Class</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>
@@ -125,6 +128,7 @@ export default function TeacherExamsPage() {
                       <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                       <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                     </TableRow>
                   ))
@@ -144,6 +148,11 @@ export default function TeacherExamsPage() {
                               {exam.examType}
                           </Badge>
                       </TableCell>
+                       <TableCell>
+                          <Badge variant={exam.status === 'approved' ? 'secondary' : exam.status === 'pending' ? 'outline' : 'destructive'}>
+                              {exam.status || 'approved'}
+                          </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
                         <AlertDialog>
                             <DropdownMenu>
@@ -154,17 +163,17 @@ export default function TeacherExamsPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => router.push(`/teacher/exams/${exam.id}`)}>
+                                <DropdownMenuItem onClick={() => router.push(`/teacher/exams/${exam.id}`)} disabled={exam.status === 'pending' || exam.status === 'rejected'}>
                                   <ClipboardPenLine className="mr-2 h-4 w-4" />
                                   Enter Marks
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)}>
+                                <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)} disabled={exam.status === 'approved' || exam.status === 'rejected'}>
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                  <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()} disabled={exam.status === 'approved'}>
                                     <Trash className="mr-2 h-4 w-4" />
                                     Delete
                                   </DropdownMenuItem>
@@ -191,7 +200,7 @@ export default function TeacherExamsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       You have not created any exams yet.
                     </TableCell>
                   </TableRow>

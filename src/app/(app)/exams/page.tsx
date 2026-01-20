@@ -8,8 +8,8 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
-import { deleteExam, getExams } from '@/lib/firebase/firestore';
-import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer } from 'lucide-react';
+import { deleteExam, getExams, updateExamStatus } from '@/lib/firebase/firestore';
+import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer, Check, Ban } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { CreateExamDialog } from './create-exam-dialog';
@@ -43,6 +43,7 @@ import { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BlankSheetDialog } from './blank-sheet-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -52,6 +53,7 @@ export default function ExamsPage() {
   const { classes, loading: appLoading } = useAppContext();
   const { settings } = useSettings();
 
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBlankSheetDialogOpen, setIsBlankSheetDialogOpen] = useState(false);
@@ -80,6 +82,7 @@ export default function ExamsPage() {
 
   const handleExamCreated = (examId: string) => {
     fetchExams();
+    setIsCreateDialogOpen(false);
     router.push(`/exams/${examId}`);
   };
   
@@ -104,10 +107,19 @@ export default function ExamsPage() {
   }
   
   const handlePrintResults = (examId: string) => {
-      // This is a simplified navigation. A full implementation might fetch the data and generate a printable view directly.
       const printUrl = `/exams/${examId}?print=true`;
       window.open(printUrl, '_blank');
   }
+
+  const handleApprove = async (examId: string) => {
+    const result = await updateExamStatus(examId, 'approved');
+    if (result.success) {
+        toast({ title: 'Exam Approved', description: 'The exam is now active.' });
+        fetchExams();
+    } else {
+        toast({ variant: 'destructive', title: 'Approval Failed', description: result.message });
+    }
+  };
 
   const academicSessions = useMemo(() => {
     const sessions = new Set(exams.map(exam => exam.academicSession).filter(Boolean));
@@ -117,8 +129,8 @@ export default function ExamsPage() {
     return Array.from(sessions).sort((a, b) => b.localeCompare(a));
   }, [exams, settings.academicSession]);
 
-  const filteredExams = useMemo(() => {
-    return exams.filter(exam => {
+  const { pendingExams, approvedExams } = useMemo(() => {
+    const filtered = exams.filter(exam => {
         const classMatch = !selectedClass || exam.className === selectedClass;
         
         let dateMatch = true;
@@ -132,6 +144,15 @@ export default function ExamsPage() {
 
         return classMatch && dateMatch && sessionMatch;
     });
+
+    return filtered.reduce((acc, exam) => {
+        if (exam.status === 'pending') {
+            acc.pendingExams.push(exam);
+        } else if (exam.status !== 'rejected') { // Show approved and exams without status
+            acc.approvedExams.push(exam);
+        }
+        return acc;
+    }, { pendingExams: [] as Exam[], approvedExams: [] as Exam[] });
   }, [exams, selectedClass, dateRange, sessionFilter]);
 
   const clearFilters = () => {
@@ -145,7 +166,7 @@ export default function ExamsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Exams</h1>
-          <p className="text-muted-foreground">Create and manage academic exams.</p>
+          <p className="text-muted-foreground">Create and manage academic exams and requests.</p>
         </div>
         <div className="flex gap-2">
             <Dialog open={isBlankSheetDialogOpen} onOpenChange={setIsBlankSheetDialogOpen}>
@@ -157,7 +178,7 @@ export default function ExamsPage() {
               </DialogTrigger>
               <BlankSheetDialog />
           </Dialog>
-          <Dialog>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2" />
@@ -169,176 +190,218 @@ export default function ExamsPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Exam History</CardTitle>
-          <CardDescription>A list of all created exams. Use the filters below to narrow down the results.</CardDescription>
-           <div className="flex flex-wrap items-center gap-4 pt-4">
-            <Select onValueChange={(v) => setSelectedClass(v === 'all' ? null : v)} value={selectedClass || 'all'}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by class..." />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Classes</SelectItem>
-                    {classes.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                </SelectContent>
-            </Select>
-
-             <Select onValueChange={setSessionFilter} value={sessionFilter}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by session..." />
-                </SelectTrigger>
-                <SelectContent>
-                    {academicSessions.map(session => <SelectItem key={session} value={session}>{session}</SelectItem>)}
-                </SelectContent>
-            </Select>
-
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button
-                        id="date"
-                        variant={"outline"}
-                        className={cn(
-                            "w-[300px] justify-start text-left font-normal",
-                            !dateRange && "text-muted-foreground"
-                        )}
-                    >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateRange?.from ? (
-                            dateRange.to ? (
-                                <>
-                                    {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
-                                </>
+    <Tabs defaultValue="approved">
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="approved">Exam History</TabsTrigger>
+            <TabsTrigger value="pending">
+                Pending Approvals
+                {pendingExams.length > 0 && <Badge className="ml-2">{pendingExams.length}</Badge>}
+            </TabsTrigger>
+        </TabsList>
+        <TabsContent value="approved">
+            <Card>
+                <CardHeader>
+                <CardTitle>Approved Exams</CardTitle>
+                <CardDescription>A list of all active exams. Use the filters below to narrow down the results.</CardDescription>
+                <div className="flex flex-wrap items-center gap-4 pt-4">
+                    <Select onValueChange={(v) => setSelectedClass(v === 'all' ? null : v)} value={selectedClass || 'all'}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Filter by class..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Classes</SelectItem>
+                            {classes.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Select onValueChange={setSessionFilter} value={sessionFilter}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Filter by session..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {academicSessions.map(session => <SelectItem key={session} value={session}>{session}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                id="date"
+                                variant={"outline"}
+                                className={cn("w-[300px] justify-start text-left font-normal", !dateRange && "text-muted-foreground")}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dateRange?.from ? (dateRange.to ? (<>{format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}</>) : (format(dateRange.from, "LLL dd, y"))) : (<span>Filter by date...</span>)}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar initialFocus mode="range" defaultMonth={dateRange?.from} selected={dateRange} onSelect={setDateRange} numberOfMonths={2}/>
+                        </PopoverContent>
+                    </Popover>
+                    {(selectedClass || dateRange || sessionFilter !== settings.academicSession) && (
+                    <Button variant="ghost" onClick={clearFilters}><X className="mr-2 h-4 w-4" /> Clear Filters</Button>
+                    )}
+                </div>
+                </CardHeader>
+                <CardContent>
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Exam Name</TableHead>
+                        <TableHead>Class</TableHead>
+                        <TableHead>Teacher</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Subjects</TableHead>
+                        <TableHead><span className="sr-only">Actions</span></TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {loading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                        </TableRow>
+                        ))
+                    ) : approvedExams.length > 0 ? (
+                        approvedExams.map(exam => (
+                        <TableRow key={exam.id}>
+                            <TableCell>{format(exam.date, 'PPP')}</TableCell>
+                            <TableCell className="font-medium">{exam.name}</TableCell>
+                            <TableCell>{exam.className}</TableCell>
+                            <TableCell>{exam.teacherName}</TableCell>
+                            <TableCell>
+                                <Badge variant={exam.examType === 'Single Subject' ? 'secondary' : 'default'}>
+                                    {exam.examType}
+                                </Badge>
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex flex-wrap gap-1 max-w-xs">
+                                    {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
+                                </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                            <AlertDialog>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => router.push(`/exams/${exam.id}`)}><ClipboardPenLine className="mr-2 h-4 w-4" />Enter Marks</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handlePrintResults(exam.id)}><Printer className="mr-2 h-4 w-4" />Print Results</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}><Trash className="mr-2 h-4 w-4" />Delete</DropdownMenuItem></AlertDialogTrigger>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>This will permanently delete the exam "{exam.name}" and all of its associated results. This action cannot be undone.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                                </AlertDialog>
+                            </TableCell>
+                        </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No exams found matching your criteria.</TableCell>
+                        </TableRow>
+                    )}
+                    </TableBody>
+                </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="pending">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Pending Exam Approvals</CardTitle>
+                    <CardDescription>Review and approve or reject exam requests from teachers.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Exam Name</TableHead>
+                                <TableHead>Class</TableHead>
+                                <TableHead>Requested By</TableHead>
+                                <TableHead>Subjects</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                             {loading ? (
+                                Array.from({ length: 3 }).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
+                                </TableRow>
+                                ))
+                            ) : pendingExams.length > 0 ? (
+                                pendingExams.map(exam => (
+                                    <TableRow key={exam.id}>
+                                        <TableCell>{format(exam.date, 'PPP')}</TableCell>
+                                        <TableCell className="font-medium">{exam.name}</TableCell>
+                                        <TableCell>{exam.className}</TableCell>
+                                        <TableCell>{exam.teacherName}</TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-wrap gap-1 max-w-xs">
+                                                {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right space-x-2">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button size="sm" variant="destructive">
+                                                        <Ban className="mr-2 h-4 w-4"/>
+                                                        Reject
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                    <AlertDialogTitle>Reject Exam Request?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will permanently delete the exam request "{exam.name}". This action cannot be undone.
+                                                    </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>Confirm Rejection</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                            <Button size="sm" onClick={() => handleApprove(exam.id)}>
+                                                <Check className="mr-2 h-4 w-4"/>
+                                                Approve
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
                             ) : (
-                                format(dateRange.from, "LLL dd, y")
-                            )
-                        ) : (
-                            <span>Filter by date...</span>
-                        )}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={dateRange?.from}
-                        selected={dateRange}
-                        onSelect={setDateRange}
-                        numberOfMonths={2}
-                    />
-                </PopoverContent>
-            </Popover>
-
-            {(selectedClass || dateRange || sessionFilter !== settings.academicSession) && (
-              <Button variant="ghost" onClick={clearFilters}>
-                <X className="mr-2 h-4 w-4" /> Clear Filters
-              </Button>
-            )}
-        </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Exam Name</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>Teacher</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Subjects</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-                  </TableRow>
-                ))
-              ) : filteredExams.length > 0 ? (
-                filteredExams.map(exam => (
-                  <TableRow key={exam.id}>
-                    <TableCell>{format(exam.date, 'PPP')}</TableCell>
-                    <TableCell className="font-medium">{exam.name}</TableCell>
-                    <TableCell>{exam.className}</TableCell>
-                    <TableCell>{exam.teacherName}</TableCell>
-                    <TableCell>
-                        <Badge variant={exam.examType === 'Single Subject' ? 'secondary' : 'default'}>
-                            {exam.examType}
-                        </Badge>
-                    </TableCell>
-                    <TableCell>
-                        <div className="flex flex-wrap gap-1 max-w-xs">
-                            {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
-                        </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <AlertDialog>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button aria-haspopup="true" size="icon" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/exams/${exam.id}`)}>
-                                <ClipboardPenLine className="mr-2 h-4 w-4" />
-                                Enter Marks
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                               <DropdownMenuItem onClick={() => handlePrintResults(exam.id)}>
-                                <Printer className="mr-2 h-4 w-4" />
-                                Print Results
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                  <Trash className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                           <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete the exam "{exam.name}" and all of its associated results. This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    No exams found matching your criteria.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No pending exam requests.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+    </Tabs>
+      
        {selectedExam && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <EditExamDialog
