@@ -8,7 +8,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format as formatDate } from 'date-fns';
 import { sendWhatsappMessage } from '@/lib/whatsapp';
-import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, sendPasswordResetEmail } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
 
 const db = getFirestore(app);
@@ -447,7 +447,7 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
             throw new Error("A user with this email already exists.");
         }
         
-        await createUserWithEmailAndPassword(tempAuth, teacherData.email, teacherData.password);
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, teacherData.email, teacherData.password);
         
         const newTeacherId = await getNextTeacherId();
         const newTeacher: Teacher = { id: newTeacherId, ...teacherData };
@@ -458,8 +458,8 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
         
         const settings = await getSettings('details');
         if (settings && settings.newTeacherMsg && newTeacher.phone) {
-            let messageBody = settings.newTeacherTemplate || 'Dear {teacher_name}, welcome to {academy_name}! We are excited to have you on our team.';
-            messageBody = messageBody.replace(/{teacher_name}/g, newTeacher.name).replace(/{academy_name}/g, settings.name || '');
+            let messageBody = settings.newTeacherTemplate || 'Dear {teacher_name}, welcome to {academy_name}! Your login credentials for the Teacher Portal are -- Email: {email} -- Password: {password}';
+            messageBody = messageBody.replace(/{teacher_name}/g, newTeacher.name).replace(/{academy_name}/g, settings.name || '').replace(/{email}/g, newTeacher.email!).replace(/{password}/g, newTeacher.password!);
 
             const apiUrl = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgApiUrl : settings.officialApiUrl;
             const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
