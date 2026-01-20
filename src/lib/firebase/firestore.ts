@@ -1284,10 +1284,33 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
     try {
         const dataToSave = { ...examData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'exams'), dataToSave);
-        await logActivity('exam_created', `New exam created: ${examData.name} for class ${examData.className}.`, `/exams/${docRef.id}`);
+        
+        const isPending = (examData as Partial<Exam>).status === 'pending';
+        const logMessage = isPending
+            ? `New exam request submitted: ${examData.name} for class ${examData.className}.`
+            : `New exam created: ${examData.name} for class ${examData.className}.`;
+        const link = isPending ? `/exams` : `/exams/${docRef.id}`;
+
+        await logActivity('exam_created', logMessage, link);
         return { success: true, message: 'Exam created successfully.', id: docRef.id };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'exams/[auto-id]', operation: 'create', requestResourceData: examData });
+        errorEmitter.emit('permission-error', permissionError);
+        return { success: false, message: (serverError as Error).message };
+    }
+}
+
+export async function updateExamStatus(examId: string, status: 'approved') {
+    const docRef = doc(db, 'exams', examId);
+    try {
+        await updateDoc(docRef, { status });
+        const examDoc = await getDoc(docRef);
+        if (examDoc.exists()) {
+             await logActivity('exam_updated', `Exam "${examDoc.data().name}" was ${status}.`);
+        }
+        return { success: true, message: 'Exam status updated.' };
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { status } });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }

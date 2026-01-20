@@ -28,9 +28,11 @@ import { createExam } from "@/lib/firebase/firestore"
 import { Loader2 } from "lucide-react"
 import { useAppContext } from "@/hooks/use-app-context"
 import { useSettings } from "@/hooks/use-settings"
+import { useTeacherAuth } from "@/hooks/use-teacher-auth"
 
 export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: string) => void }) {
     const { classes, teachers } = useAppContext();
+    const { teacher } = useTeacherAuth();
     const { settings } = useSettings();
     const [name, setName] = useState('');
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
@@ -43,6 +45,12 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     const [academicSession, setAcademicSession] = useState(settings.academicSession);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (teacher) {
+            setSelectedTeacherId(teacher.id);
+        }
+    }, [teacher]);
 
     useEffect(() => {
         if (settings.academicSession) {
@@ -65,11 +73,14 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
 
     const handleClassChange = (value: string) => {
         setSelectedClassId(value);
-        setSelectedSubject(null); // Reset subject when class changes
-        setSelectedTeacherId(null); // Reset teacher when class changes
+        setSelectedSubject(null); 
+        if (!teacher) {
+            setSelectedTeacherId(null);
+        }
     }
     
     const availableTeachers = useMemo(() => {
+        if (teacher) return [teacher];
         if (!selectedClassId) return [];
         const currentClass = classes.find(c => c.id === selectedClassId);
         if (!currentClass) return [];
@@ -79,15 +90,26 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
         return teachers.filter(teacher => 
             (teacher.subjects || []).some(subject => subjectsInClass.has(subject))
         );
-    }, [selectedClassId, classes, teachers]);
+    }, [selectedClassId, classes, teachers, teacher]);
+    
+    const currentClass = classes.find(c => c.id === selectedClassId);
+    
+    const availableSubjects = useMemo(() => {
+        if (!currentClass) return [];
+        if (teacher) {
+            const teacherSubjectNames = new Set(teacher.subjects);
+            return currentClass.subjects.filter(s => teacherSubjectNames.has(s.name));
+        }
+        return currentClass.subjects;
+    }, [currentClass, teacher]);
+
 
     const handleSubmit = async () => {
         const subjects: string[] = [];
         if (examType === 'Single Subject') {
             if (selectedSubject) subjects.push(selectedSubject);
         } else if (examType === 'Full Test') {
-            const currentClass = classes.find(c => c.id === selectedClassId);
-            if (currentClass) subjects.push(...currentClass.subjects.map(s => s.name));
+            subjects.push(...availableSubjects.map(s => s.name));
         } else if (examType === 'Manual') {
             subjects.push(...manualSubjects.split(',').map(s => s.trim()).filter(s => s));
         }
@@ -104,7 +126,6 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
         }
 
         setIsSaving(true);
-        const currentClass = classes.find(c => c.id === selectedClassId);
         const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
         
         const examData = {
@@ -118,14 +139,18 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             scope,
             results: [],
             academicSession: academicSession,
+            status: teacher ? 'pending' as const : 'approved' as const,
         };
 
         const result = await createExam(examData);
 
         if(result.success) {
+            const successMessage = teacher 
+                ? `${name} has been submitted for approval.`
+                : `${name} has been successfully created.`;
             toast({
-                title: 'Exam Created',
-                description: `${name} has been successfully created.`,
+                title: teacher ? 'Exam Submitted' : 'Exam Created',
+                description: successMessage,
             });
             onExamCreated(result.id!);
         } else {
@@ -137,8 +162,6 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
         }
         setIsSaving(false);
     };
-
-    const currentClass = classes.find(c => c.id === selectedClassId);
 
   return (
       <DialogContent className="sm:max-w-xl">
@@ -185,7 +208,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                 </div>
                  <div className="grid gap-2">
                     <Label htmlFor="teacher">Assign Teacher</Label>
-                    <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId || undefined} disabled={!selectedClassId}>
+                    <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId || undefined} disabled={!selectedClassId || !!teacher}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a teacher" />
                         </SelectTrigger>
@@ -240,7 +263,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                             <SelectValue placeholder="Select a subject" />
                         </SelectTrigger>
                         <SelectContent>
-                            {currentClass.subjects.map((s) => (
+                            {availableSubjects.map((s) => (
                                 <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
                             ))}
                         </SelectContent>
@@ -263,11 +286,12 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
         </div>
         <DialogFooter>
             <DialogClose asChild>
-                <Button type="button" onClick={handleSubmit} disabled={isSaving}>
-                    {isSaving && <Loader2 className="animate-spin mr-2"/>}
-                    {isSaving ? 'Creating...' : 'Create Exam'}
-                </Button>
+                 <Button type="button" variant="ghost">Cancel</Button>
             </DialogClose>
+            <Button type="button" onClick={handleSubmit} disabled={isSaving}>
+                {isSaving && <Loader2 className="animate-spin mr-2"/>}
+                {isSaving ? 'Submitting...' : teacher ? 'Submit for Approval' : 'Create Exam'}
+            </Button>
         </DialogFooter>
       </DialogContent>
   )
