@@ -78,7 +78,7 @@ export function AddTeacherDialog({ onTeacherAdded }: { onTeacherAdded: () => voi
         if (result.success) {
             toast({ 
                 title: 'Teacher Added', 
-                description: 'The new teacher has been saved and their login account has been created.' 
+                description: result.message
             });
             onTeacherAdded();
             // Reset form
