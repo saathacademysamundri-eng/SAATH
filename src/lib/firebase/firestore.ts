@@ -1,7 +1,7 @@
 
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
-import { app, firebaseConfig } from './config';
+import { app, auth, firebaseConfig } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -440,14 +440,13 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
             throw new Error("Email and password are required.");
         }
         
-        // This check should use the main app's auth instance to be accurate
         const mainAuth = getAuth(app);
         const signInMethods = await fetchSignInMethodsForEmail(mainAuth, teacherData.email);
         if (signInMethods.length > 0) {
             throw new Error("A user with this email already exists.");
         }
         
-        const userCredential = await createUserWithEmailAndPassword(tempAuth, teacherData.email, teacherData.password);
+        await createUserWithEmailAndPassword(tempAuth, teacherData.email, teacherData.password);
         
         const newTeacherId = await getNextTeacherId();
         const newTeacher: Teacher = { id: newTeacherId, ...teacherData };
@@ -456,21 +455,11 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
         
         await logActivity('teacher_added', `Added new teacher: ${teacherData.name}.`, `/teachers/${newTeacherId}`);
         
-        const settings = await getSettings('details');
-        if (settings && settings.newTeacherMsg && newTeacher.phone) {
-            let messageBody = settings.newTeacherTemplate || 'Dear {teacher_name}, welcome to {academy_name}! Your login credentials for the Teacher Portal are -- Email: {email} -- Password: {password}';
-            messageBody = messageBody.replace(/{teacher_name}/g, newTeacher.name).replace(/{academy_name}/g, settings.name || '').replace(/{email}/g, newTeacher.email!).replace(/{password}/g, newTeacher.password!);
-
-            const apiUrl = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgApiUrl : settings.officialApiUrl;
-            const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
-            
-            if (apiUrl && token) {
-                await sendWhatsappMessage({ to: newTeacher.phone, body: messageBody, apiUrl, token });
-            }
-        }
+        // Send password setup email using the main auth instance
+        await sendPasswordResetEmail(auth, newTeacher.email);
         
         await deleteApp(tempApp);
-        return { success: true, message: "Teacher added and account created successfully." };
+        return { success: true, message: "Teacher added. A password setup email has been sent." };
 
     } catch (serverError: any) {
         let errorMessage = (serverError as Error).message;
