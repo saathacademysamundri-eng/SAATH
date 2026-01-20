@@ -41,6 +41,8 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
     const [scope, setScope] = useState<Exam['scope']>('class');
     const [academicSession, setAcademicSession] = useState(settings.academicSession);
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
 
     useEffect(() => {
         if (settings.academicSession) {
