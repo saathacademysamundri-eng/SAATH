@@ -152,6 +152,7 @@ export type Exam = {
     date: Date;
     results?: StudentResult[];
     academicSession: string;
+    scope?: 'class' | 'teacher_students';
 }
 
 

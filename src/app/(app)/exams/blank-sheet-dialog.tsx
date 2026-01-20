@@ -27,11 +27,12 @@ import { Printer, Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Teacher } from '@/lib/data';
 
 type SheetType = 'single' | 'full';
 
 export function BlankSheetDialog() {
-  const { classes, students, loading: appLoading } = useAppContext();
+  const { classes, students, teachers, loading: appLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
 
@@ -40,6 +41,8 @@ export function BlankSheetDialog() {
   const [totalMarks, setTotalMarks] = useState(100);
   const [sheetType, setSheetType] = useState<SheetType>('single');
   const [isPrinting, setIsPrinting] = useState(false);
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
+  const [printScope, setPrintScope] = useState<'entire_class' | 'teacher_students'>('entire_class');
 
   const studentsInClass = useMemo(() => {
     if (!selectedClassId) return [];
@@ -48,13 +51,40 @@ export function BlankSheetDialog() {
     return students.filter((student) => student.class === className);
   }, [selectedClassId, students, classes]);
 
+  const availableTeachers = useMemo(() => {
+    if (!selectedClassId) return [];
+    const currentClass = classes.find(c => c.id === selectedClassId);
+    if (!currentClass) return [];
+    
+    const subjectsInClass = new Set(currentClass.subjects.map(s => s.name));
+    
+    return teachers.filter(teacher => 
+        (teacher.subjects || []).some(subject => subjectsInClass.has(subject))
+    );
+  }, [selectedClassId, classes, teachers]);
+
+  const handleClassChange = (classId: string) => {
+    setSelectedClassId(classId);
+    setSelectedTeacherId(null);
+    setPrintScope('entire_class');
+  };
+
   const handlePrint = () => {
     if (!selectedClassId) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please select a class.' });
       return;
     }
-    if (studentsInClass.length === 0) {
-      toast({ variant: 'destructive', title: 'No Students', description: 'Selected class has no students.' });
+    
+    let studentsToPrint = studentsInClass;
+
+    if (printScope === 'teacher_students' && selectedTeacherId) {
+        studentsToPrint = studentsInClass.filter(student => 
+            student.subjects.some(sub => sub.teacher_id === selectedTeacherId)
+        );
+    }
+
+    if (studentsToPrint.length === 0) {
+      toast({ variant: 'destructive', title: 'No Students', description: 'No students match the selected criteria.' });
       return;
     }
 
@@ -78,7 +108,7 @@ export function BlankSheetDialog() {
     let reportTitle = '';
     let subTitle = '';
 
-    const sortedStudents = [...studentsInClass].sort((a, b) => a.id.localeCompare(b.id));
+    const sortedStudents = [...studentsToPrint].sort((a, b) => a.id.localeCompare(b.id));
 
     if (sheetType === 'single') {
         reportTitle = examName;
@@ -194,7 +224,7 @@ export function BlankSheetDialog() {
 
         <div className="space-y-2">
           <Label htmlFor="class-select">Class</Label>
-          <Select onValueChange={setSelectedClassId} value={selectedClassId || undefined} disabled={appLoading}>
+          <Select onValueChange={handleClassChange} value={selectedClassId || undefined} disabled={appLoading}>
             <SelectTrigger id="class-select">
               <SelectValue placeholder="Select a class" />
             </SelectTrigger>
@@ -207,6 +237,38 @@ export function BlankSheetDialog() {
             </SelectContent>
           </Select>
         </div>
+        
+        {selectedClassId && (
+            <div className="space-y-2">
+              <Label htmlFor="teacher-select">Teacher</Label>
+              <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId || undefined} disabled={!selectedClassId || availableTeachers.length === 0}>
+                <SelectTrigger id="teacher-select">
+                  <SelectValue placeholder="Select a teacher" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTeachers.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+        )}
+        
+        {selectedTeacherId && (
+            <div className="space-y-2">
+              <Label>Print For</Label>
+              <RadioGroup value={printScope} onValueChange={(v: any) => setPrintScope(v)} className="flex items-center gap-4">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="entire_class" id="scope-entire" />
+                  <Label htmlFor="scope-entire" className="font-normal">Entire Class</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="teacher_students" id="scope-teacher" />
+                  <Label htmlFor="scope-teacher" className="font-normal">Teacher's Students Only</Label>
+                </div>
+              </RadioGroup>
+            </div>
+        )}
 
         {sheetType === 'single' && (
           <>

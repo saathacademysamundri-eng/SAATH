@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useState, useEffect, useMemo } from "react"
-import { type Class, type Teacher } from "@/lib/data"
+import { type Class, type Teacher, Exam } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { createExam } from "@/lib/firebase/firestore"
@@ -39,9 +39,29 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     const [manualSubjects, setManualSubjects] = useState('');
     const [totalMarks, setTotalMarks] = useState(100);
     const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
-
+    const [scope, setScope] = useState<Exam['scope']>('class');
+    const [academicSession, setAcademicSession] = useState(settings.academicSession);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (settings.academicSession) {
+            setAcademicSession(settings.academicSession);
+        }
+    }, [settings.academicSession]);
+    
+    const academicSessions = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        const years = new Set<string>();
+        if (settings.academicSession) years.add(settings.academicSession);
+
+        for (let i = -5; i < 10; i++) {
+            const startYear = currentYear + i;
+            const endYear = startYear + 1;
+            years.add(`${startYear}-${endYear}`);
+        }
+        return Array.from(years).sort((a,b) => b.localeCompare(a));
+    }, [settings.academicSession]);
 
     const handleClassChange = (value: string) => {
         setSelectedClassId(value);
@@ -72,13 +92,13 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             subjects.push(...manualSubjects.split(',').map(s => s.trim()).filter(s => s));
         }
 
-        const hasMissingInfo = !name || !selectedClassId || !selectedTeacherId || subjects.length === 0 || totalMarks <= 0;
+        const hasMissingInfo = !name || !selectedClassId || !selectedTeacherId || subjects.length === 0 || totalMarks <= 0 || !academicSession;
 
         if (hasMissingInfo) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Please fill out all fields: name, class, teacher, subjects, and marks.',
+                description: 'Please fill out all fields: name, class, teacher, subjects, marks, and academic session.',
             });
             return;
         }
@@ -95,8 +115,9 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             examType,
             subjects,
             totalMarks,
+            scope,
             results: [],
-            academicSession: settings.academicSession,
+            academicSession: academicSession,
         };
 
         const result = await createExam(examData);
@@ -128,9 +149,24 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
-            <div className="grid gap-2">
-                <Label htmlFor="name">Exam Name</Label>
-                <Input id="name" placeholder="e.g., Mid-Term Test, Weekly Physics Quiz" value={name} onChange={(e) => setName(e.target.value)} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="name">Exam Name</Label>
+                    <Input id="name" placeholder="e.g., Mid-Term Test, Weekly Physics Quiz" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                 <div className="grid gap-2">
+                    <Label htmlFor="session">Academic Session</Label>
+                    <Select onValueChange={setAcademicSession} value={academicSession}>
+                        <SelectTrigger id="session">
+                            <SelectValue placeholder="Select a session" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {academicSessions.map((session) => (
+                                <SelectItem key={session} value={session}>{session}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -161,6 +197,22 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                     </Select>
                 </div>
             </div>
+
+            {selectedTeacherId && (
+                <div className="grid gap-2">
+                    <Label>Exam For</Label>
+                    <RadioGroup value={scope} onValueChange={(v: any) => setScope(v)} className="flex items-center gap-4 pt-2">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="class" id="scope-class-create" />
+                            <Label htmlFor="scope-class-create" className="font-normal">Entire Class</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="teacher_students" id="scope-teacher-create" />
+                            <Label htmlFor="scope-teacher-create" className="font-normal">Teacher's Students Only</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+            )}
             
             <div className="grid gap-2">
                 <Label>Exam Type</Label>
