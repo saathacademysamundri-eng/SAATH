@@ -455,8 +455,8 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
         
         await logActivity('teacher_added', `Added new teacher: ${teacherData.name}.`, `/teachers/${newTeacherId}`);
         
-        // Send password setup email using the main auth instance
-        await sendPasswordResetEmail(auth, newTeacher.email);
+        // Send password setup email using the temp auth instance where the user was created
+        await sendPasswordResetEmail(tempAuth, newTeacher.email);
         
         await deleteApp(tempApp);
         return { success: true, message: "Teacher added. A password setup email has been sent." };
