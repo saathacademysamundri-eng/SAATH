@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,12 +10,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
+import { ForgotPasswordDialog } from './forgot-password-dialog';
+import { useSettings } from '@/hooks/use-settings';
 
 export default function TeacherLoginPage() {
   const { login, loading } = useTeacherAuth();
+  const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    if (!isSettingsLoading) {
+      document.title = `Teacher Login | ${settings.name || 'Academy Portal'}`;
+    }
+  }, [isSettingsLoading, settings.name]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +76,7 @@ export default function TeacherLoginPage() {
               {loading ? 'Logging in...' : 'Log In'}
             </Button>
           </form>
+          <ForgotPasswordDialog />
         </CardContent>
       </Card>
     </main>
