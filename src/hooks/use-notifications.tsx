@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { Notification } from '@/lib/data';
 
 export function useNotifications(userId: string | null) {
@@ -20,8 +20,7 @@ export function useNotifications(userId: string | null) {
 
         const q = query(
             collection(db, 'notifications'),
-            where('userId', '==', userId),
-            orderBy('timestamp', 'desc')
+            where('userId', '==', userId)
         );
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -44,6 +43,10 @@ export function useNotifications(userId: string | null) {
                     }
                 }
             });
+
+            // Sort notifications on the client-side to avoid needing a composite index
+            fetchedNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
             setNotifications(fetchedNotifications);
             setUnreadCount(unread);
             setLoading(false);
