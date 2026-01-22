@@ -1357,7 +1357,7 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
     }
 }
 
-export async function updateExamStatus(examId: string, status: 'approved') {
+export async function updateExamStatus(examId: string, status: 'approved' | 'rejected') {
     const docRef = doc(db, 'exams', examId);
     try {
         await updateDoc(docRef, { status });
@@ -1366,6 +1366,8 @@ export async function updateExamStatus(examId: string, status: 'approved') {
              const exam = examDoc.data() as Exam;
              if (status === 'approved') {
                 await createNotification(exam.teacherId, `Your exam request "${exam.name}" has been approved.`, `/teacher/exams/${examId}`);
+             } else if (status === 'rejected') {
+                await createNotification(exam.teacherId, `Your exam request "${exam.name}" was rejected.`, `/teacher/exams`);
              }
              await logActivity('exam_updated', `Exam "${exam.name}" was ${status}.`);
         }

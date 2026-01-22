@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -120,6 +121,16 @@ export default function ExamsPage() {
         toast({ variant: 'destructive', title: 'Approval Failed', description: result.message });
     }
   };
+  
+  const handleReject = async (exam: Exam) => {
+    const result = await updateExamStatus(exam.id, 'rejected');
+    if (result.success) {
+        toast({ title: 'Exam Rejected', description: `The exam request from ${exam.teacherName} has been rejected.`});
+        fetchExams();
+    } else {
+        toast({ variant: 'destructive', title: 'Rejection Failed', description: result.message });
+    }
+  }
 
   const academicSessions = useMemo(() => {
     const sessions = new Set(exams.map(exam => exam.academicSession).filter(Boolean));
@@ -374,12 +385,14 @@ export default function ExamsPage() {
                                                     <AlertDialogHeader>
                                                     <AlertDialogTitle>Reject Exam Request?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        This will permanently delete the exam request "{exam.name}". This action cannot be undone.
+                                                        This will mark the exam request "{exam.name}" as rejected. The teacher will be notified.
                                                     </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>Confirm Rejection</AlertDialogAction>
+                                                    <AlertDialogAction onClick={() => handleReject(exam)} className="bg-destructive hover:bg-destructive/90">
+                                                        Confirm Rejection
+                                                    </AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>

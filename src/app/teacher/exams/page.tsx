@@ -7,7 +7,7 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
-import { getExamsByTeacher, deleteExam } from '@/lib/firebase/firestore';
+import { deleteExam } from '@/lib/firebase/firestore';
 import { ClipboardPenLine, MoreHorizontal, PlusCircle, Edit, Trash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -35,6 +35,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { EditExamDialog } from '@/app/(app)/exams/edit-exam-dialog';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
+import { onSnapshot, query, collection, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 export default function TeacherExamsPage() {
   const { teacher } = useTeacherAuth();
@@ -47,25 +49,44 @@ export default function TeacherExamsPage() {
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const fetchExams = async () => {
-    if (!teacher) return;
-    setLoading(true);
-    const examsData = await getExamsByTeacher(teacher.id);
-    setExams(examsData);
-    setLoading(false);
-  };
-
   useEffect(() => {
-    fetchExams();
-  }, [teacher]);
+    if (!teacher) {
+        setLoading(false);
+        return;
+    };
+
+    setLoading(true);
+    const q = query(collection(db, 'exams'), where("teacherId", "==", teacher.id));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const examsData: Exam[] = [];
+        querySnapshot.forEach((doc) => {
+            examsData.push({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam);
+        });
+
+        const sortedExams = examsData.sort((a, b) => b.date.getTime() - a.date.getTime());
+        setExams(sortedExams);
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching exams in real-time: ", error);
+        toast({
+            variant: "destructive",
+            title: "Could not fetch exams",
+            description: "There was an error loading your exams. Please try again later.",
+        });
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [teacher, toast]);
 
   const handleExamCreated = () => {
-    fetchExams();
+    // No need to call fetchExams, snapshot listener will do the work.
     setIsCreateDialogOpen(false);
   };
   
   const handleExamUpdated = () => {
-    fetchExams();
+    // No need to call fetchExams, snapshot listener will do the work.
     setIsEditDialogOpen(false);
   };
 
@@ -78,7 +99,7 @@ export default function TeacherExamsPage() {
     const result = await deleteExam(examId);
     if (result.success) {
         toast({ title: 'Exam Deleted', description: 'The exam has been successfully removed.' });
-        fetchExams();
+        // No need to call fetchExams, snapshot listener will do the work.
     } else {
         toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
     }
