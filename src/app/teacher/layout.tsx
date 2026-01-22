@@ -45,8 +45,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppProvider } from '@/hooks/use-app-context';
 import { NotificationsMenu } from '@/components/notifications-menu';
 import { ExamDeadlineReminderDialog } from './deadline-reminder-dialog';
-import { getExamsByTeacher } from '@/lib/firebase/firestore';
-import { Exam } from '@/lib/data';
+import { getExamsByTeacher, getStudents } from '@/lib/firebase/firestore';
+import { Exam, Student } from '@/lib/data';
 
 
 function TeacherSidebar() {
@@ -221,44 +221,52 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const [isReminderOpen, setIsReminderOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !teacher && pathname !== '/teacher/login') {
-      router.replace('/teacher/login');
-    }
-  }, [teacher, loading, router, pathname]);
-
-  useEffect(() => {
     if (teacher && !loading) {
         const checkDeadlines = async () => {
-            const hasChecked = sessionStorage.getItem('deadlineCheckCompleted');
-            if (hasChecked) return;
+            const [exams, allStudents] = await Promise.all([
+                getExamsByTeacher(teacher.id),
+                getStudents()
+            ]);
 
-            const exams = await getExamsByTeacher(teacher.id);
             const now = new Date();
-            const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-            const upcomingOrOverdue = exams.filter(exam => {
+            const upcomingOrOverdueIncomplete = exams.filter(exam => {
                 if (!exam.submissionDeadline || exam.status !== 'approved') {
                     return false;
                 }
+
                 const deadline = new Date(exam.submissionDeadline);
-                const isOverdue = deadline < now;
-                const isUpcoming = deadline > now && deadline <= twentyFourHoursFromNow;
+                const isPastDue = deadline < now;
+                
+                if (!isPastDue) return false;
 
-                const isIncomplete = !exam.results || exam.results.length === 0;
+                const studentsForExam = allStudents.filter(student => 
+                    student.class === exam.className && 
+                    (exam.scope === 'class' || student.subjects.some(sub => sub.teacher_id === teacher.id))
+                );
+                
+                if (studentsForExam.length === 0) return false;
 
-                return isIncomplete && (isOverdue || isUpcoming);
+                const resultsMap = new Map(exam.results?.map(r => [r.studentId, r.marks]) || []);
+
+                const isExamIncomplete = studentsForExam.some(student => {
+                    const studentResult = resultsMap.get(student.id);
+                    if (!studentResult) return true; 
+                    return exam.subjects.some(subjectName => studentResult[subjectName] == null);
+                });
+                
+                return isExamIncomplete;
             });
 
-            if (upcomingOrOverdue.length > 0) {
-                setOverdueExams(upcomingOrOverdue);
+            if (upcomingOrOverdueIncomplete.length > 0) {
+                setOverdueExams(upcomingOrOverdueIncomplete);
                 setIsReminderOpen(true);
-                sessionStorage.setItem('deadlineCheckCompleted', 'true');
             }
         };
 
         checkDeadlines();
     }
-  }, [teacher, loading]);
+  }, [teacher, loading, pathname]);
   
   if (pathname === '/teacher/login') {
     return <>{children}</>;
