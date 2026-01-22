@@ -10,12 +10,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function MyStudentsPage() {
   const { teacher } = useTeacherAuth();
-  const { students } = useAppContext();
+  const { students, classes } = useAppContext();
   const [search, setSearch] = useState('');
+  const [classFilter, setClassFilter] = useState('all');
   const router = useRouter();
+
+  const teacherClasses = useMemo(() => {
+    if (!teacher) return [];
+    const teacherSubjectNames = new Set(teacher.subjects);
+    return classes.filter(c => 
+        c.subjects.some(s => teacherSubjectNames.has(s.name))
+    );
+  }, [teacher, classes]);
 
   const teacherStudents = useMemo(() => {
     if (!teacher) return [];
@@ -25,11 +35,17 @@ export default function MyStudentsPage() {
   }, [teacher, students]);
   
   const filteredStudents = useMemo(() => {
-    return teacherStudents.filter(student =>
-      student.name.toLowerCase().includes(search.toLowerCase()) || 
-      student.id.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [teacherStudents, search]);
+    const classToFilter = teacherClasses.find(c => c.id === classFilter)?.name;
+    
+    return teacherStudents.filter(student => {
+        const searchMatch = student.name.toLowerCase().includes(search.toLowerCase()) || 
+          student.id.toLowerCase().includes(search.toLowerCase());
+        
+        const classMatch = classFilter === 'all' || student.class === classToFilter;
+
+        return searchMatch && classMatch;
+    });
+  }, [teacherStudents, search, classFilter, teacherClasses]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -37,14 +53,25 @@ export default function MyStudentsPage() {
         <CardHeader>
             <CardTitle className="flex items-center gap-2"><Users /> My Students</CardTitle>
             <CardDescription>A list of all students assigned to you.</CardDescription>
-             <div className="relative pt-4">
-              <Search className="absolute left-2.5 top-6 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search your students by name or roll number..." 
-                className="pl-8"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+            <div className="flex flex-col md:flex-row gap-4 pt-4">
+                <div className="relative flex-grow">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Search your students by name or roll number..." 
+                      className="pl-8"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
+                <Select value={classFilter} onValueChange={setClassFilter}>
+                    <SelectTrigger className="w-full md:w-[200px]">
+                        <SelectValue placeholder="Filter by class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All My Classes</SelectItem>
+                        {teacherClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
             </div>
         </CardHeader>
         <CardContent>
