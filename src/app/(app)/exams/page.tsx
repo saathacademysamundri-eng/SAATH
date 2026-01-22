@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -10,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { type Exam } from '@/lib/data';
 import { deleteExam, getExams, updateExamStatus } from '@/lib/firebase/firestore';
 import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer, Check, Ban } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { CreateExamDialog } from './create-exam-dialog';
 import { format, addDays } from 'date-fns';
@@ -52,6 +50,8 @@ export default function ExamsPage() {
   const { toast } = useToast();
   const { classes, loading: appLoading } = useAppContext();
   const { settings } = useSettings();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
@@ -190,7 +190,7 @@ export default function ExamsPage() {
         </div>
       </div>
 
-    <Tabs defaultValue="approved">
+    <Tabs defaultValue={tabFromUrl === 'pending' ? 'pending' : 'approved'}>
         <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="approved">Exam History</TabsTrigger>
             <TabsTrigger value="pending">
