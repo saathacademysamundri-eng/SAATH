@@ -47,7 +47,7 @@ service cloud.firestore {
        allow read, write: if isAuthenticated();
     }
     match /teacher_attendance/{attendanceId} {
-      allow read, write: if isAuthenticated();
+      allow list, read, write: if isAuthenticated();
     }
     match /settings/{settingId} {
        allow read, write: if isAuthenticated();

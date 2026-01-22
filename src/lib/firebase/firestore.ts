@@ -1293,6 +1293,39 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
     }
 }
 
+export async function getAllTeacherAttendanceForMonth(month: number, year: number): Promise<{ teacherId: string, date: Date, status: AttendanceStatus }[]> {
+    try {
+        const monthStartStr = formatDate(startOfMonth(new Date(year, month)), 'yyyy-MM-dd');
+        const monthEndStr = formatDate(endOfMonth(new Date(year, month)), 'yyyy-MM-dd');
+
+        const q = query(
+            collection(db, 'teacher_attendance'),
+            where('date', '>=', monthStartStr),
+            where('date', '<=', monthEndStr)
+        );
+        const querySnapshot = await getDocs(q);
+
+        const attendance: { teacherId: string, date: Date, status: AttendanceStatus }[] = [];
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            attendance.push({
+                teacherId: data.teacherId,
+                date: new Date(data.date + 'T00:00:00'), // Treat date string as UTC to avoid timezone issues
+                status: data.status,
+            });
+        });
+        
+        return attendance;
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: `teacher_attendance`,
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        return [];
+    }
+}
+
 
 // Exam Functions
 export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
