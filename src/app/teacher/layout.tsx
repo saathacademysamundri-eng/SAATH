@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Sidebar,
@@ -44,6 +44,9 @@ import { LiveDate, LiveTime } from '@/components/live-date-time';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppProvider } from '@/hooks/use-app-context';
 import { NotificationsMenu } from '@/components/notifications-menu';
+import { ExamDeadlineReminderDialog } from './deadline-reminder-dialog';
+import { getExamsByTeacher } from '@/lib/firebase/firestore';
+import { Exam } from '@/lib/data';
 
 
 function TeacherSidebar() {
@@ -214,11 +217,48 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const router = useRouter();
   const pathname = usePathname();
 
+  const [overdueExams, setOverdueExams] = useState<Exam[]>([]);
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
+
   useEffect(() => {
     if (!loading && !teacher && pathname !== '/teacher/login') {
       router.replace('/teacher/login');
     }
   }, [teacher, loading, router, pathname]);
+
+  useEffect(() => {
+    if (teacher && !loading) {
+        const checkDeadlines = async () => {
+            const hasChecked = sessionStorage.getItem('deadlineCheckCompleted');
+            if (hasChecked) return;
+
+            const exams = await getExamsByTeacher(teacher.id);
+            const now = new Date();
+            const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+            const upcomingOrOverdue = exams.filter(exam => {
+                if (!exam.submissionDeadline || exam.status !== 'approved') {
+                    return false;
+                }
+                const deadline = new Date(exam.submissionDeadline);
+                const isOverdue = deadline < now;
+                const isUpcoming = deadline > now && deadline <= twentyFourHoursFromNow;
+
+                const isIncomplete = !exam.results || exam.results.length === 0;
+
+                return isIncomplete && (isOverdue || isUpcoming);
+            });
+
+            if (upcomingOrOverdue.length > 0) {
+                setOverdueExams(upcomingOrOverdue);
+                setIsReminderOpen(true);
+                sessionStorage.setItem('deadlineCheckCompleted', 'true');
+            }
+        };
+
+        checkDeadlines();
+    }
+  }, [teacher, loading]);
   
   if (pathname === '/teacher/login') {
     return <>{children}</>;
@@ -233,6 +273,11 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       <AppProvider>
         <SidebarProvider>
           <TeacherWelcomeDialog />
+          <ExamDeadlineReminderDialog
+            isOpen={isReminderOpen}
+            onOpenChange={setIsReminderOpen}
+            exams={overdueExams}
+          />
           <TeacherSidebar />
           <SidebarInset>
             <TeacherHeader />

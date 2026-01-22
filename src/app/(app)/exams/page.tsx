@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
 import { deleteExam, getExams, updateExamStatus } from '@/lib/firebase/firestore';
-import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer, Check, Ban } from 'lucide-react';
+import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer, Check, Ban, AlertCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { CreateExamDialog } from './create-exam-dialog';
@@ -260,8 +261,7 @@ export default function ExamsPage() {
                         <TableHead>Exam Name</TableHead>
                         <TableHead>Class</TableHead>
                         <TableHead>Teacher</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Subjects</TableHead>
+                        <TableHead>Submission Deadline</TableHead>
                         <TableHead><span className="sr-only">Actions</span></TableHead>
                     </TableRow>
                     </TableHeader>
@@ -273,8 +273,7 @@ export default function ExamsPage() {
                             <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                             <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                         </TableRow>
                         ))
@@ -282,18 +281,25 @@ export default function ExamsPage() {
                         approvedExams.map(exam => (
                         <TableRow key={exam.id}>
                             <TableCell>{format(exam.date, 'PPP')}</TableCell>
-                            <TableCell className="font-medium">{exam.name}</TableCell>
-                            <TableCell>{exam.className}</TableCell>
-                            <TableCell>{exam.teacherName}</TableCell>
-                            <TableCell>
-                                <Badge variant={exam.examType === 'Single Subject' ? 'secondary' : 'default'}>
-                                    {exam.examType}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex flex-wrap gap-1 max-w-xs">
+                            <TableCell className="font-medium">
+                                <div>{exam.name}</div>
+                                <div className="text-xs text-muted-foreground flex flex-wrap gap-1 mt-1">
                                     {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
                                 </div>
+                            </TableCell>
+                            <TableCell>{exam.className}</TableCell>
+                            <TableCell>{exam.teacherName}</TableCell>
+                             <TableCell>
+                                {exam.submissionDeadline ? (
+                                    <span className={cn(
+                                        "font-medium",
+                                        new Date(exam.submissionDeadline) < new Date() && "text-destructive"
+                                    )}>
+                                        {format(exam.submissionDeadline, 'PPP')}
+                                    </span>
+                                ) : (
+                                    <span className="text-muted-foreground">N/A</span>
+                                )}
                             </TableCell>
                             <TableCell className="text-right">
                             <AlertDialog>

@@ -25,10 +25,14 @@ import { type Class, type Teacher, Exam } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { createExam } from "@/lib/firebase/firestore"
-import { Loader2 } from "lucide-react"
+import { Loader2, CalendarIcon } from "lucide-react"
 import { useAppContext } from "@/hooks/use-app-context"
 import { useSettings } from "@/hooks/use-settings"
 import { useTeacherAuth } from "@/hooks/use-teacher-auth"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
 
 export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: string) => void }) {
     const { classes, teachers } = useAppContext();
@@ -43,6 +47,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
     const [scope, setScope] = useState<Exam['scope']>('class');
     const [academicSession, setAcademicSession] = useState(settings.academicSession);
+    const [submissionDeadline, setSubmissionDeadline] = useState<Date | undefined>();
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
@@ -139,6 +144,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             scope,
             results: [],
             academicSession: academicSession,
+            submissionDeadline: submissionDeadline || null,
             status: teacher ? 'pending' as const : 'approved' as const,
         };
 
@@ -278,9 +284,36 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                 </div>
             )}
             
-            <div className="grid gap-2">
-                <Label htmlFor="totalMarks">Total Marks per Subject</Label>
-                <Input id="totalMarks" type="number" placeholder="e.g., 100" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="totalMarks">Total Marks per Subject</Label>
+                    <Input id="totalMarks" type="number" placeholder="e.g., 100" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="submission-deadline">Submission Deadline (Optional)</Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !submissionDeadline && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {submissionDeadline ? format(submissionDeadline, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={submissionDeadline}
+                                onSelect={setSubmissionDeadline}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </div>
 
         </div>

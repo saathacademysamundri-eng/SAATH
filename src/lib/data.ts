@@ -153,6 +153,7 @@ export type Exam = {
     status?: 'pending' | 'approved' | 'rejected';
     results?: StudentResult[];
     academicSession: string;
+    submissionDeadline?: Date;
     scope?: 'class' | 'teacher_students';
 }
 

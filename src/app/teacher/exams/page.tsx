@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
 import { deleteExam } from '@/lib/firebase/firestore';
-import { ClipboardPenLine, MoreHorizontal, PlusCircle, Edit, Trash } from 'lucide-react';
+import { ClipboardPenLine, MoreHorizontal, PlusCircle, Edit, Trash, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { CreateExamDialog } from '@/app/(app)/exams/create-exam-dialog';
@@ -37,6 +38,7 @@ import { EditExamDialog } from '@/app/(app)/exams/edit-exam-dialog';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
 import { onSnapshot, query, collection, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { cn } from '@/lib/utils';
 
 export default function TeacherExamsPage() {
   const { teacher } = useTeacherAuth();
@@ -61,7 +63,13 @@ export default function TeacherExamsPage() {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const examsData: Exam[] = [];
         querySnapshot.forEach((doc) => {
-            examsData.push({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam);
+            const data = doc.data();
+            examsData.push({ 
+                id: doc.id, 
+                ...data, 
+                date: data.date.toDate(),
+                submissionDeadline: data.submissionDeadline?.toDate() 
+            } as Exam);
         });
 
         const sortedExams = examsData.sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -81,12 +89,10 @@ export default function TeacherExamsPage() {
   }, [teacher, toast]);
 
   const handleExamCreated = () => {
-    // No need to call fetchExams, snapshot listener will do the work.
     setIsCreateDialogOpen(false);
   };
   
   const handleExamUpdated = () => {
-    // No need to call fetchExams, snapshot listener will do the work.
     setIsEditDialogOpen(false);
   };
 
@@ -99,7 +105,6 @@ export default function TeacherExamsPage() {
     const result = await deleteExam(examId);
     if (result.success) {
         toast({ title: 'Exam Deleted', description: 'The exam has been successfully removed.' });
-        // No need to call fetchExams, snapshot listener will do the work.
     } else {
         toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
     }
@@ -135,8 +140,7 @@ export default function TeacherExamsPage() {
                 <TableRow>
                   <TableHead>Exam Name</TableHead>
                   <TableHead className="hidden sm:table-cell">Date</TableHead>
-                  <TableHead className="hidden md:table-cell">Class</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>Deadline</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
@@ -147,78 +151,86 @@ export default function TeacherExamsPage() {
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                       <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                     </TableRow>
                   ))
                 ) : exams.length > 0 ? (
-                  exams.map(exam => (
-                    <TableRow key={exam.id}>
-                      <TableCell className="font-medium">
-                        <div>{exam.name}</div>
-                        <div className="text-xs text-muted-foreground flex flex-wrap gap-1 mt-1">
-                          {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">{format(exam.date, 'PPP')}</TableCell>
-                      <TableCell className="hidden md:table-cell">{exam.className}</TableCell>
-                      <TableCell>
-                          <Badge variant={exam.examType === 'Single Subject' ? 'secondary' : 'default'}>
-                              {exam.examType}
-                          </Badge>
-                      </TableCell>
-                       <TableCell>
-                          <Badge variant={exam.status === 'approved' ? 'secondary' : exam.status === 'pending' ? 'outline' : 'destructive'}>
-                              {exam.status || 'approved'}
-                          </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <AlertDialog>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Toggle menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => router.push(`/teacher/exams/${exam.id}`)} disabled={exam.status === 'pending' || exam.status === 'rejected'}>
-                                  <ClipboardPenLine className="mr-2 h-4 w-4" />
-                                  Enter Marks
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)} disabled={exam.status === 'approved' || exam.status === 'rejected'}>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()} disabled={exam.status === 'approved'}>
-                                    <Trash className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete the exam "{exam.name}" and all of its associated results. This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  exams.map(exam => {
+                    const isOverdue = exam.submissionDeadline && new Date(exam.submissionDeadline) < new Date() && (!exam.results || exam.results.length === 0);
+                    return (
+                        <TableRow key={exam.id}>
+                          <TableCell className="font-medium">
+                            <div>{exam.name} ({exam.className})</div>
+                            <div className="text-xs text-muted-foreground flex flex-wrap gap-1 mt-1">
+                              {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">{format(exam.date, 'PPP')}</TableCell>
+                           <TableCell>
+                                {exam.submissionDeadline ? (
+                                    <span className={cn(isOverdue && "text-destructive font-bold")}>
+                                        {format(exam.submissionDeadline, 'PPP')}
+                                    </span>
+                                ) : (
+                                    <span className="text-muted-foreground">N/A</span>
+                                )}
+                            </TableCell>
+                           <TableCell>
+                              <Badge variant={exam.status === 'approved' ? 'secondary' : exam.status === 'pending' ? 'outline' : 'destructive'}>
+                                  {exam.status || 'approved'}
+                              </Badge>
+                               {isOverdue && (
+                                <AlertCircle className="inline-block ml-2 h-4 w-4 text-destructive" title="Submission is overdue" />
+                               )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <AlertDialog>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => router.push(`/teacher/exams/${exam.id}`)} disabled={exam.status === 'pending' || exam.status === 'rejected'}>
+                                      <ClipboardPenLine className="mr-2 h-4 w-4" />
+                                      Enter Marks
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)} disabled={exam.status === 'approved' || exam.status === 'rejected'}>
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <AlertDialogTrigger asChild>
+                                      <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()} disabled={exam.status === 'approved'}>
+                                        <Trash className="mr-2 h-4 w-4" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete the exam "{exam.name}" and all of its associated results. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                          </TableCell>
+                        </TableRow>
+                    )
+                  })
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
