@@ -155,6 +155,7 @@ export type Exam = {
     academicSession: string;
     submissionDeadline?: Date;
     scope?: 'class' | 'teacher_students';
+    completionNotified?: boolean;
 }
 
 export type Notification = {

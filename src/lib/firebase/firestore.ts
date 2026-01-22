@@ -1478,7 +1478,18 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
         // Check if the exam is complete and notify admin if deadline is passed
         const examDoc = await getDoc(docRef);
         if (examDoc.exists()) {
-            const exam = { id: examDoc.id, ...examDoc.data(), date: examDoc.data().date.toDate(), submissionDeadline: examDoc.data().submissionDeadline?.toDate() } as Exam;
+            const exam = { 
+                id: examDoc.id, 
+                ...examDoc.data(), 
+                date: examDoc.data().date.toDate(), 
+                submissionDeadline: examDoc.data().submissionDeadline?.toDate() 
+            } as Exam;
+            
+            // If notification has already been sent, do nothing further.
+            if (exam.completionNotified) {
+                return { success: true, message: 'Exam results saved successfully.' };
+            }
+
             const allStudents = await getStudents();
             
             const studentsForExam = allStudents.filter(student => 
@@ -1487,7 +1498,7 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
             );
 
             if (studentsForExam.length > 0) {
-                const resultsMap = new Map(exam.results?.map(r => [r.studentId, r.marks]) || []);
+                const resultsMap = new Map(results.map(r => [r.studentId, r.marks]));
                 const isExamComplete = studentsForExam.every(student => {
                     const studentResult = resultsMap.get(student.id);
                     if (!studentResult) return false;
@@ -1497,9 +1508,11 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
                 if (isExamComplete) {
                     const deadline = exam.submissionDeadline ? new Date(exam.submissionDeadline) : null;
                     const now = new Date();
-                    // Notify admin only if the deadline has passed
+                    
                     if (deadline && deadline < now) {
                         await createNotification(ADMIN_UID, `${exam.teacherName} has submitted all marks for "${exam.name}" (${exam.className}).`, `/exams/${exam.id}`);
+                        // Set the flag to prevent future notifications for this exam
+                        await updateDoc(docRef, { completionNotified: true });
                     }
                 }
             }
