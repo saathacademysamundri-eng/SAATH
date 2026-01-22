@@ -84,8 +84,8 @@ export function TakeTeacherAttendance() {
                                     </TableRow>
                                 ))
                             ) : teachers.length > 0 ? (
-                                teachers.map((teacher) => (
-                                    <TableRow key={teacher.id}>
+                                teachers.map((teacher, index) => (
+                                    <TableRow key={`${teacher.id}-${index}`}>
                                         <TableCell className="font-medium">{teacher.name}</TableCell>
                                         <TableCell className="text-right">
                                             <RadioGroup
