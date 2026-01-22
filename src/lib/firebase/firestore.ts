@@ -1472,26 +1472,24 @@ export async function getExam(examId: string): Promise<Exam | null> {
 export async function saveExamResults(examId: string, results: StudentResult[]) {
     const docRef = doc(db, 'exams', examId);
     try {
-        await updateDoc(docRef, { results });
-        await logActivity('exam_results_saved', `Saved results for an exam.`);
-
-        // Check if the exam is complete and notify admin if deadline is passed
+        // First, get the current state of the exam
         const examDoc = await getDoc(docRef);
-        if (examDoc.exists()) {
-            const exam = { 
-                id: examDoc.id, 
-                ...examDoc.data(), 
-                date: examDoc.data().date.toDate(), 
-                submissionDeadline: examDoc.data().submissionDeadline?.toDate() 
-            } as Exam;
-            
-            // If notification has already been sent, do nothing further.
-            if (exam.completionNotified) {
-                return { success: true, message: 'Exam results saved successfully.' };
-            }
+        if (!examDoc.exists()) {
+            throw new Error("Exam not found");
+        }
 
+        const exam = { 
+            id: examDoc.id, 
+            ...examDoc.data(), 
+            date: examDoc.data().date.toDate(), 
+            submissionDeadline: examDoc.data().submissionDeadline?.toDate() 
+        } as Exam;
+        
+        let shouldNotify = false;
+
+        // Only do the completion check if we haven't already notified
+        if (!exam.completionNotified) {
             const allStudents = await getStudents();
-            
             const studentsForExam = allStudents.filter(student => 
                 student.class === exam.className && 
                 (exam.scope === 'class' || student.subjects.some(sub => sub.teacher_id === exam.teacherId))
@@ -1508,16 +1506,28 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
                 if (isExamComplete) {
                     const deadline = exam.submissionDeadline ? new Date(exam.submissionDeadline) : null;
                     const now = new Date();
-                    
                     if (deadline && deadline < now) {
-                        await createNotification(ADMIN_UID, `${exam.teacherName} has submitted all marks for "${exam.name}" (${exam.className}).`, `/exams/${exam.id}`);
-                        // Set the flag to prevent future notifications for this exam
-                        await updateDoc(docRef, { completionNotified: true });
+                        shouldNotify = true;
                     }
                 }
             }
         }
-        
+
+        // Now, perform the update
+        const updateData: { results: StudentResult[], completionNotified?: boolean } = { results };
+        if (shouldNotify) {
+            updateData.completionNotified = true;
+        }
+
+        await updateDoc(docRef, updateData);
+
+        // Log and notify outside the main update logic
+        await logActivity('exam_results_saved', `Saved results for exam "${exam.name}".`);
+
+        if (shouldNotify) {
+            await createNotification(ADMIN_UID, `${exam.teacherName} has submitted all marks for "${exam.name}" (${exam.className}).`, `/exams/${exam.id}`);
+        }
+
         return { success: true, message: 'Exam results saved successfully.' };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { results } });

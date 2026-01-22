@@ -291,12 +291,9 @@ export default function ExamsPage() {
                             <TableCell>{exam.teacherName}</TableCell>
                              <TableCell>
                                 {exam.submissionDeadline ? (
-                                    <span className={cn(
-                                        "font-medium",
-                                        new Date(exam.submissionDeadline) < new Date() && "text-destructive"
-                                    )}>
+                                    <Badge variant={new Date(exam.submissionDeadline) < new Date() ? "destructive" : "outline"} className="font-medium">
                                         {format(exam.submissionDeadline, 'PPP')}
-                                    </span>
+                                    </Badge>
                                 ) : (
                                     <span className="text-muted-foreground">N/A</span>
                                 )}
