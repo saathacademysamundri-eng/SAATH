@@ -384,7 +384,7 @@ export async function checkAndGenerateMonthlyFees() {
             const studentRef = studentDoc.ref;
             
             const newTotalFee = student.totalFee + student.monthlyFee;
-            const newStatus: Student['feeStatus'] = newTotalFee > student.monthlyFee ? 'Overdue' : 'Pending';
+            const newStatus: Student['feeStatus'] = newTotalFee > 0 ? (newTotalFee < studentData.totalFee ? 'Partial' : 'Pending') : 'Paid';
 
             batch.update(studentRef, {
                 totalFee: newTotalFee,
@@ -1336,15 +1336,13 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
         const dataToSave = { ...examData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'exams'), dataToSave);
         
-        const isPending = (examData as Partial<Exam>).status === 'pending';
-        
-        if (isPending) {
+        if (examData.status === 'pending') {
             await createNotification(ADMIN_UID, `New exam request from ${examData.teacherName}: "${examData.name}".`, `/exams?tab=pending`);
-        } else {
-             await createNotification(examData.teacherId, `A new exam has been assigned to you: "${examData.name}".`, `/teacher/exams/${docRef.id}`);
+        } else if (examData.status === 'approved') {
+            await createNotification(examData.teacherId, `A new exam has been assigned to you: "${examData.name}".`, `/teacher/exams/${docRef.id}`);
         }
 
-        const logMessage = isPending
+        const logMessage = examData.status === 'pending'
             ? `New exam request submitted: ${examData.name} for class ${examData.className}.`
             : `New exam created: ${examData.name} for class ${examData.className}.`;
         
@@ -1499,7 +1497,7 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
                 const resultsMap = new Map(results.map(r => [r.studentId, r.marks]));
                 const isExamComplete = studentsForExam.every(student => {
                     const studentResult = resultsMap.get(student.id);
-                    if (!studentResult) return false;
+                    if (!studentResult) return false; 
                     return exam.subjects.every(subjectName => studentResult[subjectName] != null);
                 });
 
@@ -1646,3 +1644,4 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+
