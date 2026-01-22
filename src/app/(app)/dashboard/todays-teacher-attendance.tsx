@@ -107,8 +107,8 @@ export function TodaysTeacherAttendance() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {attendanceData.map(item => (
-                            <TableRow key={item.teacherId}>
+                        {attendanceData.map((item, index) => (
+                            <TableRow key={`${item.teacherId}-${index}`}>
                                 <TableCell className="font-medium">{item.teacherName}</TableCell>
                                 <TableCell className="text-center">
                                     <Badge variant={getStatusBadgeVariant(item.todayStatus)}>{item.todayStatus}</Badge>
