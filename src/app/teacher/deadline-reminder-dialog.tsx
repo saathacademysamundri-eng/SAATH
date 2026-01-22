@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -19,15 +18,22 @@ export function ExamDeadlineReminderDialog({
   isOpen,
   onOpenChange,
   exams,
+  onSnooze,
 }: {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   exams: Exam[];
+  onSnooze: () => void;
 }) {
   const router = useRouter();
 
   const handleGoToExam = (examId: string) => {
     router.push(`/teacher/exams/${examId}`);
+    onOpenChange(false);
+  };
+
+  const handleSnoozeClick = () => {
+    onSnooze();
     onOpenChange(false);
   };
 
@@ -57,7 +63,10 @@ export function ExamDeadlineReminderDialog({
             </div>
           ))}
         </div>
-        <DialogFooter>
+        <DialogFooter className="sm:justify-between gap-2">
+          <Button variant="ghost" onClick={handleSnoozeClick}>
+            Snooze for 2 hours
+          </Button>
           <Button onClick={() => onOpenChange(false)}>Dismiss</Button>
         </DialogFooter>
       </DialogContent>

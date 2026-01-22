@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -212,6 +210,9 @@ function TeacherHeader() {
     )
 }
 
+const SNOOZE_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours
+const SNOOZE_STORAGE_KEY = 'examDeadlineSnooze';
+
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const { teacher, loading } = useTeacherAuth();
   const router = useRouter();
@@ -219,6 +220,16 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
   const [overdueExams, setOverdueExams] = useState<Exam[]>([]);
   const [isReminderOpen, setIsReminderOpen] = useState(false);
+
+  const handleSnooze = () => {
+    const now = new Date().getTime();
+    const snoozedData = {
+        examIds: overdueExams.map(e => e.id),
+        expiresAt: now + SNOOZE_DURATION_MS,
+    };
+    sessionStorage.setItem(SNOOZE_STORAGE_KEY, JSON.stringify(snoozedData));
+    setIsReminderOpen(false);
+  };
 
   useEffect(() => {
     if (teacher && !loading) {
@@ -257,10 +268,33 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
                 
                 return isExamIncomplete;
             });
+            
+            const snoozedDataString = sessionStorage.getItem(SNOOZE_STORAGE_KEY);
+            let snoozedExamIds: string[] = [];
 
-            if (upcomingOrOverdueIncomplete.length > 0) {
-                setOverdueExams(upcomingOrOverdueIncomplete);
+            if (snoozedDataString) {
+                try {
+                    const snoozedData = JSON.parse(snoozedDataString);
+                    if (new Date().getTime() < snoozedData.expiresAt) {
+                        snoozedExamIds = snoozedData.examIds || [];
+                    } else {
+                        sessionStorage.removeItem(SNOOZE_STORAGE_KEY);
+                    }
+                } catch (e) {
+                    sessionStorage.removeItem(SNOOZE_STORAGE_KEY);
+                }
+            }
+            
+            const finalExamsToShow = upcomingOrOverdueIncomplete.filter(
+                exam => !snoozedExamIds.includes(exam.id)
+            );
+
+            if (finalExamsToShow.length > 0) {
+                setOverdueExams(finalExamsToShow);
                 setIsReminderOpen(true);
+            } else {
+                setOverdueExams([]);
+                setIsReminderOpen(false);
             }
         };
 
@@ -285,6 +319,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
             isOpen={isReminderOpen}
             onOpenChange={setIsReminderOpen}
             exams={overdueExams}
+            onSnooze={handleSnooze}
           />
           <TeacherSidebar />
           <SidebarInset>
