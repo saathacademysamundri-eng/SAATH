@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -87,7 +88,7 @@ export default function MyStudentsPage() {
               </TableHeader>
               <TableBody>
                 {filteredStudents.length > 0 ? filteredStudents.map(student => (
-                  <TableRow key={student.id} className="cursor-pointer" onClick={() => router.push(`/students/${student.id}`)}>
+                  <TableRow key={student.id}>
                     <TableCell>
                         <div className="flex items-center gap-3">
                             <Avatar className="h-10 w-10">
