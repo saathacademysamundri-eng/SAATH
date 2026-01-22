@@ -1414,7 +1414,15 @@ export async function deleteExam(examId: string) {
 export async function getExams(): Promise<Exam[]> {
     const q = query(collection(db, "exams"), orderBy("date", "desc"));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            date: data.date.toDate(),
+            submissionDeadline: data.submissionDeadline?.toDate(),
+        } as Exam;
+    });
 }
 
 export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
@@ -1424,7 +1432,15 @@ export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
             where("teacherId", "==", teacherId)
         );
         const querySnapshot = await getDocs(q);
-        const exams = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
+        const exams = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                date: data.date.toDate(),
+                submissionDeadline: data.submissionDeadline?.toDate(),
+            } as Exam;
+        });
         // Sort client-side to avoid needing a composite index
         return exams.sort((a, b) => b.date.getTime() - a.date.getTime());
     } catch (serverError) {
@@ -1443,7 +1459,12 @@ export async function getExam(examId: string): Promise<Exam | null> {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         const data = docSnap.data();
-        return { id: docSnap.id, ...data, date: data.date.toDate() } as Exam;
+        return {
+            id: docSnap.id,
+            ...data,
+            date: data.date.toDate(),
+            submissionDeadline: data.submissionDeadline?.toDate(),
+        } as Exam;
     }
     return null;
 }
