@@ -1470,7 +1470,6 @@ export async function getExam(examId: string): Promise<Exam | null> {
 export async function saveExamResults(examId: string, results: StudentResult[]) {
     const docRef = doc(db, 'exams', examId);
     try {
-        // First, get the current state of the exam
         const examDoc = await getDoc(docRef);
         if (!examDoc.exists()) {
             throw new Error("Exam not found");
@@ -1485,7 +1484,6 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
         
         let shouldNotify = false;
 
-        // Only do the completion check if we haven't already notified
         if (!exam.completionNotified) {
             const allStudents = await getStudents();
             const studentsForExam = allStudents.filter(student => 
@@ -1502,16 +1500,11 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
                 });
 
                 if (isExamComplete) {
-                    const deadline = exam.submissionDeadline ? new Date(exam.submissionDeadline) : null;
-                    const now = new Date();
-                    if (deadline && deadline < now) {
-                        shouldNotify = true;
-                    }
+                    shouldNotify = true;
                 }
             }
         }
 
-        // Now, perform the update
         const updateData: { results: StudentResult[], completionNotified?: boolean } = { results };
         if (shouldNotify) {
             updateData.completionNotified = true;
@@ -1519,7 +1512,6 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
 
         await updateDoc(docRef, updateData);
 
-        // Log and notify outside the main update logic
         await logActivity('exam_results_saved', `Saved results for exam "${exam.name}".`);
 
         if (shouldNotify) {
@@ -1644,4 +1636,5 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+
 
