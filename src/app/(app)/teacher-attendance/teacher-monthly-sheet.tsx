@@ -231,10 +231,10 @@ export function TeacherMonthlySheet() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {teachers.map(teacher => {
+                           {teachers.map((teacher, index) => {
                                 const summary = teacherSummaries.find(s => s.teacherId === teacher.id)?.summary || { P: 0, A: 0, L: 0 };
                                 return (
-                                    <TableRow key={teacher.id}>
+                                    <TableRow key={`${teacher.id}-${index}`}>
                                         <TableCell className="font-medium sticky left-0 bg-background z-10">{teacher.name}</TableCell>
                                         {dayHeaders.map(day => (
                                             <TableCell key={day} className={`text-center font-bold text-xs p-2 ${getStatusStyle(monthlyData[teacher.id]?.[day])}`}>
