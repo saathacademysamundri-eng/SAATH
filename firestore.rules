@@ -63,5 +63,9 @@ service cloud.firestore {
     match /activities/{activityId} {
        allow read, write: if isAuthenticated();
     }
+    match /notifications/{notificationId} {
+      allow read, update: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated();
+    }
   }
 }

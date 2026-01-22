@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -42,6 +43,7 @@ import { TeacherWelcomeDialog } from './welcome-dialog';
 import { LiveDate, LiveTime } from '@/components/live-date-time';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppProvider } from '@/hooks/use-app-context';
+import { NotificationsMenu } from '@/components/notifications-menu';
 
 
 function TeacherSidebar() {
@@ -170,6 +172,7 @@ function TeacherHeader() {
     const pathname = usePathname();
     const router = useRouter();
     const { settings } = useSettings();
+    const { teacher } = useTeacherAuth();
 
     useEffect(() => {
         const academyName = settings.name || 'My Academy';
@@ -199,6 +202,7 @@ function TeacherHeader() {
                 <LiveDate />
                 <LiveTime />
                 <ThemeSwitcher />
+                <NotificationsMenu userId={teacher?.id || null} />
                 <TeacherUserNav />
             </div>
          </header>

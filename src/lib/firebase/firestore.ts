@@ -2,7 +2,7 @@
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app, auth, firebaseConfig } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary } from '@/lib/data';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -25,6 +25,20 @@ export async function logActivity(type: Activity['type'], message: string, link?
     } catch (e) {
         console.error("Failed to log activity:", e);
         // We don't throw an error here as this is a non-critical background task
+    }
+}
+
+export async function createNotification(userId: string, message: string, link?: string) {
+    try {
+        await addDoc(collection(db, 'notifications'), {
+            userId,
+            message,
+            link: link || null,
+            read: false,
+            timestamp: serverTimestamp(),
+        });
+    } catch (e) {
+        console.error("Failed to create notification:", e);
     }
 }
 
@@ -397,9 +411,10 @@ export async function checkAndGenerateMonthlyFees() {
 
 export async function getTeachers(): Promise<Teacher[]> {
     const teachersCollection = collection(db, 'teachers');
-    const q = query(teachersCollection, orderBy("id"));
-    const teachersSnap = await getDocs(q);
-    return teachersSnap.docs.map(doc => doc.data() as Teacher);
+    const teachersSnap = await getDocs(teachersCollection);
+    const teachersData = teachersSnap.docs.map(doc => doc.data() as Teacher);
+    // Sort client-side
+    return teachersData.sort((a,b) => a.id.localeCompare(b.id));
 }
 
 export async function getTeacher(id: string): Promise<Teacher | null> {
@@ -1286,10 +1301,17 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
         const docRef = await addDoc(collection(db, 'exams'), dataToSave);
         
         const isPending = (examData as Partial<Exam>).status === 'pending';
+        
+        if (isPending) {
+            await createNotification(ADMIN_UID, `New exam request from ${examData.teacherName}: "${examData.name}".`, `/exams`);
+        } else {
+            await createNotification(examData.teacherId, `A new exam has been assigned to you: "${examData.name}".`, `/teacher/exams/${docRef.id}`);
+        }
+
         const logMessage = isPending
             ? `New exam request submitted: ${examData.name} for class ${examData.className}.`
             : `New exam created: ${examData.name} for class ${examData.className}.`;
-        const link = isPending ? `/exams` : `/exams/${docRef.id}`;
+        const link = `/exams`;
 
         await logActivity('exam_created', logMessage, link);
         return { success: true, message: 'Exam created successfully.', id: docRef.id };
@@ -1306,7 +1328,11 @@ export async function updateExamStatus(examId: string, status: 'approved') {
         await updateDoc(docRef, { status });
         const examDoc = await getDoc(docRef);
         if (examDoc.exists()) {
-             await logActivity('exam_updated', `Exam "${examDoc.data().name}" was ${status}.`);
+             const exam = examDoc.data() as Exam;
+             if (status === 'approved') {
+                await createNotification(exam.teacherId, `Your exam request "${exam.name}" has been approved.`, `/teacher/exams/${examId}`);
+             }
+             await logActivity('exam_updated', `Exam "${exam.name}" was ${status}.`);
         }
         return { success: true, message: 'Exam status updated.' };
     } catch (serverError) {

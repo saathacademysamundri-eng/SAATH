@@ -156,6 +156,17 @@ export type Exam = {
     scope?: 'class' | 'teacher_students';
 }
 
+export type Notification = {
+  id: string;
+  userId: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  timestamp: Date;
+};
+
+export const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
+
 
 export const dashboardStats = [
     { title: 'Total Students', value: '1,250', change: '+15.2%', icon: 'Users' },

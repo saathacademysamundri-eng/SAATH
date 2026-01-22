@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -13,6 +14,8 @@ import { useState, useEffect } from 'react';
 import { Logo } from './logo';
 import { Button } from './ui/button';
 import { useLock } from '@/hooks/use-lock';
+import { NotificationsMenu } from './notifications-menu';
+import { ADMIN_UID } from '@/lib/data';
 
 export function Header() {
   const { settings, isSettingsLoading } = useSettings();
@@ -70,6 +73,7 @@ export function Header() {
           </Button>
         )}
         <ThemeSwitcher />
+        <NotificationsMenu userId={ADMIN_UID} />
         <UserNav />
       </div>
     </header>
