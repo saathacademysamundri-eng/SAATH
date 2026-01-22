@@ -1341,7 +1341,7 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
         if (isPending) {
             await createNotification(ADMIN_UID, `New exam request from ${examData.teacherName}: "${examData.name}".`, `/exams?tab=pending`);
         } else {
-            await createNotification(examData.teacherId, `A new exam has been assigned to you: "${examData.name}".`, `/teacher/exams/${docRef.id}`);
+             await createNotification(examData.teacherId, `A new exam has been assigned to you: "${examData.name}".`, `/teacher/exams/${docRef.id}`);
         }
 
         const logMessage = isPending
