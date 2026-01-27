@@ -21,8 +21,8 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
   CarouselPrevious,
+  CarouselNext,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -128,7 +128,7 @@ export default function LoginPage() {
                         <Logo noText={true} />
                     </div>
                     
-                    <h2 className="text-2xl font-bold text-center text-primary">
+                    <h2 className="text-2xl font-bold text-center text-primary uppercase">
                         {settings.name}
                     </h2>
 
@@ -166,6 +166,15 @@ export default function LoginPage() {
                 </div>
                 {/* Right Side */}
                 <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
+                    <div className="md:hidden mb-8 text-center">
+                        <div className="h-20 w-20 mx-auto">
+                            <Logo noText={true} />
+                        </div>
+                        <h2 className="text-2xl font-bold text-primary uppercase mt-4">
+                            {settings.name}
+                        </h2>
+                    </div>
+
                     <div className="w-full max-w-sm mx-auto">
                         
                         <div className="flex justify-center mb-6">
