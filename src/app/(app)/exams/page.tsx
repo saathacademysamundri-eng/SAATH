@@ -3,17 +3,17 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
 import { deleteExam, getExams, updateExamStatus } from '@/lib/firebase/firestore';
-import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer, Check, Ban, AlertCircle } from 'lucide-react';
+import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer, Check, Ban, AlertCircle, Clock } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { CreateExamDialog } from './create-exam-dialog';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isWithinInterval, startOfToday } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -56,6 +56,7 @@ export default function ExamsPage() {
   const { settings } = useSettings();
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'overview');
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
@@ -166,6 +167,18 @@ export default function ExamsPage() {
   const pendingExams = useMemo(() => {
     return exams.filter(exam => exam.status === 'pending');
   }, [exams]);
+  
+  const upcomingDeadlines = useMemo(() => {
+    const today = startOfToday();
+    const nextSevenDays = addDays(today, 7);
+    return exams
+      .filter(exam =>
+        exam.status === 'approved' &&
+        exam.submissionDeadline &&
+        isWithinInterval(new Date(exam.submissionDeadline), { start: today, end: nextSevenDays })
+      )
+      .sort((a, b) => new Date(a.submissionDeadline!).getTime() - new Date(b.submissionDeadline!).getTime());
+  }, [exams]);
 
   const masterSheetGroups = useMemo(() => {
     const filteredForGrouping = exams.filter(exam => {
@@ -214,30 +227,11 @@ export default function ExamsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Exams</h1>
           <p className="text-muted-foreground">Create and manage academic exams and requests.</p>
         </div>
-        <div className="flex gap-2">
-            <Dialog open={isBlankSheetDialogOpen} onOpenChange={setIsBlankSheetDialogOpen}>
-              <DialogTrigger asChild>
-                  <Button variant="outline">
-                      <File className="mr-2" />
-                      Print Blank Sheet
-                  </Button>
-              </DialogTrigger>
-              <BlankSheetDialog />
-          </Dialog>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2" />
-                Create Exam
-              </Button>
-            </DialogTrigger>
-            <CreateExamDialog onExamCreated={handleExamCreated} />
-          </Dialog>
-        </div>
       </div>
 
-    <Tabs defaultValue={tabFromUrl === 'pending' ? 'pending' : 'approved'}>
-        <TabsList className="grid w-full grid-cols-3">
+    <Tabs defaultValue={tabFromUrl || 'overview'} value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="approved">Exam History</TabsTrigger>
             <TabsTrigger value="master-sheets">Master Sheets</TabsTrigger>
             <TabsTrigger value="pending">
@@ -245,6 +239,105 @@ export default function ExamsPage() {
                 {pendingExams.length > 0 && <Badge className="ml-2">{pendingExams.length}</Badge>}
             </TabsTrigger>
         </TabsList>
+        <TabsContent value="overview">
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending Approvals</CardTitle>
+                  <CardDescription>Review and approve or reject exam requests from teachers.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? <Skeleton className="h-16 w-full" /> : pendingExams.length > 0 ? (
+                    <div className="flex items-center justify-between">
+                      <p className="text-4xl font-bold">{pendingExams.length}</p>
+                      <p className="text-muted-foreground">exam request(s) waiting for your review.</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">No pending exam requests.</p>
+                  )}
+                </CardContent>
+                {pendingExams.length > 0 && (
+                    <CardFooter>
+                         <Button onClick={() => setActiveTab('pending')}>Review Requests</Button>
+                    </CardFooter>
+                )}
+              </Card>
+
+              <Card>
+                 <CardHeader>
+                  <CardTitle>Upcoming Submission Deadlines</CardTitle>
+                  <CardDescription>Exams with marks submission deadlines in the next 7 days.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Exam</TableHead>
+                        <TableHead>Deadline</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                         <TableRow><TableCell colSpan={3} className="text-center"><Skeleton className="h-24 w-full"/></TableCell></TableRow>
+                      ) : upcomingDeadlines.length > 0 ? (
+                        upcomingDeadlines.map(exam => (
+                          <TableRow key={exam.id}>
+                            <TableCell>
+                              <div className="font-medium">{exam.name}</div>
+                              <div className="text-sm text-muted-foreground">{exam.className}</div>
+                            </TableCell>
+                            <TableCell>{format(exam.submissionDeadline!, 'PPP')}</TableCell>
+                            <TableCell className="text-right">
+                               <Button variant="outline" size="sm" onClick={() => router.push(`/exams/${exam.id}`)}>
+                                <ClipboardPenLine className="mr-2 h-4 w-4" /> Enter Marks
+                               </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                            No upcoming deadlines in the next 7 days.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="space-y-6">
+               <Card>
+                 <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="lg">
+                        <PlusCircle className="mr-2" />
+                        Create New Exam
+                      </Button>
+                    </DialogTrigger>
+                    <CreateExamDialog onExamCreated={handleExamCreated} />
+                  </Dialog>
+                  <Dialog open={isBlankSheetDialogOpen} onOpenChange={setIsBlankSheetDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="secondary" size="lg">
+                            <File className="mr-2" />
+                            Print Blank Marks Sheet
+                        </Button>
+                    </DialogTrigger>
+                    <BlankSheetDialog />
+                  </Dialog>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
         <TabsContent value="approved">
             <Card>
                 <CardHeader>
@@ -327,7 +420,7 @@ export default function ExamsPage() {
                              <TableCell>
                                 {exam.submissionDeadline ? (
                                     <Badge variant={new Date(exam.submissionDeadline) < new Date() ? "destructive" : "outline"} className="font-medium">
-                                        {format(exam.submissionDeadline, 'PPP')}
+                                        {format(new Date(exam.submissionDeadline), 'PPP')}
                                     </Badge>
                                 ) : (
                                     <span className="text-muted-foreground">N/A</span>
