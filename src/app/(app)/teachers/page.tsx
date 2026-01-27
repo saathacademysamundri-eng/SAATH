@@ -103,7 +103,7 @@ export default function TeachersPage() {
   }, [teachers, allStudents, income]);
 
   const filteredTeachers = teachers.filter(teacher =>
-    teacher.name.toLowerCase().includes(search.toLowerCase())
+    teacher.name && teacher.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleEditClick = (teacher: Teacher) => {
