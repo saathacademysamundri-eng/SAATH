@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -120,11 +121,41 @@ export default function LoginPage() {
     const isLoading = isAdminLoading || isTeacherLoading;
 
     return (
-        <main className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col items-center justify-center p-4 gap-8">
+        <main className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col items-center justify-center p-4">
             <div className="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl flex min-h-[600px] overflow-hidden">
                 {/* Left Side */}
                 <div className="w-1/2 hidden md:flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-slate-800 space-y-4">
-                    <Image src="https://i.postimg.cc/qR8FfG4B/3d-render-education-illustration-student-items-on-white-background-B-T-W-s-removebg-preview.png" width={400} height={400} alt="Education Items" className="object-contain" />
+                    <Carousel
+                        className="w-full max-w-xs"
+                        plugins={[
+                        Autoplay({
+                            delay: 2000,
+                        }),
+                        ]}
+                    >
+                        <CarouselContent>
+                        {carouselImages.map((image, index) => (
+                            <CarouselItem key={index}>
+                            <div className="p-1">
+                                <Card>
+                                <CardContent className="flex aspect-square items-center justify-center p-0 rounded-lg overflow-hidden">
+                                    <Image
+                                        src={image.imageUrl}
+                                        alt={image.description}
+                                        width={400}
+                                        height={400}
+                                        className="w-full h-full object-cover"
+                                        data-ai-hint={image.imageHint}
+                                    />
+                                </CardContent>
+                                </Card>
+                            </div>
+                            </CarouselItem>
+                        ))}
+                        </CarouselContent>
+                        <CarouselPrevious />
+                        <CarouselNext />
+                    </Carousel>
                     <div className="h-16">
                         <Logo />
                     </div>
@@ -169,40 +200,6 @@ export default function LoginPage() {
                     </div>
                 </div>
             </div>
-
-            <Carousel
-                opts={{
-                    align: "start",
-                    loop: true,
-                }}
-                plugins={[
-                    Autoplay({
-                        delay: 3000,
-                    }),
-                ]}
-                className="w-full max-w-4xl"
-            >
-                <CarouselContent>
-                    {carouselImages.map((image, index) => (
-                        <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                            <Card>
-                                <CardContent className="flex aspect-video items-center justify-center p-0 rounded-lg overflow-hidden">
-                                    <Image
-                                        src={image.imageUrl}
-                                        alt={image.description}
-                                        width={600}
-                                        height={400}
-                                        className="w-full h-full object-cover"
-                                        data-ai-hint={image.imageHint}
-                                    />
-                                </CardContent>
-                            </Card>
-                        </CarouselItem>
-                    ))}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-            </Carousel>
         </main>
     );
 }
