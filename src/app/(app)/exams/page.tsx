@@ -230,7 +230,7 @@ export default function ExamsPage() {
       </div>
 
     <Tabs defaultValue={tabFromUrl || 'overview'} value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+        <TabsList className="grid h-auto w-full grid-cols-2 md:grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="approved">Exam History</TabsTrigger>
             <TabsTrigger value="master-sheets">Master Sheets</TabsTrigger>
