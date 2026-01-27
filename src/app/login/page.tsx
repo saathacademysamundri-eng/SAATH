@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -109,10 +108,8 @@ export default function LoginPage() {
         <main className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
             <div className="relative w-full max-w-4xl min-h-[600px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl flex overflow-hidden">
                 {/* Left Side */}
-                <div className="w-1/2 hidden md:flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-700/50 p-8">
+                <div className="w-1/2 hidden md:flex items-center justify-center p-8">
                     <Image src="https://i.postimg.cc/qR8FfG4B/3d-render-education-illustration-student-items-on-white-background-B-T-W-s-removebg-preview.png" width={400} height={400} alt="Education Items" className="object-contain" />
-                    <h1 className="text-3xl font-bold mt-4 text-center text-gray-800 dark:text-white">{settings.name}</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-2 text-center">Welcome to the central hub for academy management.</p>
                 </div>
                 {/* Right Side */}
                 <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
@@ -124,12 +121,12 @@ export default function LoginPage() {
                                 <Button onClick={() => handleToggle('teacher')} variant={loginType === 'teacher' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'teacher' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Teacher</Button>
                             </div>
                         </div>
-                        <h2 className="text-3xl font-bold text-center mb-2">LOG IN</h2>
+                        <h2 className="text-2xl font-bold text-center mb-2">LOG IN</h2>
                         <p className="text-center text-muted-foreground mb-8">
                             Sign in to your {loginType} account.
                         </p>
                         
-                        <form className="space-y-6" onSubmit={handleSubmit}>
+                        <form className="space-y-4" onSubmit={handleSubmit}>
                             <div className="space-y-2">
                                 <Label htmlFor="email">Email Address</Label>
                                 <Input id="email" type="email" placeholder={`${loginType}@example.com`} value={email} onChange={(e) => setEmail(e.target.value)} required />

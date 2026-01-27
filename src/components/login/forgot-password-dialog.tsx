@@ -39,14 +39,14 @@ export function ForgotPasswordDialog() {
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="link" size="sm" className="p-0 h-auto text-sm font-medium text-gray-300 hover:text-white">
+                <Button variant="link" size="sm" className="p-0 h-auto text-sm font-medium">
                     Forgot password?
                 </Button>
             </DialogTrigger>
-            <DialogContent className="bg-gray-900 text-white border-gray-800">
+            <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Reset Password</DialogTitle>
-                    <DialogDescription className="text-gray-400">
+                    <DialogDescription>
                         Enter your email address and we'll send you a link to reset your password.
                     </DialogDescription>
                 </DialogHeader>
@@ -60,13 +60,12 @@ export function ForgotPasswordDialog() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="bg-white/20 text-white placeholder:text-gray-300 border-white/30 focus:bg-white/30 focus:ring-white"
                         />
                     </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                    <Button onClick={handleSendLink} disabled={isSending} className="bg-white text-blue-600 hover:bg-gray-200">
+                    <Button onClick={handleSendLink} disabled={isSending}>
                         {isSending && <Loader2 className="mr-2 animate-spin" />}
                         Send Reset Link
                     </Button>
