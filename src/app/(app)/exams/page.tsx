@@ -230,7 +230,7 @@ export default function ExamsPage() {
       </div>
 
     <Tabs defaultValue={tabFromUrl || 'overview'} value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="approved">Exam History</TabsTrigger>
             <TabsTrigger value="master-sheets">Master Sheets</TabsTrigger>
@@ -342,9 +342,9 @@ export default function ExamsPage() {
                 <CardHeader>
                 <CardTitle>Approved Exams</CardTitle>
                 <CardDescription>A list of all active exams. Use the filters below to narrow down the results.</CardDescription>
-                <div className="flex flex-wrap items-center gap-4 pt-4">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-4 pt-4">
                     <Select onValueChange={(v) => setApprovedClassFilter(v === 'all' ? null : v)} value={approvedClassFilter || 'all'}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-full sm:w-[180px]">
                             <SelectValue placeholder="Filter by class..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -353,7 +353,7 @@ export default function ExamsPage() {
                         </SelectContent>
                     </Select>
                     <Select onValueChange={setApprovedSessionFilter} value={approvedSessionFilter}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-full sm:w-[180px]">
                             <SelectValue placeholder="Filter by session..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -365,7 +365,7 @@ export default function ExamsPage() {
                             <Button
                                 id="date"
                                 variant={"outline"}
-                                className={cn("w-[300px] justify-start text-left font-normal", !approvedDateRange && "text-muted-foreground")}
+                                className={cn("w-full sm:w-[300px] justify-start text-left font-normal", !approvedDateRange && "text-muted-foreground")}
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {approvedDateRange?.from ? (approvedDateRange.to ? (<>{format(approvedDateRange.from, "LLL dd, y")} - {format(approvedDateRange.to, "LLL dd, y")}</>) : (format(approvedDateRange.from, "LLL dd, y"))) : (<span>Filter by date...</span>)}
@@ -381,83 +381,85 @@ export default function ExamsPage() {
                 </div>
                 </CardHeader>
                 <CardContent>
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Exam Name</TableHead>
-                        <TableHead>Class</TableHead>
-                        <TableHead>Teacher</TableHead>
-                        <TableHead>Submission Deadline</TableHead>
-                        <TableHead><span className="sr-only">Actions</span></TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {loading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-                        </TableRow>
-                        ))
-                    ) : approvedExams.length > 0 ? (
-                        approvedExams.map(exam => (
-                        <TableRow key={exam.id}>
-                            <TableCell>{format(exam.date, 'PPP')}</TableCell>
-                            <TableCell className="font-medium">
-                                <div>{exam.name}</div>
-                                <div className="text-xs text-muted-foreground flex flex-wrap gap-1 mt-1">
-                                    {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
-                                </div>
-                            </TableCell>
-                            <TableCell>{exam.className}</TableCell>
-                            <TableCell>{exam.teacherName}</TableCell>
-                             <TableCell>
-                                {exam.submissionDeadline ? (
-                                    <Badge variant={new Date(exam.submissionDeadline) < new Date() ? "destructive" : "outline"} className="font-medium">
-                                        {format(new Date(exam.submissionDeadline), 'PPP')}
-                                    </Badge>
-                                ) : (
-                                    <span className="text-muted-foreground">N/A</span>
-                                )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                            <AlertDialog>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => router.push(`/exams/${exam.id}`)}><ClipboardPenLine className="mr-2 h-4 w-4" />Enter Marks</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handlePrintResults(exam.id)}><Printer className="mr-2 h-4 w-4" />Print Results</DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}><Trash className="mr-2 h-4 w-4" />Delete</DropdownMenuItem></AlertDialogTrigger>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>This will permanently delete the exam "{exam.name}" and all of its associated results. This action cannot be undone.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                                </AlertDialog>
-                            </TableCell>
-                        </TableRow>
-                        ))
-                    ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
                         <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No exams found matching your criteria.</TableCell>
+                            <TableHead className="hidden sm:table-cell">Date</TableHead>
+                            <TableHead>Exam Name</TableHead>
+                            <TableHead>Class</TableHead>
+                            <TableHead className="hidden md:table-cell">Teacher</TableHead>
+                            <TableHead>Submission Deadline</TableHead>
+                            <TableHead><span className="sr-only">Actions</span></TableHead>
                         </TableRow>
-                    )}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                        {loading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                            </TableRow>
+                            ))
+                        ) : approvedExams.length > 0 ? (
+                            approvedExams.map(exam => (
+                            <TableRow key={exam.id}>
+                                <TableCell className="hidden sm:table-cell">{format(exam.date, 'PPP')}</TableCell>
+                                <TableCell className="font-medium">
+                                    <div>{exam.name}</div>
+                                    <div className="text-xs text-muted-foreground flex flex-wrap gap-1 mt-1">
+                                        {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
+                                    </div>
+                                </TableCell>
+                                <TableCell>{exam.className}</TableCell>
+                                <TableCell className="hidden md:table-cell">{exam.teacherName}</TableCell>
+                                <TableCell>
+                                    {exam.submissionDeadline ? (
+                                        <Badge variant={new Date(exam.submissionDeadline) < new Date() ? "destructive" : "outline"} className="font-medium">
+                                            {format(new Date(exam.submissionDeadline), 'PPP')}
+                                        </Badge>
+                                    ) : (
+                                        <span className="text-muted-foreground">N/A</span>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                <AlertDialog>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => router.push(`/exams/${exam.id}`)}><ClipboardPenLine className="mr-2 h-4 w-4" />Enter Marks</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleOpenEditDialog(exam)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handlePrintResults(exam.id)}><Printer className="mr-2 h-4 w-4" />Print Results</DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}><Trash className="mr-2 h-4 w-4" />Delete</DropdownMenuItem></AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>This will permanently delete the exam "{exam.name}" and all of its associated results. This action cannot be undone.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteExam(exam.id)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                    </AlertDialog>
+                                </TableCell>
+                            </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No exams found matching your criteria.</TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
             </Card>
         </TabsContent>
@@ -466,9 +468,9 @@ export default function ExamsPage() {
                 <CardHeader>
                     <CardTitle>Master Sheets</CardTitle>
                     <CardDescription>Consolidated reports for exams sharing the same name, class, and session.</CardDescription>
-                     <div className="flex flex-wrap items-center gap-4 pt-4">
+                     <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-4 pt-4">
                         <Select onValueChange={(v) => setMasterSheetClassFilter(v === 'all' ? null : v)} value={masterSheetClassFilter || 'all'}>
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-full sm:w-[180px]">
                                 <SelectValue placeholder="Filter by class..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -477,7 +479,7 @@ export default function ExamsPage() {
                             </SelectContent>
                         </Select>
                         <Select onValueChange={setMasterSheetSessionFilter} value={masterSheetSessionFilter}>
-                            <SelectTrigger className="w-[180px]">
+                            <SelectTrigger className="w-full sm:w-[180px]">
                                 <SelectValue placeholder="Filter by session..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -489,7 +491,7 @@ export default function ExamsPage() {
                                 <Button
                                     id="master-date"
                                     variant={"outline"}
-                                    className={cn("w-[300px] justify-start text-left font-normal", !masterSheetDateRange && "text-muted-foreground")}
+                                    className={cn("w-full sm:w-[300px] justify-start text-left font-normal", !masterSheetDateRange && "text-muted-foreground")}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {masterSheetDateRange?.from ? (masterSheetDateRange.to ? (<>{format(masterSheetDateRange.from, "LLL dd, y")} - {format(masterSheetDateRange.to, "LLL dd, y")}</>) : (format(masterSheetDateRange.from, "LLL dd, y"))) : (<span>Filter by date...</span>)}
@@ -534,14 +536,13 @@ export default function ExamsPage() {
                     <CardDescription>Review and approve or reject exam requests from teachers.</CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Date</TableHead>
+                                <TableHead className="hidden sm:table-cell">Date</TableHead>
                                 <TableHead>Exam Name</TableHead>
-                                <TableHead>Class</TableHead>
-                                <TableHead>Requested By</TableHead>
-                                <TableHead>Subjects</TableHead>
+                                <TableHead className="hidden md:table-cell">Requested By</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -549,26 +550,23 @@ export default function ExamsPage() {
                              {loading ? (
                                 Array.from({ length: 3 }).map((_, i) => (
                                 <TableRow key={i}>
-                                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                                     <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                                     <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
                                 </TableRow>
                                 ))
                             ) : pendingExams.length > 0 ? (
                                 pendingExams.map(exam => (
                                     <TableRow key={exam.id}>
-                                        <TableCell>{format(exam.date, 'PPP')}</TableCell>
-                                        <TableCell className="font-medium">{exam.name}</TableCell>
-                                        <TableCell>{exam.className}</TableCell>
-                                        <TableCell>{exam.teacherName}</TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-wrap gap-1 max-w-xs">
+                                        <TableCell className="hidden sm:table-cell">{format(exam.date, 'PPP')}</TableCell>
+                                        <TableCell className="font-medium">
+                                            <div>{exam.name} ({exam.className})</div>
+                                            <div className="text-xs text-muted-foreground flex flex-wrap gap-1 mt-1">
                                                 {exam.subjects.map(s => <Badge key={s} variant="outline" className="font-normal">{s}</Badge>)}
                                             </div>
                                         </TableCell>
+                                        <TableCell className="hidden md:table-cell">{exam.teacherName}</TableCell>
                                         <TableCell className="text-right space-x-2">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
@@ -606,6 +604,7 @@ export default function ExamsPage() {
                             )}
                         </TableBody>
                     </Table>
+                  </div>
                 </CardContent>
             </Card>
         </TabsContent>
@@ -622,3 +621,4 @@ export default function ExamsPage() {
     </div>
   );
 }
+
