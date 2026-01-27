@@ -16,11 +16,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState, useEffect } from 'react';
-import { getTodaysAttendanceSummary, getTodaysMessagesCount } from '@/lib/firebase/firestore';
+import { getTodaysAttendanceSummary, getTodaysMessagesCount, getExams, createNotification } from '@/lib/firebase/firestore';
 import { TodaysAttendance } from './todays-attendance';
 import { RecentActivities } from './recent-activities';
 import { TodaysTeacherAttendance } from './todays-teacher-attendance';
 import { ClassDistribution } from './class-distribution';
+import { ADMIN_UID } from '@/lib/data';
+import { format } from 'date-fns';
+
 
 const iconMap: { [key: string]: React.ElementType } = {
   Users,
@@ -43,6 +46,38 @@ export default function DashboardPage() {
     useEffect(() => {
         getTodaysAttendanceSummary().then(setAttendance);
         getTodaysMessagesCount().then(setMessagesSent);
+
+        const checkMissedDeadlines = async () => {
+            const lastCheck = localStorage.getItem('lastDeadlineCheck');
+            const today = new Date().toISOString().split('T')[0];
+
+            if (lastCheck === today) {
+                return; // Already checked today
+            }
+
+            const allExams = await getExams();
+            const now = new Date();
+            const notifiedExams = JSON.parse(localStorage.getItem('notifiedMissedDeadlines') || '[]');
+            const newNotifiedExams = [...notifiedExams];
+
+            for (const exam of allExams) {
+                if (exam.submissionDeadline && new Date(exam.submissionDeadline) < now && exam.status === 'approved') {
+                    const isIncomplete = !exam.results || exam.results.length === 0;
+                    if (isIncomplete && !notifiedExams.includes(exam.id)) {
+                        await createNotification(
+                            ADMIN_UID,
+                            `Marks for "${exam.name}" (${exam.className}) by ${exam.teacherName} are overdue. The deadline was ${format(new Date(exam.submissionDeadline), 'PPP')}.`,
+                            `/exams/${exam.id}`
+                        );
+                        newNotifiedExams.push(exam.id);
+                    }
+                }
+            }
+            localStorage.setItem('lastDeadlineCheck', today);
+            localStorage.setItem('notifiedMissedDeadlines', JSON.stringify(newNotifiedExams));
+        };
+
+        checkMissedDeadlines();
     }, []);
 
     const totalIncome = useMemo(() => {

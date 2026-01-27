@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { getTeacherAttendanceForMonth } from '@/lib/firebase/firestore';
+import { getAllTeacherAttendanceForMonth } from '@/lib/firebase/firestore';
 import { format, getDaysInMonth } from 'date-fns';
 import { Loader2, Printer } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
@@ -37,17 +37,22 @@ export function TeacherMonthlySheet() {
 
     const handleFetchReport = async () => {
         setIsLoading(true);
+        const allAttendanceRecords = await getAllTeacherAttendanceForMonth(selectedMonth, selectedYear);
+
         const allTeachersData: MonthlyAttendance = {};
         
-        for (const teacher of teachers) {
-            const data = await getTeacherAttendanceForMonth(teacher.id, selectedMonth, selectedYear);
-            const teacherAttendance: { [day: number]: AttendanceStatus } = {};
-            data.forEach(record => {
+        // Initialize for all teachers
+        teachers.forEach(teacher => {
+            allTeachersData[teacher.id] = {};
+        });
+
+        // Populate from the single fetch
+        allAttendanceRecords.forEach(record => {
+            if (allTeachersData[record.teacherId]) {
                 const day = record.date.getUTCDate();
-                teacherAttendance[day] = record.status.charAt(0) as AttendanceStatus;
-            });
-            allTeachersData[teacher.id] = teacherAttendance;
-        }
+                allTeachersData[record.teacherId][day] = record.status.charAt(0) as AttendanceStatus;
+            }
+        });
         
         setMonthlyData(allTeachersData);
         setIsLoading(false);
@@ -226,10 +231,10 @@ export function TeacherMonthlySheet() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {teachers.map(teacher => {
+                           {teachers.map((teacher, index) => {
                                 const summary = teacherSummaries.find(s => s.teacherId === teacher.id)?.summary || { P: 0, A: 0, L: 0 };
                                 return (
-                                    <TableRow key={teacher.id}>
+                                    <TableRow key={`${teacher.id}-${index}`}>
                                         <TableCell className="font-medium sticky left-0 bg-background z-10">{teacher.name}</TableCell>
                                         {dayHeaders.map(day => (
                                             <TableCell key={day} className={`text-center font-bold text-xs p-2 ${getStatusStyle(monthlyData[teacher.id]?.[day])}`}>

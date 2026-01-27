@@ -153,8 +153,21 @@ export type Exam = {
     status?: 'pending' | 'approved' | 'rejected';
     results?: StudentResult[];
     academicSession: string;
+    submissionDeadline?: Date;
     scope?: 'class' | 'teacher_students';
+    completionNotified?: boolean;
 }
+
+export type Notification = {
+  id: string;
+  userId: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  timestamp: Date;
+};
+
+export const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
 
 export const dashboardStats = [

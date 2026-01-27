@@ -25,15 +25,23 @@ import { type Class, type Teacher, Exam } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { createExam } from "@/lib/firebase/firestore"
-import { Loader2 } from "lucide-react"
+import { Loader2, CalendarIcon } from "lucide-react"
 import { useAppContext } from "@/hooks/use-app-context"
 import { useSettings } from "@/hooks/use-settings"
 import { useTeacherAuth } from "@/hooks/use-teacher-auth"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+import { usePathname } from "next/navigation"
 
 export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: string) => void }) {
     const { classes, teachers } = useAppContext();
     const { teacher } = useTeacherAuth();
     const { settings } = useSettings();
+    const pathname = usePathname();
+    const isTeacherPortal = pathname.startsWith('/teacher');
+
     const [name, setName] = useState('');
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [examType, setExamType] = useState<'Single Subject' | 'Full Test' | 'Manual'>('Single Subject');
@@ -43,14 +51,15 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
     const [scope, setScope] = useState<Exam['scope']>('class');
     const [academicSession, setAcademicSession] = useState(settings.academicSession);
+    const [submissionDeadline, setSubmissionDeadline] = useState<Date | undefined>();
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
-        if (teacher) {
+        if (isTeacherPortal && teacher) {
             setSelectedTeacherId(teacher.id);
         }
-    }, [teacher]);
+    }, [teacher, isTeacherPortal]);
 
     useEffect(() => {
         if (settings.academicSession) {
@@ -74,13 +83,13 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     const handleClassChange = (value: string) => {
         setSelectedClassId(value);
         setSelectedSubject(null); 
-        if (!teacher) {
+        if (!isTeacherPortal) {
             setSelectedTeacherId(null);
         }
     }
     
     const availableTeachers = useMemo(() => {
-        if (teacher) return [teacher];
+        if (isTeacherPortal && teacher) return [teacher];
         if (!selectedClassId) return [];
         const currentClass = classes.find(c => c.id === selectedClassId);
         if (!currentClass) return [];
@@ -90,18 +99,18 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
         return teachers.filter(teacher => 
             (teacher.subjects || []).some(subject => subjectsInClass.has(subject))
         );
-    }, [selectedClassId, classes, teachers, teacher]);
+    }, [selectedClassId, classes, teachers, teacher, isTeacherPortal]);
     
     const currentClass = classes.find(c => c.id === selectedClassId);
     
     const availableSubjects = useMemo(() => {
         if (!currentClass) return [];
-        if (teacher) {
+        if (isTeacherPortal && teacher) {
             const teacherSubjectNames = new Set(teacher.subjects);
             return currentClass.subjects.filter(s => teacherSubjectNames.has(s.name));
         }
         return currentClass.subjects;
-    }, [currentClass, teacher]);
+    }, [currentClass, teacher, isTeacherPortal]);
 
 
     const handleSubmit = async () => {
@@ -139,17 +148,18 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             scope,
             results: [],
             academicSession: academicSession,
-            status: teacher ? 'pending' as const : 'approved' as const,
+            submissionDeadline: submissionDeadline || null,
+            status: (isTeacherPortal && teacher) ? 'pending' as const : 'approved' as const,
         };
 
         const result = await createExam(examData);
 
         if(result.success) {
-            const successMessage = teacher 
+            const successMessage = (isTeacherPortal && teacher) 
                 ? `${name} has been submitted for approval.`
                 : `${name} has been successfully created.`;
             toast({
-                title: teacher ? 'Exam Submitted' : 'Exam Created',
+                title: (isTeacherPortal && teacher) ? 'Exam Submitted' : 'Exam Created',
                 description: successMessage,
             });
             onExamCreated(result.id!);
@@ -208,7 +218,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                 </div>
                  <div className="grid gap-2">
                     <Label htmlFor="teacher">Assign Teacher</Label>
-                    <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId || undefined} disabled={!selectedClassId || !!teacher}>
+                    <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId || undefined} disabled={!selectedClassId || (isTeacherPortal && !!teacher)}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a teacher" />
                         </SelectTrigger>
@@ -278,9 +288,36 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                 </div>
             )}
             
-            <div className="grid gap-2">
-                <Label htmlFor="totalMarks">Total Marks per Subject</Label>
-                <Input id="totalMarks" type="number" placeholder="e.g., 100" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="totalMarks">Total Marks per Subject</Label>
+                    <Input id="totalMarks" type="number" placeholder="e.g., 100" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="submission-deadline">Submission Deadline (Optional)</Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !submissionDeadline && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {submissionDeadline ? format(submissionDeadline, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={submissionDeadline}
+                                onSelect={setSubmissionDeadline}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </div>
 
         </div>
@@ -290,7 +327,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             </DialogClose>
             <Button type="button" onClick={handleSubmit} disabled={isSaving}>
                 {isSaving && <Loader2 className="animate-spin mr-2"/>}
-                {isSaving ? 'Submitting...' : teacher ? 'Submit for Approval' : 'Create Exam'}
+                {isSaving ? 'Submitting...' : (isTeacherPortal && teacher) ? 'Submit for Approval' : 'Create Exam'}
             </Button>
         </DialogFooter>
       </DialogContent>

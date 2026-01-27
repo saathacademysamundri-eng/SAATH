@@ -2,7 +2,7 @@
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app, auth, firebaseConfig } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary } from '@/lib/data';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -28,11 +28,25 @@ export async function logActivity(type: Activity['type'], message: string, link?
     }
 }
 
+export async function createNotification(userId: string, message: string, link?: string) {
+    try {
+        await addDoc(collection(db, 'notifications'), {
+            userId,
+            message,
+            link: link || null,
+            read: false,
+            timestamp: serverTimestamp(),
+        });
+    } catch (e) {
+        console.error("Failed to create notification:", e);
+    }
+}
+
 export async function getRecentActivities(count = 50): Promise<Activity[]> {
     try {
         const q = query(collection(db, 'activities'), orderBy('date', 'desc'), limit(count));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => {
+        const activities = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -42,6 +56,7 @@ export async function getRecentActivities(count = 50): Promise<Activity[]> {
                 date: data.date.toDate(),
             } as Activity;
         });
+        return activities.sort((a, b) => b.date.getTime() - a.date.getTime());
     } catch (error) {
         console.error("Error fetching recent activities:", error);
         return [];
@@ -369,7 +384,7 @@ export async function checkAndGenerateMonthlyFees() {
             const studentRef = studentDoc.ref;
             
             const newTotalFee = student.totalFee + student.monthlyFee;
-            const newStatus: Student['feeStatus'] = newTotalFee > student.monthlyFee ? 'Overdue' : 'Pending';
+            const newStatus: Student['feeStatus'] = newTotalFee > 0 ? (newTotalFee < studentData.totalFee ? 'Partial' : 'Pending') : 'Paid';
 
             batch.update(studentRef, {
                 totalFee: newTotalFee,
@@ -397,9 +412,10 @@ export async function checkAndGenerateMonthlyFees() {
 
 export async function getTeachers(): Promise<Teacher[]> {
     const teachersCollection = collection(db, 'teachers');
-    const q = query(teachersCollection, orderBy("id"));
-    const teachersSnap = await getDocs(q);
-    return teachersSnap.docs.map(doc => doc.data() as Teacher);
+    const teachersSnap = await getDocs(teachersCollection);
+    const teachersData = teachersSnap.docs.map(doc => doc.data() as Teacher);
+    // Sort client-side
+    return teachersData.sort((a,b) => a.id.localeCompare(b.id));
 }
 
 export async function getTeacher(id: string): Promise<Teacher | null> {
@@ -865,9 +881,10 @@ export async function addReport(reportData: Omit<Report, 'id' | 'reportDate'>) {
 }
 
 export async function getReports(): Promise<Report[]> {
-    const q = query(collection(db, "reports"), orderBy("reportDate", "desc"));
+    const q = query(collection(db, "reports"));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), reportDate: doc.data().reportDate.toDate() } as Report));
+    const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), reportDate: doc.data().reportDate.toDate() } as Report));
+    return reports.sort((a,b) => b.reportDate.getTime() - a.reportDate.getTime());
 }
 
 // Teacher Payout Functions
@@ -1019,9 +1036,9 @@ export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Repor
 }
 
 export async function getAcademyShare(): Promise<Payout[]> {
-    const q = query(collection(db, "academy_share"), orderBy("payoutDate", "desc"));
+    const q = query(collection(db, "academy_share"));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
+    const shares = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
@@ -1029,6 +1046,7 @@ export async function getAcademyShare(): Promise<Payout[]> {
             payoutDate: data.payoutDate.toDate(),
         } as Payout;
     });
+    return shares.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
 }
 
 
@@ -1278,6 +1296,39 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
     }
 }
 
+export async function getAllTeacherAttendanceForMonth(month: number, year: number): Promise<{ teacherId: string, date: Date, status: AttendanceStatus }[]> {
+    try {
+        const monthStartStr = formatDate(startOfMonth(new Date(year, month)), 'yyyy-MM-dd');
+        const monthEndStr = formatDate(endOfMonth(new Date(year, month)), 'yyyy-MM-dd');
+
+        const q = query(
+            collection(db, 'teacher_attendance'),
+            where('date', '>=', monthStartStr),
+            where('date', '<=', monthEndStr)
+        );
+        const querySnapshot = await getDocs(q);
+
+        const attendance: { teacherId: string, date: Date, status: AttendanceStatus }[] = [];
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            attendance.push({
+                teacherId: data.teacherId,
+                date: new Date(data.date + 'T00:00:00'), // Treat date string as UTC to avoid timezone issues
+                status: data.status,
+            });
+        });
+        
+        return attendance;
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: `teacher_attendance`,
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        return [];
+    }
+}
+
 
 // Exam Functions
 export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
@@ -1285,13 +1336,17 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
         const dataToSave = { ...examData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'exams'), dataToSave);
         
-        const isPending = (examData as Partial<Exam>).status === 'pending';
-        const logMessage = isPending
+        if (examData.status === 'pending') {
+            await createNotification(ADMIN_UID, `New exam request from ${examData.teacherName}: "${examData.name}".`, `/exams?tab=pending`);
+        } else if (examData.status === 'approved') {
+            await createNotification(examData.teacherId, `A new exam has been assigned to you: "${examData.name}".`, `/teacher/exams/${docRef.id}`);
+        }
+
+        const logMessage = examData.status === 'pending'
             ? `New exam request submitted: ${examData.name} for class ${examData.className}.`
             : `New exam created: ${examData.name} for class ${examData.className}.`;
-        const link = isPending ? `/exams` : `/exams/${docRef.id}`;
-
-        await logActivity('exam_created', logMessage, link);
+        
+        await logActivity('exam_created', logMessage, `/exams`);
         return { success: true, message: 'Exam created successfully.', id: docRef.id };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'exams/[auto-id]', operation: 'create', requestResourceData: examData });
@@ -1300,13 +1355,19 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
     }
 }
 
-export async function updateExamStatus(examId: string, status: 'approved') {
+export async function updateExamStatus(examId: string, status: 'approved' | 'rejected') {
     const docRef = doc(db, 'exams', examId);
     try {
         await updateDoc(docRef, { status });
         const examDoc = await getDoc(docRef);
         if (examDoc.exists()) {
-             await logActivity('exam_updated', `Exam "${examDoc.data().name}" was ${status}.`);
+             const exam = examDoc.data() as Exam;
+             if (status === 'approved') {
+                await createNotification(exam.teacherId, `Your exam request "${exam.name}" has been approved.`, `/teacher/exams/${examId}`);
+             } else if (status === 'rejected') {
+                await createNotification(exam.teacherId, `Your exam request "${exam.name}" was rejected.`, `/teacher/exams`);
+             }
+             await logActivity('exam_updated', `Exam "${exam.name}" was ${status}.`);
         }
         return { success: true, message: 'Exam status updated.' };
     } catch (serverError) {
@@ -1351,7 +1412,15 @@ export async function deleteExam(examId: string) {
 export async function getExams(): Promise<Exam[]> {
     const q = query(collection(db, "exams"), orderBy("date", "desc"));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            date: data.date.toDate(),
+            submissionDeadline: data.submissionDeadline?.toDate(),
+        } as Exam;
+    });
 }
 
 export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
@@ -1361,7 +1430,15 @@ export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
             where("teacherId", "==", teacherId)
         );
         const querySnapshot = await getDocs(q);
-        const exams = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
+        const exams = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                date: data.date.toDate(),
+                submissionDeadline: data.submissionDeadline?.toDate(),
+            } as Exam;
+        });
         // Sort client-side to avoid needing a composite index
         return exams.sort((a, b) => b.date.getTime() - a.date.getTime());
     } catch (serverError) {
@@ -1380,7 +1457,12 @@ export async function getExam(examId: string): Promise<Exam | null> {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         const data = docSnap.data();
-        return { id: docSnap.id, ...data, date: data.date.toDate() } as Exam;
+        return {
+            id: docSnap.id,
+            ...data,
+            date: data.date.toDate(),
+            submissionDeadline: data.submissionDeadline?.toDate(),
+        } as Exam;
     }
     return null;
 }
@@ -1388,8 +1470,54 @@ export async function getExam(examId: string): Promise<Exam | null> {
 export async function saveExamResults(examId: string, results: StudentResult[]) {
     const docRef = doc(db, 'exams', examId);
     try {
-        await updateDoc(docRef, { results });
-        await logActivity('exam_results_saved', `Saved results for an exam.`);
+        const examDoc = await getDoc(docRef);
+        if (!examDoc.exists()) {
+            throw new Error("Exam not found");
+        }
+
+        const exam = { 
+            id: examDoc.id, 
+            ...examDoc.data(), 
+            date: examDoc.data().date.toDate(), 
+            submissionDeadline: examDoc.data().submissionDeadline?.toDate() 
+        } as Exam;
+        
+        let shouldNotify = false;
+
+        if (!exam.completionNotified) {
+            const allStudents = await getStudents();
+            const studentsForExam = allStudents.filter(student => 
+                student.class === exam.className && 
+                (exam.scope === 'class' || student.subjects.some(sub => sub.teacher_id === exam.teacherId))
+            );
+
+            if (studentsForExam.length > 0) {
+                const resultsMap = new Map(results.map(r => [r.studentId, r.marks]));
+                const isExamComplete = studentsForExam.every(student => {
+                    const studentResult = resultsMap.get(student.id);
+                    if (!studentResult) return false; 
+                    return exam.subjects.every(subjectName => studentResult[subjectName] != null);
+                });
+
+                if (isExamComplete) {
+                    shouldNotify = true;
+                }
+            }
+        }
+
+        const updateData: { results: StudentResult[], completionNotified?: boolean } = { results };
+        if (shouldNotify) {
+            updateData.completionNotified = true;
+        }
+
+        await updateDoc(docRef, updateData);
+
+        await logActivity('exam_results_saved', `Saved results for exam "${exam.name}".`);
+
+        if (shouldNotify) {
+            await createNotification(ADMIN_UID, `${exam.teacherName} has submitted all marks for "${exam.name}" (${exam.className}).`, `/exams/${exam.id}`);
+        }
+
         return { success: true, message: 'Exam results saved successfully.' };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { results } });
@@ -1508,3 +1636,5 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+
+

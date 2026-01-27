@@ -39,8 +39,8 @@ export function ForgotPasswordDialog() {
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="link" size="sm" className="w-full mt-2 p-0 h-auto">
-                    Forgot Password?
+                <Button variant="link" size="sm" className="p-0 h-auto text-sm font-medium">
+                    Forgot password?
                 </Button>
             </DialogTrigger>
             <DialogContent>
@@ -56,7 +56,7 @@ export function ForgotPasswordDialog() {
                         <Input
                             id="reset-email"
                             type="email"
-                            placeholder="teacher@example.com"
+                            placeholder="admin@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required

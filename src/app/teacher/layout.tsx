@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -14,7 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Sidebar,
@@ -42,6 +41,10 @@ import { TeacherWelcomeDialog } from './welcome-dialog';
 import { LiveDate, LiveTime } from '@/components/live-date-time';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppProvider } from '@/hooks/use-app-context';
+import { NotificationsMenu } from '@/components/notifications-menu';
+import { ExamDeadlineReminderDialog } from './deadline-reminder-dialog';
+import { getExamsByTeacher, getStudents } from '@/lib/firebase/firestore';
+import { Exam, Student } from '@/lib/data';
 
 
 function TeacherSidebar() {
@@ -170,6 +173,7 @@ function TeacherHeader() {
     const pathname = usePathname();
     const router = useRouter();
     const { settings } = useSettings();
+    const { teacher } = useTeacherAuth();
 
     useEffect(() => {
         const academyName = settings.name || 'My Academy';
@@ -199,22 +203,104 @@ function TeacherHeader() {
                 <LiveDate />
                 <LiveTime />
                 <ThemeSwitcher />
+                <NotificationsMenu userId={teacher?.id || null} />
                 <TeacherUserNav />
             </div>
          </header>
     )
 }
 
+const SNOOZE_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours
+const SNOOZE_STORAGE_KEY = 'examDeadlineSnooze';
+
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const { teacher, loading } = useTeacherAuth();
   const router = useRouter();
   const pathname = usePathname();
 
+  const [overdueExams, setOverdueExams] = useState<Exam[]>([]);
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
+
+  const handleSnooze = () => {
+    const now = new Date().getTime();
+    const snoozedData = {
+        examIds: overdueExams.map(e => e.id),
+        expiresAt: now + SNOOZE_DURATION_MS,
+    };
+    sessionStorage.setItem(SNOOZE_STORAGE_KEY, JSON.stringify(snoozedData));
+    setIsReminderOpen(false);
+  };
+
   useEffect(() => {
-    if (!loading && !teacher && pathname !== '/teacher/login') {
-      router.replace('/teacher/login');
+    if (teacher && !loading) {
+        const checkDeadlines = async () => {
+            const [exams, allStudents] = await Promise.all([
+                getExamsByTeacher(teacher.id),
+                getStudents()
+            ]);
+
+            const now = new Date();
+
+            const upcomingOrOverdueIncomplete = exams.filter(exam => {
+                if (!exam.submissionDeadline || exam.status !== 'approved') {
+                    return false;
+                }
+
+                const deadline = new Date(exam.submissionDeadline);
+                const isPastDue = deadline < now;
+                
+                if (!isPastDue) return false;
+
+                const studentsForExam = allStudents.filter(student => 
+                    student.class === exam.className && 
+                    (exam.scope === 'class' || student.subjects.some(sub => sub.teacher_id === teacher.id))
+                );
+                
+                if (studentsForExam.length === 0) return false;
+
+                const resultsMap = new Map(exam.results?.map(r => [r.studentId, r.marks]) || []);
+
+                const isExamIncomplete = studentsForExam.some(student => {
+                    const studentResult = resultsMap.get(student.id);
+                    if (!studentResult) return true; 
+                    return exam.subjects.some(subjectName => studentResult[subjectName] == null);
+                });
+                
+                return isExamIncomplete;
+            });
+            
+            const snoozedDataString = sessionStorage.getItem(SNOOZE_STORAGE_KEY);
+            let snoozedExamIds: string[] = [];
+
+            if (snoozedDataString) {
+                try {
+                    const snoozedData = JSON.parse(snoozedDataString);
+                    if (new Date().getTime() < snoozedData.expiresAt) {
+                        snoozedExamIds = snoozedData.examIds || [];
+                    } else {
+                        sessionStorage.removeItem(SNOOZE_STORAGE_KEY);
+                    }
+                } catch (e) {
+                    sessionStorage.removeItem(SNOOZE_STORAGE_KEY);
+                }
+            }
+            
+            const finalExamsToShow = upcomingOrOverdueIncomplete.filter(
+                exam => !snoozedExamIds.includes(exam.id)
+            );
+
+            if (finalExamsToShow.length > 0) {
+                setOverdueExams(finalExamsToShow);
+                setIsReminderOpen(true);
+            } else {
+                setOverdueExams([]);
+                setIsReminderOpen(false);
+            }
+        };
+
+        checkDeadlines();
     }
-  }, [teacher, loading, router, pathname]);
+  }, [teacher, loading, pathname]);
   
   if (pathname === '/teacher/login') {
     return <>{children}</>;
@@ -229,6 +315,12 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       <AppProvider>
         <SidebarProvider>
           <TeacherWelcomeDialog />
+          <ExamDeadlineReminderDialog
+            isOpen={isReminderOpen}
+            onOpenChange={setIsReminderOpen}
+            exams={overdueExams}
+            onSnooze={handleSnooze}
+          />
           <TeacherSidebar />
           <SidebarInset>
             <TeacherHeader />
