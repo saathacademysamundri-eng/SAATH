@@ -44,6 +44,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BlankSheetDialog } from './blank-sheet-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MasterSheetView } from './master-sheet-view';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -141,7 +143,7 @@ export default function ExamsPage() {
     return Array.from(sessions).sort((a, b) => b.localeCompare(a));
   }, [exams, settings.academicSession]);
 
-  const { pendingExams, approvedExams } = useMemo(() => {
+  const { pendingExams, approvedExams, masterSheetGroups } = useMemo(() => {
     const filtered = exams.filter(exam => {
         const classMatch = !selectedClass || exam.className === selectedClass;
         
@@ -157,14 +159,35 @@ export default function ExamsPage() {
         return classMatch && dateMatch && sessionMatch;
     });
 
-    return filtered.reduce((acc, exam) => {
+    const groups: { [key: string]: Exam[] } = {};
+
+    const result = filtered.reduce((acc, exam) => {
         if (exam.status === 'pending') {
             acc.pendingExams.push(exam);
-        } else if (exam.status !== 'rejected') { // Show approved and exams without status
+        } else if (exam.status !== 'rejected') { 
             acc.approvedExams.push(exam);
         }
+        
+        if (exam.status === 'approved') {
+            const groupKey = `${exam.name} - ${exam.className} (${exam.academicSession})`;
+            if (!groups[groupKey]) {
+                groups[groupKey] = [];
+            }
+            groups[groupKey].push(exam);
+        }
+
         return acc;
-    }, { pendingExams: [] as Exam[], approvedExams: [] as Exam[] });
+    }, { pendingExams: [] as Exam[], approvedExams: [] as Exam[], masterSheetGroups: {} as { [key: string]: Exam[] } });
+
+    result.masterSheetGroups = Object.keys(groups).reduce((acc, key) => {
+        if (groups[key].length > 1) {
+            acc[key] = groups[key];
+        }
+        return acc;
+    }, {} as { [key: string]: Exam[] });
+    
+    return result;
+
   }, [exams, selectedClass, dateRange, sessionFilter]);
 
   const clearFilters = () => {
@@ -203,8 +226,9 @@ export default function ExamsPage() {
       </div>
 
     <Tabs defaultValue={tabFromUrl === 'pending' ? 'pending' : 'approved'}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="approved">Exam History</TabsTrigger>
+            <TabsTrigger value="master-sheets">Master Sheets</TabsTrigger>
             <TabsTrigger value="pending">
                 Pending Approvals
                 {pendingExams.length > 0 && <Badge className="ml-2">{pendingExams.length}</Badge>}
@@ -331,6 +355,35 @@ export default function ExamsPage() {
                     )}
                     </TableBody>
                 </Table>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="master-sheets">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Master Sheets</CardTitle>
+                    <CardDescription>Consolidated reports for exams sharing the same name, class, and session.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {Object.keys(masterSheetGroups).length > 0 ? (
+                         <Accordion type="single" collapsible className="w-full">
+                            {Object.entries(masterSheetGroups).map(([key, groupExams]) => (
+                                <AccordionItem value={key} key={key}>
+                                    <AccordionTrigger className="text-lg">
+                                        {key}
+                                        <Badge variant="secondary" className="ml-4">{groupExams.length} Exams</Badge>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <MasterSheetView exams={groupExams} groupTitle={key} />
+                                    </AccordionContent>
+                                </AccordionItem>
+                            ))}
+                         </Accordion>
+                    ) : (
+                        <div className="text-center h-24 flex items-center justify-center text-muted-foreground">
+                            No master sheets available. Create multiple exams with the same name for a class to generate one.
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </TabsContent>
