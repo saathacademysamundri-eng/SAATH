@@ -94,7 +94,7 @@ export default function LoginPage() {
         setShowPassword(false);
     };
     
-    if (!isClient || isSettingsLoading) {
+    if (!isClient) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-background">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -105,25 +105,25 @@ export default function LoginPage() {
     const isLoading = isAdminLoading || isTeacherLoading;
 
     return (
-        <main className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
-            <div className="relative w-full max-w-4xl min-h-[600px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl flex overflow-hidden">
+        <main className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center p-4">
+            <div className="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl flex min-h-[600px] overflow-hidden">
                 {/* Left Side */}
-                <div className="w-1/2 hidden md:flex items-center justify-center p-8">
+                <div className="w-1/2 hidden md:flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-slate-800">
                     <Image src="https://i.postimg.cc/qR8FfG4B/3d-render-education-illustration-student-items-on-white-background-B-T-W-s-removebg-preview.png" width={400} height={400} alt="Education Items" className="object-contain" />
                 </div>
                 {/* Right Side */}
-                <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
+                <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center relative">
                     <Image src="https://i.postimg.cc/L8y28m4N/3d-cartoon-character-pointing-finger-at-copy-space-side-isolated-on-white-background-3d-renderin.png" width={200} height={200} alt="Character" className="absolute bottom-0 -right-16 w-48 h-auto hidden lg:block" />
                     <div className="w-full max-w-sm mx-auto">
                         <div className="flex justify-center mb-6">
-                            <div className="bg-gray-200 dark:bg-gray-700 p-1 rounded-full flex gap-1">
+                            <div className="bg-gray-200 dark:bg-slate-700 p-1 rounded-full flex gap-1">
                                 <Button onClick={() => handleToggle('admin')} variant={loginType === 'admin' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'admin' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Admin</Button>
                                 <Button onClick={() => handleToggle('teacher')} variant={loginType === 'teacher' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'teacher' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Teacher</Button>
                             </div>
                         </div>
                         <h2 className="text-2xl font-bold text-center mb-2">LOG IN</h2>
                         <p className="text-center text-muted-foreground mb-8">
-                            Sign in to your {loginType} account.
+                           Sign in to your {loginType} account.
                         </p>
                         
                         <form className="space-y-4" onSubmit={handleSubmit}>
