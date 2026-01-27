@@ -11,6 +11,7 @@ import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence, 
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ForgotPasswordDialog } from './forgot-password-dialog';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
@@ -85,7 +86,7 @@ export function LoginForm() {
   return (
     <form className="grid gap-6" onSubmit={handleLogin}>
       <div className="grid gap-2">
-        <Label htmlFor="email" className="text-gray-700">Email Address</Label>
+        <Label htmlFor="email" className="text-gray-200">Email Address</Label>
         <Input
           id="email"
           type="email"
@@ -93,20 +94,13 @@ export function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="bg-gray-100 dark:bg-gray-200 text-gray-900"
+          className="bg-white/20 text-white placeholder:text-gray-300 border-white/30 focus:bg-white/30 focus:ring-white"
         />
       </div>
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-gray-700">Password</Label>
-            <a
-              href="#"
-              className="text-sm font-medium text-primary hover:underline"
-              tabIndex={-1}
-              onClick={(e) => e.preventDefault()}
-            >
-              Forgot password?
-            </a>
+            <Label htmlFor="password" className="text-gray-200">Password</Label>
+            <ForgotPasswordDialog />
         </div>
         <Input
           id="password"
@@ -114,12 +108,12 @@ export function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="bg-gray-100 dark:bg-gray-200 text-gray-900"
+          className="bg-white/20 text-white placeholder:text-gray-300 border-white/30 focus:bg-white/30 focus:ring-white"
         />
       </div>
       <Button
         type="submit"
-        className="w-full bg-gradient-to-r from-orange-400 to-pink-500 py-3 text-base font-semibold text-white shadow-lg transition-all hover:from-orange-500 hover:to-pink-600 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
+        className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 py-3 text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-gray-900"
         disabled={isLoading}
         size="lg"
       >
