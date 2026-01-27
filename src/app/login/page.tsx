@@ -124,7 +124,10 @@ export default function LoginPage() {
         <main className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col items-center justify-center p-4">
             <div className="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl flex min-h-[600px] overflow-hidden">
                 {/* Left Side */}
-                <div className="w-1/2 hidden md:flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-slate-800 space-y-4">
+                <div className="w-1/2 hidden md:flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-slate-800 space-y-6">
+                    <div className="h-20">
+                        <Logo />
+                    </div>
                     <Carousel
                         className="w-full max-w-xs"
                         plugins={[
@@ -156,9 +159,6 @@ export default function LoginPage() {
                         <CarouselPrevious />
                         <CarouselNext />
                     </Carousel>
-                    <div className="h-16">
-                        <Logo />
-                    </div>
                 </div>
                 {/* Right Side */}
                 <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
