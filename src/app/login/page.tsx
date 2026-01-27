@@ -16,6 +16,16 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { ForgotPasswordDialog } from '@/components/login/forgot-password-dialog';
 import { Logo } from '@/components/logo';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
@@ -35,6 +45,10 @@ export default function LoginPage() {
     
     const router = useRouter();
     const { toast } = useToast();
+
+    const carouselImages = PlaceHolderImages.filter(img => 
+        ['elevate-experience', 'cta-image-1', 'cta-image-2', 'benefit-explore', 'group-classes', 'online-classes'].includes(img.id)
+    );
 
     useEffect(() => {
         setIsClient(true);
@@ -106,18 +120,19 @@ export default function LoginPage() {
     const isLoading = isAdminLoading || isTeacherLoading;
 
     return (
-        <main className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center p-4">
+        <main className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col items-center justify-center p-4 gap-8">
             <div className="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl flex min-h-[600px] overflow-hidden">
                 {/* Left Side */}
-                <div className="w-1/2 hidden md:flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-slate-800">
+                <div className="w-1/2 hidden md:flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-slate-800 space-y-4">
                     <Image src="https://i.postimg.cc/qR8FfG4B/3d-render-education-illustration-student-items-on-white-background-B-T-W-s-removebg-preview.png" width={400} height={400} alt="Education Items" className="object-contain" />
+                    <div className="h-16">
+                        <Logo />
+                    </div>
                 </div>
                 {/* Right Side */}
                 <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
                     <div className="w-full max-w-sm mx-auto">
-                        <div className="flex justify-center mb-4 h-12">
-                            <Logo />
-                        </div>
+                        
                         <div className="flex justify-center mb-6">
                             <div className="bg-gray-200 dark:bg-slate-700 p-1 rounded-full flex gap-1">
                                 <Button onClick={() => handleToggle('admin')} variant={loginType === 'admin' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'admin' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Admin</Button>
@@ -154,6 +169,40 @@ export default function LoginPage() {
                     </div>
                 </div>
             </div>
+
+            <Carousel
+                opts={{
+                    align: "start",
+                    loop: true,
+                }}
+                plugins={[
+                    Autoplay({
+                        delay: 3000,
+                    }),
+                ]}
+                className="w-full max-w-4xl"
+            >
+                <CarouselContent>
+                    {carouselImages.map((image, index) => (
+                        <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                            <Card>
+                                <CardContent className="flex aspect-video items-center justify-center p-0 rounded-lg overflow-hidden">
+                                    <Image
+                                        src={image.imageUrl}
+                                        alt={image.description}
+                                        width={600}
+                                        height={400}
+                                        className="w-full h-full object-cover"
+                                        data-ai-hint={image.imageHint}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+            </Carousel>
         </main>
     );
 }
