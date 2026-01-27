@@ -98,17 +98,12 @@ export default {
           "0%,70%,100%": { opacity: "1" },
           "20%,50%": { opacity: "0" },
         },
-        "breathe": {
-            "0%, 100%": { 'box-shadow': '0 0 20px rgba(0, 0, 0, 0.1)', transform: 'scale(1)' },
-            "50%": { 'box-shadow': '0 0 30px rgba(0, 0, 0, 0.15)', transform: 'scale(1.01)' },
-        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'scroll-up-slow': 'scroll-up-slow 40s linear infinite',
         "caret-blink": "caret-blink 1.25s ease-out infinite",
-        "breathe": "breathe 5s ease-in-out infinite",
       },
     },
   },

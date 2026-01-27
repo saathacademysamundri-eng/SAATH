@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -45,10 +44,12 @@ export default function TeacherLoginPage() {
 
   return (
     <main className="flex min-h-svh w-full items-center justify-center bg-gray-100 dark:bg-gray-900">
-      <div className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl md:h-auto md:min-h-[550px] md:flex-row animate-breathe">
+      <div className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl md:h-auto md:min-h-[550px] md:flex-row">
         
         {/* Left Side - Login Form */}
         <div className="relative flex w-full flex-col justify-center p-8 md:w-1/2 lg:p-12 text-gray-900 dark:text-gray-900">
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-repeat opacity-5 [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]"></div>
+
           <div className="relative z-10 mx-auto w-full max-w-sm">
             <div className="mb-8 text-center">
                 <div className="mx-auto h-20 w-20">
@@ -85,7 +86,12 @@ export default function TeacherLoginPage() {
                    className="bg-gray-100 dark:bg-gray-200 text-gray-900"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-sky-500 to-indigo-500 py-3 text-base font-semibold text-white shadow-lg transition-all hover:from-sky-600 hover:to-indigo-600 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2" 
+                disabled={loading}
+                size="lg"
+              >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? 'Logging in...' : 'Log In'}
               </Button>
