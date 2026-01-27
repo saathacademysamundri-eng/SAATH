@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Facebook, Instagram, MessageSquare } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
@@ -15,6 +15,7 @@ import { getSettings } from '@/lib/firebase/firestore';
 import { cn } from '@/lib/utils';
 import { ForgotPasswordDialog } from '@/components/login/forgot-password-dialog';
 import { Logo } from '@/components/logo';
+import Link from 'next/link';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
@@ -111,7 +112,7 @@ export default function LoginPage() {
                     <div className="h-20 w-20 mx-auto">
                         <Logo noText={true} />
                     </div>
-                    <h2 className="text-2xl font-bold text-foreground uppercase mt-4">
+                    <h2 className="text-2xl font-bold text-foreground uppercase mt-4 dark:text-white">
                         {settings.name}
                     </h2>
                 </div>
@@ -150,6 +151,20 @@ export default function LoginPage() {
                             Log In
                         </Button>
                     </form>
+                </div>
+            </div>
+             <div className="mt-8 text-center text-sm text-muted-foreground">
+                <p>Developed by "Mian Mudassar"</p>
+                <div className="mt-2 flex justify-center gap-4">
+                    <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                        <Facebook className="h-4 w-4" />
+                    </Link>
+                    <Link href="https://api.whatsapp.com/send?phone=923099969535&text=Hye%20%0AI%20want%20to%20know%20about%20the%20software%20you%20created%2C%20which%20is%20a%20management%20system%20in%20the%20school.%20" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                        <MessageSquare className="h-4 w-4" />
+                    </Link>
+                    <Link href="https://www.instagram.com/mianmudassar_" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                        <Instagram className="h-4 w-4" />
+                    </Link>
                 </div>
             </div>
         </main>
