@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -176,9 +177,13 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
     }
     printWindow.document.write(`<html><head><title>Print Master Sheet</title>
         <style>
-            @media print { @page { size: A4 landscape; margin: 0.75in; } }
-            body { font-family: 'Segoe UI', sans-serif; -webkit-print-color-adjust: exact; }
-            .printable-content { margin: 0; padding: 0; }
+            @media print { 
+                @page { size: A4 landscape; margin: 0.75in; } 
+                body { -webkit-print-color-adjust: exact; }
+            }
+            body { font-family: 'Segoe UI', sans-serif; font-size: 10pt; }
+            .report-container { max-width: 1100px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+            .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
             .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
@@ -188,6 +193,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
             table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem; }
             th, td { padding: 6px 8px; border: 1px solid #ddd; }
             th { font-weight: bold; background-color: #f2f2f2; text-align: center; }
+            .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
         </style>
         </head><body>`);
     printWindow.document.write(printRef.current.innerHTML);
@@ -197,16 +203,26 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
     setTimeout(() => printWindow.print(), 500);
   };
   
+  const footerHtml = useMemo(() => {
+    return `
+        <div class="footer">
+            Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
+        </div>
+    `;
+  }, [settings.name]);
 
   return (
     <div className="p-4 bg-muted/50 rounded-lg">
         <div ref={printRef} className="absolute -left-[9999px] top-auto w-[1100px] bg-white text-black p-4">
-            <div className="printable-content">
-                <div dangerouslySetInnerHTML={{ __html: printableHeaderHtml }} />
-                <table>
-                    <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
-                    <tbody dangerouslySetInnerHTML={{ __html: printableTableBody }} />
-                </table>
+            <div className="report-container">
+                <div className="content-wrap">
+                    <div dangerouslySetInnerHTML={{ __html: printableHeaderHtml }} />
+                    <table>
+                        <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
+                        <tbody dangerouslySetInnerHTML={{ __html: printableTableBody }} />
+                    </table>
+                </div>
+                <div dangerouslySetInnerHTML={{ __html: footerHtml }} />
             </div>
         </div>
 

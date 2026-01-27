@@ -62,14 +62,20 @@ export default function ExamsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBlankSheetDialogOpen, setIsBlankSheetDialogOpen] = useState(false);
 
-  // Filter state
-  const [selectedClass, setSelectedClass] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [sessionFilter, setSessionFilter] = useState('');
+  // Filter state for Approved Exams
+  const [approvedClassFilter, setApprovedClassFilter] = useState<string | null>(null);
+  const [approvedDateRange, setApprovedDateRange] = useState<DateRange | undefined>(undefined);
+  const [approvedSessionFilter, setApprovedSessionFilter] = useState('');
+
+  // Filter state for Master Sheets
+  const [masterSheetClassFilter, setMasterSheetClassFilter] = useState<string | null>(null);
+  const [masterSheetDateRange, setMasterSheetDateRange] = useState<DateRange | undefined>(undefined);
+  const [masterSheetSessionFilter, setMasterSheetSessionFilter] = useState('');
 
   useEffect(() => {
     if (settings.academicSession) {
-      setSessionFilter(settings.academicSession);
+      setApprovedSessionFilter(settings.academicSession);
+      setMasterSheetSessionFilter(settings.academicSession);
     }
   }, [settings.academicSession]);
 
@@ -143,57 +149,62 @@ export default function ExamsPage() {
     return Array.from(sessions).sort((a, b) => b.localeCompare(a));
   }, [exams, settings.academicSession]);
 
-  const { pendingExams, approvedExams, masterSheetGroups } = useMemo(() => {
-    const filtered = exams.filter(exam => {
-        const classMatch = !selectedClass || exam.className === selectedClass;
-        
+  const approvedExams = useMemo(() => {
+    return exams.filter(exam => {
+        const classMatch = !approvedClassFilter || exam.className === approvedClassFilter;
         let dateMatch = true;
-        if (dateRange?.from) {
-            const fromDate = dateRange.from;
-            const toDate = dateRange.to ? addDays(dateRange.to, 1) : addDays(fromDate, 1);
+        if (approvedDateRange?.from) {
+            const fromDate = approvedDateRange.from;
+            const toDate = approvedDateRange.to ? addDays(approvedDateRange.to, 1) : addDays(fromDate, 1);
             dateMatch = exam.date >= fromDate && exam.date < toDate;
         }
+        const sessionMatch = !approvedSessionFilter || exam.academicSession === approvedSessionFilter;
+        return classMatch && dateMatch && sessionMatch && exam.status === 'approved';
+    });
+  }, [exams, approvedClassFilter, approvedDateRange, approvedSessionFilter]);
 
-        const sessionMatch = !sessionFilter || exam.academicSession === sessionFilter;
+  const pendingExams = useMemo(() => {
+    return exams.filter(exam => exam.status === 'pending');
+  }, [exams]);
 
-        return classMatch && dateMatch && sessionMatch;
+  const masterSheetGroups = useMemo(() => {
+    const filteredForGrouping = exams.filter(exam => {
+        const classMatch = !masterSheetClassFilter || exam.className === masterSheetClassFilter;
+        let dateMatch = true;
+        if (masterSheetDateRange?.from) {
+            const fromDate = masterSheetDateRange.from;
+            const toDate = masterSheetDateRange.to ? addDays(masterSheetDateRange.to, 1) : addDays(fromDate, 1);
+            dateMatch = exam.date >= fromDate && exam.date < toDate;
+        }
+        const sessionMatch = !masterSheetSessionFilter || exam.academicSession === masterSheetSessionFilter;
+        return classMatch && dateMatch && sessionMatch && exam.status === 'approved';
     });
 
     const groups: { [key: string]: Exam[] } = {};
+    filteredForGrouping.forEach(exam => {
+        const groupKey = `${exam.name} - ${exam.className} (${exam.academicSession})`;
+        if (!groups[groupKey]) groups[groupKey] = [];
+        groups[groupKey].push(exam);
+    });
 
-    const result = filtered.reduce((acc, exam) => {
-        if (exam.status === 'pending') {
-            acc.pendingExams.push(exam);
-        } else if (exam.status !== 'rejected') { 
-            acc.approvedExams.push(exam);
-        }
-        
-        if (exam.status === 'approved') {
-            const groupKey = `${exam.name} - ${exam.className} (${exam.academicSession})`;
-            if (!groups[groupKey]) {
-                groups[groupKey] = [];
-            }
-            groups[groupKey].push(exam);
-        }
-
-        return acc;
-    }, { pendingExams: [] as Exam[], approvedExams: [] as Exam[], masterSheetGroups: {} as { [key: string]: Exam[] } });
-
-    result.masterSheetGroups = Object.keys(groups).reduce((acc, key) => {
-        if (groups[key].length > 1) {
-            acc[key] = groups[key];
-        }
-        return acc;
-    }, {} as { [key: string]: Exam[] });
+    const result: { [key: string]: Exam[] } = {};
+    Object.keys(groups).forEach(key => {
+        if (groups[key].length > 1) result[key] = groups[key];
+    });
     
     return result;
+  }, [exams, masterSheetClassFilter, masterSheetDateRange, masterSheetSessionFilter]);
 
-  }, [exams, selectedClass, dateRange, sessionFilter]);
-
-  const clearFilters = () => {
-    setSelectedClass(null);
-    setDateRange(undefined);
-    setSessionFilter(settings.academicSession || '');
+  const clearApprovedFilters = () => {
+    setApprovedClassFilter(null);
+    setApprovedDateRange(undefined);
+    setApprovedSessionFilter(settings.academicSession || '');
+  }
+  
+  const clearMasterSheetFilters = () => {
+    setMasterSheetClassFilter(null);
+    setMasterSheetDateRange(undefined);
+    setMasterSheetSessionFilter(settings.academicSession || '');
   }
 
   return (
@@ -240,7 +251,7 @@ export default function ExamsPage() {
                 <CardTitle>Approved Exams</CardTitle>
                 <CardDescription>A list of all active exams. Use the filters below to narrow down the results.</CardDescription>
                 <div className="flex flex-wrap items-center gap-4 pt-4">
-                    <Select onValueChange={(v) => setSelectedClass(v === 'all' ? null : v)} value={selectedClass || 'all'}>
+                    <Select onValueChange={(v) => setApprovedClassFilter(v === 'all' ? null : v)} value={approvedClassFilter || 'all'}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Filter by class..." />
                         </SelectTrigger>
@@ -249,7 +260,7 @@ export default function ExamsPage() {
                             {classes.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                    <Select onValueChange={setSessionFilter} value={sessionFilter}>
+                    <Select onValueChange={setApprovedSessionFilter} value={approvedSessionFilter}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Filter by session..." />
                         </SelectTrigger>
@@ -262,18 +273,18 @@ export default function ExamsPage() {
                             <Button
                                 id="date"
                                 variant={"outline"}
-                                className={cn("w-[300px] justify-start text-left font-normal", !dateRange && "text-muted-foreground")}
+                                className={cn("w-[300px] justify-start text-left font-normal", !approvedDateRange && "text-muted-foreground")}
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dateRange?.from ? (dateRange.to ? (<>{format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}</>) : (format(dateRange.from, "LLL dd, y"))) : (<span>Filter by date...</span>)}
+                                {approvedDateRange?.from ? (approvedDateRange.to ? (<>{format(approvedDateRange.from, "LLL dd, y")} - {format(approvedDateRange.to, "LLL dd, y")}</>) : (format(approvedDateRange.from, "LLL dd, y"))) : (<span>Filter by date...</span>)}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar initialFocus mode="range" defaultMonth={dateRange?.from} selected={dateRange} onSelect={setDateRange} numberOfMonths={2}/>
+                            <Calendar initialFocus mode="range" defaultMonth={approvedDateRange?.from} selected={approvedDateRange} onSelect={setApprovedDateRange} numberOfMonths={2}/>
                         </PopoverContent>
                     </Popover>
-                    {(selectedClass || dateRange || sessionFilter !== settings.academicSession) && (
-                    <Button variant="ghost" onClick={clearFilters}><X className="mr-2 h-4 w-4" /> Clear Filters</Button>
+                    {(approvedClassFilter || approvedDateRange || approvedSessionFilter !== settings.academicSession) && (
+                    <Button variant="ghost" onClick={clearApprovedFilters}><X className="mr-2 h-4 w-4" /> Clear Filters</Button>
                     )}
                 </div>
                 </CardHeader>
@@ -363,6 +374,43 @@ export default function ExamsPage() {
                 <CardHeader>
                     <CardTitle>Master Sheets</CardTitle>
                     <CardDescription>Consolidated reports for exams sharing the same name, class, and session.</CardDescription>
+                     <div className="flex flex-wrap items-center gap-4 pt-4">
+                        <Select onValueChange={(v) => setMasterSheetClassFilter(v === 'all' ? null : v)} value={masterSheetClassFilter || 'all'}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Filter by class..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Classes</SelectItem>
+                                {classes.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select onValueChange={setMasterSheetSessionFilter} value={masterSheetSessionFilter}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Filter by session..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {academicSessions.map(session => <SelectItem key={session} value={session}>{session}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    id="master-date"
+                                    variant={"outline"}
+                                    className={cn("w-[300px] justify-start text-left font-normal", !masterSheetDateRange && "text-muted-foreground")}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {masterSheetDateRange?.from ? (masterSheetDateRange.to ? (<>{format(masterSheetDateRange.from, "LLL dd, y")} - {format(masterSheetDateRange.to, "LLL dd, y")}</>) : (format(masterSheetDateRange.from, "LLL dd, y"))) : (<span>Filter by date...</span>)}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar initialFocus mode="range" defaultMonth={masterSheetDateRange?.from} selected={masterSheetDateRange} onSelect={setMasterSheetDateRange} numberOfMonths={2}/>
+                            </PopoverContent>
+                        </Popover>
+                        {(masterSheetClassFilter || masterSheetDateRange || masterSheetSessionFilter !== settings.academicSession) && (
+                        <Button variant="ghost" onClick={clearMasterSheetFilters}><X className="mr-2 h-4 w-4" /> Clear Filters</Button>
+                        )}
+                    </div>
                 </CardHeader>
                 <CardContent>
                     {Object.keys(masterSheetGroups).length > 0 ? (
@@ -381,7 +429,7 @@ export default function ExamsPage() {
                          </Accordion>
                     ) : (
                         <div className="text-center h-24 flex items-center justify-center text-muted-foreground">
-                            No master sheets available. Create multiple exams with the same name for a class to generate one.
+                            No master sheets available for the selected filters.
                         </div>
                     )}
                 </CardContent>

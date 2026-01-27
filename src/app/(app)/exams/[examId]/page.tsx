@@ -182,7 +182,6 @@ export default function ExamResultsPage() {
 
     const sortedForRanking = [...studentTotals].sort((a, b) => b.totalMarks - a.totalMarks);
     
-    const finalResultsWithPosition: EnhancedResult[] = [];
     let rank = 0;
     let lastMark = -1;
 
@@ -233,7 +232,6 @@ export default function ExamResultsPage() {
     printWindow.document.write(`<style>
         @media print { @page { size: A4; margin: 0.75in; } }
         body { -webkit-print-color-adjust: exact; }
-        .printable-content { margin: 0; padding: 0; }
     </style>`);
     printWindow.document.write('</head><body>');
     printWindow.document.write(elementToPrint.innerHTML);
@@ -325,6 +323,14 @@ export default function ExamResultsPage() {
       </div>
     `;
   }, [settings, exam, totalMaxMarks]);
+  
+  const footerHtml = useMemo(() => {
+    return `
+        <div class="footer">
+            Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
+        </div>
+    `;
+  }, [settings.name]);
 
 
   if (loading) {
@@ -355,28 +361,33 @@ export default function ExamResultsPage() {
       {/* Hidden div for printing/saving */}
        <div className="absolute -left-[9999px] top-auto w-[1000px] bg-white text-black p-4" ref={printRef}>
           <style>{`
-            .printable-content body { 
+            body { 
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt;
             }
-            .report-container { max-width: 1000px; margin: auto; padding: 20px; }
+            .report-container { max-width: 1000px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
+            .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
             .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
             .report-title { text-align: center; margin: 2rem 0; }
             .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0 0 0.5rem 0; }
             .report-title p { font-size: 1.1rem; color: #555; margin: 0; }
-            .printable-content table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-            .printable-content th, .printable-content td { padding: 8px 10px; border: 1px solid #ddd; }
-            .printable-content th { font-weight: bold; background-color: #f2f2f2; text-align: center; }
-            .printable-content tr:nth-child(even) { background-color: #f9f9f9; }
+            table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+            th, td { padding: 8px 10px; border: 1px solid #ddd; }
+            th { font-weight: bold; background-color: #f2f2f2; text-align: center; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
           `}</style>
-          <div className="report-container printable-content">
+          <div className="report-container">
+            <div className="content-wrap">
               <div dangerouslySetInnerHTML={{ __html: printableHeaderHtml }} />
               <table>
                  <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
                  <tbody dangerouslySetInnerHTML={{ __html: printableTableBody }} />
               </table>
+            </div>
+            <div dangerouslySetInnerHTML={{ __html: footerHtml }} />
           </div>
         </div>
 

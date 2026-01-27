@@ -146,45 +146,47 @@ export default function VouchersPage() {
   
     return `
       <div class="voucher-container">
-          <!-- Student Copy -->
-          <div class="main-content">
-            <div class="header">
-                ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
-                <h1>${settings.name}</h1>
-                <p>${settings.address}</p>
-                <p>Phone: ${settings.phone}</p>
-            </div>
-            <h2>Fee Voucher (Student Copy)</h2>
-            <table class="details">
-                <tr><td><strong>Student Name:</strong></td><td>${student.name}</td><td><strong>Roll No:</strong></td><td>${student.id}</td></tr>
-                <tr><td><strong>Father's Name:</strong></td><td>${student.fatherName}</td><td><strong>Class:</strong></td><td>${student.class}</td></tr>
-                <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
-            </table>
-            <table class="fee-details">
-                <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
-                <tbody><tr><td>Tuition Fee</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tbody>
-                <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tfoot>
-            </table>
-            <div class="qr-section">
-              ${qrCodeDataUrl ? `
-                    <p><strong>Scan for live fee status</strong></p>
-                    <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
-                ` : ''}
-            </div>
-          </div>
+          <div class="content-wrap">
+              <!-- Student Copy -->
+              <div class="main-content">
+                <div class="header">
+                    ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
+                    <h1>${settings.name}</h1>
+                    <p>${settings.address}</p>
+                    <p>Phone: ${settings.phone}</p>
+                </div>
+                <h2>Fee Voucher (Student Copy)</h2>
+                <table class="details">
+                    <tr><td><strong>Student Name:</strong></td><td>${student.name}</td><td><strong>Roll No:</strong></td><td>${student.id}</td></tr>
+                    <tr><td><strong>Father's Name:</strong></td><td>${student.fatherName}</td><td><strong>Class:</strong></td><td>${student.class}</td></tr>
+                    <tr><td><strong>Issue Date:</strong></td><td>${format(issueDate, 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
+                </table>
+                <table class="fee-details">
+                    <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
+                    <tbody><tr><td>Tuition Fee</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tbody>
+                    <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tfoot>
+                </table>
+                <div class="qr-section">
+                  ${qrCodeDataUrl ? `
+                        <p><strong>Scan for live fee status</strong></p>
+                        <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
+                    ` : ''}
+                </div>
+              </div>
 
-          <div class="cut-line">
-              <div class="cut-line-icon">&#x2702;</div>
-          </div>
+              <div class="cut-line">
+                  <div class="cut-line-icon">&#x2702;</div>
+              </div>
 
-          <!-- Academy Copy -->
-          <div class="slip">
-              <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
-              <p><strong>Student:</strong> ${student.name} (${student.id})</p>
-              <p><strong>Father's Name:</strong> ${student.fatherName}</p>
-              <p><strong>Class:</strong> ${student.class}</p>
-              <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
-              <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
+              <!-- Academy Copy -->
+              <div class="slip">
+                  <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
+                  <p><strong>Student:</strong> ${student.name} (${student.id})</p>
+                  <p><strong>Father's Name:</strong> ${student.fatherName}</p>
+                  <p><strong>Class:</strong> ${student.class}</p>
+                  <p><strong>Amount:</strong> ${student.totalFee.toLocaleString()} PKR</p>
+                  <p><strong>Due Date:</strong> ${format(dueDate, 'PPP')}</p>
+              </div>
           </div>
            <div class="footer">
               Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
@@ -249,6 +251,7 @@ export default function VouchersPage() {
                   box-sizing: border-box;
                 }
                 .voucher-container:last-child { page-break-after: auto; }
+                .content-wrap { flex: 1; }
                 .main-content { flex-grow: 1; }
                 .header { text-align: center; margin-bottom: 20px; }
                 .header img { max-height: 80px; margin-bottom: 10px; }
