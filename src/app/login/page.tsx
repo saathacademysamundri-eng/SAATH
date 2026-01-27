@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { ForgotPasswordDialog } from '@/components/login/forgot-password-dialog';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
@@ -106,18 +107,28 @@ export default function LoginPage() {
     const isLoading = isAdminLoading || isTeacherLoading;
 
     return (
-        <main className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-sm">
-                <div className="mb-8 text-center">
-                    <div className="h-20 w-20 mx-auto">
-                        <Logo noText={true} />
-                    </div>
-                    <h2 className="text-2xl font-bold text-foreground uppercase mt-4 dark:text-white">
-                        {settings.name}
-                    </h2>
+        <main className="min-h-screen bg-gray-100 dark:bg-gradient-to-r dark:from-gray-900 dark:via-purple-900 dark:to-gray-800 dark:bg-[length:200%_200%] dark:animate-animated-gradient flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-4xl rounded-2xl bg-card shadow-2xl overflow-hidden grid md:grid-cols-2">
+                <div className="relative hidden md:block">
+                    <Image
+                        src="https://images.unsplash.com/photo-1571260899304-425eee4c7efc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwbGVhcm5pbmd8ZW58MHx8fHwxNzYxNDU1NTU2fDA&ixlib=rb-4.1.0&q=80&w=1080"
+                        alt="Students learning in a classroom"
+                        fill
+                        className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 </div>
-                
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8">
+
+                <div className="p-8">
+                    <div className="mb-8 text-center">
+                        <div className="h-20 w-20 mx-auto">
+                            <Logo noText={true} />
+                        </div>
+                        <h2 className="text-2xl font-bold text-foreground uppercase mt-4 dark:text-white">
+                            {settings.name}
+                        </h2>
+                    </div>
+                    
                     <div className="flex justify-center mb-6">
                         <div className="bg-gray-200 dark:bg-slate-700 p-1 rounded-full flex gap-1">
                             <Button onClick={() => handleToggle('admin')} variant={loginType === 'admin' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'admin' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Admin</Button>
@@ -153,7 +164,8 @@ export default function LoginPage() {
                     </form>
                 </div>
             </div>
-             <div className="mt-8 text-center text-sm text-muted-foreground">
+
+            <div className="mt-8 text-center text-sm text-muted-foreground">
                 <p>Developed by "Mian Mudassar"</p>
                 <div className="mt-2 flex justify-center gap-4">
                     <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
