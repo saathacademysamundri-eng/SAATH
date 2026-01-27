@@ -33,11 +33,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { usePathname } from "next/navigation"
 
 export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: string) => void }) {
     const { classes, teachers } = useAppContext();
     const { teacher } = useTeacherAuth();
     const { settings } = useSettings();
+    const pathname = usePathname();
+    const isTeacherPortal = pathname.startsWith('/teacher');
+
     const [name, setName] = useState('');
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [examType, setExamType] = useState<'Single Subject' | 'Full Test' | 'Manual'>('Single Subject');
@@ -52,10 +56,10 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     const { toast } = useToast();
 
     useEffect(() => {
-        if (teacher) {
+        if (isTeacherPortal && teacher) {
             setSelectedTeacherId(teacher.id);
         }
-    }, [teacher]);
+    }, [teacher, isTeacherPortal]);
 
     useEffect(() => {
         if (settings.academicSession) {
@@ -79,13 +83,13 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
     const handleClassChange = (value: string) => {
         setSelectedClassId(value);
         setSelectedSubject(null); 
-        if (!teacher) {
+        if (!isTeacherPortal) {
             setSelectedTeacherId(null);
         }
     }
     
     const availableTeachers = useMemo(() => {
-        if (teacher) return [teacher];
+        if (isTeacherPortal && teacher) return [teacher];
         if (!selectedClassId) return [];
         const currentClass = classes.find(c => c.id === selectedClassId);
         if (!currentClass) return [];
@@ -95,18 +99,18 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
         return teachers.filter(teacher => 
             (teacher.subjects || []).some(subject => subjectsInClass.has(subject))
         );
-    }, [selectedClassId, classes, teachers, teacher]);
+    }, [selectedClassId, classes, teachers, teacher, isTeacherPortal]);
     
     const currentClass = classes.find(c => c.id === selectedClassId);
     
     const availableSubjects = useMemo(() => {
         if (!currentClass) return [];
-        if (teacher) {
+        if (isTeacherPortal && teacher) {
             const teacherSubjectNames = new Set(teacher.subjects);
             return currentClass.subjects.filter(s => teacherSubjectNames.has(s.name));
         }
         return currentClass.subjects;
-    }, [currentClass, teacher]);
+    }, [currentClass, teacher, isTeacherPortal]);
 
 
     const handleSubmit = async () => {
@@ -145,17 +149,17 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             results: [],
             academicSession: academicSession,
             submissionDeadline: submissionDeadline || null,
-            status: teacher ? 'pending' as const : 'approved' as const,
+            status: (isTeacherPortal && teacher) ? 'pending' as const : 'approved' as const,
         };
 
         const result = await createExam(examData);
 
         if(result.success) {
-            const successMessage = teacher 
+            const successMessage = (isTeacherPortal && teacher) 
                 ? `${name} has been submitted for approval.`
                 : `${name} has been successfully created.`;
             toast({
-                title: teacher ? 'Exam Submitted' : 'Exam Created',
+                title: (isTeacherPortal && teacher) ? 'Exam Submitted' : 'Exam Created',
                 description: successMessage,
             });
             onExamCreated(result.id!);
@@ -214,7 +218,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
                 </div>
                  <div className="grid gap-2">
                     <Label htmlFor="teacher">Assign Teacher</Label>
-                    <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId || undefined} disabled={!selectedClassId || !!teacher}>
+                    <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId || undefined} disabled={!selectedClassId || (isTeacherPortal && !!teacher)}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a teacher" />
                         </SelectTrigger>
@@ -323,7 +327,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             </DialogClose>
             <Button type="button" onClick={handleSubmit} disabled={isSaving}>
                 {isSaving && <Loader2 className="animate-spin mr-2"/>}
-                {isSaving ? 'Submitting...' : teacher ? 'Submit for Approval' : 'Create Exam'}
+                {isSaving ? 'Submitting...' : (isTeacherPortal && teacher) ? 'Submit for Approval' : 'Create Exam'}
             </Button>
         </DialogFooter>
       </DialogContent>
