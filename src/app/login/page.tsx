@@ -111,7 +111,7 @@ export default function LoginPage() {
                     <div className="h-20 w-20 mx-auto">
                         <Logo noText={true} />
                     </div>
-                    <h2 className="text-2xl font-bold text-primary uppercase mt-4">
+                    <h2 className="text-2xl font-bold text-foreground uppercase mt-4">
                         {settings.name}
                     </h2>
                 </div>
