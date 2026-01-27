@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { type Exam, type Student } from '@/lib/data';
-import { Printer } from 'lucide-react';
+import { Printer, FileDown } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -202,6 +201,56 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
     printWindow.focus();
     setTimeout(() => printWindow.print(), 500);
   };
+
+  const handleExport = () => {
+    if (!aggregatedResults.length) {
+        toast({ variant: 'destructive', title: 'Cannot Export', description: 'No results to export.' });
+        return;
+    }
+
+    const headers = [
+        'Roll #',
+        'Student Name',
+        "Father's Name",
+        ...allSubjects,
+        'Obtained Marks',
+        'Total Marks',
+        'Percentage',
+    ];
+    if (showPosition) {
+        headers.push('Position');
+    }
+
+    const rows = aggregatedResults.map(student => {
+        const rowData = [
+            student.studentId,
+            `"${student.studentName.replace(/"/g, '""')}"`,
+            `"${student.fatherName.replace(/"/g, '""')}"`,
+            ...allSubjects.map(subject => {
+                const mark = student.marks[subject];
+                return mark ?? '';
+            }),
+            student.totalMarks,
+            totalMaxMarks,
+            `${student.percentage.toFixed(2)}%`,
+        ];
+        if (showPosition) {
+            rowData.push(student.position);
+        }
+        return rowData.join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${groupTitle.replace(/ /g, '_')}_master_sheet.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   
   const footerHtml = useMemo(() => {
     return `
@@ -235,6 +284,10 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2" />
             Print Master Sheet
+          </Button>
+          <Button variant="outline" onClick={handleExport}>
+            <FileDown className="mr-2" />
+            Export as CSV
           </Button>
         </div>
       </div>
