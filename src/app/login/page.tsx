@@ -15,6 +15,7 @@ import { getSettings } from '@/lib/firebase/firestore';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { ForgotPasswordDialog } from '@/components/login/forgot-password-dialog';
+import { Logo } from '@/components/logo';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
@@ -114,6 +115,9 @@ export default function LoginPage() {
                 {/* Right Side */}
                 <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
                     <div className="w-full max-w-sm mx-auto">
+                        <div className="flex justify-center mb-4 h-12">
+                            <Logo />
+                        </div>
                         <div className="flex justify-center mb-6">
                             <div className="bg-gray-200 dark:bg-slate-700 p-1 rounded-full flex gap-1">
                                 <Button onClick={() => handleToggle('admin')} variant={loginType === 'admin' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'admin' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Admin</Button>
