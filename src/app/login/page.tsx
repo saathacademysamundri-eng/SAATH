@@ -112,8 +112,7 @@ export default function LoginPage() {
                     <Image src="https://i.postimg.cc/qR8FfG4B/3d-render-education-illustration-student-items-on-white-background-B-T-W-s-removebg-preview.png" width={400} height={400} alt="Education Items" className="object-contain" />
                 </div>
                 {/* Right Side */}
-                <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center relative">
-                    <Image src="https://i.postimg.cc/L8y28m4N/3d-cartoon-character-pointing-finger-at-copy-space-side-isolated-on-white-background-3d-renderin.png" width={200} height={200} alt="Character" className="absolute bottom-0 -right-16 w-48 h-auto hidden lg:block" />
+                <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
                     <div className="w-full max-w-sm mx-auto">
                         <div className="flex justify-center mb-6">
                             <div className="bg-gray-200 dark:bg-slate-700 p-1 rounded-full flex gap-1">
@@ -123,7 +122,7 @@ export default function LoginPage() {
                         </div>
                         <h2 className="text-2xl font-bold text-center mb-2">LOG IN</h2>
                         <p className="text-center text-muted-foreground mb-8">
-                           Sign in to your {loginType} account.
+                           Welcome back! Please sign in to continue.
                         </p>
                         
                         <form className="space-y-4" onSubmit={handleSubmit}>
