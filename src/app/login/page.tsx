@@ -12,20 +12,9 @@ import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence, signOut } from 'firebase/auth';
 import { getSettings } from '@/lib/firebase/firestore';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { ForgotPasswordDialog } from '@/components/login/forgot-password-dialog';
 import { Logo } from '@/components/logo';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
-} from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
@@ -45,10 +34,6 @@ export default function LoginPage() {
     
     const router = useRouter();
     const { toast } = useToast();
-
-    const carouselImages = PlaceHolderImages.filter(img => 
-        ['elevate-experience', 'cta-image-1', 'cta-image-2', 'benefit-explore', 'group-classes', 'online-classes'].includes(img.id)
-    );
 
     useEffect(() => {
         setIsClient(true);
@@ -121,96 +106,50 @@ export default function LoginPage() {
 
     return (
         <main className="min-h-screen bg-gray-100 dark:bg-slate-900 flex flex-col items-center justify-center p-4">
-            <div className="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl flex min-h-[600px] overflow-hidden">
-                {/* Left Side */}
-                <div className="w-1/2 hidden md:flex flex-col items-center justify-center space-y-8 p-8 bg-gray-50 dark:bg-slate-800">
-                    <div className="h-20">
+            <div className="w-full max-w-sm">
+                <div className="mb-8 text-center">
+                    <div className="h-20 w-20 mx-auto">
                         <Logo noText={true} />
                     </div>
-                    
-                    <h2 className="text-2xl font-bold text-center text-primary uppercase">
+                    <h2 className="text-2xl font-bold text-primary uppercase mt-4">
                         {settings.name}
                     </h2>
-
-                    <Carousel
-                        className="w-full max-w-xs"
-                        plugins={[
-                        Autoplay({
-                            delay: 2000,
-                        }),
-                        ]}
-                    >
-                        <CarouselContent>
-                        {carouselImages.map((image, index) => (
-                            <CarouselItem key={index}>
-                            <div className="p-1">
-                                <Card>
-                                <CardContent className="flex aspect-square items-center justify-center p-0 rounded-lg overflow-hidden">
-                                    <Image
-                                        src={image.imageUrl}
-                                        alt={image.description}
-                                        width={400}
-                                        height={400}
-                                        className="w-full h-full object-cover"
-                                        data-ai-hint={image.imageHint}
-                                    />
-                                </CardContent>
-                                </Card>
-                            </div>
-                            </CarouselItem>
-                        ))}
-                        </CarouselContent>
-                        <CarouselPrevious />
-                        <CarouselNext />
-                    </Carousel>
                 </div>
-                {/* Right Side */}
-                <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
-                    <div className="md:hidden mb-8 text-center">
-                        <div className="h-20 w-20 mx-auto">
-                            <Logo noText={true} />
+                
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8">
+                    <div className="flex justify-center mb-6">
+                        <div className="bg-gray-200 dark:bg-slate-700 p-1 rounded-full flex gap-1">
+                            <Button onClick={() => handleToggle('admin')} variant={loginType === 'admin' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'admin' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Admin</Button>
+                            <Button onClick={() => handleToggle('teacher')} variant={loginType === 'teacher' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'teacher' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Teacher</Button>
                         </div>
-                        <h2 className="text-2xl font-bold text-primary uppercase mt-4">
-                            {settings.name}
-                        </h2>
                     </div>
-
-                    <div className="w-full max-w-sm mx-auto">
-                        
-                        <div className="flex justify-center mb-6">
-                            <div className="bg-gray-200 dark:bg-slate-700 p-1 rounded-full flex gap-1">
-                                <Button onClick={() => handleToggle('admin')} variant={loginType === 'admin' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'admin' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Admin</Button>
-                                <Button onClick={() => handleToggle('teacher')} variant={loginType === 'teacher' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'teacher' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Teacher</Button>
+                    <h2 className="text-2xl font-bold text-center mb-2">LOG IN</h2>
+                    <p className="text-center text-muted-foreground mb-8">
+                        Welcome back! Please sign in to continue.
+                    </p>
+                    
+                    <form className="space-y-4" onSubmit={handleSubmit}>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email Address</Label>
+                            <Input id="email" type="email" placeholder={`${loginType}@example.com`} value={email} onChange={(e) => setEmail(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Password</Label>
+                            <div className="relative">
+                                <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">
+                                    {showPassword ? <EyeOff /> : <Eye />}
+                                </button>
                             </div>
                         </div>
-                        <h2 className="text-2xl font-bold text-center mb-2">LOG IN</h2>
-                        <p className="text-center text-muted-foreground mb-8">
-                           Welcome back! Please sign in to continue.
-                        </p>
-                        
-                        <form className="space-y-4" onSubmit={handleSubmit}>
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email Address</Label>
-                                <Input id="email" type="email" placeholder={`${loginType}@example.com`} value={email} onChange={(e) => setEmail(e.target.value)} required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
-                                <div className="relative">
-                                    <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">
-                                        {showPassword ? <EyeOff /> : <Eye />}
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <ForgotPasswordDialog />
-                            </div>
-                            <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Log In
-                            </Button>
-                        </form>
-                    </div>
+                        <div className="text-right">
+                            <ForgotPasswordDialog />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Log In
+                        </Button>
+                    </form>
                 </div>
             </div>
         </main>
