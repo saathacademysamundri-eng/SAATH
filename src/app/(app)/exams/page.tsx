@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -241,6 +240,33 @@ export default function ExamsPage() {
         </TabsList>
         <TabsContent value="overview">
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+            <div className="space-y-6 lg:order-last">
+               <Card>
+                 <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="lg">
+                        <PlusCircle className="mr-2" />
+                        Create New Exam
+                      </Button>
+                    </DialogTrigger>
+                    <CreateExamDialog onExamCreated={handleExamCreated} />
+                  </Dialog>
+                  <Dialog open={isBlankSheetDialogOpen} onOpenChange={setIsBlankSheetDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="secondary" size="lg">
+                            <File className="mr-2" />
+                            Print Blank Marks Sheet
+                        </Button>
+                    </DialogTrigger>
+                    <BlankSheetDialog />
+                  </Dialog>
+                </CardContent>
+              </Card>
+            </div>
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
@@ -305,34 +331,6 @@ export default function ExamsPage() {
                       )}
                     </TableBody>
                   </Table>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="space-y-6">
-               <Card>
-                 <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="lg">
-                        <PlusCircle className="mr-2" />
-                        Create New Exam
-                      </Button>
-                    </DialogTrigger>
-                    <CreateExamDialog onExamCreated={handleExamCreated} />
-                  </Dialog>
-                  <Dialog open={isBlankSheetDialogOpen} onOpenChange={setIsBlankSheetDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="secondary" size="lg">
-                            <File className="mr-2" />
-                            Print Blank Marks Sheet
-                        </Button>
-                    </DialogTrigger>
-                    <BlankSheetDialog />
-                  </Dialog>
                 </CardContent>
               </Card>
             </div>
