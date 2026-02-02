@@ -73,67 +73,59 @@ export default function TeacherProfilePage() {
     const isNewTeacher = payoutData.length === 0;
     const currentMonthKey = format(new Date(), 'yyyy-MM');
     
-    // Filter for income that has NOT been paid out to THIS teacher
     const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
 
-    const earningsByMonth: { [key: string]: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> & { year: number, monthIndex: number } } = {};
+    const currentCycleData: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> = {
+        totalGross: 0,
+        teacherShare: 0,
+        academyShare: 0,
+        studentEarnings: [],
+    };
 
     unpaidIncome.forEach(inc => {
         const monthKey = format(inc.date, 'yyyy-MM');
-
-        // For a new teacher (no payout history), skip processing any income
-        // that was received in a month prior to the current month.
-        // This prevents new teachers from earning from old, pre-existing unpaid fees.
         if (isNewTeacher && monthKey < currentMonthKey) {
             return;
         }
-        
+
         const student = students.find(s => s.id === inc.studentId);
         if (student) {
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
             if (relevantSubjects.length > 0) {
-                 relevantSubjects.forEach(subject => {
+                relevantSubjects.forEach(subject => {
                     const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
                     if (student.monthlyFee > 0) {
-                      const proportion = feeShareForSubject / student.monthlyFee;
-                      const earnedShare = inc.amount * proportion;
-                      
-                      if (!earningsByMonth[monthKey]) {
-                          earningsByMonth[monthKey] = {
-                              totalGross: 0,
-                              teacherShare: 0,
-                              academyShare: 0,
-                              studentEarnings: [],
-                              year: getYear(inc.date),
-                              monthIndex: getMonth(inc.date),
-                          };
-                      }
+                        const proportion = feeShareForSubject / student.monthlyFee;
+                        const earnedShare = inc.amount * proportion;
 
-                      earningsByMonth[monthKey].totalGross += earnedShare;
-                      earningsByMonth[monthKey].studentEarnings.push({
-                          student: student,
-                          earnedShare: earnedShare,
-                          subjectName: subject.subject_name,
-                          incomeId: inc.id,
-                          incomeDate: inc.date,
-                      });
+                        currentCycleData.totalGross += earnedShare;
+                        currentCycleData.studentEarnings.push({
+                            student: student,
+                            earnedShare: earnedShare,
+                            subjectName: subject.subject_name,
+                            incomeId: inc.id,
+                            incomeDate: inc.date,
+                        });
                     }
-                 });
+                });
             }
         }
     });
 
-    const finalMonthlyEarnings: MonthlyEarnings[] = Object.keys(earningsByMonth).map(key => {
-      const data = earningsByMonth[key];
-      return {
-        ...data,
-        month: format(new Date(data.year, data.monthIndex), 'MMMM yyyy'),
-        teacherShare: data.totalGross * 0.7,
-        academyShare: data.totalGross * 0.3,
-      };
-    }).sort((a,b) => b.year - a.year || b.monthIndex - a.monthIndex);
+    currentCycleData.teacherShare = currentCycleData.totalGross * 0.7;
+    currentCycleData.academyShare = currentCycleData.totalGross * 0.3;
+
+    const finalEarnings: MonthlyEarnings[] = [];
+    if (currentCycleData.totalGross > 0) {
+        finalEarnings.push({
+            ...currentCycleData,
+            month: 'Current Earnings Cycle',
+            year: new Date().getFullYear(),
+            monthIndex: new Date().getMonth(),
+        });
+    }
     
-    setMonthlyEarnings(finalMonthlyEarnings);
+    setMonthlyEarnings(finalEarnings);
 
     setLoading(false);
   }, [teacherId, teachers, students, income, isAppLoading]);
@@ -417,12 +409,12 @@ export default function TeacherProfilePage() {
             <TabsContent value="earnings" className="mt-4">
                <Card>
                 <CardHeader>
-                    <CardTitle>Unpaid Earnings by Month</CardTitle>
-                    <CardDescription>Earnings from collected student fees, grouped by the month the fee was for.</CardDescription>
+                    <CardTitle>Unpaid Earnings</CardTitle>
+                    <CardDescription>Aggregated earnings from all collected student fees that have not yet been paid out.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {monthlyEarnings.length > 0 ? (
-                        <Accordion type="single" collapsible className="w-full">
+                        <Accordion type="single" collapsible className="w-full" defaultValue={monthlyEarnings[0].month}>
                             {monthlyEarnings.map(monthData => (
                                 <AccordionItem value={monthData.month} key={monthData.month}>
                                     <AccordionTrigger>
@@ -477,7 +469,7 @@ export default function TeacherProfilePage() {
                                                 </Button>
                                                  <Button onClick={() => handlePayout(monthData)} disabled={payingMonth === monthData.month || monthData.teacherShare <= 0}>
                                                     {payingMonth === monthData.month ? <Loader2 className="mr-2 animate-spin" /> : <Wallet className="mr-2" />}
-                                                    {payingMonth === monthData.month ? 'Processing...' : `Pay ${monthData.month}`}
+                                                    {payingMonth === monthData.month ? 'Processing...' : `Pay Out Cycle`}
                                                 </Button>
                                             </div>
                                         </div>
