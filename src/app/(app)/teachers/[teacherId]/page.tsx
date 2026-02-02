@@ -69,12 +69,27 @@ export default function TeacherProfilePage() {
     
     setTeacher(teacherData);
     
+    const payoutData = await getTeacherPayouts(teacherId);
+    setPayouts(payoutData);
+
+    const isNewTeacher = payoutData.length === 0;
+    const currentMonthKey = format(new Date(), 'yyyy-MM');
+    
     // Filter for income that has NOT been paid out to THIS teacher
     const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
 
     const earningsByMonth: { [key: string]: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> & { year: number, monthIndex: number } } = {};
 
     unpaidIncome.forEach(inc => {
+        const monthKey = format(inc.date, 'yyyy-MM');
+
+        // For a new teacher (no payout history), skip processing any income
+        // that was received in a month prior to the current month.
+        // This prevents new teachers from earning from old, pre-existing unpaid fees.
+        if (isNewTeacher && monthKey < currentMonthKey) {
+            return;
+        }
+        
         const student = students.find(s => s.id === inc.studentId);
         if (student) {
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
@@ -85,7 +100,6 @@ export default function TeacherProfilePage() {
                       const proportion = feeShareForSubject / student.monthlyFee;
                       const earnedShare = inc.amount * proportion;
                       
-                      const monthKey = format(inc.date, 'yyyy-MM');
                       if (!earningsByMonth[monthKey]) {
                           earningsByMonth[monthKey] = {
                               totalGross: 0,
@@ -122,9 +136,6 @@ export default function TeacherProfilePage() {
     }).sort((a,b) => b.year - a.year || b.monthIndex - a.monthIndex);
     
     setMonthlyEarnings(finalMonthlyEarnings);
-
-    const payoutData = await getTeacherPayouts(teacherId);
-    setPayouts(payoutData);
 
     setLoading(false);
   }, [teacherId, teachers, students, income, isAppLoading]);
@@ -320,23 +331,23 @@ export default function TeacherProfilePage() {
 
   if (loading || isAppLoading) {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Skeleton className="h-20 w-20 rounded-lg" />
-                <div className="space-y-2">
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-4 w-32" />
+        <div class="space-y-6">
+            <div class="flex items-center gap-4">
+                <Skeleton class="h-20 w-20 rounded-lg" />
+                <div class="space-y-2">
+                    <Skeleton class="h-6 w-48" />
+                    <Skeleton class="h-4 w-32" />
                 </div>
             </div>
             <Card>
                 <CardHeader>
-                    <Skeleton className="h-8 w-1/2" />
+                    <Skeleton class="h-8 w-1/2" />
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
+                    <div class="space-y-4">
+                        <Skeleton class="h-10 w-full" />
+                        <Skeleton class="h-10 w-full" />
+                        <Skeleton class="h-10 w-full" />
                     </div>
                 </CardContent>
             </Card>
@@ -346,15 +357,15 @@ export default function TeacherProfilePage() {
 
   if (!teacher) {
     return (
-      <div className="text-center py-10">
-        <h2 className="text-2xl font-bold">Teacher not found</h2>
-        <p className="text-muted-foreground">The teacher with ID "{teacherId}" could not be found.</p>
+      <div class="text-center py-10">
+        <h2 class="text-2xl font-bold">Teacher not found</h2>
+        <p class="text-muted-foreground">The teacher with ID "{teacherId}" could not be found.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div class="flex flex-col gap-6">
       <TeacherEarningsClient 
         teacherId={teacher.id} 
         teacherName={teacher.name}
@@ -363,16 +374,16 @@ export default function TeacherProfilePage() {
       
       <div id="print-area">
         <Card>
-            <CardHeader className='flex-row items-center gap-4 space-y-0 pb-4'>
-                <Avatar className="h-20 w-20">
+            <CardHeader class='flex-row items-center gap-4 space-y-0 pb-4'>
+                <Avatar class="h-20 w-20">
                     <AvatarFallback>{teacher.name.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className='grid gap-1'>
-                    <CardTitle className="text-2xl">{teacher.name}</CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                        <Phone className="h-4 w-4" /> {teacher.phone}
+                <div class='grid gap-1'>
+                    <CardTitle class="text-2xl">{teacher.name}</CardTitle>
+                    <CardDescription class="flex items-center gap-2">
+                        <Phone class="h-4 w-4" /> {teacher.phone}
                     </CardDescription>
-                    <div className="flex flex-wrap gap-2 pt-2">
+                    <div class="flex flex-wrap gap-2 pt-2">
                         {teacher.subjects && teacher.subjects.map(subject => (
                             <Badge key={subject} variant="secondary">{subject}</Badge>
                         ))}
@@ -381,13 +392,13 @@ export default function TeacherProfilePage() {
             </CardHeader>
         </Card>
         
-        <Tabs defaultValue="earnings" className="mt-4">
-            <TabsList className="print:hidden grid w-full grid-cols-3">
+        <Tabs defaultValue="earnings" class="mt-4">
+            <TabsList class="print:hidden grid w-full grid-cols-3">
                 <TabsTrigger value="earnings">Current Earnings</TabsTrigger>
                 <TabsTrigger value="payouts">Payout History</TabsTrigger>
                 <TabsTrigger value="profile">Profile Details</TabsTrigger>
             </TabsList>
-            <TabsContent value="earnings" className="mt-4">
+            <TabsContent value="earnings" class="mt-4">
                <Card>
                 <CardHeader>
                     <CardTitle>Unpaid Earnings by Month</CardTitle>
@@ -395,29 +406,29 @@ export default function TeacherProfilePage() {
                 </CardHeader>
                 <CardContent>
                     {monthlyEarnings.length > 0 ? (
-                        <Accordion type="single" collapsible className="w-full">
+                        <Accordion type="single" collapsible class="w-full">
                             {monthlyEarnings.map(monthData => (
                                 <AccordionItem value={monthData.month} key={monthData.month}>
                                     <AccordionTrigger>
-                                        <div className="flex justify-between w-full pr-4">
-                                            <span className="text-lg font-semibold">{monthData.month}</span>
-                                            <span className="text-lg font-bold text-green-600">{monthData.teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</span>
+                                        <div class="flex justify-between w-full pr-4">
+                                            <span class="text-lg font-semibold">{monthData.month}</span>
+                                            <span class="text-lg font-bold text-green-600">{monthData.teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</span>
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent>
-                                        <div className="p-4 bg-muted/50 rounded-md">
-                                            <div className="grid grid-cols-3 gap-4 text-center mb-4">
+                                        <div class="p-4 bg-muted/50 rounded-md">
+                                            <div class="grid grid-cols-3 gap-4 text-center mb-4">
                                                 <div>
-                                                    <p className="text-sm text-muted-foreground">Gross Earnings</p>
-                                                    <p className="font-bold text-lg">{monthData.totalGross.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                    <p class="text-sm text-muted-foreground">Gross Earnings</p>
+                                                    <p class="font-bold text-lg">{monthData.totalGross.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm text-muted-foreground">Teacher's Share (70%)</p>
-                                                    <p className="font-bold text-lg text-green-600">{monthData.teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                    <p class="text-sm text-muted-foreground">Teacher's Share (70%)</p>
+                                                    <p class="font-bold text-lg text-green-600">{monthData.teacherShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm text-muted-foreground">Academy's Share (30%)</p>
-                                                    <p className="font-bold text-lg text-blue-600">{monthData.academyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                    <p class="text-sm text-muted-foreground">Academy's Share (30%)</p>
+                                                    <p class="font-bold text-lg text-blue-600">{monthData.academyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                                 </div>
                                             </div>
                                              <Table>
@@ -426,26 +437,26 @@ export default function TeacherProfilePage() {
                                                         <TableHead>Student</TableHead>
                                                         <TableHead>Fee Date</TableHead>
                                                         <TableHead>Subject</TableHead>
-                                                        <TableHead className="text-right">Share from Fee</TableHead>
+                                                        <TableHead class="text-right">Share from Fee</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
                                                     {monthData.studentEarnings.map(({ student, earnedShare, subjectName, incomeId, incomeDate }, index) => (
                                                         <TableRow key={`${incomeId}-${index}`}>
                                                             <TableCell>
-                                                                <div className="font-medium">{student.name}</div>
-                                                                <div className="text-xs text-muted-foreground">{student.id}</div>
+                                                                <div class="font-medium">{student.name}</div>
+                                                                <div class="text-xs text-muted-foreground">{student.id}</div>
                                                             </TableCell>
                                                             <TableCell>{format(incomeDate, 'PPP')}</TableCell>
                                                             <TableCell>{subjectName}</TableCell>
-                                                            <TableCell className="text-right">{earnedShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
+                                                            <TableCell class="text-right">{earnedShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
                                                         </TableRow>
                                                     ))}
                                                 </TableBody>
                                             </Table>
-                                            <div className="mt-4 flex justify-end">
+                                            <div class="mt-4 flex justify-end">
                                                  <Button onClick={() => handlePayout(monthData)} disabled={payingMonth === monthData.month || monthData.teacherShare <= 0}>
-                                                    {payingMonth === monthData.month ? <Loader2 className="mr-2 animate-spin" /> : <Wallet className="mr-2" />}
+                                                    {payingMonth === monthData.month ? <Loader2 class="mr-2 animate-spin" /> : <Wallet class="mr-2" />}
                                                     {payingMonth === monthData.month ? 'Processing...' : `Pay ${monthData.month}`}
                                                 </Button>
                                             </div>
@@ -455,7 +466,7 @@ export default function TeacherProfilePage() {
                             ))}
                         </Accordion>
                     ) : (
-                         <div className="text-center text-muted-foreground h-24 flex items-center justify-center">
+                         <div class="text-center text-muted-foreground h-24 flex items-center justify-center">
                             No unpaid earnings for this teacher.
                         </div>
                     )}
@@ -474,7 +485,7 @@ export default function TeacherProfilePage() {
                                 <TableRow>
                                     <TableHead>Payout Date</TableHead>
                                     <TableHead>Amount Paid</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead class="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -482,16 +493,16 @@ export default function TeacherProfilePage() {
                                     payouts.map((payout) => (
                                         <TableRow key={payout.id}>
                                             <TableCell>{format(payout.payoutDate, 'PPP')}</TableCell>
-                                            <TableCell className="font-medium">{payout.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
-                                            <TableCell className="text-right space-x-2">
+                                            <TableCell class="font-medium">{payout.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</TableCell>
+                                            <TableCell class="text-right space-x-2">
                                                 <Button variant="outline" size="sm" onClick={() => handlePrintHistory(payout)} disabled={!payout.report || isSettingsLoading}>
-                                                    <Printer className="mr-2 h-4 w-4" />
+                                                    <Printer class="mr-2 h-4 w-4" />
                                                     Print
                                                 </Button>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
                                                         <Button variant="destructive" size="sm" disabled={deletingPayoutId === payout.id}>
-                                                             {deletingPayoutId === payout.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                                             {deletingPayoutId === payout.id ? <Loader2 class="mr-2 h-4 w-4 animate-spin" /> : <Trash2 class="mr-2 h-4 w-4" />}
                                                              Delete
                                                         </Button>
                                                     </AlertDialogTrigger>
@@ -499,12 +510,12 @@ export default function TeacherProfilePage() {
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>Reverse Payout?</AlertDialogTitle>
                                                             <AlertDialogDescription>
-                                                                This action will permanently reverse the payout of <span className="font-bold">{payout.amount.toLocaleString()} PKR</span> made on <span className="font-bold">{format(payout.payoutDate, 'PPP')}</span>. The associated income will be marked as unpaid again. This cannot be undone.
+                                                                This action will permanently reverse the payout of <span class="font-bold">{payout.amount.toLocaleString()} PKR</span> made on <span class="font-bold">{format(payout.payoutDate, 'PPP')}</span>. The associated income will be marked as unpaid again. This cannot be undone.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeletePayout(payout)} className="bg-destructive hover:bg-destructive/90">
+                                                            <AlertDialogAction onClick={() => handleDeletePayout(payout)} class="bg-destructive hover:bg-destructive/90">
                                                                 Confirm Reversal
                                                             </AlertDialogAction>
                                                         </AlertDialogFooter>
@@ -515,7 +526,7 @@ export default function TeacherProfilePage() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                                        <TableCell colSpan={3} class="h-24 text-center text-muted-foreground">
                                             No payout history for this teacher.
                                         </TableCell>
                                     </TableRow>
@@ -531,40 +542,40 @@ export default function TeacherProfilePage() {
                         <CardTitle>Teacher Information</CardTitle>
                         <CardDescription>Personal and contact details for {teacher.name}.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex items-center gap-3 rounded-md border p-3">
-                                <User className="h-5 w-5 text-muted-foreground" />
+                    <CardContent class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex items-center gap-3 rounded-md border p-3">
+                                <User class="h-5 w-5 text-muted-foreground" />
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Father's Name</p>
-                                    <p className="font-medium">{teacher.fatherName}</p>
+                                    <p class="text-sm text-muted-foreground">Father's Name</p>
+                                    <p class="font-medium">{teacher.fatherName}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 rounded-md border p-3">
-                                <Phone className="h-5 w-5 text-muted-foreground" />
+                            <div class="flex items-center gap-3 rounded-md border p-3">
+                                <Phone class="h-5 w-5 text-muted-foreground" />
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Phone</p>
-                                    <p className="font-medium">{teacher.phone}</p>
+                                    <p class="text-sm text-muted-foreground">Phone</p>
+                                    <p class="font-medium">{teacher.phone}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 rounded-md border p-3">
-                                <Mail className="h-5 w-5 text-muted-foreground" />
+                            <div class="flex items-center gap-3 rounded-md border p-3">
+                                <Mail class="h-5 w-5 text-muted-foreground" />
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Email</p>
-                                    <p className="font-medium">{teacher.email || 'Not provided'}</p>
+                                    <p class="text-sm text-muted-foreground">Email</p>
+                                    <p class="font-medium">{teacher.email || 'Not provided'}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 rounded-md border p-3">
-                                <Home className="h-5 w-5 text-muted-foreground" />
+                            <div class="flex items-center gap-3 rounded-md border p-3">
+                                <Home class="h-5 w-5 text-muted-foreground" />
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Address</p>
-                                    <p className="font-medium">{teacher.address}</p>
+                                    <p class="text-sm text-muted-foreground">Address</p>
+                                    <p class="font-medium">{teacher.address}</p>
                                 </div>
                             </div>
                         </div>
                          <div>
-                            <p className="text-sm font-medium mb-2">Subjects Taught</p>
-                            <div className="flex flex-wrap gap-2">
+                            <p class="text-sm font-medium mb-2">Subjects Taught</p>
+                            <div class="flex flex-wrap gap-2">
                                 {teacher.subjects && teacher.subjects.map(subject => (
                                     <Badge key={subject} variant="secondary">{subject}</Badge>
                                 ))}
