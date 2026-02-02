@@ -384,11 +384,11 @@ export async function checkAndGenerateMonthlyFees() {
             const studentRef = studentDoc.ref;
             
             const newTotalFee = student.totalFee + student.monthlyFee;
-            const newStatus: Student['feeStatus'] = newTotalFee > 0 ? (newTotalFee < studentData.totalFee ? 'Partial' : 'Pending') : 'Paid';
+            const newFeeStatus: Student['feeStatus'] = newTotalFee > 0 ? 'Pending' : 'Paid';
 
             batch.update(studentRef, {
                 totalFee: newTotalFee,
-                feeStatus: newStatus,
+                feeStatus: newFeeStatus,
             });
         });
         
@@ -1636,5 +1636,6 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+
 
 
