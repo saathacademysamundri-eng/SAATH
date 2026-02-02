@@ -71,7 +71,6 @@ export default function TeacherProfilePage() {
     setPayouts(payoutData);
 
     const isNewTeacher = payoutData.length === 0;
-    const currentMonthKey = format(new Date(), 'yyyy-MM');
     
     const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
 
@@ -83,11 +82,6 @@ export default function TeacherProfilePage() {
     };
 
     unpaidIncome.forEach(inc => {
-        const monthKey = format(inc.date, 'yyyy-MM');
-        if (isNewTeacher && monthKey < currentMonthKey) {
-            return;
-        }
-
         const student = students.find(s => s.id === inc.studentId);
         if (student) {
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
@@ -96,16 +90,29 @@ export default function TeacherProfilePage() {
                     const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
                     if (student.monthlyFee > 0) {
                         const proportion = feeShareForSubject / student.monthlyFee;
-                        const earnedShare = inc.amount * proportion;
+                        
+                        let earnableAmount = inc.amount;
+                        if (isNewTeacher) {
+                            const balanceBeforeThisPayment = student.totalFee + inc.amount;
+                            const oldDebt = balanceBeforeThisPayment - student.monthlyFee;
 
-                        currentCycleData.totalGross += earnedShare;
-                        currentCycleData.studentEarnings.push({
-                            student: student,
-                            earnedShare: earnedShare,
-                            subjectName: subject.subject_name,
-                            incomeId: inc.id,
-                            incomeDate: inc.date,
-                        });
+                            if (oldDebt > 0) {
+                                earnableAmount = Math.max(0, inc.amount - oldDebt);
+                            }
+                        }
+
+                        const earnedShare = earnableAmount * proportion;
+
+                        if (earnedShare > 0) {
+                           currentCycleData.totalGross += earnedShare;
+                           currentCycleData.studentEarnings.push({
+                               student: student,
+                               earnedShare: earnedShare,
+                               subjectName: subject.subject_name,
+                               incomeId: inc.id,
+                               incomeDate: inc.date,
+                           });
+                        }
                     }
                 });
             }
@@ -346,23 +353,23 @@ export default function TeacherProfilePage() {
 
   if (loading || isAppLoading) {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Skeleton className="h-20 w-20 rounded-lg" />
-                <div className="space-y-2">
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-4 w-32" />
+        <div class="space-y-6">
+            <div class="flex items-center gap-4">
+                <Skeleton class="h-20 w-20 rounded-lg" />
+                <div class="space-y-2">
+                    <Skeleton class="h-6 w-48" />
+                    <Skeleton class="h-4 w-32" />
                 </div>
             </div>
             <Card>
                 <CardHeader>
-                    <Skeleton className="h-8 w-1/2" />
+                    <Skeleton class="h-8 w-1/2" />
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
+                    <div class="space-y-4">
+                        <Skeleton class="h-10 w-full" />
+                        <Skeleton class="h-10 w-full" />
+                        <Skeleton class="h-10 w-full" />
                     </div>
                 </CardContent>
             </Card>
