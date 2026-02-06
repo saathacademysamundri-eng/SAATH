@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -15,7 +14,7 @@ import { useParams } from 'next/navigation';
 import { useAppContext } from '@/hooks/use-app-context';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { format, getMonth, getYear } from 'date-fns';
+import { format, getMonth, getYear, startOfMonth, endOfMonth } from 'date-fns';
 import { useSettings } from '@/hooks/use-settings';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -72,7 +71,13 @@ export default function TeacherProfilePage() {
 
     const isNewTeacher = payoutData.length === 0;
     
-    const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
+    let unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
+
+    // If it's a brand new teacher, strictly limit to income records from the current month onwards
+    if (isNewTeacher) {
+        const startOfCurrentMonth = startOfMonth(new Date());
+        unpaidIncome = unpaidIncome.filter(i => i.date >= startOfCurrentMonth);
+    }
 
     const currentCycleData: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> = {
         totalGross: 0,
@@ -87,11 +92,13 @@ export default function TeacherProfilePage() {
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
             if (relevantSubjects.length > 0) {
                 relevantSubjects.forEach(subject => {
-                    const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                    const feeShareForSubject = subject.fee_share || 0;
                     if (student.monthlyFee > 0) {
                         const proportion = feeShareForSubject / student.monthlyFee;
                         
                         let earnableAmount = inc.amount;
+                        
+                        // Rule: A new teacher should not earn from historical student debt
                         if (isNewTeacher) {
                             const balanceBeforeThisPayment = student.totalFee + inc.amount;
                             const oldDebt = balanceBeforeThisPayment - student.monthlyFee;
@@ -353,23 +360,23 @@ export default function TeacherProfilePage() {
 
   if (loading || isAppLoading) {
     return (
-        <div class="space-y-6">
-            <div class="flex items-center gap-4">
-                <Skeleton class="h-20 w-20 rounded-lg" />
-                <div class="space-y-2">
-                    <Skeleton class="h-6 w-48" />
-                    <Skeleton class="h-4 w-32" />
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
+                <Skeleton className="h-20 w-20 rounded-lg" />
+                <div className="space-y-2">
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-32" />
                 </div>
             </div>
             <Card>
                 <CardHeader>
-                    <Skeleton class="h-8 w-1/2" />
+                    <Skeleton className="h-8 w-1/2" />
                 </CardHeader>
                 <CardContent>
-                    <div class="space-y-4">
-                        <Skeleton class="h-10 w-full" />
-                        <Skeleton class="h-10 w-full" />
-                        <Skeleton class="h-10 w-full" />
+                    <div className="space-y-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
                     </div>
                 </CardContent>
             </Card>
