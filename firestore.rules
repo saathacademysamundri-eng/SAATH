@@ -15,7 +15,9 @@ service cloud.firestore {
 
     // Rules for specific collections
     match /students/{studentId} {
-      allow read, write: if isAuthenticated();
+      // Allow public get for the search APIs
+      allow get: if true;
+      allow list, write: if isAuthenticated();
     }
     match /teachers/{teacherId} {
       allow read, write: if isAuthenticated();
@@ -24,7 +26,9 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
     match /income/{incomeId} {
-       allow read, write: if isAuthenticated();
+       // Allow public list for the ledger search
+       allow list: if true;
+       allow get, write: if isAuthenticated();
     }
     match /expenses/{expenseId} {
        allow read, write: if isAuthenticated();
@@ -39,9 +43,9 @@ service cloud.firestore {
         allow read, write: if isAuthenticated();
     }
     match /exams/{examId} {
+      // Allow public list for the results search
+      allow list: if true;
       allow get, write: if isAuthenticated();
-      // Allow a teacher to list exams assigned to them.
-      allow list: if isAuthenticated();
     }
     match /attendance/{attendanceId} {
        allow read, write: if isAuthenticated();
