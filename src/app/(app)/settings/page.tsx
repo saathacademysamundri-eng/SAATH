@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History, Archive, GraduationCap, DollarSign, RefreshCw, Link as LinkIcon, Code } from 'lucide-react';
+import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History, Archive, GraduationCap, DollarSign, RefreshCw, Link as LinkIcon, Code, Award } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { seedDatabase, clearActivityHistory, getRecentActivities, syncTeacherAuthAccounts } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
