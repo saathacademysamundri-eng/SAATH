@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getStudent, getExamsForStudent } from '@/lib/firebase/firestore';
 import { Student, Exam } from '@/lib/data';
-import { Search, Loader2, Award, BookOpen, AlertCircle, GraduationCap, Printer, Medal, ChevronRight } from 'lucide-react';
+import { Search, Loader2, Award, BookOpen, AlertCircle, GraduationCap, Printer, Medal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -31,15 +31,11 @@ export default function PublicResultsSearchPage() {
       const searchTerm = rollNo.trim().toUpperCase();
       let searchId = searchTerm;
       
-      // Handle numeric input by trying to match S00X format
       if (/^\d+$/.test(searchTerm)) {
         searchId = `S${searchTerm.padStart(3, '0')}`;
       }
 
-      // Try searching with normalized ID
       let studentData = await getStudent(searchId);
-      
-      // Fallback: If not found, try searching with exact raw input
       if (!studentData && searchId !== searchTerm) {
         studentData = await getStudent(searchTerm);
       }
@@ -49,11 +45,11 @@ export default function PublicResultsSearchPage() {
         const examsData = await getExamsForStudent(studentData.id);
         setExams(examsData);
       } else {
-        setError('No student record found for this Roll Number. Please check your card and try again.');
+        setError('No student record found. Please verify your Roll Number.');
       }
     } catch (err) {
       console.error('Search error:', err);
-      setError('A connection error occurred. Please refresh and try again.');
+      setError('A connection error occurred. Please try again in a moment.');
     } finally {
       setLoading(false);
     }
@@ -98,14 +94,14 @@ export default function PublicResultsSearchPage() {
                 className="text-lg h-16 pl-12 border-2 border-slate-100 focus:border-[#1e40af] focus:ring-[#1e40af]/10 rounded-2xl bg-slate-50/50 font-semibold text-slate-900"
               />
             </div>
-            <Button 
+            <button 
               onClick={handleSearch} 
               disabled={loading} 
-              className="h-16 px-10 text-lg font-bold rounded-2xl bg-[#1e40af] hover:bg-[#1e40af]/90 shadow-lg shadow-blue-900/20 transition-all active:scale-95"
+              className="h-16 px-10 text-lg font-bold rounded-2xl bg-[#1e40af] text-white hover:bg-[#1e3a8a] shadow-lg shadow-blue-900/20 transition-all active:scale-95 flex items-center justify-center"
             >
               {loading ? <Loader2 className="animate-spin mr-3 h-6 w-6" /> : <Search className="mr-3 h-6 w-6" />}
               View Results
-            </Button>
+            </button>
           </div>
           {error && (
             <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 border border-red-100">
@@ -118,7 +114,6 @@ export default function PublicResultsSearchPage() {
 
       {student && (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-          {/* Identity Header */}
           <Card className="overflow-hidden border-0 shadow-2xl rounded-[2.5rem]">
             <div className="bg-gradient-to-r from-[#1e40af] to-[#059669] p-10 md:p-12 text-white relative">
               <div className="absolute top-0 right-0 p-10 opacity-10">
@@ -161,7 +156,7 @@ export default function PublicResultsSearchPage() {
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black mb-1">Overall Percentage</p>
+                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black mb-1">Percentage</p>
                         <p className="text-3xl font-black text-[#059669] leading-none">{stats?.percentage.toFixed(1)}%</p>
                       </div>
                       <div className="h-12 w-px bg-slate-200" />
@@ -176,8 +171,8 @@ export default function PublicResultsSearchPage() {
                         <TableHeader>
                           <TableRow className="bg-slate-50/30 hover:bg-slate-50/30 border-b-2">
                             <TableHead className="py-5 pl-10 text-slate-600 font-black uppercase tracking-widest text-[11px]">Academic Subject</TableHead>
-                            <TableHead className="text-center text-slate-600 font-black uppercase tracking-widest text-[11px]">Score Obtained</TableHead>
-                            <TableHead className="text-center text-slate-600 font-black uppercase tracking-widest text-[11px]">Maximum Score</TableHead>
+                            <TableHead className="text-center text-slate-600 font-black uppercase tracking-widest text-[11px]">Obtained</TableHead>
+                            <TableHead className="text-center text-slate-600 font-black uppercase tracking-widest text-[11px]">Maximum</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -188,7 +183,7 @@ export default function PublicResultsSearchPage() {
                                 <TableCell className="font-black py-6 pl-10 text-slate-800 text-lg">{sub}</TableCell>
                                 <TableCell className="text-center">
                                   {mark === 'A' ? (
-                                    <Badge className="bg-red-50 text-red-600 border-red-100 hover:bg-red-100 font-black rounded-lg px-4 py-1">ABSENT</Badge>
+                                    <Badge className="bg-red-50 text-red-600 border-red-100 font-black rounded-lg px-4 py-1">ABSENT</Badge>
                                   ) : (
                                     <span className="font-mono text-2xl font-black text-slate-900">{mark ?? '-'}</span>
                                   )}
@@ -201,7 +196,7 @@ export default function PublicResultsSearchPage() {
                             <TableCell className="pl-10">
                               <div className="flex items-center gap-3">
                                 <Award className="h-6 w-6 text-amber-400" />
-                                <span className="text-slate-400 font-black uppercase tracking-widest text-sm">Aggregate Result</span>
+                                <span className="text-slate-400 font-black uppercase tracking-widest text-sm">Aggregate</span>
                               </div>
                             </TableCell>
                             <TableCell className="text-center text-4xl font-black text-white">{stats?.obtained}</TableCell>
@@ -219,10 +214,7 @@ export default function PublicResultsSearchPage() {
                   <div className="mx-auto w-24 h-24 rounded-3xl bg-white flex items-center justify-center shadow-inner">
                     <BookOpen className="h-12 w-12 text-slate-200" />
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-2xl font-black text-slate-900 uppercase tracking-tight">Records Unavailable</p>
-                    <p className="text-slate-500 font-medium max-w-sm mx-auto">We couldn't find any approved exam results for this student ID at this time.</p>
-                  </div>
+                  <p className="text-2xl font-black text-slate-900 uppercase tracking-tight">No Records Found</p>
                 </CardContent>
               </Card>
             )}

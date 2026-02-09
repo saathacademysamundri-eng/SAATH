@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getStudent, getIncomeByStudent } from '@/lib/firebase/firestore';
 import { Student, Income } from '@/lib/data';
-import { Search, Loader2, Wallet, Receipt, AlertCircle, History, TrendingUp, Printer, Calendar, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Search, Loader2, Wallet, Receipt, AlertCircle, History, TrendingUp, Printer, Calendar, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -31,26 +31,32 @@ export default function PublicLedgerSearchPage() {
       const searchTerm = rollNo.trim().toUpperCase();
       let searchId = searchTerm;
       
+      // Attempt to normalize S001 format
       if (/^\d+$/.test(searchTerm)) {
         searchId = `S${searchTerm.padStart(3, '0')}`;
       }
 
+      // 1. Try search with normalized ID
       let studentData = await getStudent(searchId);
+      
+      // 2. Try search with raw input if first failed
       if (!studentData && searchId !== searchTerm) {
         studentData = await getStudent(searchTerm);
       }
 
       if (studentData) {
         setStudent(studentData);
+        // Fetch all income records for this student
         const incomeData = await getIncomeByStudent(studentData.id);
+        // Client-side sort to avoid index requirements for public portal
         const sortedHistory = [...incomeData].sort((a, b) => b.date.getTime() - a.date.getTime());
         setHistory(sortedHistory);
       } else {
-        setError('No student record found. Please verify your Roll Number.');
+        setError('No record found. Please check your Roll Number and try again.');
       }
     } catch (err) {
       console.error('Search error:', err);
-      setError('A connection error occurred. Please try again.');
+      setError('A connection error occurred. Please try again in a moment.');
     } finally {
       setLoading(false);
     }
@@ -132,7 +138,7 @@ export default function PublicLedgerSearchPage() {
                 <TrendingUp size={90} />
               </div>
               <CardHeader className="pb-2">
-                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1">Lifetime Payments</p>
+                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1">Life-time Paid</p>
                 <CardTitle className="text-4xl font-black tracking-tight text-[#059669]">{stats.totalPaid.toLocaleString()} PKR</CardTitle>
               </CardHeader>
               <CardContent>
@@ -148,13 +154,13 @@ export default function PublicLedgerSearchPage() {
                 <History size={90} />
               </div>
               <CardHeader className="pb-2">
-                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1">Success Receipts</p>
+                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1">Total Transactions</p>
                 <CardTitle className="text-4xl font-black tracking-tight text-[#1e40af]">{stats.transactionCount}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-xs font-bold text-slate-400 flex items-center gap-2">
                   <CheckCircle2 className="h-3.5 w-3.5 text-[#1e40af]" />
-                  Total verified transactions
+                  Verified Success
                 </p>
               </CardContent>
             </Card>
@@ -173,7 +179,7 @@ export default function PublicLedgerSearchPage() {
                   </CardDescription>
                 </div>
               </div>
-              <Button variant="outline" onClick={() => window.print()} className="rounded-xl border-2 border-slate-200 font-bold px-6 h-12 hover:bg-[#0f172a] hover:text-white transition-all">
+              <Button variant="outline" onClick={() => window.print()} className="rounded-xl border-2 border-slate-200 font-bold px-6 h-12 hover:bg-[#0f172a] hover:text-white transition-all text-slate-900">
                 <Printer className="mr-2 h-5 w-5" />
                 Print Statement
               </Button>
@@ -184,8 +190,8 @@ export default function PublicLedgerSearchPage() {
                   <TableHeader>
                     <TableRow className="bg-slate-50/30 hover:bg-slate-50/30 border-b-2">
                       <TableHead className="py-6 pl-10 text-slate-600 font-black uppercase tracking-widest text-[11px]">Transaction Date</TableHead>
-                      <TableHead className="text-slate-600 font-black uppercase tracking-widest text-[11px]">Payment Type</TableHead>
-                      <TableHead className="text-slate-600 font-black uppercase tracking-widest text-[11px]">Receipt ID</TableHead>
+                      <TableHead className="text-slate-600 font-black uppercase tracking-widest text-[11px]">Payment Detail</TableHead>
+                      <TableHead className="text-slate-600 font-black uppercase tracking-widest text-[11px]">Receipt Reference</TableHead>
                       <TableHead className="text-right pr-10 text-slate-600 font-black uppercase tracking-widest text-[11px]">Credit (PKR)</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -196,7 +202,7 @@ export default function PublicLedgerSearchPage() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                            <span className="font-black text-slate-900 uppercase text-xs">Academy Tuition</span>
+                            <span className="font-black text-slate-900 uppercase text-xs">Tuition Fee</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -215,8 +221,8 @@ export default function PublicLedgerSearchPage() {
                             <div className="p-6 bg-slate-50 rounded-full">
                               <History size={64} className="opacity-40" />
                             </div>
-                            <p className="font-black text-xl uppercase tracking-tight text-slate-400">No History Found</p>
-                            <p className="text-sm font-medium text-slate-400">Please search for a valid roll number to view records.</p>
+                            <p className="font-black text-xl uppercase tracking-tight text-slate-400">No Payment History</p>
+                            <p className="text-sm font-medium text-slate-400">Records will appear here after your first payment.</p>
                           </div>
                         </TableCell>
                       </TableRow>
