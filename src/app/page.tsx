@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, Facebook, Instagram, MessageSquare } from 'lucide-react';
-import { useSettings } from '@/hooks/use-settings';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence, signOut } from 'firebase/auth';
@@ -22,7 +21,6 @@ const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
 export default function LoginPage() {
     const [isClient, setIsClient] = useState(false);
-    const { settings, isSettingsLoading } = useSettings();
     const [loginType, setLoginType] = useState<'admin' | 'teacher'>('admin');
     
     const [email, setEmail] = useState('');
@@ -80,48 +78,49 @@ export default function LoginPage() {
         }
     };
 
-    if (!isClient) return <div className="min-h-screen bg-[#2e1065]" />;
+    if (!isClient) return <div className="min-h-screen bg-[#0f172a]" />;
     
     const isLoading = isAdminLoading || isTeacherLoading;
 
     return (
-        <main className="min-h-screen bg-[#2e1065] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-            <div className="w-full max-w-4xl rounded-2xl bg-[#1e293b] shadow-2xl overflow-hidden grid md:grid-cols-2 border border-slate-700">
-                {/* Left Side: Brand Image (Hidden on small mobile) */}
-                <div className="relative hidden md:block border-r border-slate-700">
+        <main className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+            <div className="w-full max-w-4xl rounded-2xl bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-white/10">
+                {/* Left Side: Brand Image (Hidden on mobile) */}
+                <div className="relative hidden md:block border-r border-white/5">
                     <Image
                         src="https://images.unsplash.com/photo-1571260899304-425eee4c7efc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwbGVhcm5pbmd8ZW58MHx8fHwxNzYxNDU1NTU2fDA&ixlib=rb-4.1.0&q=80&w=1080"
                         alt="Students"
                         fill
                         className="object-cover"
+                        priority
                     />
-                    <div className="absolute inset-0 bg-black/20" />
+                    <div className="absolute inset-0 bg-indigo-950/30 backdrop-grayscale-[0.2]" />
                 </div>
 
                 {/* Right Side: Login Form */}
                 <div className="p-6 sm:p-10 lg:p-12 flex flex-col justify-center">
                     <div className="mb-8 text-center">
-                        <div className="h-16 w-16 mx-auto mb-4 bg-white p-1 rounded-xl shadow-inner">
+                        <div className="h-16 w-16 mx-auto mb-4 bg-white p-1.5 rounded-2xl shadow-xl ring-4 ring-white/10">
                             <Logo noText={true} />
                         </div>
-                        <h2 className="text-xl font-bold text-white uppercase tracking-tight leading-tight">
-                            SAATH ACADEMY SAMUNDRI
+                        <h2 className="text-xl font-black text-white uppercase tracking-tighter leading-tight">
+                            SAATH ACADEMY <span className="text-emerald-400">SAMUNDRI</span>
                         </h2>
                     </div>
                     
                     <div className="flex justify-center mb-8">
-                        <div className="bg-slate-800 p-1 rounded-full flex gap-1 w-full max-w-[220px]">
+                        <div className="bg-white/5 p-1 rounded-full flex gap-1 w-full max-w-[220px] border border-white/10">
                             <button 
                                 type="button"
                                 onClick={() => setLoginType('admin')}
-                                className={cn("flex-1 py-2 px-4 rounded-full text-xs font-black transition-all uppercase tracking-wider", loginType === 'admin' ? "bg-[#4f46e5] text-white shadow-lg scale-105" : "text-slate-400 hover:text-slate-300")}
+                                className={cn("flex-1 py-2 px-4 rounded-full text-xs font-black transition-all uppercase tracking-wider", loginType === 'admin' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-slate-400 hover:text-slate-200")}
                             >
                                 Admin
                             </button>
                             <button 
                                 type="button"
                                 onClick={() => setLoginType('teacher')}
-                                className={cn("flex-1 py-2 px-4 rounded-full text-xs font-black transition-all uppercase tracking-wider", loginType === 'teacher' ? "bg-[#4f46e5] text-white shadow-lg scale-105" : "text-slate-400 hover:text-slate-300")}
+                                className={cn("flex-1 py-2 px-4 rounded-full text-xs font-black transition-all uppercase tracking-wider", loginType === 'teacher' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-slate-400 hover:text-slate-200")}
                             >
                                 Teacher
                             </button>
@@ -129,8 +128,8 @@ export default function LoginPage() {
                     </div>
 
                     <div className="text-center mb-8">
-                        <h3 className="text-2xl font-black text-white uppercase tracking-tight">LOG IN</h3>
-                        <p className="text-slate-400 text-[11px] uppercase font-bold tracking-widest mt-1">Institutional Access Only</p>
+                        <h3 className="text-2xl font-black text-white uppercase tracking-tight">Login Portal</h3>
+                        <p className="text-slate-500 text-[10px] uppercase font-bold tracking-[0.3em] mt-1">Institutional Access Only</p>
                     </div>
                     
                     <form className="space-y-5" onSubmit={handleSubmit}>
@@ -139,11 +138,11 @@ export default function LoginPage() {
                             <Input 
                                 id="email" 
                                 type="email" 
-                                placeholder="admin@example.com" 
+                                placeholder="Enter your email" 
                                 value={email} 
                                 onChange={(e) => setEmail(e.target.value)} 
                                 required 
-                                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 h-12 focus:ring-[#4f46e5] focus:border-[#4f46e5] rounded-xl"
+                                className="bg-slate-950/50 border-white/10 text-white placeholder:text-slate-600 h-12 focus:ring-indigo-500 focus:border-indigo-500 rounded-xl"
                             />
                         </div>
                         <div className="space-y-2">
@@ -155,7 +154,7 @@ export default function LoginPage() {
                                     value={password} 
                                     onChange={(e) => setPassword(e.target.value)} 
                                     required 
-                                    className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 h-12 focus:ring-[#4f46e5] focus:border-[#4f46e5] rounded-xl"
+                                    className="bg-slate-950/50 border-white/10 text-white placeholder:text-slate-600 h-12 focus:ring-indigo-500 focus:border-indigo-500 rounded-xl"
                                 />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300">
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -165,25 +164,25 @@ export default function LoginPage() {
                         <div className="text-right">
                             <ForgotPasswordDialog />
                         </div>
-                        <Button type="submit" className="w-full h-12 bg-[#4f46e5] hover:bg-[#4338ca] text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-xl transition-all active:scale-95 disabled:opacity-70" disabled={isLoading}>
+                        <Button type="submit" className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-xl transition-all active:scale-95 disabled:opacity-70" disabled={isLoading}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            SIGN IN
+                            AUTHENTICATE
                         </Button>
                     </form>
                 </div>
             </div>
 
-            <div className="mt-10 text-center">
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Developed by Mian Mudassar</p>
-                <div className="mt-4 flex justify-center gap-6">
-                    <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" className="text-slate-500 hover:text-white transition-colors">
-                        <Facebook size={18} />
+            <div className="mt-10 text-center space-y-4">
+                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em]">Developed by Mian Mudassar</p>
+                <div className="flex justify-center gap-6">
+                    <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" className="text-slate-600 hover:text-indigo-400 transition-colors">
+                        <Facebook size={20} />
                     </Link>
-                    <Link href="https://api.whatsapp.com/send?phone=923099969535" target="_blank" className="text-slate-500 hover:text-white transition-colors">
-                        <MessageSquare size={18} />
+                    <Link href="https://api.whatsapp.com/send?phone=923099969535" target="_blank" className="text-slate-600 hover:text-emerald-400 transition-colors">
+                        <MessageSquare size={20} />
                     </Link>
-                    <Link href="https://www.instagram.com/mianmudassar_" target="_blank" className="text-slate-500 hover:text-white transition-colors">
-                        <Instagram size={18} />
+                    <Link href="https://www.instagram.com/mianmudassar_" target="_blank" className="text-slate-600 hover:text-pink-400 transition-colors">
+                        <Instagram size={20} />
                     </Link>
                 </div>
             </div>

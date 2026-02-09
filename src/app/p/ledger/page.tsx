@@ -135,8 +135,7 @@ export default function PublicLedgerSearchPage() {
               <CardContent>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Successful Payments</p>
               </CardContent>
-            </Card>
-          </div>
+            </div>
 
           <Card className="bg-white shadow-2xl rounded-[2rem] border-slate-100 overflow-hidden">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
