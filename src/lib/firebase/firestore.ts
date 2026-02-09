@@ -1,5 +1,4 @@
 
-
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app, auth, firebaseConfig } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID } from '@/lib/data';
@@ -13,6 +12,15 @@ import { initializeApp, deleteApp } from 'firebase/app';
 
 const db = getFirestore(app);
 
+// Helper to safely convert Firestore timestamp to Date
+const safeToDate = (timestamp: any): Date => {
+    if (!timestamp) return new Date();
+    if (timestamp instanceof Date) return timestamp;
+    if (timestamp.toDate && typeof timestamp.toDate === 'function') return timestamp.toDate();
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') return new Date(timestamp);
+    return new Date();
+};
+
 // Activity Log Functions
 export async function logActivity(type: Activity['type'], message: string, link?: string) {
     try {
@@ -24,7 +32,6 @@ export async function logActivity(type: Activity['type'], message: string, link?
         });
     } catch (e) {
         console.error("Failed to log activity:", e);
-        // We don't throw an error here as this is a non-critical background task
     }
 }
 
@@ -53,7 +60,7 @@ export async function getRecentActivities(count = 50): Promise<Activity[]> {
                 type: data.type,
                 message: data.message,
                 link: data.link,
-                date: data.date.toDate(),
+                date: safeToDate(data.date),
             } as Activity;
         });
         return activities.sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -119,7 +126,7 @@ export async function getStudents(): Promise<Student[]> {
         return { 
             ...data,
             id: doc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     });
     return allStudents.filter(s => s.status === 'active').sort((a, b) => a.id.localeCompare(b.id));
@@ -133,7 +140,7 @@ export async function getAlumni(): Promise<Student[]> {
         return { 
             ...data,
             id: doc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     });
     return allStudents.filter(s => s.status === 'graduated').sort((a, b) => a.id.localeCompare(b.id));
@@ -147,7 +154,7 @@ export async function getArchivedStudents(): Promise<Student[]> {
         return { 
             ...data,
             id: doc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     });
     return allStudents.filter(s => s.status === 'archived').sort((a, b) => {
@@ -173,7 +180,19 @@ export async function getStudent(id: string): Promise<Student | null> {
         return { 
             ...data,
             id: studentDoc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
+        } as Student;
+    }
+    
+    // Fallback: Search by "id" field if doc ID doesn't match
+    const q = query(collection(db, 'students'), where('id', '==', id), limit(1));
+    const qs = await getDocs(q);
+    if (!qs.empty) {
+        const data = qs.docs[0].data();
+        return { 
+            ...data,
+            id: qs.docs[0].id,
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     }
     
@@ -187,7 +206,6 @@ export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id:
         await setDoc(docRef, studentWithStatus);
         await logActivity('new_admission', `New admission: ${student.name} (ID: ${student.id}) in class ${student.class}.`, `/students/${student.id}`);
         
-        // Send WhatsApp message if enabled
         const settings = await getSettings('details');
         if (settings && settings.newAdmissionMsg && student.phone) {
             let messageBody = settings.newAdmissionTemplate || 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.';
@@ -230,11 +248,9 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
 
             if (studentData.monthlyFee !== undefined && studentData.monthlyFee !== oldStudentData.monthlyFee) {
                 const feeDifference = studentData.monthlyFee - oldStudentData.monthlyFee;
-                // Adjust totalFee (outstanding balance) by the same difference
                 const newTotalFee = oldStudentData.totalFee + feeDifference;
                 updateData.totalFee = newTotalFee;
 
-                // Optionally, update feeStatus based on new totalFee
                 if (newTotalFee <= 0) {
                     updateData.feeStatus = 'Paid';
                 } else if (newTotalFee < oldStudentData.totalFee) {
@@ -315,14 +331,12 @@ export async function deleteStudentPermanently(studentId: string) {
                 throw new Error("Only archived students can be permanently deleted.");
             }
 
-            // Find and delete all income records for this student
             const incomeQuery = query(collection(db, 'income'), where('studentId', '==', studentId));
             const incomeSnapshot = await getDocs(incomeQuery);
             incomeSnapshot.forEach(incomeDoc => {
                 transaction.delete(incomeDoc.ref);
             });
 
-            // Delete the student document
             transaction.delete(studentRef);
             
             await logActivity('student_deleted', `Permanently deleted student record and all associated payments for ${student.name} (ID: ${studentId}).`);
@@ -369,11 +383,9 @@ export async function checkAndGenerateMonthlyFees() {
         const currentMonth = formatDate(new Date(), 'yyyy-MM');
 
         if (stateDoc.exists() && stateDoc.data().lastGeneratedMonth === currentMonth) {
-            // Fees already generated for this month
             return { success: true, message: "Fees for the current month have already been generated." };
         }
         
-        // If we've reached here, we need to generate fees.
         const studentsCollection = collection(db, 'students');
         const q = query(studentsCollection, where("status", "==", "active"));
         const studentsSnap = await getDocs(q);
@@ -384,15 +396,14 @@ export async function checkAndGenerateMonthlyFees() {
             const studentRef = studentDoc.ref;
             
             const newTotalFee = student.totalFee + student.monthlyFee;
-            const newStatus: Student['feeStatus'] = newTotalFee > 0 ? (newTotalFee < studentData.totalFee ? 'Partial' : 'Pending') : 'Paid';
+            const newFeeStatus: Student['feeStatus'] = newTotalFee > 0 ? 'Pending' : 'Paid';
 
             batch.update(studentRef, {
                 totalFee: newTotalFee,
-                feeStatus: newStatus,
+                feeStatus: newFeeStatus,
             });
         });
         
-        // Update the state document after preparing the student updates
         batch.set(stateRef, { lastGeneratedMonth: currentMonth });
 
         await batch.commit();
@@ -414,7 +425,6 @@ export async function getTeachers(): Promise<Teacher[]> {
     const teachersCollection = collection(db, 'teachers');
     const teachersSnap = await getDocs(teachersCollection);
     const teachersData = teachersSnap.docs.map(doc => doc.data() as Teacher);
-    // Sort client-side
     return teachersData.sort((a,b) => a.id.localeCompare(b.id));
 }
 
@@ -446,7 +456,6 @@ export async function getNextTeacherId(): Promise<string> {
 }
 
 export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
-    // Unique name to avoid conflicts if called multiple times
     const tempAppName = 'temp-auth-app-' + Date.now();
     const tempApp = initializeApp(firebaseConfig, tempAppName);
     const tempAuth = getAuth(tempApp);
@@ -471,7 +480,6 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
         
         await logActivity('teacher_added', `Added new teacher: ${teacherData.name}.`, `/teachers/${newTeacherId}`);
         
-        // Send password setup email using the temp auth instance where the user was created
         await sendPasswordResetEmail(tempAuth, newTeacher.email);
         
         await deleteApp(tempApp);
@@ -486,7 +494,7 @@ export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
         }
         
         console.error("Error adding teacher:", serverError);
-        await deleteApp(tempApp); // Ensure cleanup on error
+        await deleteApp(tempApp);
         return { success: false, message: errorMessage };
     }
 }
@@ -529,36 +537,31 @@ export async function syncTeacherAuthAccounts() {
     const tempAuth = getAuth(tempApp);
     
     let createdCount = 0;
-    const updatedCount = 0; // Not implemented
+    const updatedCount = 0;
     let skippedCount = 0;
 
     try {
         const teachers = await getTeachers();
 
         for (const teacher of teachers) {
-            // We only attempt to create an account if both email and password are provided.
             if (!teacher.email || !teacher.password) {
                 skippedCount++;
                 continue;
             }
             
             try {
-                // Directly attempt to create the user.
                 await createUserWithEmailAndPassword(tempAuth, teacher.email, teacher.password);
                 createdCount++;
             } catch (authError: any) {
                 if (authError.code === 'auth/email-already-in-use') {
-                    // This is an expected case if the user already exists. We can safely skip.
                     skippedCount++;
                 } else {
-                    // For other errors (e.g., weak-password), we should log them.
                     console.error(`Failed to create auth account for ${teacher.email}:`, authError.message);
-                    // We don't rethrow here, just log and continue with other teachers.
                 }
             }
         }
         
-        await deleteApp(tempApp); // Clean up the temporary app
+        await deleteApp(tempApp);
         
         if (createdCount > 0) {
             await logActivity('settings_updated', `Synced teacher login accounts: ${createdCount} new accounts created.`);
@@ -566,7 +569,7 @@ export async function syncTeacherAuthAccounts() {
         return { success: true, createdCount, updatedCount, skippedCount };
     } catch (error) {
         console.error("Error during teacher sync process:", error);
-        await deleteApp(tempApp); // Ensure cleanup on error
+        await deleteApp(tempApp);
         return { success: false, message: (error as Error).message, createdCount, updatedCount, skippedCount };
     }
 }
@@ -587,7 +590,6 @@ async function getNextClassId(): Promise<string> {
 export async function addClass(name: string) {
     try {
         const newClassId = await getNextClassId();
-        const newClass = { id: newClassId, name: name, subjects: [], sections: [] };
         const docRef = doc(db, 'classes', newClassId);
         await setDoc(docRef, { id: newClassId, name: name, sections: [] });
         await logActivity('class_added', `Created new class: ${name}.`);
@@ -719,7 +721,20 @@ export async function getIncome(): Promise<Income[]> {
         return {
             id: doc.id,
             ...data,
-            date: data.date.toDate(),
+            date: safeToDate(data.date),
+        } as Income;
+    });
+}
+
+export async function getIncomeByStudent(studentId: string): Promise<Income[]> {
+    const q = query(collection(db, "income"), where("studentId", "==", studentId));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            date: safeToDate(data.date),
         } as Income;
     });
 }
@@ -735,7 +750,7 @@ export async function getIncomeByReceiptId(receiptId: string): Promise<Income | 
     return {
         id: doc.id,
         ...data,
-        date: data.date.toDate(),
+        date: safeToDate(data.date),
     } as Income;
 }
 
@@ -818,7 +833,7 @@ export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>, expe
 export async function getExpenses(): Promise<Expense[]> {
     const q = query(collection(db, "expenses"), orderBy("date", "desc"));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Expense));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: safeToDate(doc.data().date) } as Expense));
 }
 
 export async function updateExpense(expenseId: string, data: { description: string; amount: number, category: string }) {
@@ -883,7 +898,7 @@ export async function addReport(reportData: Omit<Report, 'id' | 'reportDate'>) {
 export async function getReports(): Promise<Report[]> {
     const q = query(collection(db, "reports"));
     const querySnapshot = await getDocs(q);
-    const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), reportDate: doc.data().reportDate.toDate() } as Report));
+    const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), reportDate: safeToDate(doc.data().reportDate) } as Report));
     return reports.sort((a,b) => b.reportDate.getTime() - a.reportDate.getTime());
 }
 
@@ -893,29 +908,25 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
         const batch = writeBatch(db);
         const payoutTimestamp = serverTimestamp();
         
-        // Payout Record
         const payoutRef = doc(collection(db, 'teacher_payouts'));
         batch.set(payoutRef, { teacherId, teacherName, amount, payoutDate: payoutTimestamp, incomeIds });
 
-        // Academy Share Record
         if (reportData && reportData.academyShare > 0) {
             const academyShareRef = doc(collection(db, 'academy_share'));
             batch.set(academyShareRef, {
                 teacherId,
                 teacherName,
                 amount: reportData.academyShare,
-                payoutDate: Timestamp.fromDate(earningsMonth), // Use earnings month
+                payoutDate: Timestamp.fromDate(earningsMonth),
                 payoutId: payoutRef.id,
             });
         }
 
-        // Update Income Records
         incomeIds.forEach(id => {
             const incomeRef = doc(db, 'income', id);
             batch.update(incomeRef, { [`paidOutTo.${teacherId}`]: payoutRef.id });
         });
 
-        // Expense Record - set to the last day of the earnings month
         const expenseDate = endOfMonth(earningsMonth);
         batch.set(doc(collection(db, 'expenses')), { 
             description: `Payout to ${teacherName} for ${formatDate(earningsMonth, 'MMMM yyyy')}`, 
@@ -926,7 +937,6 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
             category: 'Salaries' 
         });
 
-        // Report Record
         if (reportData) {
             const reportRef = doc(collection(db, 'reports'));
             batch.set(reportRef, { ...reportData, teacherId, teacherName, payoutId: payoutRef.id, reportDate: payoutTimestamp });
@@ -952,34 +962,29 @@ export async function deletePayout(payoutId: string) {
 
             const payoutData = payoutDoc.data() as TeacherPayout;
 
-            // Mark associated income records as not paid out
             for (const incomeId of payoutData.incomeIds) {
                 const incomeRef = doc(db, 'income', incomeId);
                 transaction.update(incomeRef, { [`paidOutTo.${payoutData.teacherId}`]: deleteField() });
             }
 
-            // Find and delete the associated expense record
             const expenseQuery = query(collection(db, 'expenses'), where("payoutId", "==", payoutId), limit(1));
             const expenseSnap = await getDocs(expenseQuery);
             if (!expenseSnap.empty) {
                 transaction.delete(expenseSnap.docs[0].ref);
             }
             
-             // Find and delete the associated academy share record
             const shareQuery = query(collection(db, 'academy_share'), where("payoutId", "==", payoutId), limit(1));
             const shareSnap = await getDocs(shareQuery);
             if (!shareSnap.empty) {
                 transaction.delete(shareSnap.docs[0].ref);
             }
 
-            // Find and delete the associated report
             const reportQuery = query(collection(db, 'reports'), where("payoutId", "==", payoutId), limit(1));
             const reportSnap = await getDocs(reportQuery);
             if (!reportSnap.empty) {
                 transaction.delete(reportSnap.docs[0].ref);
             }
 
-            // Finally, delete the payout record itself
             transaction.delete(payoutRef);
 
             await logActivity('teacher_payout', `Reversed payout of ${payoutData.amount} for ${payoutData.teacherName}.`);
@@ -997,9 +1002,8 @@ export async function deletePayout(payoutId: string) {
 export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
     const q = query(collection(db, "teacher_payouts"), where("teacherId", "==", teacherId));
     const querySnapshot = await getDocs(q);
-    let payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: doc.data().payoutDate.toDate() } as TeacherPayout));
+    let payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: safeToDate(doc.data().payoutDate) } as TeacherPayout));
 
-    // Sort client-side
     payouts = payouts.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
 
     const payoutsWithReports: (TeacherPayout & { report?: Report, academyShare?: number })[] = [];
@@ -1019,7 +1023,7 @@ export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayo
 export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
     const q = query(collection(db, "teacher_payouts"), orderBy("payoutDate", "desc"));
     const querySnapshot = await getDocs(q);
-    const payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: doc.data().payoutDate.toDate() } as TeacherPayout));
+    const payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: safeToDate(doc.data().payoutDate) } as TeacherPayout));
     
     const payoutsWithReports: (TeacherPayout & { report?: Report, academyShare?: number })[] = [];
     for (const payout of payouts) {
@@ -1043,7 +1047,7 @@ export async function getAcademyShare(): Promise<Payout[]> {
         return {
             id: doc.id,
             ...data,
-            payoutDate: data.payoutDate.toDate(),
+            payoutDate: safeToDate(data.payoutDate),
         } as Payout;
     });
     return shares.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
@@ -1058,7 +1062,6 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
         await setDoc(docRef, attendanceData, { merge: true });
         await logActivity('attendance_marked', `Marked attendance for class ${attendanceData.className}.`);
         
-        // Send WhatsApp message for absent students
         const settings = await getSettings('details');
         if (settings && settings.absentMsg && settings.whatsappProvider !== 'none') {
             const absentStudents: { id: string, name: string, phone: string }[] = [];
@@ -1313,7 +1316,7 @@ export async function getAllTeacherAttendanceForMonth(month: number, year: numbe
             const data = doc.data();
             attendance.push({
                 teacherId: data.teacherId,
-                date: new Date(data.date + 'T00:00:00'), // Treat date string as UTC to avoid timezone issues
+                date: new Date(data.date + 'T00:00:00'),
                 status: data.status,
             });
         });
@@ -1417,8 +1420,8 @@ export async function getExams(): Promise<Exam[]> {
         return {
             id: doc.id,
             ...data,
-            date: data.date.toDate(),
-            submissionDeadline: data.submissionDeadline?.toDate(),
+            date: safeToDate(data.date),
+            submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
         } as Exam;
     });
 }
@@ -1435,18 +1438,37 @@ export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
             return {
                 id: doc.id,
                 ...data,
-                date: data.date.toDate(),
-                submissionDeadline: data.submissionDeadline?.toDate(),
+                date: safeToDate(data.date),
+                submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
             } as Exam;
         });
-        // Sort client-side to avoid needing a composite index
         return exams.sort((a, b) => b.date.getTime() - a.date.getTime());
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({
-            path: 'exams', // Path for a collection query.
+            path: 'exams',
             operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
+        return [];
+    }
+}
+
+export async function getExamsForStudent(studentId: string): Promise<Exam[]> {
+    try {
+        const q = query(collection(db, 'exams'), where('status', '==', 'approved'));
+        const querySnapshot = await getDocs(q);
+        const exams = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                date: safeToDate(data.date),
+                submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
+            } as Exam;
+        });
+        return exams.filter(exam => exam.results?.some(r => r.studentId === studentId));
+    } catch (error) {
+        console.error("Error fetching exams for student:", error);
         return [];
     }
 }
@@ -1460,8 +1482,8 @@ export async function getExam(examId: string): Promise<Exam | null> {
         return {
             id: docSnap.id,
             ...data,
-            date: data.date.toDate(),
-            submissionDeadline: data.submissionDeadline?.toDate(),
+            date: safeToDate(data.date),
+            submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
         } as Exam;
     }
     return null;
@@ -1475,11 +1497,12 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
             throw new Error("Exam not found");
         }
 
+        const examData = examDoc.data() as any;
         const exam = { 
             id: examDoc.id, 
-            ...examDoc.data(), 
-            date: examDoc.data().date.toDate(), 
-            submissionDeadline: examDoc.data().submissionDeadline?.toDate() 
+            ...examData, 
+            date: safeToDate(examData.date), 
+            submissionDeadline: examData.submissionDeadline ? safeToDate(examData.submissionDeadline) : undefined 
         } as Exam;
         
         let shouldNotify = false;
@@ -1548,7 +1571,6 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
     try {
         const todayStr = formatDate(new Date(), 'yyyy-MM-dd');
         
-        // Fetch all data in parallel
         const [allClasses, allStudents, allTeachers] = await Promise.all([
             getClasses(),
             getStudents(),
@@ -1561,7 +1583,6 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         const qTeachers = query(collection(db, 'teacher_attendance'), where('date', '==', todayStr));
         const teacherAttendanceSnap = await getDocs(qTeachers);
 
-        // Process student attendance
         const studentSummary: DailyAttendanceSummary['students'] = {
             totalStudents: allStudents.length,
             totalPresent: 0,
@@ -1603,7 +1624,6 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
             };
         });
 
-        // Process teacher attendance
         const teacherSummary: DailyAttendanceSummary['teachers'] = {
             totalTeachers: allTeachers.length,
             presentCount: 0,
@@ -1636,5 +1656,3 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
-
-
