@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, LogIn } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export default function PublicPortalLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,8 +17,8 @@ export default function PublicPortalLayout({ children }: { children: React.React
               <Logo noText={true} />
             </div>
             <div className="flex flex-col">
-              <span className="font-black text-[#1e40af] text-lg sm:text-2xl leading-none tracking-tight">SAATH ACADEMY</span>
-              <span className="font-bold text-[#059669] text-[10px] sm:text-sm mt-0.5 tracking-[0.2em]">SAMUNDRI</span>
+              <span className="font-black text-[#1e40af] text-lg sm:text-2xl leading-none tracking-tight uppercase">SAATH ACADEMY</span>
+              <span className="font-bold text-[#059669] text-[10px] sm:text-sm mt-0.5 tracking-[0.2em] uppercase">SAMUNDRI</span>
             </div>
           </Link>
 
@@ -43,15 +43,28 @@ export default function PublicPortalLayout({ children }: { children: React.React
         {children}
       </main>
 
-      <footer className="bg-[#0f172a] text-slate-400 py-12 px-4 text-center text-sm border-t border-slate-800">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center mb-6">
+      <footer className="bg-[#0f172a] text-slate-400 py-12 px-4 text-center border-t border-slate-800">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex justify-center mb-2">
              <div className="h-12 w-12 grayscale opacity-50 contrast-200">
                 <Logo noText={true} />
              </div>
           </div>
-          <p className="font-semibold text-slate-300 mb-2">© {new Date().getFullYear()} SAATH Academy. All Rights Reserved.</p>
-          <p className="text-slate-500 font-mono text-[10px] uppercase tracking-widest">Powered by SchoolUP Platform</p>
+          
+          <div className="space-y-4">
+            <p className="font-black text-slate-200 text-sm sm:text-base tracking-tight uppercase">
+              © 2026 SAATH ACADEMY SAMUNDRI. All Rights Reserved.
+            </p>
+            
+            <div className="space-y-2">
+              <p className="text-slate-500 font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.4em] font-bold">
+                POWERED BY SCHOOLUP PLATFORM
+              </p>
+              <p className="text-slate-600 font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.25em]">
+                DEVELOPED BY MIAN MUDASSAR
+              </p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
