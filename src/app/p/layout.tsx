@@ -12,10 +12,10 @@ export default function PublicPortalLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-      {/* Shared Public Header */}
+      {/* Shared Public Header aligned with saathsamundri.com */}
       <header className="sticky top-0 z-50 w-full bg-white border-b border-slate-200 shadow-sm px-4 py-3 sm:px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="https://www.saathsamundri.com/" className="flex items-center gap-3">
             <div className="h-10 w-10">
               <Logo noText={true} />
             </div>
@@ -48,7 +48,7 @@ export default function PublicPortalLayout({ children }: { children: React.React
         {children}
       </main>
 
-      <footer className="bg-slate-900 text-slate-400 py-12 px-4 text-center text-sm border-t border-slate-800">
+      <footer className="bg-[#0f172a] text-slate-400 py-12 px-4 text-center text-sm border-t border-slate-800">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-center mb-6">
              <div className="h-12 w-12 grayscale opacity-50 contrast-200">

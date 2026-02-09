@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getStudent, getIncomeByStudent } from '@/lib/firebase/firestore';
 import { Student, Income } from '@/lib/data';
-import { Search, Loader2, Wallet, Receipt, AlertCircle, History, TrendingUp, Printer, Calendar, ArrowRight } from 'lucide-react';
+import { Search, Loader2, Wallet, Receipt, AlertCircle, History, TrendingUp, Printer, Calendar, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -28,24 +28,29 @@ export default function PublicLedgerSearchPage() {
     setHistory([]);
 
     try {
-      let searchId = rollNo.trim().toUpperCase();
-      if (/^\d+$/.test(searchId)) {
-        searchId = `S${searchId.padStart(3, '0')}`;
+      const searchTerm = rollNo.trim().toUpperCase();
+      let searchId = searchTerm;
+      
+      if (/^\d+$/.test(searchTerm)) {
+        searchId = `S${searchTerm.padStart(3, '0')}`;
       }
 
-      const studentData = await getStudent(searchId);
+      let studentData = await getStudent(searchId);
+      if (!studentData && searchId !== searchTerm) {
+        studentData = await getStudent(searchTerm);
+      }
+
       if (studentData) {
         setStudent(studentData);
         const incomeData = await getIncomeByStudent(studentData.id);
-        // Explicitly sort by date desc for the statement view
         const sortedHistory = [...incomeData].sort((a, b) => b.date.getTime() - a.date.getTime());
         setHistory(sortedHistory);
       } else {
-        setError('No student record found for this roll number. Please verify and try again.');
+        setError('No student record found. Please verify your Roll Number.');
       }
     } catch (err) {
-      console.error(err);
-      setError('A system error occurred while fetching your records. Please try again.');
+      console.error('Search error:', err);
+      setError('A connection error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -69,10 +74,10 @@ export default function PublicLedgerSearchPage() {
           <Receipt className="h-10 w-10" />
         </div>
         <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-3">Financial Statement</h1>
-        <p className="text-lg text-slate-600 max-w-md mx-auto">Access your payment history and current fee balance instantly.</p>
+        <p className="text-lg text-slate-600 max-w-md mx-auto">Access your complete payment history and real-time dues statement.</p>
       </header>
 
-      <Card className="mb-12 shadow-2xl border-slate-200/60 bg-white overflow-hidden rounded-[2rem]">
+      <Card className="mb-12 shadow-xl border-slate-200/60 bg-white overflow-hidden rounded-[2rem]">
         <CardContent className="p-8">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-grow">
@@ -82,20 +87,20 @@ export default function PublicLedgerSearchPage() {
                 value={rollNo} 
                 onChange={(e) => setRollNo(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="text-lg h-16 pl-12 border-2 border-slate-100 focus:border-[#1e40af] focus:ring-[#1e40af]/10 rounded-2xl bg-slate-50/50 font-semibold"
+                className="text-lg h-16 pl-12 border-2 border-slate-100 focus:border-[#1e40af] focus:ring-[#1e40af]/10 rounded-2xl bg-slate-50/50 font-semibold text-slate-900"
               />
             </div>
-            <Button 
+            <button 
               onClick={handleSearch} 
               disabled={loading} 
-              className="h-16 px-10 text-lg font-bold rounded-2xl bg-[#1e40af] hover:bg-[#1e40af]/90 shadow-lg shadow-blue-900/20 transition-all active:scale-95 whitespace-nowrap"
+              className="h-16 px-10 text-lg font-bold rounded-2xl bg-[#059669] text-white hover:bg-[#047857] shadow-lg shadow-emerald-900/20 transition-all active:scale-95 flex items-center justify-center"
             >
               {loading ? <Loader2 className="animate-spin mr-3 h-6 w-6" /> : <Search className="mr-3 h-6 w-6" />}
-              Fetch Records
-            </Button>
+              Search Statement
+            </button>
           </div>
           {error && (
-            <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 border border-red-100 animate-in fade-in slide-in-from-top-2">
+            <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 border border-red-100">
               <AlertCircle className="h-5 w-5 flex-shrink-0" />
               <p className="text-sm font-bold">{error}</p>
             </div>
@@ -105,9 +110,8 @@ export default function PublicLedgerSearchPage() {
 
       {student && (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-          {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-slate-900 text-white shadow-xl rounded-[2rem] border-0 overflow-hidden relative group">
+            <Card className="bg-[#0f172a] text-white shadow-xl rounded-[2rem] border-0 overflow-hidden relative group">
               <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
                 <Wallet size={90} />
               </div>
@@ -116,9 +120,9 @@ export default function PublicLedgerSearchPage() {
                 <CardTitle className="text-4xl font-black tracking-tight">{student.totalFee.toLocaleString()} PKR</CardTitle>
               </CardHeader>
               <CardContent>
-                <Badge className="bg-amber-500/20 text-amber-400 border-0 font-bold py-1 px-3">
-                  <span className="h-2 w-2 rounded-full bg-amber-400 mr-2 animate-pulse" />
-                  Due for Payment
+                <Badge className={cn("bg-opacity-20 border-0 font-bold py-1 px-3", student.totalFee > 0 ? "bg-amber-500 text-amber-400" : "bg-emerald-500 text-emerald-400")}>
+                  <span className={cn("h-2 w-2 rounded-full mr-2", student.totalFee > 0 ? "bg-amber-400 animate-pulse" : "bg-emerald-400")} />
+                  {student.totalFee > 0 ? "Payment Due" : "Fully Cleared"}
                 </Badge>
               </CardContent>
             </Card>
@@ -128,13 +132,13 @@ export default function PublicLedgerSearchPage() {
                 <TrendingUp size={90} />
               </div>
               <CardHeader className="pb-2">
-                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1">Total Amount Paid</p>
+                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1">Lifetime Payments</p>
                 <CardTitle className="text-4xl font-black tracking-tight text-[#059669]">{stats.totalPaid.toLocaleString()} PKR</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-xs font-bold text-slate-400 flex items-center gap-2">
                   <Calendar className="h-3.5 w-3.5" />
-                  Last: {stats.lastPaymentDate ? format(stats.lastPaymentDate, 'MMM d, yyyy') : 'N/A'}
+                  Last Pay: {stats.lastPaymentDate ? format(stats.lastPaymentDate, 'MMM d, yyyy') : 'N/A'}
                 </p>
               </CardContent>
             </Card>
@@ -144,13 +148,13 @@ export default function PublicLedgerSearchPage() {
                 <History size={90} />
               </div>
               <CardHeader className="pb-2">
-                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1">Payment Frequency</p>
+                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1">Success Receipts</p>
                 <CardTitle className="text-4xl font-black tracking-tight text-[#1e40af]">{stats.transactionCount}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-xs font-bold text-slate-400 flex items-center gap-2">
-                  <Receipt className="h-3.5 w-3.5" />
-                  Total successful receipts
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[#1e40af]" />
+                  Total verified transactions
                 </p>
               </CardContent>
             </Card>
@@ -165,11 +169,11 @@ export default function PublicLedgerSearchPage() {
                 <div>
                   <CardTitle className="text-2xl font-black text-slate-900 tracking-tight">{student.name}</CardTitle>
                   <CardDescription className="font-bold text-slate-500 mt-1 uppercase tracking-wide">
-                    {student.id} • {student.class} {student.section && `• Section ${student.section}`}
+                    {student.id} • {student.class} {student.section && `• SEC ${student.section}`}
                   </CardDescription>
                 </div>
               </div>
-              <Button variant="outline" onClick={() => window.print()} className="rounded-xl border-2 font-bold px-6 h-12 hover:bg-slate-900 hover:text-white transition-all">
+              <Button variant="outline" onClick={() => window.print()} className="rounded-xl border-2 border-slate-200 font-bold px-6 h-12 hover:bg-[#0f172a] hover:text-white transition-all">
                 <Printer className="mr-2 h-5 w-5" />
                 Print Statement
               </Button>
@@ -180,9 +184,9 @@ export default function PublicLedgerSearchPage() {
                   <TableHeader>
                     <TableRow className="bg-slate-50/30 hover:bg-slate-50/30 border-b-2">
                       <TableHead className="py-6 pl-10 text-slate-600 font-black uppercase tracking-widest text-[11px]">Transaction Date</TableHead>
-                      <TableHead className="text-slate-600 font-black uppercase tracking-widest text-[11px]">Description</TableHead>
-                      <TableHead className="text-slate-600 font-black uppercase tracking-widest text-[11px]">Receipt Number</TableHead>
-                      <TableHead className="text-right pr-10 text-slate-600 font-black uppercase tracking-widest text-[11px]">Amount (PKR)</TableHead>
+                      <TableHead className="text-slate-600 font-black uppercase tracking-widest text-[11px]">Payment Type</TableHead>
+                      <TableHead className="text-slate-600 font-black uppercase tracking-widest text-[11px]">Receipt ID</TableHead>
+                      <TableHead className="text-right pr-10 text-slate-600 font-black uppercase tracking-widest text-[11px]">Credit (PKR)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -191,12 +195,14 @@ export default function PublicLedgerSearchPage() {
                         <TableCell className="py-6 pl-10 text-slate-800 font-bold">{format(income.date, 'PPP')}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                            <span className="font-black text-slate-900 uppercase text-xs">Tuition Fee</span>
+                            <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                            <span className="font-black text-slate-900 uppercase text-xs">Academy Tuition</span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-xs font-black text-slate-400 bg-slate-100/50 px-3 py-1 rounded-lg w-fit">
-                          {income.receiptId || 'N/A'}
+                        <TableCell>
+                          <span className="font-mono text-xs font-black text-slate-400 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                            {income.receiptId || 'OFF-REC-00'}
+                          </span>
                         </TableCell>
                         <TableCell className="text-right pr-10">
                           <span className="text-xl font-black text-[#059669]">{income.amount.toLocaleString()}</span>
@@ -209,8 +215,8 @@ export default function PublicLedgerSearchPage() {
                             <div className="p-6 bg-slate-50 rounded-full">
                               <History size={64} className="opacity-40" />
                             </div>
-                            <p className="font-black text-xl uppercase tracking-tight">No Transactions Found</p>
-                            <p className="text-sm font-medium text-slate-400">Search for a valid roll number to view records.</p>
+                            <p className="font-black text-xl uppercase tracking-tight text-slate-400">No History Found</p>
+                            <p className="text-sm font-medium text-slate-400">Please search for a valid roll number to view records.</p>
                           </div>
                         </TableCell>
                       </TableRow>
