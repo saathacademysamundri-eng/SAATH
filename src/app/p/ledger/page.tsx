@@ -43,7 +43,7 @@ export default function PublicLedgerSearchPage() {
       if (studentData) {
         setStudent(studentData);
         const incomeData = await getIncomeByStudent(studentData.id);
-        // Sort history by date descending on the client side
+        // Sort history by date descending
         setHistory(incomeData.sort((a, b) => b.date.getTime() - a.date.getTime()));
       } else {
         setError('Record not found. Please verify your Roll Number.');

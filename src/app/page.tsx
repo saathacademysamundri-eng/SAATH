@@ -109,7 +109,7 @@ export default function LoginPage() {
                             <Logo noText={true} />
                         </div>
                         <h2 className="text-xl font-black text-white uppercase tracking-tight leading-tight">
-                            SAATH &nbsp; ACADEMY <span className="text-emerald-400">SAMUNDRI</span>
+                            SAATH &nbsp; ACADEMY &nbsp; <span className="text-emerald-400">SAMUNDRI</span>
                         </h2>
                     </div>
                     
