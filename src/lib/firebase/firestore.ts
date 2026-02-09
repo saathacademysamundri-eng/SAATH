@@ -706,7 +706,7 @@ export async function getIncome(): Promise<Income[]> {
 }
 
 export async function getIncomeByStudent(studentId: string): Promise<Income[]> {
-    const q = query(collection(db, "income"), where("studentId", "==", studentId), orderBy("date", "desc"));
+    const q = query(collection(db, "income"), where("studentId", "==", studentId));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => {
         const data = doc.data();
