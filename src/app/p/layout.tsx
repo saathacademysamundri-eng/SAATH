@@ -13,7 +13,7 @@ export default function PublicPortalLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-      {/* Academy Header aligned with provided branding image */}
+      {/* Academy Header perfectly matched to saathsamundri.com branding */}
       <header className="sticky top-0 z-50 w-full bg-white border-b border-slate-200 shadow-sm px-4 py-3 sm:px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="https://www.saathsamundri.com/" className="flex items-center gap-3">

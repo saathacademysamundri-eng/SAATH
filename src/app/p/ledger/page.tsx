@@ -32,41 +32,41 @@ export default function PublicLedgerSearchPage() {
       const searchTerm = rollNo.trim().toUpperCase();
       let searchId = searchTerm;
       
-      // Attempt to normalize S001 format
+      // Normalize S001 format
       if (/^\d+$/.test(searchTerm)) {
         searchId = `S${searchTerm.padStart(3, '0')}`;
       }
 
-      // 1. Try search with normalized ID
+      // 1. Try finding student
       let studentData = await getStudent(searchId);
-      
-      // 2. Try search with raw input if first failed
       if (!studentData && searchId !== searchTerm) {
         studentData = await getStudent(searchTerm);
       }
-
-      // 3. Try lowercase just in case
       if (!studentData) {
         studentData = await getStudent(searchTerm.toLowerCase());
       }
 
       if (studentData) {
         setStudent(studentData);
-        // Fetch all income records for this student
+        // Fetch all income records
         const incomeData = await getIncomeByStudent(studentData.id);
-        // Client-side sort to avoid index requirements for public portal
+        
+        // Client-side sort to avoid index errors
         const sortedHistory = [...incomeData].sort((a, b) => {
             const dateA = a.date ? a.date.getTime() : 0;
             const dateB = b.date ? b.date.getTime() : 0;
             return dateB - dateA;
         });
+        
         setHistory(sortedHistory);
       } else {
         setError('No record found. Please check your Roll Number and try again.');
       }
     } catch (err: any) {
       console.error('Search error:', err);
-      setError(`Search failed: ${err.message || 'Connection Error'}. Please try again.`);
+      setError(err.message?.includes('permission') 
+        ? 'Access Denied: Missing permissions. Please contact admin.' 
+        : 'A connection error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
