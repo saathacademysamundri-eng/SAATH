@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -105,7 +106,6 @@ export default function LoginPage() {
                         <div className="h-16 w-16 mx-auto mb-4 bg-white p-1.5 rounded-2xl shadow-xl ring-4 ring-white/10">
                             <Logo noText={true} />
                         </div>
-                        {/* Increased spacing between institutional words for premium branding */}
                         <h2 className="text-xl font-black text-white uppercase tracking-tight leading-tight">
                             SAATH &nbsp; ACADEMY &nbsp; <span className="text-emerald-400">SAMUNDRI</span>
                         </h2>
