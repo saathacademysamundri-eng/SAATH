@@ -5,7 +5,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
-import { Globe, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 
 export default function PublicPortalLayout({ children }: { children: React.ReactNode }) {

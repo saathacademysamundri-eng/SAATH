@@ -32,25 +32,36 @@ export default function PublicResultsSearchPage() {
       const searchTerm = rollNo.trim().toUpperCase();
       let searchId = searchTerm;
       
+      // Normalize S001 format
       if (/^\d+$/.test(searchTerm)) {
         searchId = `S${searchTerm.padStart(3, '0')}`;
       }
 
+      // Try multiple variations
       let studentData = await getStudent(searchId);
       if (!studentData && searchId !== searchTerm) {
         studentData = await getStudent(searchTerm);
+      }
+      if (!studentData) {
+        studentData = await getStudent(searchTerm.toLowerCase());
       }
 
       if (studentData) {
         setStudent(studentData);
         const examsData = await getExamsForStudent(studentData.id);
-        setExams(examsData);
+        // Sort exams by date descending on client
+        const sortedExams = [...examsData].sort((a, b) => {
+            const dateA = a.date ? a.date.getTime() : 0;
+            const dateB = b.date ? b.date.getTime() : 0;
+            return dateB - dateA;
+        });
+        setExams(sortedExams);
       } else {
         setError('No student record found. Please verify your Roll Number.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Search error:', err);
-      setError('A connection error occurred. Please try again in a moment.');
+      setError(`Search failed: ${err.message || 'Connection Error'}. Please try again.`);
     } finally {
       setLoading(false);
     }
@@ -66,7 +77,7 @@ export default function PublicResultsSearchPage() {
         if (typeof mark === 'number') obtained += mark;
     });
 
-    const total = exam.totalMarks * exam.subjects.length;
+    const total = (exam.totalMarks || 0) * exam.subjects.length;
     const percentage = total > 0 ? (obtained / total) * 100 : 0;
 
     return { obtained, total, percentage };
@@ -92,7 +103,7 @@ export default function PublicResultsSearchPage() {
                 value={rollNo} 
                 onChange={(e) => setRollNo(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="text-lg h-16 pl-12 border-2 border-slate-100 focus:border-[#1e40af] focus:ring-[#1e40af]/10 rounded-2xl bg-slate-50/50 font-black text-slate-950"
+                className="text-xl h-16 pl-12 border-2 border-slate-100 focus:border-[#1e40af] focus:ring-[#1e40af]/10 rounded-2xl bg-slate-50/50 font-black text-slate-950 placeholder:text-slate-400"
               />
             </div>
             <button 
@@ -152,7 +163,7 @@ export default function PublicResultsSearchPage() {
                       </div>
                       <div>
                         <h3 className="font-black text-2xl text-slate-900 tracking-tight">{exam.name}</h3>
-                        <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">{format(exam.date, 'MMMM d, yyyy')}</p>
+                        <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">{exam.date ? format(exam.date, 'MMMM d, yyyy') : 'N/A'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6">

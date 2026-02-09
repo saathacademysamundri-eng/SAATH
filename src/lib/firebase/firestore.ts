@@ -12,6 +12,15 @@ import { initializeApp, deleteApp } from 'firebase/app';
 
 const db = getFirestore(app);
 
+// Helper to safely convert Firestore timestamp to Date
+const safeToDate = (timestamp: any): Date => {
+    if (!timestamp) return new Date();
+    if (timestamp instanceof Date) return timestamp;
+    if (timestamp.toDate && typeof timestamp.toDate === 'function') return timestamp.toDate();
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') return new Date(timestamp);
+    return new Date();
+};
+
 // Activity Log Functions
 export async function logActivity(type: Activity['type'], message: string, link?: string) {
     try {
@@ -51,7 +60,7 @@ export async function getRecentActivities(count = 50): Promise<Activity[]> {
                 type: data.type,
                 message: data.message,
                 link: data.link,
-                date: data.date.toDate(),
+                date: safeToDate(data.date),
             } as Activity;
         });
         return activities.sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -117,7 +126,7 @@ export async function getStudents(): Promise<Student[]> {
         return { 
             ...data,
             id: doc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     });
     return allStudents.filter(s => s.status === 'active').sort((a, b) => a.id.localeCompare(b.id));
@@ -131,7 +140,7 @@ export async function getAlumni(): Promise<Student[]> {
         return { 
             ...data,
             id: doc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     });
     return allStudents.filter(s => s.status === 'graduated').sort((a, b) => a.id.localeCompare(b.id));
@@ -145,7 +154,7 @@ export async function getArchivedStudents(): Promise<Student[]> {
         return { 
             ...data,
             id: doc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     });
     return allStudents.filter(s => s.status === 'archived').sort((a, b) => {
@@ -171,7 +180,19 @@ export async function getStudent(id: string): Promise<Student | null> {
         return { 
             ...data,
             id: studentDoc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
+        } as Student;
+    }
+    
+    // Fallback: Search by "id" field if doc ID doesn't match
+    const q = query(collection(db, 'students'), where('id', '==', id), limit(1));
+    const qs = await getDocs(q);
+    if (!qs.empty) {
+        const data = qs.docs[0].data();
+        return { 
+            ...data,
+            id: qs.docs[0].id,
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     }
     
@@ -700,7 +721,7 @@ export async function getIncome(): Promise<Income[]> {
         return {
             id: doc.id,
             ...data,
-            date: data.date.toDate(),
+            date: safeToDate(data.date),
         } as Income;
     });
 }
@@ -713,7 +734,7 @@ export async function getIncomeByStudent(studentId: string): Promise<Income[]> {
         return {
             id: doc.id,
             ...data,
-            date: data.date.toDate(),
+            date: safeToDate(data.date),
         } as Income;
     });
 }
@@ -729,7 +750,7 @@ export async function getIncomeByReceiptId(receiptId: string): Promise<Income | 
     return {
         id: doc.id,
         ...data,
-        date: data.date.toDate(),
+        date: safeToDate(data.date),
     } as Income;
 }
 
@@ -812,7 +833,7 @@ export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>, expe
 export async function getExpenses(): Promise<Expense[]> {
     const q = query(collection(db, "expenses"), orderBy("date", "desc"));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Expense));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: safeToDate(doc.data().date) } as Expense));
 }
 
 export async function updateExpense(expenseId: string, data: { description: string; amount: number, category: string }) {
@@ -877,7 +898,7 @@ export async function addReport(reportData: Omit<Report, 'id' | 'reportDate'>) {
 export async function getReports(): Promise<Report[]> {
     const q = query(collection(db, "reports"));
     const querySnapshot = await getDocs(q);
-    const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), reportDate: doc.data().reportDate.toDate() } as Report));
+    const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), reportDate: safeToDate(doc.data().reportDate) } as Report));
     return reports.sort((a,b) => b.reportDate.getTime() - a.reportDate.getTime());
 }
 
@@ -981,7 +1002,7 @@ export async function deletePayout(payoutId: string) {
 export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
     const q = query(collection(db, "teacher_payouts"), where("teacherId", "==", teacherId));
     const querySnapshot = await getDocs(q);
-    let payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: doc.data().payoutDate.toDate() } as TeacherPayout));
+    let payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: safeToDate(doc.data().payoutDate) } as TeacherPayout));
 
     payouts = payouts.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
 
@@ -1002,7 +1023,7 @@ export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayo
 export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
     const q = query(collection(db, "teacher_payouts"), orderBy("payoutDate", "desc"));
     const querySnapshot = await getDocs(q);
-    const payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: doc.data().payoutDate.toDate() } as TeacherPayout));
+    const payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: safeToDate(doc.data().payoutDate) } as TeacherPayout));
     
     const payoutsWithReports: (TeacherPayout & { report?: Report, academyShare?: number })[] = [];
     for (const payout of payouts) {
@@ -1026,7 +1047,7 @@ export async function getAcademyShare(): Promise<Payout[]> {
         return {
             id: doc.id,
             ...data,
-            payoutDate: data.payoutDate.toDate(),
+            payoutDate: safeToDate(data.payoutDate),
         } as Payout;
     });
     return shares.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
@@ -1399,8 +1420,8 @@ export async function getExams(): Promise<Exam[]> {
         return {
             id: doc.id,
             ...data,
-            date: data.date.toDate(),
-            submissionDeadline: data.submissionDeadline?.toDate(),
+            date: safeToDate(data.date),
+            submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
         } as Exam;
     });
 }
@@ -1417,8 +1438,8 @@ export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
             return {
                 id: doc.id,
                 ...data,
-                date: data.date.toDate(),
-                submissionDeadline: data.submissionDeadline?.toDate(),
+                date: safeToDate(data.date),
+                submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
             } as Exam;
         });
         return exams.sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -1441,8 +1462,8 @@ export async function getExamsForStudent(studentId: string): Promise<Exam[]> {
             return {
                 id: doc.id,
                 ...data,
-                date: data.date.toDate(),
-                submissionDeadline: data.submissionDeadline?.toDate(),
+                date: safeToDate(data.date),
+                submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
             } as Exam;
         });
         return exams.filter(exam => exam.results?.some(r => r.studentId === studentId));
@@ -1461,8 +1482,8 @@ export async function getExam(examId: string): Promise<Exam | null> {
         return {
             id: docSnap.id,
             ...data,
-            date: data.date.toDate(),
-            submissionDeadline: data.submissionDeadline?.toDate(),
+            date: safeToDate(data.date),
+            submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
         } as Exam;
     }
     return null;
@@ -1476,11 +1497,12 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
             throw new Error("Exam not found");
         }
 
+        const examData = examDoc.data() as any;
         const exam = { 
             id: examDoc.id, 
-            ...examDoc.data(), 
-            date: examDoc.data().date.toDate(), 
-            submissionDeadline: examDoc.data().submissionDeadline?.toDate() 
+            ...examData, 
+            date: safeToDate(examData.date), 
+            submissionDeadline: examData.submissionDeadline ? safeToDate(examData.submissionDeadline) : undefined 
         } as Exam;
         
         let shouldNotify = false;

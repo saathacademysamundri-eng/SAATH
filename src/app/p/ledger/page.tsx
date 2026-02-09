@@ -45,26 +45,35 @@ export default function PublicLedgerSearchPage() {
         studentData = await getStudent(searchTerm);
       }
 
+      // 3. Try lowercase just in case
+      if (!studentData) {
+        studentData = await getStudent(searchTerm.toLowerCase());
+      }
+
       if (studentData) {
         setStudent(studentData);
         // Fetch all income records for this student
         const incomeData = await getIncomeByStudent(studentData.id);
         // Client-side sort to avoid index requirements for public portal
-        const sortedHistory = [...incomeData].sort((a, b) => b.date.getTime() - a.date.getTime());
+        const sortedHistory = [...incomeData].sort((a, b) => {
+            const dateA = a.date ? a.date.getTime() : 0;
+            const dateB = b.date ? b.date.getTime() : 0;
+            return dateB - dateA;
+        });
         setHistory(sortedHistory);
       } else {
         setError('No record found. Please check your Roll Number and try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Search error:', err);
-      setError('A connection error occurred. Please try again in a moment.');
+      setError(`Search failed: ${err.message || 'Connection Error'}. Please try again.`);
     } finally {
       setLoading(false);
     }
   };
 
   const stats = useMemo(() => {
-    const totalPaid = history.reduce((sum, item) => sum + item.amount, 0);
+    const totalPaid = history.reduce((sum, item) => sum + (item.amount || 0), 0);
     const lastPayment = history.length > 0 ? history[0] : null;
     return {
       totalPaid,
@@ -94,7 +103,7 @@ export default function PublicLedgerSearchPage() {
                 value={rollNo} 
                 onChange={(e) => setRollNo(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="text-lg h-16 pl-12 border-2 border-slate-100 focus:border-[#1e40af] focus:ring-[#1e40af]/10 rounded-2xl bg-slate-50/50 font-black text-slate-950"
+                className="text-xl h-16 pl-12 border-2 border-slate-100 focus:border-[#1e40af] focus:ring-[#1e40af]/10 rounded-2xl bg-slate-50/50 font-black text-slate-950 placeholder:text-slate-400"
               />
             </div>
             <button 
@@ -124,12 +133,12 @@ export default function PublicLedgerSearchPage() {
               </div>
               <CardHeader className="pb-2">
                 <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Outstanding Balance</p>
-                <CardTitle className="text-4xl font-black tracking-tight">{student.totalFee.toLocaleString()} PKR</CardTitle>
+                <CardTitle className="text-4xl font-black tracking-tight">{(student.totalFee || 0).toLocaleString()} PKR</CardTitle>
               </CardHeader>
               <CardContent>
-                <Badge className={cn("bg-opacity-20 border-0 font-bold py-1 px-3", student.totalFee > 0 ? "bg-amber-500 text-amber-400" : "bg-emerald-500 text-emerald-400")}>
-                  <span className={cn("h-2 w-2 rounded-full mr-2", student.totalFee > 0 ? "bg-amber-400 animate-pulse" : "bg-emerald-400")} />
-                  {student.totalFee > 0 ? "Payment Due" : "Fully Cleared"}
+                <Badge className={cn("bg-opacity-20 border-0 font-bold py-1 px-3", (student.totalFee || 0) > 0 ? "bg-amber-500 text-amber-400" : "bg-emerald-500 text-emerald-400")}>
+                  <span className={cn("h-2 w-2 rounded-full mr-2", (student.totalFee || 0) > 0 ? "bg-amber-400 animate-pulse" : "bg-emerald-400")} />
+                  {(student.totalFee || 0) > 0 ? "Payment Due" : "Fully Cleared"}
                 </Badge>
               </CardContent>
             </Card>
@@ -199,7 +208,7 @@ export default function PublicLedgerSearchPage() {
                   <TableBody>
                     {history.length > 0 ? history.map((income) => (
                       <TableRow key={income.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
-                        <TableCell className="py-6 pl-10 text-slate-800 font-bold">{format(income.date, 'PPP')}</TableCell>
+                        <TableCell className="py-6 pl-10 text-slate-800 font-bold">{income.date ? format(income.date, 'PPP') : 'N/A'}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
