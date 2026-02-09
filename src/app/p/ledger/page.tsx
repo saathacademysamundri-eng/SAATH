@@ -31,10 +31,9 @@ export default function PublicLedgerSearchPage() {
       const searchTerm = rollNo.trim().toUpperCase();
       let searchId = searchTerm;
       
-      // Normalize roll number (e.g., "1" -> "S001")
       if (/^\d+$/.test(searchTerm)) {
         searchId = `S${searchTerm.padStart(3, '0')}`;
-      } else if (!searchTerm.startsWith('S') && searchTerm.length > 0) {
+      } else if (!searchTerm.startsWith('S')) {
         searchId = `S${searchTerm.replace(/\D/g, '').padStart(3, '0')}`;
       }
 
@@ -43,7 +42,6 @@ export default function PublicLedgerSearchPage() {
       if (studentData) {
         setStudent(studentData);
         const incomeData = await getIncomeByStudent(studentData.id);
-        // Sort history by date descending
         setHistory(incomeData.sort((a, b) => b.date.getTime() - a.date.getTime()));
       } else {
         setError('Record not found. Please verify your Roll Number.');
