@@ -87,6 +87,7 @@ export default function LoginPage() {
             {/* Background "Ingredients" - Animated Glows */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full animate-pulse" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full animate-pulse delay-700" />
+            <div className="absolute top-[20%] right-[-5%] w-[30%] h-[30%] bg-emerald-500/5 blur-[100px] rounded-full animate-pulse delay-1000" />
 
             <div className="w-full max-w-4xl rounded-2xl bg-slate-900/40 backdrop-blur-2xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-white/10 relative z-10">
                 {/* Left Side: Brand Image (Hidden on mobile) */}
@@ -107,8 +108,8 @@ export default function LoginPage() {
                         <div className="h-16 w-16 mx-auto mb-4 bg-white p-1.5 rounded-2xl shadow-xl ring-4 ring-white/10">
                             <Logo noText={true} />
                         </div>
-                        <h2 className="text-xl font-black text-white uppercase tracking-tighter leading-tight">
-                            SAATH ACADEMY <span className="text-emerald-400">SAMUNDRI</span>
+                        <h2 className="text-xl font-black text-white uppercase tracking-tight leading-tight">
+                            SAATH &nbsp; ACADEMY <span className="text-emerald-400">SAMUNDRI</span>
                         </h2>
                     </div>
                     
@@ -176,7 +177,7 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            <div className="mt-10 text-center space-y-4">
+            <div className="mt-10 text-center space-y-4 relative z-10">
                 <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em]">Developed by Mian Mudassar</p>
                 <div className="flex justify-center gap-6">
                     <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" className="text-slate-600 hover:text-indigo-400 transition-colors">
