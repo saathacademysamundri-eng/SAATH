@@ -77,7 +77,7 @@ export default function PublicResultsSearchPage() {
           <GraduationCap className="h-8 w-8 sm:h-10 sm:w-10" />
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-2 uppercase">Academic Results</h1>
-        <p className="text-base sm:text-lg text-slate-600 max-w-md mx-auto font-medium">Official grades and performance reports.</p>
+        <p className="text-base sm:text-lg text-slate-600 max-w-md mx-auto font-medium text-center">Official grades and performance reports.</p>
       </header>
 
       <Card className="mb-8 shadow-xl border-slate-200/60 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] bg-white">

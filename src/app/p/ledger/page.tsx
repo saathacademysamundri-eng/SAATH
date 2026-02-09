@@ -43,7 +43,7 @@ export default function PublicLedgerSearchPage() {
       if (studentData) {
         setStudent(studentData);
         const incomeData = await getIncomeByStudent(studentData.id);
-        // Sort history by date descending
+        // Sort history by date descending on the client side
         setHistory(incomeData.sort((a, b) => b.date.getTime() - a.date.getTime()));
       } else {
         setError('Record not found. Please verify your Roll Number.');
@@ -67,7 +67,7 @@ export default function PublicLedgerSearchPage() {
           <Receipt className="h-8 w-8 sm:h-10 sm:w-10" />
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-2 uppercase">Financial Statement</h1>
-        <p className="text-base sm:text-lg text-slate-600 max-w-md mx-auto font-medium">Live fee tracking and payment history.</p>
+        <p className="text-base sm:text-lg text-slate-600 max-w-md mx-auto font-medium text-center">Live fee tracking and payment history.</p>
       </header>
 
       <Card className="mb-8 shadow-xl border-slate-200/60 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] bg-white">
@@ -135,7 +135,8 @@ export default function PublicLedgerSearchPage() {
               <CardContent>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Successful Payments</p>
               </CardContent>
-            </div>
+            </Card>
+          </div>
 
           <Card className="bg-white shadow-2xl rounded-[2rem] border-slate-100 overflow-hidden">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">

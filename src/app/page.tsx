@@ -78,13 +78,17 @@ export default function LoginPage() {
         }
     };
 
-    if (!isClient) return <div className="min-h-screen bg-[#0f172a]" />;
+    if (!isClient) return <div className="min-h-screen bg-slate-950" />;
     
     const isLoading = isAdminLoading || isTeacherLoading;
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-            <div className="w-full max-w-4xl rounded-2xl bg-slate-900/50 backdrop-blur-xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-white/10">
+        <main className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden relative">
+            {/* Background "Ingredients" - Animated Glows */}
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full animate-pulse" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full animate-pulse delay-700" />
+
+            <div className="w-full max-w-4xl rounded-2xl bg-slate-900/40 backdrop-blur-2xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-white/10 relative z-10">
                 {/* Left Side: Brand Image (Hidden on mobile) */}
                 <div className="relative hidden md:block border-r border-white/5">
                     <Image
@@ -94,7 +98,7 @@ export default function LoginPage() {
                         className="object-cover"
                         priority
                     />
-                    <div className="absolute inset-0 bg-indigo-950/30 backdrop-grayscale-[0.2]" />
+                    <div className="absolute inset-0 bg-indigo-950/40 backdrop-grayscale-[0.1]" />
                 </div>
 
                 {/* Right Side: Login Form */}
@@ -113,14 +117,14 @@ export default function LoginPage() {
                             <button 
                                 type="button"
                                 onClick={() => setLoginType('admin')}
-                                className={cn("flex-1 py-2 px-4 rounded-full text-xs font-black transition-all uppercase tracking-wider", loginType === 'admin' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-slate-400 hover:text-slate-200")}
+                                className={cn("flex-1 py-2 px-4 rounded-full text-[10px] font-black transition-all uppercase tracking-wider", loginType === 'admin' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-slate-400 hover:text-slate-200")}
                             >
                                 Admin
                             </button>
                             <button 
                                 type="button"
                                 onClick={() => setLoginType('teacher')}
-                                className={cn("flex-1 py-2 px-4 rounded-full text-xs font-black transition-all uppercase tracking-wider", loginType === 'teacher' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-slate-400 hover:text-slate-200")}
+                                className={cn("flex-1 py-2 px-4 rounded-full text-[10px] font-black transition-all uppercase tracking-wider", loginType === 'teacher' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-slate-400 hover:text-slate-200")}
                             >
                                 Teacher
                             </button>
@@ -129,7 +133,7 @@ export default function LoginPage() {
 
                     <div className="text-center mb-8">
                         <h3 className="text-2xl font-black text-white uppercase tracking-tight">Login Portal</h3>
-                        <p className="text-slate-500 text-[10px] uppercase font-bold tracking-[0.3em] mt-1">Institutional Access Only</p>
+                        <p className="text-slate-500 text-[9px] uppercase font-bold tracking-[0.3em] mt-1">Institutional Access Only</p>
                     </div>
                     
                     <form className="space-y-5" onSubmit={handleSubmit}>
