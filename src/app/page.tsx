@@ -85,9 +85,9 @@ export default function LoginPage() {
     const isLoading = isAdminLoading || isTeacherLoading;
 
     return (
-        <main className="min-h-screen bg-[#2e1065] flex flex-col items-center justify-center p-4">
+        <main className="min-h-screen bg-[#2e1065] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
             <div className="w-full max-w-4xl rounded-2xl bg-[#1e293b] shadow-2xl overflow-hidden grid md:grid-cols-2 border border-slate-700">
-                {/* Left Side: Brand Image */}
+                {/* Left Side: Brand Image (Hidden on small mobile) */}
                 <div className="relative hidden md:block border-r border-slate-700">
                     <Image
                         src="https://images.unsplash.com/photo-1571260899304-425eee4c7efc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwbGVhcm5pbmd8ZW58MHx8fHwxNzYxNDU1NTU2fDA&ixlib=rb-4.1.0&q=80&w=1080"
@@ -95,30 +95,33 @@ export default function LoginPage() {
                         fill
                         className="object-cover"
                     />
+                    <div className="absolute inset-0 bg-black/20" />
                 </div>
 
                 {/* Right Side: Login Form */}
-                <div className="p-8 sm:p-12 flex flex-col justify-center">
+                <div className="p-6 sm:p-10 lg:p-12 flex flex-col justify-center">
                     <div className="mb-8 text-center">
-                        <div className="h-16 w-16 mx-auto mb-4 bg-white p-1 rounded-xl">
+                        <div className="h-16 w-16 mx-auto mb-4 bg-white p-1 rounded-xl shadow-inner">
                             <Logo noText={true} />
                         </div>
-                        <h2 className="text-xl font-bold text-white uppercase tracking-tight">
+                        <h2 className="text-xl font-bold text-white uppercase tracking-tight leading-tight">
                             SAATH ACADEMY SAMUNDRI
                         </h2>
                     </div>
                     
                     <div className="flex justify-center mb-8">
-                        <div className="bg-slate-800 p-1 rounded-full flex gap-1 w-full max-w-[200px]">
+                        <div className="bg-slate-800 p-1 rounded-full flex gap-1 w-full max-w-[220px]">
                             <button 
+                                type="button"
                                 onClick={() => setLoginType('admin')}
-                                className={cn("flex-1 py-1.5 px-4 rounded-full text-xs font-bold transition-all uppercase", loginType === 'admin' ? "bg-[#4f46e5] text-white shadow-lg" : "text-slate-400 hover:text-slate-300")}
+                                className={cn("flex-1 py-2 px-4 rounded-full text-xs font-black transition-all uppercase tracking-wider", loginType === 'admin' ? "bg-[#4f46e5] text-white shadow-lg scale-105" : "text-slate-400 hover:text-slate-300")}
                             >
                                 Admin
                             </button>
                             <button 
+                                type="button"
                                 onClick={() => setLoginType('teacher')}
-                                className={cn("flex-1 py-1.5 px-4 rounded-full text-xs font-bold transition-all uppercase", loginType === 'teacher' ? "bg-[#4f46e5] text-white shadow-lg" : "text-slate-400 hover:text-slate-300")}
+                                className={cn("flex-1 py-2 px-4 rounded-full text-xs font-black transition-all uppercase tracking-wider", loginType === 'teacher' ? "bg-[#4f46e5] text-white shadow-lg scale-105" : "text-slate-400 hover:text-slate-300")}
                             >
                                 Teacher
                             </button>
@@ -126,13 +129,13 @@ export default function LoginPage() {
                     </div>
 
                     <div className="text-center mb-8">
-                        <h3 className="text-2xl font-black text-white uppercase">LOG IN</h3>
-                        <p className="text-slate-400 text-xs mt-1">Welcome back! Please sign in to continue.</p>
+                        <h3 className="text-2xl font-black text-white uppercase tracking-tight">LOG IN</h3>
+                        <p className="text-slate-400 text-[11px] uppercase font-bold tracking-widest mt-1">Institutional Access Only</p>
                     </div>
                     
                     <form className="space-y-5" onSubmit={handleSubmit}>
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-[10px] uppercase tracking-widest text-slate-400 font-bold ml-1">Email Address</Label>
+                            <Label htmlFor="email" className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black ml-1">Email Address</Label>
                             <Input 
                                 id="email" 
                                 type="email" 
@@ -140,11 +143,11 @@ export default function LoginPage() {
                                 value={email} 
                                 onChange={(e) => setEmail(e.target.value)} 
                                 required 
-                                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 h-12 focus:ring-[#4f46e5] focus:border-[#4f46e5]"
+                                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 h-12 focus:ring-[#4f46e5] focus:border-[#4f46e5] rounded-xl"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password" className="text-[10px] uppercase tracking-widest text-slate-400 font-bold ml-1">Password</Label>
+                            <Label htmlFor="password" className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black ml-1">Password</Label>
                             <div className="relative">
                                 <Input 
                                     id="password" 
@@ -152,7 +155,7 @@ export default function LoginPage() {
                                     value={password} 
                                     onChange={(e) => setPassword(e.target.value)} 
                                     required 
-                                    className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 h-12 focus:ring-[#4f46e5] focus:border-[#4f46e5]"
+                                    className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 h-12 focus:ring-[#4f46e5] focus:border-[#4f46e5] rounded-xl"
                                 />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300">
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -162,25 +165,25 @@ export default function LoginPage() {
                         <div className="text-right">
                             <ForgotPasswordDialog />
                         </div>
-                        <Button type="submit" className="w-full h-12 bg-[#4f46e5] hover:bg-[#4338ca] text-white font-bold uppercase tracking-wide text-sm rounded-xl shadow-lg transition-all active:scale-95" disabled={isLoading}>
+                        <Button type="submit" className="w-full h-12 bg-[#4f46e5] hover:bg-[#4338ca] text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-xl transition-all active:scale-95 disabled:opacity-70" disabled={isLoading}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Log In
+                            SIGN IN
                         </Button>
                     </form>
                 </div>
             </div>
 
-            <div className="mt-8 text-center text-xs text-slate-400 font-medium">
-                <p>Developed by "Mian Mudassar"</p>
-                <div className="mt-3 flex justify-center gap-4">
-                    <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" className="hover:text-white transition-colors">
-                        <Facebook size={16} />
+            <div className="mt-10 text-center">
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Developed by Mian Mudassar</p>
+                <div className="mt-4 flex justify-center gap-6">
+                    <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" className="text-slate-500 hover:text-white transition-colors">
+                        <Facebook size={18} />
                     </Link>
-                    <Link href="https://api.whatsapp.com/send?phone=923099969535" target="_blank" className="hover:text-white transition-colors">
-                        <MessageSquare size={16} />
+                    <Link href="https://api.whatsapp.com/send?phone=923099969535" target="_blank" className="text-slate-500 hover:text-white transition-colors">
+                        <MessageSquare size={18} />
                     </Link>
-                    <Link href="https://www.instagram.com/mianmudassar_" target="_blank" className="hover:text-white transition-colors">
-                        <Instagram size={16} />
+                    <Link href="https://www.instagram.com/mianmudassar_" target="_blank" className="text-slate-500 hover:text-white transition-colors">
+                        <Instagram size={18} />
                     </Link>
                 </div>
             </div>
