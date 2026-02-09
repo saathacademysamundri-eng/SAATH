@@ -84,13 +84,11 @@ export default function LoginPage() {
 
     return (
         <main className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden relative">
-            {/* Background "Ingredients" - Animated Glows */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full animate-pulse" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full animate-pulse delay-700" />
             <div className="absolute top-[20%] right-[-5%] w-[30%] h-[30%] bg-emerald-500/5 blur-[100px] rounded-full animate-pulse delay-1000" />
 
             <div className="w-full max-w-4xl rounded-2xl bg-slate-900/40 backdrop-blur-2xl shadow-2xl overflow-hidden grid md:grid-cols-2 border border-white/10 relative z-10">
-                {/* Left Side: Brand Image (Hidden on mobile) */}
                 <div className="relative hidden md:block border-r border-white/5">
                     <Image
                         src="https://images.unsplash.com/photo-1571260899304-425eee4c7efc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwbGVhcm5pbmd8ZW58MHx8fHwxNzYxNDU1NTU2fDA&ixlib=rb-4.1.0&q=80&w=1080"
@@ -102,7 +100,6 @@ export default function LoginPage() {
                     <div className="absolute inset-0 bg-indigo-950/40 backdrop-grayscale-[0.1]" />
                 </div>
 
-                {/* Right Side: Login Form */}
                 <div className="p-6 sm:p-10 lg:p-12 flex flex-col justify-center">
                     <div className="mb-8 text-center">
                         <div className="h-16 w-16 mx-auto mb-4 bg-white p-1.5 rounded-2xl shadow-xl ring-4 ring-white/10">

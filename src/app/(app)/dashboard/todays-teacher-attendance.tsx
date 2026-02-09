@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Badge } from '@/components/ui/badge';
@@ -10,10 +9,12 @@ import { ClipboardList } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
+type StatusType = 'Present' | 'Absent' | 'Leave' | 'Not Marked';
+
 type TeacherAttendanceSummary = {
   teacherId: string;
   teacherName: string;
-  todayStatus: 'Present' | 'Absent' | 'Leave' | 'Not Marked';
+  todayStatus: StatusType;
   presentMonth: number;
   absentMonth: number;
 };
@@ -23,36 +24,48 @@ export function TodaysTeacherAttendance() {
     const [attendanceData, setAttendanceData] = useState<TeacherAttendanceSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
+    function normalizeStatus(status: string | undefined): StatusType {
+        if (status === 'Present' || status === 'Absent' || status === 'Leave') {
+            return status;
+        }
+        return 'Not Marked';
+    }
+
     useEffect(() => {
         if (!appLoading && teachers.length > 0) {
             async function fetchAllTeacherAttendance() {
                 setIsLoading(true);
-                const now = new Date();
-                const month = now.getMonth();
-                const year = now.getFullYear();
+                try {
+                    const now = new Date();
+                    const month = now.getMonth();
+                    const year = now.getFullYear();
 
-                const allAttendanceForMonth = await getAllTeacherAttendanceForMonth(month, year);
+                    const allAttendanceForMonth = await getAllTeacherAttendanceForMonth(month, year);
 
-                const summaryData = teachers.map(teacher => {
-                    const teacherRecords = allAttendanceForMonth.filter(rec => rec.teacherId === teacher.id);
-                    
-                    const todayStr = now.toISOString().split('T')[0];
-                    const todayRecord = teacherRecords.find(d => d.date.toISOString().split('T')[0] === todayStr);
+                    const summaryData: TeacherAttendanceSummary[] = teachers.map(teacher => {
+                        const teacherRecords = allAttendanceForMonth.filter(rec => rec.teacherId === teacher.id);
+                        
+                        const todayStr = now.toISOString().split('T')[0];
+                        const todayRecord = teacherRecords.find(d => d.date.toISOString().split('T')[0] === todayStr);
 
-                    const presentCount = teacherRecords.filter(d => d.status === 'Present').length;
-                    const absentOrLeaveCount = teacherRecords.filter(d => d.status === 'Absent' || d.status === 'Leave').length;
+                        const presentCount = teacherRecords.filter(d => d.status === 'Present').length;
+                        const absentOrLeaveCount = teacherRecords.filter(d => d.status === 'Absent' || d.status === 'Leave').length;
 
-                    return {
-                        teacherId: teacher.id,
-                        teacherName: teacher.name,
-                        todayStatus: todayRecord?.status || 'Not Marked',
-                        presentMonth: presentCount,
-                        absentMonth: absentOrLeaveCount,
-                    }
-                });
+                        return {
+                            teacherId: teacher.id,
+                            teacherName: teacher.name,
+                            todayStatus: normalizeStatus(todayRecord?.status),
+                            presentMonth: presentCount,
+                            absentMonth: absentOrLeaveCount,
+                        };
+                    });
 
-                setAttendanceData(summaryData);
-                setIsLoading(false);
+                    setAttendanceData(summaryData);
+                } catch (error) {
+                    console.error("Failed to fetch teacher attendance summary:", error);
+                } finally {
+                    setIsLoading(false);
+                }
             }
             fetchAllTeacherAttendance();
         } else if (!appLoading) {
@@ -60,7 +73,7 @@ export function TodaysTeacherAttendance() {
         }
     }, [appLoading, teachers]);
     
-    const getStatusBadgeVariant = (status: TeacherAttendanceSummary['todayStatus']) => {
+    const getStatusBadgeVariant = (status: StatusType) => {
         switch(status) {
             case 'Present': return 'secondary';
             case 'Absent': return 'destructive';
