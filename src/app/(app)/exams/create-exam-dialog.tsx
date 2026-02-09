@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -147,6 +146,7 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             scope,
             results: [],
             academicSession: academicSession,
+            // Ensure submissionDeadline is passed as undefined if no date is picked to prevent type mismatch
             submissionDeadline: submissionDeadline || undefined,
             status: (isTeacherPortal && teacher) ? 'pending' as const : 'approved' as const,
         };

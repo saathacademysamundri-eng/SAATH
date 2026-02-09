@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +24,7 @@ export function TodaysTeacherAttendance() {
     const [attendanceData, setAttendanceData] = useState<TeacherAttendanceSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
+    // Type-safe status guard for TypeScript compliance
     function normalizeStatus(status: string | undefined): StatusType {
         if (status === 'Present' || status === 'Absent' || status === 'Leave') {
             return status;
