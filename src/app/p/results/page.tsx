@@ -31,8 +31,12 @@ export default function PublicResultsSearchPage() {
       const searchTerm = rollNo.trim().toUpperCase();
       let searchId = searchTerm;
       
+      // Normalize roll number: "1" -> "S001"
       if (/^\d+$/.test(searchTerm)) {
         searchId = `S${searchTerm.padStart(3, '0')}`;
+      } else if (!searchTerm.startsWith('S')) {
+        // Handle cases like "s001"
+        searchId = `S${searchTerm.replace(/\D/g, '').padStart(3, '0')}`;
       }
 
       const studentData = await getStudent(searchId);
@@ -43,11 +47,11 @@ export default function PublicResultsSearchPage() {
         const sortedExams = [...examsData].sort((a, b) => b.date.getTime() - a.date.getTime());
         setExams(sortedExams);
       } else {
-        setError('No record found. Please verify your Roll Number.');
+        setError('Record not found. Please verify your Roll Number.');
       }
     } catch (err: any) {
       console.error('Search error:', err);
-      setError('Connection error. Please try again.');
+      setError('A connection error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

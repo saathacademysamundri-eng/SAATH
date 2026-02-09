@@ -31,7 +31,7 @@ export default function PublicPortalLayout({ children }: { children: React.React
             </Button>
             <div className="h-6 w-px bg-slate-200" />
             <Button size="sm" variant="outline" asChild className="border-[#1e40af] text-[#1e40af] hover:bg-[#1e40af] hover:text-white font-bold rounded-full px-4 sm:px-6 text-xs sm:text-sm">
-              <Link href="/login">
+              <Link href="/">
                 Login
               </Link>
             </Button>

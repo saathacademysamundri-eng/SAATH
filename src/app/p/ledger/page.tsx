@@ -31,17 +31,18 @@ export default function PublicLedgerSearchPage() {
       const searchTerm = rollNo.trim().toUpperCase();
       let searchId = searchTerm;
       
+      // Normalize roll number: "1" -> "S001"
       if (/^\d+$/.test(searchTerm)) {
         searchId = `S${searchTerm.padStart(3, '0')}`;
+      } else if (!searchTerm.startsWith('S')) {
+        searchId = `S${searchTerm.replace(/\D/g, '').padStart(3, '0')}`;
       }
 
       const studentData = await getStudent(searchId);
 
       if (studentData) {
         setStudent(studentData);
-        // Simplified fetching to avoid index issues
         const incomeData = await getIncomeByStudent(studentData.id);
-        // Client-side sort
         const sortedHistory = [...incomeData].sort((a, b) => b.date.getTime() - a.date.getTime());
         setHistory(sortedHistory);
       } else {
@@ -49,7 +50,7 @@ export default function PublicLedgerSearchPage() {
       }
     } catch (err: any) {
       console.error('Search error:', err);
-      setError('Connection error. Please try again.');
+      setError('A connection error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -134,8 +135,7 @@ export default function PublicLedgerSearchPage() {
               <CardContent>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Successful Transactions</p>
               </CardContent>
-            </Card>
-          </div>
+            </div>
 
           <Card className="bg-white shadow-2xl rounded-[2rem] border-slate-100 overflow-hidden">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
