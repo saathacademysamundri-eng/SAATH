@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, EyeOff, Facebook, Instagram, MessageSquare, Award, Wallet, ArrowRight } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Award, Wallet, ArrowRight } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
@@ -16,12 +16,11 @@ import { cn } from '@/lib/utils';
 import { ForgotPasswordDialog } from '@/components/login-form';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
-export default function LandingPage() {
+export default function LandingLoginPage() {
     const [isClient, setIsClient] = useState(false);
     const { settings, isSettingsLoading } = useSettings();
     const [loginType, setLoginType] = useState<'admin' | 'teacher'>('admin');
@@ -49,7 +48,7 @@ export default function LandingPage() {
 
             if (user.uid !== ADMIN_UID) {
                 await signOut(auth);
-                toast({ variant: 'destructive', title: 'Access Denied', description: 'You do not have permission to access the admin panel.' });
+                toast({ variant: 'destructive', title: 'Access Denied', description: 'Unauthorized access.' });
                 return;
             }
 
@@ -59,11 +58,7 @@ export default function LandingPage() {
             toast({ title: 'Login Successful', description: 'Welcome back, Admin!' });
             router.push('/dashboard');
         } catch (error: any) {
-            let errorMessage = 'An unexpected error occurred.';
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                errorMessage = 'Invalid email or password.';
-            }
-            toast({ variant: 'destructive', title: 'Login Failed', description: errorMessage });
+            toast({ variant: 'destructive', title: 'Login Failed', description: 'Invalid credentials.' });
         } finally {
             setIsAdminLoading(false);
         }
@@ -85,19 +80,13 @@ export default function LandingPage() {
         }
     };
 
-    if (!isClient) {
-        return (
-            <div className="flex h-screen w-full items-center justify-center bg-background">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            </div>
-        );
-    }
+    if (!isClient) return <div className="min-h-screen bg-slate-50" />;
     
     const isLoading = isAdminLoading || isTeacherLoading;
 
     return (
         <main className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 sm:p-6 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
-            <div className="w-full max-w-5xl grid lg:grid-cols-2 gap-8 items-center">
+            <div className="w-full max-w-5xl grid lg:grid-cols-2 gap-12 items-center">
                 
                 {/* Left Side: Student Portal Gateway */}
                 <div className="space-y-8">
@@ -105,11 +94,11 @@ export default function LandingPage() {
                         <div className="h-20 w-20 mx-auto lg:mx-0">
                             <Logo noText={true} />
                         </div>
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight uppercase">
+                        <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight uppercase">
                             SAATH ACADEMY <br/>
                             <span className="text-[#059669]">SAMUNDRI</span>
                         </h1>
-                        <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">Official Student Portal</p>
+                        <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-xs sm:text-sm">Official Student Portal</p>
                     </div>
 
                     <div className="grid gap-4">
@@ -121,8 +110,8 @@ export default function LandingPage() {
                                     </div>
                                     <div className="flex-1 p-6 text-left bg-white flex items-center justify-between">
                                         <div>
-                                            <h3 className="font-black text-slate-900 text-lg uppercase">Academic Performance</h3>
-                                            <p className="text-slate-500 text-sm font-medium">Check marks & board rankings</p>
+                                            <h3 className="font-black text-slate-900 text-lg uppercase">Academic Results</h3>
+                                            <p className="text-slate-500 text-xs sm:text-sm font-medium">Check your marks & ranking</p>
                                         </div>
                                         <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-[#1e40af] transition-colors" />
                                     </div>
@@ -139,7 +128,7 @@ export default function LandingPage() {
                                     <div className="flex-1 p-6 text-left bg-white flex items-center justify-between">
                                         <div>
                                             <h3 className="font-black text-slate-900 text-lg uppercase">Financial Statement</h3>
-                                            <p className="text-slate-500 text-sm font-medium">View fee payments & balance</p>
+                                            <p className="text-slate-500 text-xs sm:text-sm font-medium">View fee history & dues</p>
                                         </div>
                                         <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-[#059669] transition-colors" />
                                     </div>
@@ -149,7 +138,7 @@ export default function LandingPage() {
                     </div>
 
                     <div className="pt-4 border-t border-slate-200">
-                        <Button variant="outline" asChild className="w-full rounded-xl border-2 font-bold h-12 hover:bg-slate-900 hover:text-white transition-all uppercase">
+                        <Button variant="outline" asChild className="w-full rounded-xl border-2 font-bold h-12 hover:bg-slate-900 hover:text-white transition-all uppercase text-xs">
                             <Link href="https://www.saathsamundri.com/">
                                 <ArrowRight className="mr-2 h-4 w-4 rotate-180" />
                                 Back to Academy Website
@@ -159,11 +148,11 @@ export default function LandingPage() {
                 </div>
 
                 {/* Right Side: Staff Login */}
-                <Card className="shadow-2xl border-slate-200 rounded-[2rem] overflow-hidden">
+                <Card className="shadow-2xl border-slate-200 rounded-[2.5rem] overflow-hidden">
                     <div className="p-8 sm:p-10">
                         <div className="text-center mb-8">
                             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Staff Login</h2>
-                            <p className="text-slate-500 font-medium">Management & Faculty Access</p>
+                            <p className="text-slate-500 font-medium">Faculty & Admin Access</p>
                         </div>
 
                         <div className="flex justify-center mb-8">
@@ -202,16 +191,16 @@ export default function LandingPage() {
                             </div>
                             <Button type="submit" className="w-full h-14 rounded-2xl bg-[#1e40af] hover:bg-[#1e3a8a] text-white font-black text-lg shadow-lg uppercase tracking-tight transition-all active:scale-95" disabled={isLoading}>
                                 {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                                Sign In to Portal
+                                Sign In
                             </Button>
                         </form>
                     </div>
                 </Card>
             </div>
 
-            {/* Global Institutional Footer */}
+            {/* Global Footer */}
             <div className="mt-16 text-center space-y-4">
-                <p className="font-black text-slate-400 text-xs sm:text-sm tracking-tight uppercase">
+                <p className="font-black text-slate-400 text-xs tracking-tight uppercase">
                     © 2026 SAATH ACADEMY SAMUNDRI. All Rights Reserved.
                 </p>
                 <div className="space-y-1">

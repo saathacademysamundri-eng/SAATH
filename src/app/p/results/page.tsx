@@ -31,11 +31,9 @@ export default function PublicResultsSearchPage() {
       const searchTerm = rollNo.trim().toUpperCase();
       let searchId = searchTerm;
       
-      // Normalize roll number: "1" -> "S001"
       if (/^\d+$/.test(searchTerm)) {
         searchId = `S${searchTerm.padStart(3, '0')}`;
       } else if (!searchTerm.startsWith('S')) {
-        // Handle cases like "s001"
         searchId = `S${searchTerm.replace(/\D/g, '').padStart(3, '0')}`;
       }
 
@@ -44,14 +42,13 @@ export default function PublicResultsSearchPage() {
       if (studentData) {
         setStudent(studentData);
         const examsData = await getExamsForStudent(studentData.id);
-        const sortedExams = [...examsData].sort((a, b) => b.date.getTime() - a.date.getTime());
-        setExams(sortedExams);
+        setExams(examsData);
       } else {
         setError('Record not found. Please verify your Roll Number.');
       }
     } catch (err: any) {
       console.error('Search error:', err);
-      setError('A connection error occurred. Please try again.');
+      setError('Connection failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -79,11 +76,11 @@ export default function PublicResultsSearchPage() {
         <div className="inline-flex items-center justify-center p-4 rounded-3xl bg-blue-50 text-[#1e40af] mb-4 shadow-sm border border-blue-100">
           <GraduationCap className="h-8 w-8 sm:h-10 sm:w-10" />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-2 uppercase">Academic Performance</h1>
-        <p className="text-base sm:text-lg text-slate-600 max-w-md mx-auto">Official results and progress reports.</p>
+        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-2 uppercase">Academic Results</h1>
+        <p className="text-base sm:text-lg text-slate-600 max-w-md mx-auto font-medium">Official grades and performance reports.</p>
       </header>
 
-      <Card className="mb-8 shadow-xl border-slate-200/60 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem]">
+      <Card className="mb-8 shadow-xl border-slate-200/60 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] bg-white">
         <CardContent className="p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-grow">

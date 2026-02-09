@@ -9,10 +9,10 @@ import { ArrowLeft } from 'lucide-react';
 export default function PublicPortalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-      {/* Academy Header perfectly matched to saathsamundri.com branding */}
+      {/* Dynamic Institutional Header */}
       <header className="sticky top-0 z-50 w-full bg-white border-b border-slate-200 shadow-sm px-4 py-3 sm:px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="https://www.saathsamundri.com/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl overflow-hidden bg-white shadow-sm border border-slate-100 flex items-center justify-center p-1">
               <Logo noText={true} />
             </div>
@@ -22,17 +22,11 @@ export default function PublicPortalLayout({ children }: { children: React.React
             </div>
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" asChild className="text-slate-600 hover:text-[#1e40af] font-semibold flex text-xs sm:text-sm px-2 sm:px-4">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" asChild className="text-slate-600 hover:text-[#1e40af] font-semibold text-xs sm:text-sm">
               <Link href="https://www.saathsamundri.com/">
                 <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
                 <span className="hidden xs:inline">Back to </span>Website
-              </Link>
-            </Button>
-            <div className="h-6 w-px bg-slate-200" />
-            <Button size="sm" variant="outline" asChild className="border-[#1e40af] text-[#1e40af] hover:bg-[#1e40af] hover:text-white font-bold rounded-full px-4 sm:px-6 text-xs sm:text-sm">
-              <Link href="/">
-                Login
               </Link>
             </Button>
           </div>

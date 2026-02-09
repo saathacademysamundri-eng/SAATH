@@ -31,10 +31,10 @@ export default function PublicLedgerSearchPage() {
       const searchTerm = rollNo.trim().toUpperCase();
       let searchId = searchTerm;
       
-      // Normalize roll number: "1" -> "S001"
+      // Normalize roll number (e.g., "1" -> "S001")
       if (/^\d+$/.test(searchTerm)) {
         searchId = `S${searchTerm.padStart(3, '0')}`;
-      } else if (!searchTerm.startsWith('S')) {
+      } else if (!searchTerm.startsWith('S') && searchTerm.length > 0) {
         searchId = `S${searchTerm.replace(/\D/g, '').padStart(3, '0')}`;
       }
 
@@ -43,10 +43,10 @@ export default function PublicLedgerSearchPage() {
       if (studentData) {
         setStudent(studentData);
         const incomeData = await getIncomeByStudent(studentData.id);
-        const sortedHistory = [...incomeData].sort((a, b) => b.date.getTime() - a.date.getTime());
-        setHistory(sortedHistory);
+        // Sort history by date descending
+        setHistory(incomeData.sort((a, b) => b.date.getTime() - a.date.getTime()));
       } else {
-        setError('Record not found. Please check your Roll Number.');
+        setError('Record not found. Please verify your Roll Number.');
       }
     } catch (err: any) {
       console.error('Search error:', err);
@@ -60,6 +60,10 @@ export default function PublicLedgerSearchPage() {
     return history.reduce((sum, item) => sum + (item.amount || 0), 0);
   }, [history]);
 
+  const lastPayment = useMemo(() => {
+    return history.length > 0 ? history[0] : null;
+  }, [history]);
+
   return (
     <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
       <header className="mb-8 sm:mb-12 text-center">
@@ -67,10 +71,10 @@ export default function PublicLedgerSearchPage() {
           <Receipt className="h-8 w-8 sm:h-10 sm:w-10" />
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-2 uppercase">Financial Statement</h1>
-        <p className="text-base sm:text-lg text-slate-600 max-w-md mx-auto">Live fee tracking and payment history.</p>
+        <p className="text-base sm:text-lg text-slate-600 max-w-md mx-auto font-medium">Live fee tracking and payment history.</p>
       </header>
 
-      <Card className="mb-8 shadow-xl border-slate-200/60 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem]">
+      <Card className="mb-8 shadow-xl border-slate-200/60 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] bg-white">
         <CardContent className="p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-grow">
@@ -119,23 +123,24 @@ export default function PublicLedgerSearchPage() {
 
             <Card className="bg-white shadow-xl rounded-3xl border-slate-100 border-b-4 border-b-[#059669]">
               <CardHeader className="pb-2">
-                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-1">Total Paid</p>
+                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-1">Life-time Paid</p>
                 <CardTitle className="text-3xl sm:text-4xl font-black tracking-tight text-[#059669]">{totalPaid.toLocaleString()} PKR</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Life-time Payments</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Collections</p>
               </CardContent>
             </Card>
 
             <Card className="bg-white shadow-xl rounded-3xl border-slate-100 border-b-4 border-b-[#1e40af]">
               <CardHeader className="pb-2">
-                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-1">Total Records</p>
+                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-1">Transactions</p>
                 <CardTitle className="text-3xl sm:text-4xl font-black tracking-tight text-[#1e40af]">{history.length}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Successful Transactions</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Successful Payments</p>
               </CardContent>
-            </div>
+            </Card>
+          </div>
 
           <Card className="bg-white shadow-2xl rounded-[2rem] border-slate-100 overflow-hidden">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
