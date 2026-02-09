@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, EyeOff, Award, Wallet, ArrowRight } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Facebook, Instagram, MessageSquare } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
@@ -16,11 +16,11 @@ import { cn } from '@/lib/utils';
 import { ForgotPasswordDialog } from '@/components/login-form';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
+import Image from 'next/image';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
-export default function LandingLoginPage() {
+export default function LoginPage() {
     const [isClient, setIsClient] = useState(false);
     const { settings, isSettingsLoading } = useSettings();
     const [loginType, setLoginType] = useState<'admin' | 'teacher'>('admin');
@@ -80,136 +80,108 @@ export default function LandingLoginPage() {
         }
     };
 
-    if (!isClient) return <div className="min-h-screen bg-slate-50" />;
+    if (!isClient) return <div className="min-h-screen bg-[#2e1065]" />;
     
     const isLoading = isAdminLoading || isTeacherLoading;
 
     return (
-        <main className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 sm:p-6 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
-            <div className="w-full max-w-5xl grid lg:grid-cols-2 gap-12 items-center">
-                
-                {/* Left Side: Student Portal Gateway */}
-                <div className="space-y-8">
-                    <div className="space-y-4 text-center lg:text-left">
-                        <div className="h-20 w-20 mx-auto lg:mx-0">
-                            <Logo noText={true} />
-                        </div>
-                        <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight uppercase">
-                            SAATH ACADEMY <br/>
-                            <span className="text-[#059669]">SAMUNDRI</span>
-                        </h1>
-                        <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-xs sm:text-sm">Official Student Portal</p>
-                    </div>
-
-                    <div className="grid gap-4">
-                        <Card className="overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 group">
-                            <Link href="/p/results" className="block">
-                                <CardContent className="p-0 flex items-stretch">
-                                    <div className="bg-[#1e40af] p-6 text-white flex items-center justify-center">
-                                        <Award className="h-8 w-8" />
-                                    </div>
-                                    <div className="flex-1 p-6 text-left bg-white flex items-center justify-between">
-                                        <div>
-                                            <h3 className="font-black text-slate-900 text-lg uppercase">Academic Results</h3>
-                                            <p className="text-slate-500 text-xs sm:text-sm font-medium">Check your marks & ranking</p>
-                                        </div>
-                                        <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-[#1e40af] transition-colors" />
-                                    </div>
-                                </CardContent>
-                            </Link>
-                        </Card>
-
-                        <Card className="overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 group">
-                            <Link href="/p/ledger" className="block">
-                                <CardContent className="p-0 flex items-stretch">
-                                    <div className="bg-[#059669] p-6 text-white flex items-center justify-center">
-                                        <Wallet className="h-8 w-8" />
-                                    </div>
-                                    <div className="flex-1 p-6 text-left bg-white flex items-center justify-between">
-                                        <div>
-                                            <h3 className="font-black text-slate-900 text-lg uppercase">Financial Statement</h3>
-                                            <p className="text-slate-500 text-xs sm:text-sm font-medium">View fee history & dues</p>
-                                        </div>
-                                        <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-[#059669] transition-colors" />
-                                    </div>
-                                </CardContent>
-                            </Link>
-                        </Card>
-                    </div>
-
-                    <div className="pt-4 border-t border-slate-200">
-                        <Button variant="outline" asChild className="w-full rounded-xl border-2 font-bold h-12 hover:bg-slate-900 hover:text-white transition-all uppercase text-xs">
-                            <Link href="https://www.saathsamundri.com/">
-                                <ArrowRight className="mr-2 h-4 w-4 rotate-180" />
-                                Back to Academy Website
-                            </Link>
-                        </Button>
-                    </div>
+        <main className="min-h-screen bg-[#2e1065] flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-4xl rounded-2xl bg-[#1e293b] shadow-2xl overflow-hidden grid md:grid-cols-2 border border-slate-700">
+                {/* Left Side: Brand Image */}
+                <div className="relative hidden md:block border-r border-slate-700">
+                    <Image
+                        src="https://images.unsplash.com/photo-1571260899304-425eee4c7efc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwbGVhcm5pbmd8ZW58MHx8fHwxNzYxNDU1NTU2fDA&ixlib=rb-4.1.0&q=80&w=1080"
+                        alt="Students"
+                        fill
+                        className="object-cover"
+                    />
                 </div>
 
-                {/* Right Side: Staff Login */}
-                <Card className="shadow-2xl border-slate-200 rounded-[2.5rem] overflow-hidden">
-                    <div className="p-8 sm:p-10">
-                        <div className="text-center mb-8">
-                            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Staff Login</h2>
-                            <p className="text-slate-500 font-medium">Faculty & Admin Access</p>
+                {/* Right Side: Login Form */}
+                <div className="p-8 sm:p-12 flex flex-col justify-center">
+                    <div className="mb-8 text-center">
+                        <div className="h-16 w-16 mx-auto mb-4 bg-white p-1 rounded-xl">
+                            <Logo noText={true} />
                         </div>
-
-                        <div className="flex justify-center mb-8">
-                            <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 w-full max-w-[280px]">
-                                <button 
-                                    onClick={() => setLoginType('admin')} 
-                                    className={cn("flex-1 py-2 px-4 rounded-xl text-sm font-black transition-all uppercase", loginType === 'admin' ? "bg-white text-[#1e40af] shadow-md" : "text-slate-400 hover:text-slate-600")}
-                                >
-                                    Admin
-                                </button>
-                                <button 
-                                    onClick={() => setLoginType('teacher')} 
-                                    className={cn("flex-1 py-2 px-4 rounded-xl text-sm font-black transition-all uppercase", loginType === 'teacher' ? "bg-white text-[#1e40af] shadow-md" : "text-slate-400 hover:text-slate-600")}
-                                >
-                                    Teacher
-                                </button>
-                            </div>
-                        </div>
-
-                        <form className="space-y-5" onSubmit={handleSubmit}>
-                            <div className="space-y-2">
-                                <Label htmlFor="email" className="font-bold uppercase text-[10px] tracking-widest text-slate-400 ml-1">Email Address</Label>
-                                <Input id="email" type="email" placeholder={`${loginType}@saath.edu`} value={email} onChange={(e) => setEmail(e.target.value)} required className="h-12 rounded-xl border-2 border-slate-100 focus:border-[#1e40af] font-bold text-slate-900" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="password" className="font-bold uppercase text-[10px] tracking-widest text-slate-400 ml-1">Password</Label>
-                                <div className="relative">
-                                    <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required className="h-12 rounded-xl border-2 border-slate-100 focus:border-[#1e40af] font-bold text-slate-900" />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600">
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <ForgotPasswordDialog />
-                            </div>
-                            <Button type="submit" className="w-full h-14 rounded-2xl bg-[#1e40af] hover:bg-[#1e3a8a] text-white font-black text-lg shadow-lg uppercase tracking-tight transition-all active:scale-95" disabled={isLoading}>
-                                {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                                Sign In
-                            </Button>
-                        </form>
+                        <h2 className="text-xl font-bold text-white uppercase tracking-tight">
+                            SAATH ACADEMY SAMUNDRI
+                        </h2>
                     </div>
-                </Card>
+                    
+                    <div className="flex justify-center mb-8">
+                        <div className="bg-slate-800 p-1 rounded-full flex gap-1 w-full max-w-[200px]">
+                            <button 
+                                onClick={() => setLoginType('admin')}
+                                className={cn("flex-1 py-1.5 px-4 rounded-full text-xs font-bold transition-all uppercase", loginType === 'admin' ? "bg-[#4f46e5] text-white shadow-lg" : "text-slate-400 hover:text-slate-300")}
+                            >
+                                Admin
+                            </button>
+                            <button 
+                                onClick={() => setLoginType('teacher')}
+                                className={cn("flex-1 py-1.5 px-4 rounded-full text-xs font-bold transition-all uppercase", loginType === 'teacher' ? "bg-[#4f46e5] text-white shadow-lg" : "text-slate-400 hover:text-slate-300")}
+                            >
+                                Teacher
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="text-center mb-8">
+                        <h3 className="text-2xl font-black text-white uppercase">LOG IN</h3>
+                        <p className="text-slate-400 text-xs mt-1">Welcome back! Please sign in to continue.</p>
+                    </div>
+                    
+                    <form className="space-y-5" onSubmit={handleSubmit}>
+                        <div className="space-y-2">
+                            <Label htmlFor="email" className="text-[10px] uppercase tracking-widest text-slate-400 font-bold ml-1">Email Address</Label>
+                            <Input 
+                                id="email" 
+                                type="email" 
+                                placeholder="admin@example.com" 
+                                value={email} 
+                                onChange={(e) => setEmail(e.target.value)} 
+                                required 
+                                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 h-12 focus:ring-[#4f46e5] focus:border-[#4f46e5]"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password" className="text-[10px] uppercase tracking-widest text-slate-400 font-bold ml-1">Password</Label>
+                            <div className="relative">
+                                <Input 
+                                    id="password" 
+                                    type={showPassword ? 'text' : 'password'} 
+                                    value={password} 
+                                    onChange={(e) => setPassword(e.target.value)} 
+                                    required 
+                                    className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 h-12 focus:ring-[#4f46e5] focus:border-[#4f46e5]"
+                                />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300">
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <ForgotPasswordDialog />
+                        </div>
+                        <Button type="submit" className="w-full h-12 bg-[#4f46e5] hover:bg-[#4338ca] text-white font-bold uppercase tracking-wide text-sm rounded-xl shadow-lg transition-all active:scale-95" disabled={isLoading}>
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Log In
+                        </Button>
+                    </form>
+                </div>
             </div>
 
-            {/* Global Footer */}
-            <div className="mt-16 text-center space-y-4">
-                <p className="font-black text-slate-400 text-xs tracking-tight uppercase">
-                    © 2026 SAATH ACADEMY SAMUNDRI. All Rights Reserved.
-                </p>
-                <div className="space-y-1">
-                    <p className="text-slate-300 font-mono text-[10px] uppercase tracking-[0.4em] font-bold">
-                        POWERED BY SCHOOLUP PLATFORM
-                    </p>
-                    <p className="text-slate-400 font-bold text-[9px] uppercase tracking-[0.25em]">
-                        DEVELOPED BY MIAN MUDASSAR
-                    </p>
+            <div className="mt-8 text-center text-xs text-slate-400 font-medium">
+                <p>Developed by "Mian Mudassar"</p>
+                <div className="mt-3 flex justify-center gap-4">
+                    <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" className="hover:text-white transition-colors">
+                        <Facebook size={16} />
+                    </Link>
+                    <Link href="https://api.whatsapp.com/send?phone=923099969535" target="_blank" className="hover:text-white transition-colors">
+                        <MessageSquare size={16} />
+                    </Link>
+                    <Link href="https://www.instagram.com/mianmudassar_" target="_blank" className="hover:text-white transition-colors">
+                        <Instagram size={16} />
+                    </Link>
                 </div>
             </div>
         </main>

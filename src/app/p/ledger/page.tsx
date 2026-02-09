@@ -60,10 +60,6 @@ export default function PublicLedgerSearchPage() {
     return history.reduce((sum, item) => sum + (item.amount || 0), 0);
   }, [history]);
 
-  const lastPayment = useMemo(() => {
-    return history.length > 0 ? history[0] : null;
-  }, [history]);
-
   return (
     <div className="container mx-auto px-4 py-8 sm:py-12 max-w-5xl">
       <header className="mb-8 sm:mb-12 text-center">

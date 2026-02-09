@@ -53,7 +53,8 @@ service cloud.firestore {
       allow list, read, write: if isAuthenticated();
     }
     match /settings/{settingId} {
-       allow read, write: if isAuthenticated();
+       allow get: if true;
+       allow write: if isAuthenticated();
     }
     match /message_logs/{logId} {
         allow create: if isAuthenticated();
