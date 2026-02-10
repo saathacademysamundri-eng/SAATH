@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Badge } from '@/components/ui/badge';
@@ -33,15 +32,23 @@ export function TodaysTeacherAttendance() {
     const [attendanceData, setAttendanceData] = useState<TeacherAttendanceSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
+    function normalizeStatus(status: string | undefined): StatusType {
+        if (status === 'Present' || status === 'Absent' || status === 'Leave') {
+            return status;
+        }
+        return 'Not Marked';
+    }
+
     useEffect(() => {
         if (!appLoading && teachers.length > 0) {
             async function fetchAllTeacherAttendance() {
                 setIsLoading(true);
-                const now = new Date();
-                const month = now.getMonth();
-                const year = now.getFullYear();
+                try {
+                    const now = new Date();
+                    const month = now.getMonth();
+                    const year = now.getFullYear();
 
-                const allAttendanceForMonth = await getAllTeacherAttendanceForMonth(month, year);
+                    const allAttendanceForMonth = await getAllTeacherAttendanceForMonth(month, year);
 
                 const summaryData: TeacherAttendanceSummary[] = teachers.map(teacher => {
                     const teacherRecords = allAttendanceForMonth.filter(rec => rec.teacherId === teacher.id);
@@ -56,9 +63,30 @@ export function TodaysTeacherAttendance() {
                         absentMonth: teacherRecords.filter(d => d.status !== 'Present').length,
                     }
                 });
+                    const summaryData: TeacherAttendanceSummary[] = teachers.map(teacher => {
+                        const teacherRecords = allAttendanceForMonth.filter(rec => rec.teacherId === teacher.id);
+                        
+                        const todayStr = now.toISOString().split('T')[0];
+                        const todayRecord = teacherRecords.find(d => d.date.toISOString().split('T')[0] === todayStr);
 
-                setAttendanceData(summaryData);
-                setIsLoading(false);
+                        const presentCount = teacherRecords.filter(d => d.status === 'Present').length;
+                        const absentOrLeaveCount = teacherRecords.filter(d => d.status === 'Absent' || d.status === 'Leave').length;
+
+                        return {
+                            teacherId: teacher.id,
+                            teacherName: teacher.name,
+                            todayStatus: normalizeStatus(todayRecord?.status),
+                            presentMonth: presentCount,
+                            absentMonth: absentOrLeaveCount,
+                        };
+                    });
+
+                    setAttendanceData(summaryData);
+                } catch (error) {
+                    console.error("Failed to fetch teacher attendance summary:", error);
+                } finally {
+                    setIsLoading(false);
+                }
             }
             fetchAllTeacherAttendance();
         } else if (!appLoading) {
