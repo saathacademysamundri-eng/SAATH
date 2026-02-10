@@ -166,7 +166,7 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-8 text-center text-sm text-muted-foreground">
-                <p>developed by mian mudassar</p>
+                <p>Developed by "Mian Mudassar"</p>
                 <div className="mt-2 flex justify-center gap-4">
                     <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
                         <Facebook className="h-4 w-4" />
