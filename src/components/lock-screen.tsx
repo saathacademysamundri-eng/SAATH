@@ -29,7 +29,7 @@ export function LockScreen() {
 
   useEffect(() => {
     if (!isSettingsLoading) {
-      document.title = `Lock Screen | ${settings.name}`;
+      document.title = `LOCK SCREEN | ${settings.name.toUpperCase()}`;
     }
   }, [isSettingsLoading, settings.name]);
 
@@ -37,9 +37,9 @@ export function LockScreen() {
     setPin(value);
     if (value.length === 4) {
       if (unlock(value)) {
-        toast({ title: 'System Unlocked' });
+        toast({ title: 'SYSTEM UNLOCKED' });
       } else {
-        toast({ variant: 'destructive', title: 'Invalid PIN' });
+        toast({ variant: 'destructive', title: 'INVALID PIN' });
         setPin('');
       }
     }
@@ -47,7 +47,7 @@ export function LockScreen() {
 
   const handleLogout = async () => {
     await signOut(auth);
-    router.push('/login');
+    router.push('/');
   };
 
   if (isSettingsLoading) {
@@ -55,18 +55,20 @@ export function LockScreen() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-lg">
-      <div className="flex w-full max-w-sm flex-col items-center rounded-2xl bg-card p-8 text-card-foreground shadow-2xl">
-        <div className="mb-4 text-center">
-          <div className="text-muted-foreground flex items-center justify-center gap-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-xl">
+      <div className="flex w-full max-w-sm flex-col items-center rounded-3xl bg-card p-8 sm:p-10 text-card-foreground shadow-2xl border border-slate-800">
+        <div className="mb-6 text-center">
+          <div className="text-slate-400 font-black text-[10px] tracking-widest flex items-center justify-center gap-2 uppercase">
             <LiveDate /> | <LiveTime />
           </div>
         </div>
-        <div className="mb-4 h-20 w-20">
+        <div className="mb-6 h-20 w-20">
           <Logo noText />
         </div>
-        <h1 className="mb-2 animate-breathe text-3xl font-bold">{settings.name}</h1>
-        <p className="mb-6 text-muted-foreground">Enter Security PIN to Unlock</p>
+        <h1 className="mb-2 animate-breathe text-2xl sm:text-3xl font-black uppercase tracking-tight text-center leading-none">
+            {settings.name}
+        </h1>
+        <p className="mb-8 text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em]">ENTER SECURITY PIN TO UNLOCK</p>
 
         <InputOTP maxLength={4} value={pin} onChange={handlePinChange}>
           <InputOTPGroup>
@@ -77,26 +79,26 @@ export function LockScreen() {
           </InputOTPGroup>
         </InputOTP>
 
-        <Button variant="link" className="mt-6" onClick={handleLogout}>
+        <Button variant="link" className="mt-8 text-slate-400 font-bold uppercase text-[10px] tracking-wider" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          Logout and login with email & password
+          LOGOUT AND SIGN IN AGAIN
         </Button>
 
-        <div className="mt-8 w-full border-t pt-6 text-center">
-          <p className="text-sm">{settings.address}</p>
-          <p className="text-sm">{settings.phone}</p>
+        <div className="mt-8 w-full border-t border-slate-800 pt-8 text-center">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{settings.address}</p>
+          <p className="text-[10px] font-black text-slate-400">{settings.phone}</p>
         </div>
 
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Developed by "Mian Mudassar"</p>
-          <div className="mt-2 flex justify-center gap-4">
-             <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer">
+        <div className="mt-8 text-center">
+          <p className="text-[10px] font-black text-slate-500 tracking-[0.2em] uppercase">DEVELOPED BY MIAN MUDASSAR</p>
+          <div className="mt-4 flex justify-center gap-6">
+             <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" className="text-slate-600 hover:text-white transition-colors">
                 <Facebook className="h-4 w-4" />
             </Link>
-             <Link href="https://api.whatsapp.com/send?phone=923099969535&text=Hye%20%0AI%20want%20to%20know%20about%20the%20software%20you%20created%2C%20which%20is%20a%20management%20system%20in%20the%20school.%20" target="_blank" rel="noopener noreferrer">
+             <Link href="https://api.whatsapp.com/send?phone=923099969535" target="_blank" className="text-slate-600 hover:text-white transition-colors">
                 <MessageSquare className="h-4 w-4" />
             </Link>
-            <Link href="https://www.instagram.com/mianmudassar_" target="_blank" rel="noopener noreferrer">
+            <Link href="https://www.instagram.com/mianmudassar_" target="_blank" className="text-slate-600 hover:text-white transition-colors">
                 <Instagram className="h-4 w-4" />
             </Link>
           </div>

@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -61,25 +60,6 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
         }
     }, [teacher, isTeacherPortal]);
 
-    useEffect(() => {
-        if (settings.academicSession) {
-            setAcademicSession(settings.academicSession);
-        }
-    }, [settings.academicSession]);
-    
-    const academicSessions = useMemo(() => {
-        const currentYear = new Date().getFullYear();
-        const years = new Set<string>();
-        if (settings.academicSession) years.add(settings.academicSession);
-
-        for (let i = -5; i < 10; i++) {
-            const startYear = currentYear + i;
-            const endYear = startYear + 1;
-            years.add(`${startYear}-${endYear}`);
-        }
-        return Array.from(years).sort((a,b) => b.localeCompare(a));
-    }, [settings.academicSession]);
-
     const handleClassChange = (value: string) => {
         setSelectedClassId(value);
         setSelectedSubject(null); 
@@ -88,19 +68,18 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
         }
     }
     
-    const availableTeachers = useMemo(() => {
-        if (isTeacherPortal && teacher) return [teacher];
-        if (!selectedClassId) return [];
-        const currentClass = classes.find(c => c.id === selectedClassId);
-        if (!currentClass) return [];
-        
-        const subjectsInClass = new Set(currentClass.subjects.map(s => s.name));
-        
-        return teachers.filter(teacher => 
-            (teacher.subjects || []).some(subject => subjectsInClass.has(subject))
-        );
-    }, [selectedClassId, classes, teachers, teacher, isTeacherPortal]);
-    
+    const academicSessions = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        const years = new Set<string>();
+        if (settings.academicSession) years.add(settings.academicSession);
+        for (let i = -5; i < 5; i++) {
+            const startYear = currentYear + i;
+            const endYear = startYear + 1;
+            years.add(`${startYear}-${endYear}`);
+        }
+        return Array.from(years).sort((a,b) => b.localeCompare(a));
+    }, [settings.academicSession]);
+
     const currentClass = classes.find(c => c.id === selectedClassId);
     
     const availableSubjects = useMemo(() => {
@@ -112,6 +91,12 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
         return currentClass.subjects;
     }, [currentClass, teacher, isTeacherPortal]);
 
+    const availableTeachers = useMemo(() => {
+        if (isTeacherPortal && teacher) return [teacher];
+        if (!selectedClassId) return [];
+        const subjectsInClass = new Set(currentClass?.subjects.map(s => s.name));
+        return teachers.filter(t => (t.subjects || []).some(sub => subjectsInClass.has(sub)));
+    }, [selectedClassId, currentClass, teachers, teacher, isTeacherPortal]);
 
     const handleSubmit = async () => {
         const subjects: string[] = [];
@@ -123,14 +108,8 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             subjects.push(...manualSubjects.split(',').map(s => s.trim()).filter(s => s));
         }
 
-        const hasMissingInfo = !name || !selectedClassId || !selectedTeacherId || subjects.length === 0 || totalMarks <= 0 || !academicSession;
-
-        if (hasMissingInfo) {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Please fill out all fields: name, class, teacher, subjects, marks, and academic session.',
-            });
+        if (!name || !selectedClassId || !selectedTeacherId || subjects.length === 0) {
+            toast({ variant: 'destructive', title: 'ERROR', description: 'PLEASE FILL ALL REQUIRED FIELDS.' });
             return;
         }
 
@@ -148,27 +127,17 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
             scope,
             results: [],
             academicSession: academicSession,
-            submissionDeadline: submissionDeadline || null,
+            submissionDeadline: submissionDeadline || undefined, // FIX: USE UNDEFINED INSTEAD OF NULL
             status: (isTeacherPortal && teacher) ? 'pending' as const : 'approved' as const,
         };
 
         const result = await createExam(examData);
 
         if(result.success) {
-            const successMessage = (isTeacherPortal && teacher) 
-                ? `${name} has been submitted for approval.`
-                : `${name} has been successfully created.`;
-            toast({
-                title: (isTeacherPortal && teacher) ? 'Exam Submitted' : 'Exam Created',
-                description: successMessage,
-            });
+            toast({ title: 'EXAM CREATED', description: 'EXAM HAS BEEN SUCCESSFULLY ADDED.' });
             onExamCreated(result.id!);
         } else {
-             toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: `Failed to create exam: ${result.message}`,
-            });
+             toast({ variant: 'destructive', title: 'ERROR', description: result.message });
         }
         setIsSaving(false);
     };
@@ -176,27 +145,23 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
   return (
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Create New Exam</DialogTitle>
-          <DialogDescription>
-            Fill in the details to set up a new exam.
-          </DialogDescription>
+          <DialogTitle className="uppercase font-black">CREATE NEW EXAM</DialogTitle>
+          <DialogDescription className="uppercase text-xs">FILL IN THE DETAILS TO SET UP A NEW EXAM.</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+        <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                    <Label htmlFor="name">Exam Name</Label>
-                    <Input id="name" placeholder="e.g., Mid-Term Test, Weekly Physics Quiz" value={name} onChange={(e) => setName(e.target.value)} />
+                    <Label className="uppercase text-[10px] font-bold">EXAM NAME</Label>
+                    <Input placeholder="e.g., MID-TERM" value={name} onChange={(e) => setName(e.target.value)} className="font-bold" />
                 </div>
                  <div className="grid gap-2">
-                    <Label htmlFor="session">Academic Session</Label>
+                    <Label className="uppercase text-[10px] font-bold">SESSION</Label>
                     <Select onValueChange={setAcademicSession} value={academicSession}>
-                        <SelectTrigger id="session">
-                            <SelectValue placeholder="Select a session" />
+                        <SelectTrigger className="font-bold">
+                            <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {academicSessions.map((session) => (
-                                <SelectItem key={session} value={session}>{session}</SelectItem>
-                            ))}
+                            {academicSessions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -204,130 +169,66 @@ export function CreateExamDialog({ onExamCreated }: { onExamCreated: (examId: st
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                    <Label htmlFor="class">Class</Label>
-                    <Select onValueChange={handleClassChange} value={selectedClassId || undefined}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a class" />
+                    <Label className="uppercase text-[10px] font-bold">CLASS</Label>
+                    <Select onValueChange={handleClassChange}>
+                        <SelectTrigger className="font-bold">
+                            <SelectValue placeholder="SELECT CLASS" />
                         </SelectTrigger>
                         <SelectContent>
-                            {classes.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                            ))}
+                            {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
                  <div className="grid gap-2">
-                    <Label htmlFor="teacher">Assign Teacher</Label>
-                    <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId || undefined} disabled={!selectedClassId || (isTeacherPortal && !!teacher)}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a teacher" />
+                    <Label className="uppercase text-[10px] font-bold">ASSIGN TEACHER</Label>
+                    <Select onValueChange={setSelectedTeacherId} value={selectedTeacherId || undefined} disabled={!selectedClassId}>
+                        <SelectTrigger className="font-bold">
+                            <SelectValue placeholder="SELECT TEACHER" />
                         </SelectTrigger>
                         <SelectContent>
-                            {availableTeachers.map((t) => (
-                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                            ))}
+                            {availableTeachers.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
             </div>
 
-            {selectedTeacherId && (
-                <div className="grid gap-2">
-                    <Label>Exam For</Label>
-                    <RadioGroup value={scope} onValueChange={(v: any) => setScope(v)} className="flex items-center gap-4 pt-2">
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="class" id="scope-class-create" />
-                            <Label htmlFor="scope-class-create" className="font-normal">Entire Class</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="teacher_students" id="scope-teacher-create" />
-                            <Label htmlFor="scope-teacher-create" className="font-normal">Teacher's Students Only</Label>
-                        </div>
-                    </RadioGroup>
-                </div>
-            )}
-            
             <div className="grid gap-2">
-                <Label>Exam Type</Label>
-                <RadioGroup value={examType} onValueChange={(v: any) => setExamType(v)} className="flex items-center gap-4 pt-2">
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Single Subject" id="single" />
-                        <Label htmlFor="single" className="font-normal">Single Subject</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Full Test" id="full" />
-                        <Label htmlFor="full" className="font-normal">Full Test</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Manual" id="manual" />
-                        <Label htmlFor="manual" className="font-normal">Manual</Label>
-                    </div>
+                <Label className="uppercase text-[10px] font-bold">EXAM TYPE</Label>
+                <RadioGroup value={examType} onValueChange={(v: any) => setExamType(v)} className="flex gap-4">
+                    {['Single Subject', 'Full Test', 'Manual'].map(t => (
+                        <div key={t} className="flex items-center space-x-2">
+                            <RadioGroupItem value={t} id={t} />
+                            <Label htmlFor={t} className="font-bold text-xs uppercase">{t}</Label>
+                        </div>
+                    ))}
                 </RadioGroup>
             </div>
             
-            {examType === 'Single Subject' && currentClass && (
-                 <div className="grid gap-2">
-                    <Label htmlFor="subject">Subject</Label>
-                    <Select onValueChange={setSelectedSubject} value={selectedSubject || undefined}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a subject" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availableSubjects.map((s) => (
-                                <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            )}
-            
-            {examType === 'Manual' && (
-                 <div className="grid gap-2">
-                    <Label htmlFor="manual-subjects">Manual Subjects</Label>
-                    <Input id="manual-subjects" value={manualSubjects} onChange={(e) => setManualSubjects(e.target.value)} placeholder="Enter subjects, separated by commas" />
-                </div>
-            )}
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                    <Label htmlFor="totalMarks">Total Marks per Subject</Label>
-                    <Input id="totalMarks" type="number" placeholder="e.g., 100" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} />
+                    <Label className="uppercase text-[10px] font-bold">TOTAL MARKS</Label>
+                    <Input type="number" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} className="font-bold" />
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor="submission-deadline">Submission Deadline (Optional)</Label>
+                    <Label className="uppercase text-[10px] font-bold">SUBMISSION DEADLINE</Label>
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !submissionDeadline && "text-muted-foreground"
-                                )}
-                            >
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-bold", !submissionDeadline && "text-muted-foreground")}>
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {submissionDeadline ? format(submissionDeadline, "PPP") : <span>Pick a date</span>}
+                                {submissionDeadline ? format(submissionDeadline, "PPP").toUpperCase() : <span>PICK A DATE</span>}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
-                            <Calendar
-                                mode="single"
-                                selected={submissionDeadline}
-                                onSelect={setSubmissionDeadline}
-                                initialFocus
-                            />
+                            <Calendar mode="single" selected={submissionDeadline} onSelect={setSubmissionDeadline} initialFocus />
                         </PopoverContent>
                     </Popover>
                 </div>
             </div>
-
         </div>
         <DialogFooter>
-            <DialogClose asChild>
-                 <Button type="button" variant="ghost">Cancel</Button>
-            </DialogClose>
-            <Button type="button" onClick={handleSubmit} disabled={isSaving}>
-                {isSaving && <Loader2 className="animate-spin mr-2"/>}
-                {isSaving ? 'Submitting...' : (isTeacherPortal && teacher) ? 'Submit for Approval' : 'Create Exam'}
+            <Button onClick={handleSubmit} disabled={isSaving} className="font-black uppercase w-full sm:w-auto">
+                {isSaving && <Loader2 className="mr-2 animate-spin"/>}
+                {isSaving ? 'CREATING...' : 'CREATE EXAM'}
             </Button>
         </DialogFooter>
       </DialogContent>

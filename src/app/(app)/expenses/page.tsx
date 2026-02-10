@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
 import { addExpense, deleteExpense, updateExpense } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, MoreHorizontal, PlusCircle, Printer, Trash, Edit, AlertCircle, Check, ChevronsUpDown } from 'lucide-react';
@@ -130,7 +128,6 @@ function AddExpenseDialog({ onExpenseAdded, onPrintVoucher }: { onExpenseAdded: 
                 action: <ToastAction altText="Print Voucher" onClick={() => onPrintVoucher(finalExpense)}>Print Voucher</ToastAction>
             });
             onExpenseAdded(finalExpense);
-            // Reset form
             setDescription('');
             setAmount(0);
             setCategory('');
@@ -183,105 +180,6 @@ function AddExpenseDialog({ onExpenseAdded, onPrintVoucher }: { onExpenseAdded: 
     );
 }
 
-function EditExpenseDialog({ expense, onExpenseUpdated }: { expense: Expense, onExpenseUpdated: () => void }) {
-    const [description, setDescription] = useState(expense.description);
-    const [amount, setAmount] = useState(expense.amount);
-    const [category, setCategory] = useState(expense.category || '');
-    const [isSaving, setIsSaving] = useState(false);
-    const { toast } = useToast();
-
-    const handleSubmit = async () => {
-        setIsSaving(true);
-        const result = await updateExpense(expense.id, { description, amount, category });
-        if (result.success) {
-            toast({ title: 'Expense Updated', description: 'The expense record has been updated.' });
-            onExpenseUpdated();
-        } else {
-            toast({ variant: 'destructive', title: 'Update Failed', description: result.message });
-        }
-        setIsSaving(false);
-    }
-
-    return (
-         <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Edit Expense</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="edit-description">Description</Label>
-                    <Input id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="edit-category">Category</Label>
-                    <CategoryCombobox value={category} onChange={setCategory} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="edit-amount">Amount (PKR)</Label>
-                    <Input id="edit-amount" type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
-                </div>
-            </div>
-            <DialogFooter>
-                <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                <DialogClose asChild>
-                    <Button onClick={handleSubmit} disabled={isSaving}>
-                        {isSaving ? <Loader2 className="animate-spin mr-2" /> : 'Save Changes'}
-                    </Button>
-                </DialogClose>
-            </DialogFooter>
-        </DialogContent>
-    )
-}
-
-function DeleteExpenseDialog({ expense, onExpenseDeleted }: { expense: Expense, onExpenseDeleted: () => void }) {
-    const [isDeleting, setIsDeleting] = useState(false);
-    const { toast } = useToast();
-
-    const handleDelete = async () => {
-        setIsDeleting(true);
-        const result = await deleteExpense(expense.id);
-        if (result.success) {
-            toast({ title: 'Expense Deleted', description: result.message });
-            onExpenseDeleted();
-        } else {
-            toast({ variant: 'destructive', title: 'Delete Failed', description: result.message });
-        }
-        setIsDeleting(false);
-    };
-
-    return (
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Are you absolutely sure?</DialogTitle>
-                <DialogDescription>
-                    This action cannot be undone. This will permanently delete the expense record for
-                    <span className="font-semibold"> {expense.description} </span>
-                    of <span className="font-semibold">{expense.amount.toLocaleString()} PKR</span>.
-                </DialogDescription>
-            </DialogHeader>
-            {expense.source === 'payout' && (
-                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                    <div>
-                        <h4 className="font-bold">Payout Reversal</h4>
-                        <p className="text-xs">
-                            Deleting this expense will fully reverse the associated teacher payout. The original student fee payments will be voided, and the amounts will be added back to each student's outstanding balance. The teacher's earnings for that period will be reset.
-                        </p>
-                    </div>
-                </div>
-            )}
-            <DialogFooter>
-                <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                <DialogClose asChild>
-                    <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-                        {isDeleting ? <Loader2 className="animate-spin mr-2" /> : 'Confirm Delete'}
-                    </Button>
-                </DialogClose>
-            </DialogFooter>
-        </DialogContent>
-    );
-}
-
 export default function ExpensesPage() {
     const { expenses, loading, refreshData } = useAppContext();
     const { settings, isSettingsLoading } = useSettings();
@@ -307,19 +205,20 @@ export default function ExpensesPage() {
     }
 
     const amountToWords = (num: number) => {
-        // Basic implementation for converting number to words for vouchers
         const a = ['','one ','two ','three ','four ', 'five ','six ','seven ','eight ','nine ','ten ','eleven ','twelve ','thirteen ','fourteen ','fifteen ','sixteen ','seventeen ','eighteen ','nineteen '];
         const b = ['', '', 'twenty','thirty','forty','fifty', 'sixty','seventy','eighty','ninety'];
         
-        if ((num = num.toString()).length > 9) return 'overflow';
-        const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-        if (!n) return ''; let str = '';
-        str += (n[1] != '00') ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'crore ' : '';
-        str += (n[2] != '00') ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'lakh ' : '';
-        str += (n[3] != '00') ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'thousand ' : '';
-        str += (n[4] != '0') ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'hundred ' : '';
-        str += (n[5] != '00') ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
-        return str.trim();
+        let n_str = num.toString().padStart(9, '0');
+        if (n_str.length > 9) return 'overflow';
+        const n = n_str.match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+        if (!n) return ''; 
+        let str = '';
+        str += (n[1] !== '00') ? (a[Number(n[1])] || b[Number(n[1][0])] + ' ' + a[Number(n[1][1])]) + 'crore ' : '';
+        str += (n[2] !== '00') ? (a[Number(n[2])] || b[Number(n[2][0])] + ' ' + a[Number(n[2][1])]) + 'lakh ' : '';
+        str += (n[3] !== '00') ? (a[Number(n[3])] || b[Number(n[3][0])] + ' ' + a[Number(n[3][1])]) + 'thousand ' : '';
+        str += (n[4] !== '0') ? (a[Number(n[4])] || b[Number(n[4][0])] + ' ' + a[Number(n[4][1])]) + 'hundred ' : '';
+        str += (n[5] !== '00') ? ((str !== '') ? 'and ' : '') + (a[Number(n[5])] || b[Number(n[5][0])] + ' ' + a[Number(n[5][1])]) : '';
+        return str.trim().toUpperCase();
     }
 
     const handlePrintVoucher = (expense: Expense) => {
@@ -328,9 +227,9 @@ export default function ExpensesPage() {
         
         const voucherHtml = `
             <html>
-                <head><title>Expense Voucher - ${expense.id}</title>
+                <head><title>EXPENSE VOUCHER - ${expense.id}</title>
                  <style>
-                    body { font-family: 'Segoe UI', sans-serif; margin: 20px; font-size: 12pt; }
+                    body { font-family: 'Segoe UI', sans-serif; margin: 20px; font-size: 12pt; text-transform: uppercase; }
                     .voucher-container { border: 2px solid #000; padding: 20px; max-width: 800px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
                     .content-wrap { flex: 1; }
                     .header { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
@@ -353,32 +252,33 @@ export default function ExpensesPage() {
                         <div class="header">
                             ${settings.logo ? `<img src="${settings.logo}" alt="Logo">` : ''}
                             <h1>${settings.name}</h1>
-                            <h2>Expense Voucher</h2>
+                            <h2>EXPENSE VOUCHER</h2>
                         </div>
                         <div class="details-grid">
-                            <div><label>Voucher #:</label><span>${expense.id}</span></div>
-                            <div><label>Date:</label><span>${format(expense.date, 'PPP')}</span></div>
-                            <div><label>Pay To:</label><span>${expense.description}</span></div>
-                            <div><label>Category:</label><span>${expense.category}</span></div>
+                            <div><label>VOUCHER #:</label><span>${expense.id}</span></div>
+                            <div><label>DATE:</label><span>${format(expense.date, 'PPP')}</span></div>
+                            <div><label>PAY TO:</label><span>${expense.description}</span></div>
+                            <div><label>CATEGORY:</label><span>${expense.category}</span></div>
                         </div>
                         <div class="details-grid" style="grid-template-columns: 3fr 1fr;">
                             <div class="amount-in-words">
-                                <label>Amount in Words:</label>
-                                <span>Rupees ${amountToWords(expense.amount)} Only</span>
+                                <label>AMOUNT IN WORDS:</label>
+                                <span>RUPEES ${amountToWords(expense.amount)} ONLY</span>
                             </div>
                              <div>
-                                <label>Amount (PKR):</label>
+                                <label>AMOUNT (PKR):</label>
                                 <span style="font-weight: bold; font-size: 1.2rem;">${expense.amount.toLocaleString()} /-</span>
                             </div>
                         </div>
                         <div class="signatures">
-                            <div>Prepared By</div>
-                            <div>Approved By</div>
-                            <div>Received By</div>
+                            <div>PREPARED BY</div>
+                            <div>APPROVED BY</div>
+                            <div>RECEIVED BY</div>
                         </div>
                       </div>
                       <div class="footer">
-                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
+                          COPYRIGHT &copy; 2026 ${settings.name.toUpperCase()}. ALL RIGHTS RESERVED.<br/>
+                          POWERED BY SCHOOLUP PLATFORM | DEVELOPED BY MIAN MUDASSAR
                       </div>
                     </div>
                 </body>
@@ -390,180 +290,67 @@ export default function ExpensesPage() {
         printWindow.focus();
     };
 
-    const handlePrintReport = () => {
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
-
-        const tableRows = expenses.map(item => `
-            <tr>
-              <td>${format(item.date, 'PPP')}</td>
-              <td>${item.description}</td>
-              <td>${item.category || 'N/A'}</td>
-              <td>${item.source}</td>
-              <td style="text-align: right;">${item.amount.toLocaleString()} PKR</td>
-            </tr>
-        `).join('');
-
-        const printHtml = `
-            <html>
-              <head>
-                <title>Expense Report</title>
-                <style>
-                  @media print {
-                    @page { size: A4 portrait; margin: 0.75in; }
-                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                  }
-                  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt; }
-                  .report-container { max-width: 1000px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
-                  .content-wrap { flex: 1; }
-                  .academy-details { text-align: center; margin-bottom: 2rem; }
-                  .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
-                  .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
-                  .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
-                  .report-title { text-align: center; margin: 2rem 0; }
-                  .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0; }
-                  table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-                  th, td { padding: 8px 10px; border: 1px solid #ddd; }
-                  th { font-weight: bold; background-color: #f2f2f2; }
-                  tr:nth-child(even) { background-color: #f9f9f9; }
-                  .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
-                </style>
-              </head>
-              <body>
-                <div class="report-container">
-                    <div class="content-wrap">
-                      <div class="academy-details">
-                        ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
-                        <h1>${settings.name}</h1>
-                        <p>${settings.address}</p>
-                        <p>Phone: ${settings.phone}</p>
-                      </div>
-                      <div class="report-title">
-                        <h2>Expense Report</h2>
-                      </div>
-                      <table>
-                        <thead>
-                            <tr><th>Date</th><th>Description</th><th>Category</th><th>Source</th><th style="text-align: right;">Amount</th></tr>
-                        </thead>
-                        <tbody>${tableRows}</tbody>
-                      </table>
-                      <h3 style="text-align: right; margin-top: 1rem;">Total Expenses: ${totalExpenses.toLocaleString()} PKR</h3>
-                    </div>
-                    <div class="footer">
-                        Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
-                    </div>
+    return (
+        <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight uppercase">EXPENSES</h1>
+                    <p className="text-muted-foreground uppercase text-xs">A RECORD OF ALL OPERATIONAL EXPENSES.</p>
                 </div>
-              </body>
-            </html>
-        `;
-
-        printWindow.document.write(printHtml);
-        printWindow.document.close();
-        setTimeout(() => printWindow.print(), 250);
-    };
-
-  return (
-    <div className="flex flex-col gap-6">
-       <div className="flex items-center justify-between">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
-                <p className="text-muted-foreground">
-                    A record of all operational expenses.
-                </p>
+                <div className="flex items-center gap-2">
+                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="font-bold">
+                                <PlusCircle className="mr-2 h-4 w-4" /> ADD EXPENSE
+                            </Button>
+                        </DialogTrigger>
+                        <AddExpenseDialog onExpenseAdded={onExpenseAdded} onPrintVoucher={handlePrintVoucher} />
+                    </Dialog>
+                </div>
             </div>
-            <div className="flex items-center gap-2">
-                <Button onClick={handlePrintReport} variant="outline" disabled={isSettingsLoading}>
-                    <Printer className="mr-2" /> Print Report
-                </Button>
-                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <PlusCircle className="mr-2" /> Add Expense
-                        </Button>
-                    </DialogTrigger>
-                    <AddExpenseDialog onExpenseAdded={onExpenseAdded} onPrintVoucher={handlePrintVoucher} />
-                </Dialog>
-            </div>
-        </div>
-      <Card>
-        <CardHeader>
-            <CardTitle>Expense Report</CardTitle>
-            <CardDescription>
-                List of all recorded expenses. Total expenses are
-                <span className="font-bold text-red-600"> {totalExpenses.toLocaleString()} PKR</span>.
-            </CardDescription>
-        </CardHeader>
-        <CardContent>
-             <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead className="text-right">Amount (PKR)</TableHead>
-                        <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    
-                        {expenses.map((item) => (
-                            <Dialog key={item.id} open={!!openDialogs[item.id]} onOpenChange={(open) => !open && handleSetDialog(item.id, null)}>
-                                <TableRow>
-                                    <TableCell>{format(item.date, 'PPP')}</TableCell>
-                                    <TableCell className="font-medium">{item.description}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{item.category || 'N/A'}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={item.source === 'payout' ? 'secondary' : 'outline'}>
-                                            {item.source}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">{item.amount.toLocaleString()}</TableCell>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="uppercase">EXPENSE REPORT</CardTitle>
+                    <CardDescription className="uppercase text-xs">
+                        TOTAL EXPENSES ARE <span className="font-black text-destructive">{totalExpenses.toLocaleString()} PKR</span>.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="uppercase text-xs font-bold">DATE</TableHead>
+                                <TableHead className="uppercase text-xs font-bold">DESCRIPTION</TableHead>
+                                <TableHead className="uppercase text-xs font-bold">CATEGORY</TableHead>
+                                <TableHead className="uppercase text-xs font-bold text-right">AMOUNT (PKR)</TableHead>
+                                <TableHead className="text-right"><span className="sr-only">ACTIONS</span></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {expenses.map((item) => (
+                                <TableRow key={item.id}>
+                                    <TableCell className="font-medium text-xs">{format(item.date, 'PPP').toUpperCase()}</TableCell>
+                                    <TableCell className="font-bold uppercase">{item.description}</TableCell>
+                                    <TableCell><Badge variant="outline" className="font-bold text-[10px]">{item.category?.toUpperCase() || 'N/A'}</Badge></TableCell>
+                                    <TableCell className="text-right font-black">{item.amount.toLocaleString()}</TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem 
-                                                    onSelect={() => handlePrintVoucher(item)}
-                                                >
-                                                    <Printer className="mr-2" /> Print Voucher
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem 
-                                                    onSelect={() => handleSetDialog(item.id, 'edit')}
-                                                    disabled={item.source === 'payout'}
-                                                >
-                                                    <Edit className="mr-2" /> Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem 
-                                                    className="text-destructive" 
-                                                    onSelect={() => handleSetDialog(item.id, 'delete')}
-                                                >
-                                                    <Trash className="mr-2" /> Delete
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onSelect={() => handlePrintVoucher(item)} className="font-bold">
+                                                    <Printer className="mr-2 h-4 w-4" /> PRINT VOUCHER
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
-                                {openDialogs[item.id] === 'edit' && <EditExpenseDialog expense={item} onExpenseUpdated={handleActionComplete} />}
-                                {openDialogs[item.id] === 'delete' && <DeleteExpenseDialog expense={item} onExpenseDeleted={handleActionComplete} />}
-                            </Dialog>
-                        ))}
-                     {!loading && expenses.length === 0 && (
-                         <TableRow>
-                            <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
-                                No expense records found.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
+    );
 }
