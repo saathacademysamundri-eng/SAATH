@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student, type Income } from '@/lib/data';
 import { getStudents, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
-import { Printer, Search, Loader2 } from 'lucide-react';
+import { Printer, Search, Loader2, CalendarIcon } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
@@ -88,6 +87,7 @@ export default function FeeCollectionPage() {
   const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
+  const [forMonth, setForMonth] = useState(() => format(new Date(), 'yyyy-MM'));
   const printRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
@@ -100,6 +100,17 @@ export default function FeeCollectionPage() {
       .filter(i => i.studentId === searchedStudent.id)
       .sort((a, b) => b.date.getTime() - a.date.getTime())[0] || null;
   }, [searchedStudent, income]);
+
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const now = new Date();
+    for (let i = -6; i <= 1; i++) {
+      const d = addDays(now, i * 30);
+      const val = format(d, 'yyyy-MM');
+      options.push({ value: val, label: format(d, 'MMMM yyyy') });
+    }
+    return options;
+  }, []);
 
 
   const handleSearch = async () => {
@@ -191,6 +202,7 @@ export default function FeeCollectionPage() {
         studentId: searchedStudent.id,
         amount: paidAmount,
         receiptId: receiptId,
+        forMonth: forMonth, // Attribute payment to specific month
     });
       
     if (!incomeResult.success || !incomeResult.id) {
@@ -605,14 +617,14 @@ export default function FeeCollectionPage() {
                               <p className='text-2xl font-bold'>{searchedStudent.feeStatus}</p>
                           </div>
                       </div>
-                  </CardContent>
+                  </CardHeader>
               </Card>
 
               <Card>
                   <CardHeader>
                       <CardTitle>Payment Collection</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid md:grid-cols-3 gap-6">
+                  <CardContent className="grid md:grid-cols-4 gap-6">
                       <div className="space-y-2">
                           <Label>Total Dues (PKR)</Label>
                           <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled />
@@ -627,6 +639,19 @@ export default function FeeCollectionPage() {
                               onChange={(e) => setPaidAmount(Number(e.target.value))}
                               disabled={isProcessingPayment || searchedStudent.totalFee === 0}
                           />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="forMonth">Payment For Month</Label>
+                          <Select value={forMonth} onValueChange={setForMonth}>
+                            <SelectTrigger id="forMonth">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {monthOptions.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                       </div>
                       <div className="space-y-2">
                           <Label>Remaining Dues (PKR)</Label>

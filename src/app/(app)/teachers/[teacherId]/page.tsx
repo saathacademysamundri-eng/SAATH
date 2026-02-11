@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -17,7 +16,7 @@ import { useParams } from 'next/navigation';
 import { useAppContext } from '@/hooks/use-app-context';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { format, getMonth, getYear } from 'date-fns';
+import { format, getMonth, getYear, startOfMonth } from 'date-fns';
 import { useSettings } from '@/hooks/use-settings';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -80,20 +79,32 @@ export default function TeacherProfilePage() {
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
             if (relevantSubjects.length > 0) {
                  relevantSubjects.forEach(subject => {
-                    const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                    // EARNING ATTRIBUTION CHECK:
+                    // Only attribute income if the teacher was assigned to the student before or during the billing period.
+                    const assignedAt = subject.assignedAt ? (subject.assignedAt.toDate ? subject.assignedAt.toDate() : new Date(subject.assignedAt)) : new Date(0);
+                    const assignedMonthKey = format(assignedAt, 'yyyy-MM');
+                    const incomeMonthKey = inc.forMonth || format(inc.date, 'yyyy-MM');
+
+                    if (assignedMonthKey > incomeMonthKey) {
+                        return; // This teacher was assigned AFTER this fee period.
+                    }
+
+                    const feeShareForSubject = subject.fee_share || 0;
                     if (student.monthlyFee > 0) {
                       const proportion = feeShareForSubject / student.monthlyFee;
                       const earnedShare = inc.amount * proportion;
                       
-                      const monthKey = format(inc.date, 'yyyy-MM');
+                      const monthKey = incomeMonthKey;
+                      const monthDate = new Date(monthKey + '-01');
+
                       if (!earningsByMonth[monthKey]) {
                           earningsByMonth[monthKey] = {
                               totalGross: 0,
                               teacherShare: 0,
                               academyShare: 0,
                               studentEarnings: [],
-                              year: getYear(inc.date),
-                              monthIndex: getMonth(inc.date),
+                              year: getYear(monthDate),
+                              monthIndex: getMonth(monthDate),
                           };
                       }
 
@@ -311,7 +322,7 @@ export default function TeacherProfilePage() {
       printWindow.document.close();
       setTimeout(() => {
         printWindow.print();
-      }, 500);
+      }, 500); // Give it a moment to render before printing
     } else {
       toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Please allow popups to print the report.' });
     }

@@ -1,5 +1,4 @@
 
-
 export type DailyAttendanceSummary = {
     date: Date;
     students: {
@@ -47,6 +46,7 @@ export type StudentSubject = {
   subject_name: string;
   teacher_id: string;
   fee_share: number;
+  assignedAt?: any; // Timestamp or Date
 }
 
 export type Student = {
@@ -87,6 +87,7 @@ export type Income = {
     studentId: string;
     amount: number;
     date: Date;
+    forMonth?: string; // e.g., "2024-07"
     paidOutTo?: { [teacherId: string]: string }; // Tracks which teacher has been paid for this income via which payout
 }
 
@@ -378,5 +379,3 @@ export const subjectTeacherMap: { [subjectName: string]: string } = {
     'Pre-Eng. Mathematics': 'T03',
     'Pre-Med. Biology': 'T05'
 };
-
-    

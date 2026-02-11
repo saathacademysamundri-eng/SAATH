@@ -181,7 +181,19 @@ export async function getStudent(id: string): Promise<Student | null> {
 
 export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id: string }) {
     const docRef = doc(db, 'students', student.id);
-    const studentWithStatus = { ...student, status: 'active' as const };
+    
+    // Inject assignment date for subjects
+    const subjectsWithAssignment = student.subjects.map(s => ({
+        ...s,
+        assignedAt: Timestamp.now(),
+    }));
+
+    const studentWithStatus = { 
+        ...student, 
+        subjects: subjectsWithAssignment,
+        status: 'active' as const 
+    };
+
     try {
         await setDoc(docRef, studentWithStatus);
         await logActivity('new_admission', `New admission: ${student.name} (ID: ${student.id}) in class ${student.class}.`, `/students/${student.id}`);
@@ -226,6 +238,21 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
 
             const oldStudentData = studentDoc.data() as Student;
             const updateData: any = { ...studentData };
+
+            // Handle subject assignment dates
+            if (studentData.subjects) {
+                const oldSubjects = oldStudentData.subjects || [];
+                updateData.subjects = studentData.subjects.map(newSub => {
+                    const existing = oldSubjects.find(os => 
+                        os.subject_name === newSub.subject_name && 
+                        os.teacher_id === newSub.teacher_id
+                    );
+                    return {
+                        ...newSub,
+                        assignedAt: existing?.assignedAt || Timestamp.now()
+                    };
+                });
+            }
 
             if (studentData.monthlyFee !== undefined && studentData.monthlyFee !== oldStudentData.monthlyFee) {
                 const feeDifference = studentData.monthlyFee - oldStudentData.monthlyFee;
@@ -710,7 +737,7 @@ export async function seedDatabase() {
 }
 
 // Income Functions
-export async function addIncome(incomeData: Omit<Income, 'id' | 'date'> & { receiptId: string }) {
+export async function addIncome(incomeData: Omit<Income, 'id' | 'date'> & { receiptId: string, forMonth?: string }) {
     try {
         const dataToSave = { ...incomeData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'income'), dataToSave);
