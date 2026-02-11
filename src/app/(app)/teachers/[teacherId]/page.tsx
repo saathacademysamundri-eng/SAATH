@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type Student, type Teacher, type TeacherPayout, type Report, Income } from '@/lib/data';
+import { type Student, type Teacher, type TeacherPayout, type Report, type Income } from '@/lib/data';
 import { getTeacherPayouts, payoutTeacher, deletePayout } from '@/lib/firebase/firestore';
 import { Loader2, Phone, Wallet, Printer, Mail, Home, User, Trash2 } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
@@ -28,7 +28,7 @@ type StudentEarning = {
 };
 
 type MonthlyEarnings = {
-  month: string; // e.g., "July 2024"
+  month: string;
   year: number;
   monthIndex: number;
   totalGross: number;
@@ -36,7 +36,6 @@ type MonthlyEarnings = {
   academyShare: number;
   studentEarnings: StudentEarning[];
 };
-
 
 export default function TeacherProfilePage() {
   const params = useParams();
@@ -66,6 +65,7 @@ export default function TeacherProfilePage() {
     
     setTeacher(teacherData);
     
+    const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
     const payoutData = await getTeacherPayouts(teacherId);
     setPayouts(payoutData);
 
@@ -91,6 +91,42 @@ export default function TeacherProfilePage() {
         if (student) {
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
             if (relevantSubjects.length > 0) {
+                 relevantSubjects.forEach(subject => {
+                    const assignedAt = subject.assignedAt ? (subject.assignedAt.toDate ? subject.assignedAt.toDate() : new Date(subject.assignedAt)) : new Date(0);
+                    const assignedMonthKey = format(assignedAt, 'yyyy-MM');
+                    const incomeMonthKey = inc.forMonth || format(inc.date, 'yyyy-MM');
+
+                    if (assignedMonthKey > incomeMonthKey) {
+                        return;
+                    }
+
+                    const feeShareForSubject = subject.fee_share || 0;
+                    if (student.monthlyFee > 0) {
+                      const proportion = feeShareForSubject / student.monthlyFee;
+                      const earnedShare = inc.amount * proportion;
+                      
+                      const monthKey = incomeMonthKey;
+                      const monthDate = new Date(monthKey + '-01');
+
+                      if (!earningsByMonth[monthKey]) {
+                          earningsByMonth[monthKey] = {
+                              totalGross: 0,
+                              teacherShare: 0,
+                              academyShare: 0,
+                              studentEarnings: [],
+                              year: getYear(monthDate),
+                              monthIndex: getMonth(monthDate),
+                          };
+                      }
+
+                      earningsByMonth[monthKey].totalGross += earnedShare;
+                      earningsByMonth[monthKey].studentEarnings.push({
+                          student: student,
+                          earnedShare: earnedShare,
+                          subjectName: subject.subject_name,
+                          incomeId: inc.id,
+                          incomeDate: inc.date,
+                      });
                 relevantSubjects.forEach(subject => {
                     const feeShareForSubject = subject.fee_share || 0;
                     if (student.monthlyFee > 0) {
@@ -148,6 +184,25 @@ export default function TeacherProfilePage() {
     fetchData();
   }, [fetchData]);
 
+  const getReportData = useCallback((monthData: MonthlyEarnings) => {
+    if (!teacher) return null;
+
+    const breakdown = monthData.studentEarnings.map(earning => ({
+      studentId: earning.student.id,
+      studentName: earning.student.name,
+      studentClass: earning.student.class,
+      subjectName: earning.subjectName,
+      feeShare: earning.earnedShare,
+    }));
+
+    return {
+      grossEarnings: monthData.totalGross,
+      teacherShare: monthData.teacherShare,
+      academyShare: monthData.academyShare,
+      studentBreakdown: breakdown,
+    };
+  }, [teacher]);
+
   const handlePayout = async (monthData: MonthlyEarnings) => {
       if (!teacher || monthData.totalGross === 0) {
           toast({ variant: 'destructive', title: 'Payout Error', description: 'No earnings to pay out for this month.' });
@@ -185,29 +240,9 @@ export default function TeacherProfilePage() {
         toast({ variant: 'destructive', title: 'Reversal Failed', description: result.message });
     }
     setDeletingPayoutId(null);
-  }
+  };
 
-
-  const getReportData = useCallback((monthData: MonthlyEarnings) => {
-    if (!teacher) return null;
-
-    const breakdown = monthData.studentEarnings.map(earning => ({
-      studentId: earning.student.id,
-      studentName: earning.student.name,
-      studentClass: earning.student.class,
-      subjectName: earning.subjectName,
-      feeShare: earning.earnedShare,
-    }));
-
-    return {
-      grossEarnings: monthData.totalGross,
-      teacherShare: monthData.teacherShare,
-      academyShare: monthData.academyShare,
-      studentBreakdown: breakdown,
-    };
-  }, [teacher]);
-
-  const generatePrintHtml = (reportData: any, teacherName: string, reportDate: Date, title: string) => {
+  const generatePrintHtml = (reportData: any, tName: string, reportDate: Date, title: string) => {
     const { grossEarnings, teacherShare, academyShare, studentBreakdown } = reportData;
     const { logo, name, address, phone } = settings;
     const formattedReportDate = format(reportDate, 'PPP');
@@ -224,7 +259,7 @@ export default function TeacherProfilePage() {
     return `
       <html>
         <head>
-          <title>${title} - ${teacherName}</title>
+          <title>${title} - ${tName}</title>
           <style>
             @media print {
               @page { size: A4; margin: 0.75in; }
@@ -238,7 +273,7 @@ export default function TeacherProfilePage() {
               color: #000;
               font-size: 10pt;
             }
-            .report-container { max-width: 800px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+            .report-container { max-width: 800px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
             .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
             .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
@@ -271,7 +306,7 @@ export default function TeacherProfilePage() {
               </div>
               <div class="report-title">
                 <h2>${title}</h2>
-                <p>For: ${teacherName} | Date: ${formattedReportDate}</p>
+                <p>For: ${tName} | Date: ${formattedReportDate}</p>
               </div>
               <div class="stats-grid">
                   <div class="stat-card">
@@ -357,7 +392,6 @@ export default function TeacherProfilePage() {
     }
   };
 
-
   if (loading || isAppLoading) {
     return (
         <div className="space-y-6">
@@ -395,6 +429,13 @@ export default function TeacherProfilePage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <TeacherEarningsClient 
+        teacherId={teacher.id} 
+        teacherName={teacher.name}
+        getReportData={() => null}
+      />
+      
+      <div id="print-area">
         <Card>
             <CardHeader className='flex-row items-center gap-4 space-y-0 pb-4'>
                 <Avatar className="h-20 w-20">
@@ -499,7 +540,7 @@ export default function TeacherProfilePage() {
                 </CardContent>
                </Card>
             </TabsContent>
-            <TabsContent value="payouts">
+            <TabsContent value="payouts" className="mt-4">
                  <Card>
                     <CardHeader>
                         <CardTitle>Teacher Payout History</CardTitle>
@@ -562,7 +603,7 @@ export default function TeacherProfilePage() {
                     </CardContent>
                 </Card>
             </TabsContent>
-            <TabsContent value="profile">
+            <TabsContent value="profile" className="mt-4">
                 <Card>
                     <CardHeader>
                         <CardTitle>Teacher Information</CardTitle>

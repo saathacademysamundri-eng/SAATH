@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student, type Income } from '@/lib/data';
 import { getStudents, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
-import { Printer, Search, Loader2 } from 'lucide-react';
+import { Printer, Search, Loader2, CalendarIcon } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
@@ -88,6 +87,7 @@ export default function FeeCollectionPage() {
   const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
+  const [forMonth, setForMonth] = useState(() => format(new Date(), 'yyyy-MM'));
   const printRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
@@ -100,6 +100,17 @@ export default function FeeCollectionPage() {
       .filter(i => i.studentId === searchedStudent.id)
       .sort((a, b) => b.date.getTime() - a.date.getTime())[0] || null;
   }, [searchedStudent, income]);
+
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const now = new Date();
+    for (let i = -6; i <= 1; i++) {
+      const d = addDays(now, i * 30);
+      const val = format(d, 'yyyy-MM');
+      options.push({ value: val, label: format(d, 'MMMM yyyy') });
+    }
+    return options;
+  }, []);
 
 
   const handleSearch = async () => {
@@ -182,15 +193,14 @@ export default function FeeCollectionPage() {
       newFeeStatus = 'Paid';
     }
 
-    // Generate receiptId before saving
     const receiptId = `RCPT-${Date.now()}`;
 
-    // Add to income collection first
     const incomeResult = await addIncome({
         studentName: searchedStudent.name,
         studentId: searchedStudent.id,
         amount: paidAmount,
         receiptId: receiptId,
+        forMonth: forMonth,
     });
       
     if (!incomeResult.success || !incomeResult.id) {
@@ -232,7 +242,7 @@ export default function FeeCollectionPage() {
       
       handlePrintPaidReceipt(paidAmount, newTotalFee, originalTotal, receiptId);
       setPaidAmount(0);
-      refreshData(); // Refresh the global context
+      refreshData();
     } else {
         toast({
             variant: "destructive",
@@ -499,31 +509,30 @@ export default function FeeCollectionPage() {
         return;
     }
     
-    // Recalculate the state at the time of the last payment
-    const amountPaid = lastPayment.amount;
-    const balanceAfterPayment = searchedStudent.totalFee;
-    const balanceBeforePayment = balanceAfterPayment + amountPaid;
-    const originalReceiptId = lastPayment.receiptId || lastPayment.id;
+    const amountPaidVal = lastPayment.amount;
+    const balanceAfterPaymentVal = searchedStudent.totalFee;
+    const balanceBeforePaymentVal = balanceAfterPaymentVal + amountPaidVal;
+    const originalReceiptIdVal = lastPayment.receiptId || lastPayment.id;
 
     if (printFormat === 'jpg') {
-        const a4Html = await getA4HtmlWithStyles(amountPaid, balanceAfterPayment, balanceBeforePayment, originalReceiptId, lastPayment.date);
+        const a4Html = await getA4HtmlWithStyles(amountPaidVal, balanceAfterPaymentVal, balanceBeforePaymentVal, originalReceiptIdVal, lastPayment.date);
         
         if (printRef.current) {
             printRef.current.innerHTML = a4Html;
             html2canvas(printRef.current.firstElementChild as HTMLElement, { scale: 2, useCORS: true, backgroundColor: 'white' }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `receipt-${searchedStudent.id}-${originalReceiptId}.jpg`;
+                link.download = `receipt-${searchedStudent.id}-${originalReceiptIdVal}.jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
                 link.click();
-                printRef.current!.innerHTML = ''; // Clear after use
+                if (printRef.current) printRef.current.innerHTML = '';
             });
         }
     } else {
-      handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, originalReceiptId, lastPayment.date);
+      handlePrintPaidReceipt(amountPaidVal, balanceAfterPaymentVal, balanceBeforePaymentVal, originalReceiptIdVal, lastPayment.date);
     }
   };
   
-  const balance = searchedStudent ? searchedStudent.totalFee : 0;
+  const currentBalanceValue = searchedStudent ? searchedStudent.totalFee : 0;
   
   return (
     <>
@@ -612,7 +621,7 @@ export default function FeeCollectionPage() {
                   <CardHeader>
                       <CardTitle>Payment Collection</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid md:grid-cols-3 gap-6">
+                  <CardContent className="grid md:grid-cols-4 gap-6">
                       <div className="space-y-2">
                           <Label>Total Dues (PKR)</Label>
                           <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled />
@@ -629,8 +638,21 @@ export default function FeeCollectionPage() {
                           />
                       </div>
                       <div className="space-y-2">
+                          <Label htmlFor="forMonth">Payment For Month</Label>
+                          <Select value={forMonth} onValueChange={setForMonth}>
+                            <SelectTrigger id="forMonth">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {monthOptions.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-2">
                           <Label>Remaining Dues (PKR)</Label>
-                          <Input value={(balance - paidAmount).toLocaleString()} readOnly disabled />
+                          <Input value={(currentBalanceValue - paidAmount).toLocaleString()} readOnly disabled />
                       </div>
                   </CardContent>
                   <CardContent className='flex gap-2'>
