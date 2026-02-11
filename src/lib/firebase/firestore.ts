@@ -201,7 +201,19 @@ export async function getStudent(id: string): Promise<Student | null> {
 
 export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id: string }) {
     const docRef = doc(db, 'students', student.id);
-    const studentWithStatus = { ...student, status: 'active' as const };
+    
+    // Inject assignment date for subjects
+    const subjectsWithAssignment = student.subjects.map(s => ({
+        ...s,
+        assignedAt: Timestamp.now(),
+    }));
+
+    const studentWithStatus = { 
+        ...student, 
+        subjects: subjectsWithAssignment,
+        status: 'active' as const 
+    };
+
     try {
         await setDoc(docRef, studentWithStatus);
         await logActivity('new_admission', `New admission: ${student.name} (ID: ${student.id}) in class ${student.class}.`, `/students/${student.id}`);
@@ -246,14 +258,30 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
             const oldStudentData = studentDoc.data() as Student;
             const updateData: any = { ...studentData };
 
+            // Handle subject assignment dates
+            if (studentData.subjects) {
+                const oldSubjects = oldStudentData.subjects || [];
+                updateData.subjects = studentData.subjects.map(newSub => {
+                    const existing = oldSubjects.find(os => 
+                        os.subject_name === newSub.subject_name && 
+                        os.teacher_id === newSub.teacher_id
+                    );
+                    return {
+                        ...newSub,
+                        assignedAt: existing?.assignedAt || Timestamp.now()
+                    };
+                });
+            }
+
             if (studentData.monthlyFee !== undefined && studentData.monthlyFee !== oldStudentData.monthlyFee) {
                 const feeDifference = studentData.monthlyFee - oldStudentData.monthlyFee;
                 const newTotalFee = oldStudentData.totalFee + feeDifference;
                 updateData.totalFee = newTotalFee;
 
+                // Update feeStatus based on new totalFee
                 if (newTotalFee <= 0) {
                     updateData.feeStatus = 'Paid';
-                } else if (newTotalFee < oldStudentData.totalFee) {
+                } else if (newTotalFee < studentData.monthlyFee!) {
                     updateData.feeStatus = 'Partial';
                 } else {
                     updateData.feeStatus = 'Pending';
@@ -266,7 +294,7 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
             transaction.update(docRef, updateData);
         });
         if (!studentData.class) {
-             await logActivity('student_updated', `Updated details for student ${studentData.name} (ID: ${studentId}).`, `/students/${studentId}`);
+             await logActivity('student_updated', `Updated details for student ${studentData.name || ''} (ID: ${studentId}).`, `/students/${studentId}`);
         }
         return { success: true, message: "Student updated successfully." };
     } catch (serverError) {
@@ -380,7 +408,8 @@ export async function checkAndGenerateMonthlyFees() {
     try {
         const stateRef = doc(db, 'system_state', 'fee_management');
         const stateDoc = await getDoc(stateRef);
-        const currentMonth = formatDate(new Date(), 'yyyy-MM');
+        const now = new Date();
+        const currentMonth = formatDate(now, 'yyyy-MM');
 
         if (stateDoc.exists() && stateDoc.data().lastGeneratedMonth === currentMonth) {
             return { success: true, message: "Fees for the current month have already been generated." };
@@ -389,12 +418,28 @@ export async function checkAndGenerateMonthlyFees() {
         const studentsCollection = collection(db, 'students');
         const q = query(studentsCollection, where("status", "==", "active"));
         const studentsSnap = await getDocs(q);
+        
+        if (studentsSnap.empty) {
+            await setDoc(stateRef, { lastGeneratedMonth: currentMonth });
+            return { success: true, message: "No active students found." };
+        }
+
         const batch = writeBatch(db);
 
         studentsSnap.forEach(studentDoc => {
             const student = studentDoc.data() as Student;
             const studentRef = studentDoc.ref;
             
+            const newTotalFee = (student.totalFee || 0) + (student.monthlyFee || 0);
+            
+            let newStatus: Student['feeStatus'] = 'Pending';
+            if (newTotalFee <= 0) {
+                newStatus = 'Paid';
+            } else if (newTotalFee > student.monthlyFee) {
+                newStatus = 'Overdue';
+            } else if (newTotalFee < student.monthlyFee) {
+                newStatus = 'Partial';
+            }
             const newTotalFee = student.totalFee + student.monthlyFee;
             const newFeeStatus: Student['feeStatus'] = newTotalFee > 0 ? 'Pending' : 'Paid';
 
@@ -408,9 +453,7 @@ export async function checkAndGenerateMonthlyFees() {
 
         await batch.commit();
 
-        if (!studentsSnap.empty) {
-             await logActivity('fee_generated', `Automatically generated monthly fees for all active students for ${currentMonth}.`);
-        }
+        await logActivity('fee_generated', `Automatically generated monthly fees for all active students for ${formatDate(now, 'MMMM yyyy')}.`);
 
         return { success: true, message: "Monthly fees have been generated successfully." };
 
@@ -700,7 +743,7 @@ export async function seedDatabase() {
 }
 
 // Income Functions
-export async function addIncome(incomeData: Omit<Income, 'id' | 'date'> & { receiptId: string }) {
+export async function addIncome(incomeData: Omit<Income, 'id' | 'date'> & { receiptId: string, forMonth?: string }) {
     try {
         const dataToSave = { ...incomeData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'income'), dataToSave);
