@@ -1,5 +1,4 @@
 
-
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
 import { app, auth, firebaseConfig } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID } from '@/lib/data';
@@ -234,10 +233,10 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
                 const newTotalFee = oldStudentData.totalFee + feeDifference;
                 updateData.totalFee = newTotalFee;
 
-                // Optionally, update feeStatus based on new totalFee
+                // Update feeStatus based on new totalFee
                 if (newTotalFee <= 0) {
                     updateData.feeStatus = 'Paid';
-                } else if (newTotalFee < oldStudentData.totalFee) {
+                } else if (newTotalFee < studentData.monthlyFee!) {
                     updateData.feeStatus = 'Partial';
                 } else {
                     updateData.feeStatus = 'Pending';
@@ -250,7 +249,7 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
             transaction.update(docRef, updateData);
         });
         if (!studentData.class) {
-             await logActivity('student_updated', `Updated details for student ${studentData.name} (ID: ${studentId}).`, `/students/${studentId}`);
+             await logActivity('student_updated', `Updated details for student ${studentData.name || ''} (ID: ${studentId}).`, `/students/${studentId}`);
         }
         return { success: true, message: "Student updated successfully." };
     } catch (serverError) {
@@ -366,7 +365,8 @@ export async function checkAndGenerateMonthlyFees() {
     try {
         const stateRef = doc(db, 'system_state', 'fee_management');
         const stateDoc = await getDoc(stateRef);
-        const currentMonth = formatDate(new Date(), 'yyyy-MM');
+        const now = new Date();
+        const currentMonth = formatDate(now, 'yyyy-MM');
 
         if (stateDoc.exists() && stateDoc.data().lastGeneratedMonth === currentMonth) {
             // Fees already generated for this month
@@ -377,14 +377,28 @@ export async function checkAndGenerateMonthlyFees() {
         const studentsCollection = collection(db, 'students');
         const q = query(studentsCollection, where("status", "==", "active"));
         const studentsSnap = await getDocs(q);
+        
+        if (studentsSnap.empty) {
+            await setDoc(stateRef, { lastGeneratedMonth: currentMonth });
+            return { success: true, message: "No active students found." };
+        }
+
         const batch = writeBatch(db);
 
         studentsSnap.forEach(studentDoc => {
             const student = studentDoc.data() as Student;
             const studentRef = studentDoc.ref;
             
-            const newTotalFee = student.totalFee + student.monthlyFee;
-            const newStatus: Student['feeStatus'] = newTotalFee > 0 ? (newTotalFee < studentData.totalFee ? 'Partial' : 'Pending') : 'Paid';
+            const newTotalFee = (student.totalFee || 0) + (student.monthlyFee || 0);
+            
+            let newStatus: Student['feeStatus'] = 'Pending';
+            if (newTotalFee <= 0) {
+                newStatus = 'Paid';
+            } else if (newTotalFee > student.monthlyFee) {
+                newStatus = 'Overdue';
+            } else if (newTotalFee < student.monthlyFee) {
+                newStatus = 'Partial';
+            }
 
             batch.update(studentRef, {
                 totalFee: newTotalFee,
@@ -397,9 +411,7 @@ export async function checkAndGenerateMonthlyFees() {
 
         await batch.commit();
 
-        if (!studentsSnap.empty) {
-             await logActivity('fee_generated', `Automatically generated monthly fees for all active students for ${currentMonth}.`);
-        }
+        await logActivity('fee_generated', `Automatically generated monthly fees for all active students for ${formatDate(now, 'MMMM yyyy')}.`);
 
         return { success: true, message: "Monthly fees have been generated successfully." };
 
@@ -1636,5 +1648,3 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
-
-
