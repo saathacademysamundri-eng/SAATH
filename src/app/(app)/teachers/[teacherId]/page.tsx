@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -6,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { type Student, type Teacher, type TeacherPayout, type Report, Income } from '@/lib/data';
+import { type Student, type Teacher, type TeacherPayout, type Report, type Income } from '@/lib/data';
 import { getTeacherPayouts, payoutTeacher, deletePayout } from '@/lib/firebase/firestore';
 import { Loader2, Phone, Wallet, Printer, Mail, Home, User, Trash2 } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
@@ -16,7 +15,7 @@ import { useParams } from 'next/navigation';
 import { useAppContext } from '@/hooks/use-app-context';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { format, getMonth, getYear, startOfMonth } from 'date-fns';
+import { format, getMonth, getYear } from 'date-fns';
 import { useSettings } from '@/hooks/use-settings';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -38,7 +37,6 @@ type MonthlyEarnings = {
   academyShare: number;
   studentEarnings: StudentEarning[];
 };
-
 
 export default function TeacherProfilePage() {
   const params = useParams();
@@ -141,6 +139,25 @@ export default function TeacherProfilePage() {
     fetchData();
   }, [fetchData]);
 
+  const getReportData = useCallback((monthData: MonthlyEarnings) => {
+    if (!teacher) return null;
+
+    const breakdown = monthData.studentEarnings.map(earning => ({
+      studentId: earning.student.id,
+      studentName: earning.student.name,
+      studentClass: earning.student.class,
+      subjectName: earning.subjectName,
+      feeShare: earning.earnedShare,
+    }));
+
+    return {
+      grossEarnings: monthData.totalGross,
+      teacherShare: monthData.teacherShare,
+      academyShare: monthData.academyShare,
+      studentBreakdown: breakdown,
+    };
+  }, [teacher]);
+
   const handlePayout = async (monthData: MonthlyEarnings) => {
       if (!teacher || monthData.totalGross === 0) {
           toast({ variant: 'destructive', title: 'Payout Error', description: 'No earnings to pay out for this month.' });
@@ -178,27 +195,7 @@ export default function TeacherProfilePage() {
         toast({ variant: 'destructive', title: 'Reversal Failed', description: result.message });
     }
     setDeletingPayoutId(null);
-  }
-
-
-  const getReportData = useCallback((monthData: MonthlyEarnings) => {
-    if (!teacher) return null;
-
-    const breakdown = monthData.studentEarnings.map(earning => ({
-      studentId: earning.student.id,
-      studentName: earning.student.name,
-      studentClass: earning.student.class,
-      subjectName: earning.subjectName,
-      feeShare: earning.earnedShare,
-    }));
-
-    return {
-      grossEarnings: monthData.totalGross,
-      teacherShare: monthData.teacherShare,
-      academyShare: monthData.academyShare,
-      studentBreakdown: breakdown,
-    };
-  }, [teacher]);
+  };
 
   const generatePrintHtml = (reportData: any, tName: string, reportDate: Date, title: string) => {
     const { grossEarnings, teacherShare, academyShare, studentBreakdown } = reportData;
@@ -324,7 +321,6 @@ export default function TeacherProfilePage() {
       toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Please allow popups to print the report.' });
     }
   };
-
 
   if (loading || isAppLoading) {
     return (
@@ -470,7 +466,7 @@ export default function TeacherProfilePage() {
                 </CardContent>
                </Card>
             </TabsContent>
-            <TabsContent value="payouts">
+            <TabsContent value="payouts" className="mt-4">
                  <Card>
                     <CardHeader>
                         <CardTitle>Teacher Payout History</CardTitle>
@@ -533,7 +529,7 @@ export default function TeacherProfilePage() {
                     </CardContent>
                 </Card>
             </TabsContent>
-            <TabsContent value="profile">
+            <TabsContent value="profile" className="mt-4">
                 <Card>
                     <CardHeader>
                         <CardTitle>Teacher Information</CardTitle>
