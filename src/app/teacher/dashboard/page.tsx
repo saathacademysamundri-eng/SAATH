@@ -5,14 +5,14 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
 import { BookCopy, DollarSign, Users, Search, ClipboardCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { format, getMonth, getYear } from 'date-fns';
+import { format, getMonth, getYear, startOfMonth } from 'date-fns';
 import { Student, Income } from '@/lib/data';
 import { MonthlyTeacherAttendance } from './monthly-attendance';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function TeacherDashboardPage() {
   const { teacher } = useTeacherAuth();
-  const { students, income } = useAppContext();
+  const { students, income, allPayouts } = useAppContext();
   
   const teacherStudents = useMemo(() => {
     if (!teacher) return [];
@@ -24,7 +24,16 @@ export default function TeacherDashboardPage() {
   const totalUnpaidEarnings = useMemo(() => {
     if (!teacher) return 0;
 
-    const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
+    const teacherPayouts = allPayouts.filter(p => p.teacherId === teacher.id);
+    const isNewTeacher = teacherPayouts.length === 0;
+
+    let unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
+
+    // Strictly prevent new teachers from earning from past months
+    if (isNewTeacher) {
+        const startOfCurrentMonth = startOfMonth(new Date());
+        unpaidIncome = unpaidIncome.filter(i => i.date >= startOfCurrentMonth);
+    }
 
     let grossEarnings = 0;
 
@@ -33,10 +42,23 @@ export default function TeacherDashboardPage() {
         if (student) {
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacher.id);
             relevantSubjects.forEach(subject => {
-                const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                const feeShareForSubject = subject.fee_share || 0;
                 if (student.monthlyFee > 0) {
                     const proportion = feeShareForSubject / student.monthlyFee;
-                    const earnedShare = inc.amount * proportion;
+                    
+                    let earnableAmount = inc.amount;
+                    
+                    // Rule: A new teacher should not earn from historical student debt
+                    if (isNewTeacher) {
+                        const balanceBeforeThisPayment = student.totalFee + inc.amount;
+                        const oldDebt = balanceBeforeThisPayment - student.monthlyFee;
+
+                        if (oldDebt > 0) {
+                            earnableAmount = Math.max(0, inc.amount - oldDebt);
+                        }
+                    }
+
+                    const earnedShare = earnableAmount * proportion;
                     grossEarnings += earnedShare;
                 }
             });
@@ -44,7 +66,7 @@ export default function TeacherDashboardPage() {
     });
 
     return grossEarnings * 0.7; // Teacher's share is 70%
-  }, [teacher, students, income]);
+  }, [teacher, students, income, allPayouts]);
   
   const stats = [
     { title: 'Total Students', value: teacherStudents.length, icon: Users },
