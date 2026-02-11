@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -14,7 +15,7 @@ import { useParams } from 'next/navigation';
 import { useAppContext } from '@/hooks/use-app-context';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { format, getMonth, getYear, startOfMonth, endOfMonth } from 'date-fns';
+import { format, getMonth, getYear, startOfMonth } from 'date-fns';
 import { useSettings } from '@/hooks/use-settings';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -28,7 +29,7 @@ type StudentEarning = {
 };
 
 type MonthlyEarnings = {
-  month: string; // e.g., "July 2024"
+  month: string;
   year: number;
   monthIndex: number;
   totalGross: number;
@@ -66,8 +67,7 @@ export default function TeacherProfilePage() {
     
     setTeacher(teacherData);
     
-    const payoutData = await getTeacherPayouts(teacherId);
-    setPayouts(payoutData);
+    const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
 
     const isNewTeacher = payoutData.length === 0;
     
@@ -91,35 +91,42 @@ export default function TeacherProfilePage() {
         if (student) {
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
             if (relevantSubjects.length > 0) {
-                relevantSubjects.forEach(subject => {
+                 relevantSubjects.forEach(subject => {
+                    const assignedAt = subject.assignedAt ? (subject.assignedAt.toDate ? subject.assignedAt.toDate() : new Date(subject.assignedAt)) : new Date(0);
+                    const assignedMonthKey = format(assignedAt, 'yyyy-MM');
+                    const incomeMonthKey = inc.forMonth || format(inc.date, 'yyyy-MM');
+
+                    if (assignedMonthKey > incomeMonthKey) {
+                        return;
+                    }
+
                     const feeShareForSubject = subject.fee_share || 0;
                     if (student.monthlyFee > 0) {
-                        const proportion = feeShareForSubject / student.monthlyFee;
-                        
-                        let earnableAmount = inc.amount;
-                        
-                        // Rule: A new teacher should not earn from historical student debt
-                        if (isNewTeacher) {
-                            const balanceBeforeThisPayment = student.totalFee + inc.amount;
-                            const oldDebt = balanceBeforeThisPayment - student.monthlyFee;
+                      const proportion = feeShareForSubject / student.monthlyFee;
+                      const earnedShare = inc.amount * proportion;
+                      
+                      const monthKey = incomeMonthKey;
+                      const monthDate = new Date(monthKey + '-01');
 
-                            if (oldDebt > 0) {
-                                earnableAmount = Math.max(0, inc.amount - oldDebt);
-                            }
-                        }
+                      if (!earningsByMonth[monthKey]) {
+                          earningsByMonth[monthKey] = {
+                              totalGross: 0,
+                              teacherShare: 0,
+                              academyShare: 0,
+                              studentEarnings: [],
+                              year: getYear(monthDate),
+                              monthIndex: getMonth(monthDate),
+                          };
+                      }
 
-                        const earnedShare = earnableAmount * proportion;
-
-                        if (earnedShare > 0) {
-                           currentCycleData.totalGross += earnedShare;
-                           currentCycleData.studentEarnings.push({
-                               student: student,
-                               earnedShare: earnedShare,
-                               subjectName: subject.subject_name,
-                               incomeId: inc.id,
-                               incomeDate: inc.date,
-                           });
-                        }
+                      earningsByMonth[monthKey].totalGross += earnedShare;
+                      earningsByMonth[monthKey].studentEarnings.push({
+                          student: student,
+                          earnedShare: earnedShare,
+                          subjectName: subject.subject_name,
+                          incomeId: inc.id,
+                          incomeDate: inc.date,
+                      });
                     }
                 });
             }
@@ -207,7 +214,7 @@ export default function TeacherProfilePage() {
     };
   }, [teacher]);
 
-  const generatePrintHtml = (reportData: any, teacherName: string, reportDate: Date, title: string) => {
+  const generatePrintHtml = (reportData: any, tName: string, reportDate: Date, title: string) => {
     const { grossEarnings, teacherShare, academyShare, studentBreakdown } = reportData;
     const { logo, name, address, phone } = settings;
     const formattedReportDate = format(reportDate, 'PPP');
@@ -224,7 +231,7 @@ export default function TeacherProfilePage() {
     return `
       <html>
         <head>
-          <title>${title} - ${teacherName}</title>
+          <title>${title} - ${tName}</title>
           <style>
             @media print {
               @page { size: A4; margin: 0.75in; }
@@ -238,7 +245,7 @@ export default function TeacherProfilePage() {
               color: #000;
               font-size: 10pt;
             }
-            .report-container { max-width: 800px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+            .report-container { max-width: 800px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
             .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
             .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
@@ -271,7 +278,7 @@ export default function TeacherProfilePage() {
               </div>
               <div class="report-title">
                 <h2>${title}</h2>
-                <p>For: ${teacherName} | Date: ${formattedReportDate}</p>
+                <p>For: ${tName} | Date: ${formattedReportDate}</p>
               </div>
               <div class="stats-grid">
                   <div class="stat-card">
@@ -395,6 +402,13 @@ export default function TeacherProfilePage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <TeacherEarningsClient 
+        teacherId={teacher.id} 
+        teacherName={teacher.name}
+        getReportData={() => null}
+      />
+      
+      <div id="print-area">
         <Card>
             <CardHeader className='flex-row items-center gap-4 space-y-0 pb-4'>
                 <Avatar className="h-20 w-20">
