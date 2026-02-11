@@ -1398,21 +1398,31 @@ export async function updateExamStatus(examId: string, status: 'approved' | 'rej
     const docRef = doc(db, 'exams', examId);
     try {
         await updateDoc(docRef, { status });
-        const examDoc = await getDoc(docRef);
-        if (examDoc.exists()) {
-             const exam = examDoc.data() as Exam;
-             if (status === 'approved') {
-                await createNotification(exam.teacherId, `Your exam request "${exam.name}" has been approved.`, `/teacher/exams/${examId}`);
-             } else if (status === 'rejected') {
-                await createNotification(exam.teacherId, `Your exam request "${exam.name}" was rejected.`, `/teacher/exams`);
-             }
-             await logActivity('exam_updated', `Exam "${exam.name}" was ${status}.`);
-        }
-        return { success: true, message: 'Exam status updated.' };
+        
+        // Handle background tasks asynchronously without awaiting to ensure rapid UI feedback
+        (async () => {
+            try {
+                const examDoc = await getDoc(docRef);
+                if (examDoc.exists()) {
+                    const exam = examDoc.data() as Exam;
+                    if (status === 'approved') {
+                        await createNotification(exam.teacherId, `Your exam request "${exam.name}" has been approved.`, `/teacher/exams/${examId}`);
+                    } else if (status === 'rejected') {
+                        await createNotification(exam.teacherId, `Your exam request "${exam.name}" was rejected.`, `/teacher/exams`);
+                    }
+                    await logActivity('exam_updated', `Exam "${exam.name}" was ${status}.`);
+                }
+            } catch (sideEffectError) {
+                console.error("Error in background task for updateExamStatus:", sideEffectError);
+            }
+        })();
+
+        return { success: true, message: 'Exam status updated successfully.' };
     } catch (serverError) {
+        console.error("Failed to update exam status:", serverError);
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { status } });
         errorEmitter.emit('permission-error', permissionError);
-        return { success: false, message: (serverError as Error).message };
+        return { success: false, message: (serverError as Error).message || 'Failed to update exam status.' };
     }
 }
 
@@ -1568,7 +1578,7 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
 export async function getTodaysMessagesCount(): Promise<number> {
     try {
         const todayStart = startOfDay(new Date());
-        const todayEnd = endOfDay(new Date());
+        todayEnd = endOfDay(new Date());
 
         const q = query(
             collection(db, 'message_logs'),
@@ -1598,7 +1608,7 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         const studentAttendanceSnap = await getDocs(qStudents);
 
         const qTeachers = query(collection(db, 'teacher_attendance'), where('date', '==', todayStr));
-        const teacherAttendanceSnap = await getDocs(qTeachers);
+        teacherAttendanceSnap = await getDocs(qTeachers);
 
         // Process student attendance
         const studentSummary: DailyAttendanceSummary['students'] = {

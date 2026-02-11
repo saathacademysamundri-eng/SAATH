@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
 import { deleteExam, getExams, updateExamStatus } from '@/lib/firebase/firestore';
-import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer, Check, Ban, AlertCircle, Clock } from 'lucide-react';
+import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer, Check, Ban, AlertCircle, Clock, Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { CreateExamDialog } from './create-exam-dialog';
@@ -62,6 +61,7 @@ export default function ExamsPage() {
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBlankSheetDialogOpen, setIsBlankSheetDialogOpen] = useState(false);
+  const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
 
   // Filter state for Approved Exams
   const [approvedClassFilter, setApprovedClassFilter] = useState<string | null>(null);
@@ -82,9 +82,15 @@ export default function ExamsPage() {
 
   const fetchExams = async () => {
     setLoading(true);
-    const examsData = await getExams();
-    setExams(examsData);
-    setLoading(false);
+    try {
+      const examsData = await getExams();
+      setExams(examsData);
+    } catch (error) {
+      console.error("Failed to fetch exams:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to load exams list.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -123,22 +129,32 @@ export default function ExamsPage() {
   }
 
   const handleApprove = async (examId: string) => {
-    const result = await updateExamStatus(examId, 'approved');
-    if (result.success) {
-        toast({ title: 'Exam Approved', description: 'The exam is now active.' });
-        fetchExams();
-    } else {
-        toast({ variant: 'destructive', title: 'Approval Failed', description: result.message });
+    setIsActionLoading(examId);
+    try {
+      const result = await updateExamStatus(examId, 'approved');
+      if (result.success) {
+          toast({ title: 'Exam Approved', description: 'The exam is now active.' });
+          await fetchExams();
+      } else {
+          toast({ variant: 'destructive', title: 'Approval Failed', description: result.message });
+      }
+    } finally {
+      setIsActionLoading(null);
     }
   };
   
-  const handleReject = async (exam: Exam) => {
-    const result = await updateExamStatus(exam.id, 'rejected');
-    if (result.success) {
-        toast({ title: 'Exam Rejected', description: `The exam request from ${exam.teacherName} has been rejected.`});
-        fetchExams();
-    } else {
-        toast({ variant: 'destructive', title: 'Rejection Failed', description: result.message });
+  const handleReject = async (examId: string, teacherName: string, examName: string) => {
+    setIsActionLoading(examId);
+    try {
+      const result = await updateExamStatus(examId, 'rejected');
+      if (result.success) {
+          toast({ title: 'Exam Rejected', description: `The request "${examName}" from ${teacherName} was rejected.`});
+          await fetchExams();
+      } else {
+          toast({ variant: 'destructive', title: 'Rejection Failed', description: result.message });
+      }
+    } finally {
+      setIsActionLoading(null);
     }
   }
 
@@ -570,8 +586,8 @@ export default function ExamsPage() {
                                         <TableCell className="text-right space-x-2">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button size="sm" variant="destructive">
-                                                        <Ban className="mr-2 h-4 w-4"/>
+                                                    <Button size="sm" variant="destructive" disabled={isActionLoading === exam.id}>
+                                                        {isActionLoading === exam.id ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Ban className="mr-2 h-4 w-4"/>}
                                                         Reject
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -584,14 +600,18 @@ export default function ExamsPage() {
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleReject(exam)} className="bg-destructive hover:bg-destructive/90">
+                                                    <AlertDialogAction onClick={() => handleReject(exam.id, exam.teacherName, exam.name)} className="bg-destructive hover:bg-destructive/90">
                                                         Confirm Rejection
                                                     </AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
-                                            <Button size="sm" onClick={() => handleApprove(exam.id)}>
-                                                <Check className="mr-2 h-4 w-4"/>
+                                            <Button 
+                                              size="sm" 
+                                              onClick={() => handleApprove(exam.id)}
+                                              disabled={isActionLoading === exam.id}
+                                            >
+                                                {isActionLoading === exam.id ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Check className="mr-2 h-4 w-4"/>}
                                                 Approve
                                             </Button>
                                         </TableCell>
@@ -621,4 +641,3 @@ export default function ExamsPage() {
     </div>
   );
 }
-
