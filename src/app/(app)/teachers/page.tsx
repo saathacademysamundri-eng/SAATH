@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -45,10 +43,11 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { deleteTeacher } from '@/lib/firebase/firestore';
 import { QrCodeDialog } from './qr-code-dialog';
+import { startOfMonth } from 'date-fns';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
-  const { teachers, students: allStudents, income, loading, refreshData } = useAppContext();
+  const { teachers, students: allStudents, income, allPayouts, loading, refreshData } = useAppContext();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -72,21 +71,42 @@ export default function TeachersPage() {
             student.subjects.some(sub => sub.teacher_id === teacher.id)
         );
         
-        // Filter for income that has NOT been paid out to THIS teacher
-        const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
+        const teacherPayouts = allPayouts.filter(p => p.teacherId === teacher.id);
+        const isNewTeacher = teacherPayouts.length === 0;
         
+        let unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
+        
+        // Strictly prevent new teachers from earning from past months
+        if (isNewTeacher) {
+            const startOfCurrentMonth = startOfMonth(new Date());
+            unpaidIncome = unpaidIncome.filter(i => i.date >= startOfCurrentMonth);
+        }
+
         let grossEarnings = 0;
 
         unpaidIncome.forEach(inc => {
             const student = allStudents.find(s => s.id === inc.studentId);
-            if (student && student.subjects.some(sub => sub.teacher_id === teacher.id)) {
-                const relevantSubjects = student.subjects.filter(s => s.teacher_id === teacher.id);
+            if (student) {
+                const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacher.id);
                 
                 relevantSubjects.forEach(subject => {
-                    const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                    const feeShareForSubject = subject.fee_share || 0;
                     if (student.monthlyFee > 0) {
                       const proportion = feeShareForSubject / student.monthlyFee;
-                      const earnedShare = inc.amount * proportion;
+                      
+                      let earnableAmount = inc.amount;
+                      
+                      // Rule: A new teacher should not earn from historical student debt
+                      if (isNewTeacher) {
+                          const balanceBeforeThisPayment = student.totalFee + inc.amount;
+                          const oldDebt = balanceBeforeThisPayment - student.monthlyFee;
+
+                          if (oldDebt > 0) {
+                              earnableAmount = Math.max(0, inc.amount - oldDebt);
+                          }
+                      }
+
+                      const earnedShare = earnableAmount * proportion;
                       grossEarnings += earnedShare;
                     }
                  });
@@ -100,7 +120,7 @@ export default function TeachersPage() {
     });
 
     return stats;
-  }, [teachers, allStudents, income]);
+  }, [teachers, allStudents, income, allPayouts]);
 
   const filteredTeachers = teachers.filter(teacher =>
     teacher.name && teacher.name.toLowerCase().includes(search.toLowerCase())

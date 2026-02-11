@@ -1,13 +1,15 @@
-
-
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { GlobalPreloader } from '@/components/global-preloader';
 
-export default function WebsiteEditorPage() {
-    const router = useRouter();
-    if (typeof window !== 'undefined') {
-        router.back();
-    }
-    return null;
+export default function WebsiteEditorRedirectPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/settings');
+  }, [router]);
+
+  return <GlobalPreloader />;
 }

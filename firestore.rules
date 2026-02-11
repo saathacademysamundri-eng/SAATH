@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -15,7 +14,9 @@ service cloud.firestore {
 
     // Rules for specific collections
     match /students/{studentId} {
-      allow read, write: if isAuthenticated();
+      // Allow public get and list for the search portal
+      allow get, list: if true;
+      allow write: if isAuthenticated();
     }
     match /teachers/{teacherId} {
       allow read, write: if isAuthenticated();
@@ -24,7 +25,9 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
     match /income/{incomeId} {
-       allow read, write: if isAuthenticated();
+       // Allow public list for the ledger search
+       allow get, list: if true;
+       allow write: if isAuthenticated();
     }
     match /expenses/{expenseId} {
        allow read, write: if isAuthenticated();
@@ -40,6 +43,9 @@ service cloud.firestore {
     }
     match /exams/{examId} {
       allow read, write: if isAuthenticated();
+      // Allow public list for the results search
+      allow get, list: if true;
+      allow write: if isAuthenticated();
     }
     match /attendance/{attendanceId} {
        allow read, write: if isAuthenticated();
@@ -48,7 +54,8 @@ service cloud.firestore {
       allow list, read, write: if isAuthenticated();
     }
     match /settings/{settingId} {
-       allow read, write: if isAuthenticated();
+       allow get: if true;
+       allow write: if isAuthenticated();
     }
     match /message_logs/{logId} {
         allow create: if isAuthenticated();
