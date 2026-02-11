@@ -193,16 +193,14 @@ export default function FeeCollectionPage() {
       newFeeStatus = 'Paid';
     }
 
-    // Generate receiptId before saving
     const receiptId = `RCPT-${Date.now()}`;
 
-    // Add to income collection first
     const incomeResult = await addIncome({
         studentName: searchedStudent.name,
         studentId: searchedStudent.id,
         amount: paidAmount,
         receiptId: receiptId,
-        forMonth: forMonth, // Attribute payment to specific month
+        forMonth: forMonth,
     });
       
     if (!incomeResult.success || !incomeResult.id) {
@@ -244,7 +242,7 @@ export default function FeeCollectionPage() {
       
       handlePrintPaidReceipt(paidAmount, newTotalFee, originalTotal, receiptId);
       setPaidAmount(0);
-      refreshData(); // Refresh the global context
+      refreshData();
     } else {
         toast({
             variant: "destructive",
@@ -511,31 +509,30 @@ export default function FeeCollectionPage() {
         return;
     }
     
-    // Recalculate the state at the time of the last payment
-    const amountPaid = lastPayment.amount;
-    const balanceAfterPayment = searchedStudent.totalFee;
-    const balanceBeforePayment = balanceAfterPayment + amountPaid;
-    const originalReceiptId = lastPayment.receiptId || lastPayment.id;
+    const amountPaidVal = lastPayment.amount;
+    const balanceAfterPaymentVal = searchedStudent.totalFee;
+    const balanceBeforePaymentVal = balanceAfterPaymentVal + amountPaidVal;
+    const originalReceiptIdVal = lastPayment.receiptId || lastPayment.id;
 
     if (printFormat === 'jpg') {
-        const a4Html = await getA4HtmlWithStyles(amountPaid, balanceAfterPayment, balanceBeforePayment, originalReceiptId, lastPayment.date);
+        const a4Html = await getA4HtmlWithStyles(amountPaidVal, balanceAfterPaymentVal, balanceBeforePaymentVal, originalReceiptIdVal, lastPayment.date);
         
         if (printRef.current) {
             printRef.current.innerHTML = a4Html;
             html2canvas(printRef.current.firstElementChild as HTMLElement, { scale: 2, useCORS: true, backgroundColor: 'white' }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `receipt-${searchedStudent.id}-${originalReceiptId}.jpg`;
+                link.download = `receipt-${searchedStudent.id}-${originalReceiptIdVal}.jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
                 link.click();
-                printRef.current!.innerHTML = ''; // Clear after use
+                if (printRef.current) printRef.current.innerHTML = '';
             });
         }
     } else {
-      handlePrintPaidReceipt(amountPaid, balanceAfterPayment, balanceBeforePayment, originalReceiptId, lastPayment.date);
+      handlePrintPaidReceipt(amountPaidVal, balanceAfterPaymentVal, balanceBeforePaymentVal, originalReceiptIdVal, lastPayment.date);
     }
   };
   
-  const balance = searchedStudent ? searchedStudent.totalFee : 0;
+  const currentBalanceValue = searchedStudent ? searchedStudent.totalFee : 0;
   
   return (
     <>
@@ -617,7 +614,7 @@ export default function FeeCollectionPage() {
                               <p className='text-2xl font-bold'>{searchedStudent.feeStatus}</p>
                           </div>
                       </div>
-                  </CardHeader>
+                  </CardContent>
               </Card>
 
               <Card>
@@ -655,7 +652,7 @@ export default function FeeCollectionPage() {
                       </div>
                       <div className="space-y-2">
                           <Label>Remaining Dues (PKR)</Label>
-                          <Input value={(balance - paidAmount).toLocaleString()} readOnly disabled />
+                          <Input value={(currentBalanceValue - paidAmount).toLocaleString()} readOnly disabled />
                       </div>
                   </CardContent>
                   <CardContent className='flex gap-2'>

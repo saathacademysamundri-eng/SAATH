@@ -30,7 +30,7 @@ type StudentEarning = {
 };
 
 type MonthlyEarnings = {
-  month: string; // e.g., "July 2024"
+  month: string;
   year: number;
   monthIndex: number;
   totalGross: number;
@@ -68,7 +68,6 @@ export default function TeacherProfilePage() {
     
     setTeacher(teacherData);
     
-    // Filter for income that has NOT been paid out to THIS teacher
     const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
 
     const earningsByMonth: { [key: string]: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> & { year: number, monthIndex: number } } = {};
@@ -79,14 +78,12 @@ export default function TeacherProfilePage() {
             const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
             if (relevantSubjects.length > 0) {
                  relevantSubjects.forEach(subject => {
-                    // EARNING ATTRIBUTION CHECK:
-                    // Only attribute income if the teacher was assigned to the student before or during the billing period.
                     const assignedAt = subject.assignedAt ? (subject.assignedAt.toDate ? subject.assignedAt.toDate() : new Date(subject.assignedAt)) : new Date(0);
                     const assignedMonthKey = format(assignedAt, 'yyyy-MM');
                     const incomeMonthKey = inc.forMonth || format(inc.date, 'yyyy-MM');
 
                     if (assignedMonthKey > incomeMonthKey) {
-                        return; // This teacher was assigned AFTER this fee period.
+                        return;
                     }
 
                     const feeShareForSubject = subject.fee_share || 0;
@@ -203,7 +200,7 @@ export default function TeacherProfilePage() {
     };
   }, [teacher]);
 
-  const generatePrintHtml = (reportData: any, teacherName: string, reportDate: Date, title: string) => {
+  const generatePrintHtml = (reportData: any, tName: string, reportDate: Date, title: string) => {
     const { grossEarnings, teacherShare, academyShare, studentBreakdown } = reportData;
     const { logo, name, address, phone } = settings;
     const formattedReportDate = format(reportDate, 'PPP');
@@ -220,7 +217,7 @@ export default function TeacherProfilePage() {
     return `
       <html>
         <head>
-          <title>${title} - ${teacherName}</title>
+          <title>${title} - ${tName}</title>
           <style>
             @media print {
               @page { size: A4; margin: 0.75in; }
@@ -234,7 +231,7 @@ export default function TeacherProfilePage() {
               color: #000;
               font-size: 10pt;
             }
-            .report-container { max-width: 800px; margin: auto; display: flex; flex-direction: column; min-height: 95vh; }
+            .report-container { max-width: 800px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
             .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
             .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
@@ -267,7 +264,7 @@ export default function TeacherProfilePage() {
               </div>
               <div class="report-title">
                 <h2>${title}</h2>
-                <p>For: ${teacherName} | Date: ${formattedReportDate}</p>
+                <p>For: ${tName} | Date: ${formattedReportDate}</p>
               </div>
               <div class="stats-grid">
                   <div class="stat-card">
@@ -322,7 +319,7 @@ export default function TeacherProfilePage() {
       printWindow.document.close();
       setTimeout(() => {
         printWindow.print();
-      }, 500); // Give it a moment to render before printing
+      }, 500);
     } else {
       toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Please allow popups to print the report.' });
     }
@@ -369,7 +366,7 @@ export default function TeacherProfilePage() {
       <TeacherEarningsClient 
         teacherId={teacher.id} 
         teacherName={teacher.name}
-        getReportData={() => null} // This client component is now only for the header
+        getReportData={() => null}
       />
       
       <div id="print-area">
