@@ -10,7 +10,6 @@ import { type Student, type Teacher, type TeacherPayout, type Report, Income } f
 import { getTeacherPayouts, payoutTeacher, deletePayout } from '@/lib/firebase/firestore';
 import { Loader2, Phone, Wallet, Printer, Mail, Home, User, Trash2 } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { TeacherEarningsClient } from './teacher-earnings-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useParams } from 'next/navigation';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -70,7 +69,22 @@ export default function TeacherProfilePage() {
     
     const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
 
-    const earningsByMonth: { [key: string]: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> & { year: number, monthIndex: number } } = {};
+    const isNewTeacher = payoutData.length === 0;
+    
+    let unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
+
+    // If it's a brand new teacher, strictly limit to income records from the current month onwards
+    if (isNewTeacher) {
+        const startOfCurrentMonth = startOfMonth(new Date());
+        unpaidIncome = unpaidIncome.filter(i => i.date >= startOfCurrentMonth);
+    }
+
+    const currentCycleData: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> = {
+        totalGross: 0,
+        teacherShare: 0,
+        academyShare: 0,
+        studentEarnings: [],
+    };
 
     unpaidIncome.forEach(inc => {
         const student = students.find(s => s.id === inc.studentId);
@@ -114,25 +128,25 @@ export default function TeacherProfilePage() {
                           incomeDate: inc.date,
                       });
                     }
-                 });
+                });
             }
         }
     });
 
-    const finalMonthlyEarnings: MonthlyEarnings[] = Object.keys(earningsByMonth).map(key => {
-      const data = earningsByMonth[key];
-      return {
-        ...data,
-        month: format(new Date(data.year, data.monthIndex), 'MMMM yyyy'),
-        teacherShare: data.totalGross * 0.7,
-        academyShare: data.totalGross * 0.3,
-      };
-    }).sort((a,b) => b.year - a.year || b.monthIndex - a.monthIndex);
-    
-    setMonthlyEarnings(finalMonthlyEarnings);
+    currentCycleData.teacherShare = currentCycleData.totalGross * 0.7;
+    currentCycleData.academyShare = currentCycleData.totalGross * 0.3;
 
-    const payoutData = await getTeacherPayouts(teacherId);
-    setPayouts(payoutData);
+    const finalEarnings: MonthlyEarnings[] = [];
+    if (currentCycleData.totalGross > 0) {
+        finalEarnings.push({
+            ...currentCycleData,
+            month: 'Current Earnings Cycle',
+            year: new Date().getFullYear(),
+            monthIndex: new Date().getMonth(),
+        });
+    }
+    
+    setMonthlyEarnings(finalEarnings);
 
     setLoading(false);
   }, [teacherId, teachers, students, income, isAppLoading]);
@@ -302,6 +316,31 @@ export default function TeacherProfilePage() {
     `;
   };
 
+  const handlePrintCurrentCycle = (monthData: MonthlyEarnings) => {
+    if (isSettingsLoading || !teacher) {
+      toast({ title: 'Please wait', description: 'Settings are loading.' });
+      return;
+    }
+    const reportData = getReportData(monthData);
+    if (!reportData || reportData.grossEarnings === 0) {
+      toast({ variant: 'destructive', title: 'No Data to Report', description: "There are no paid fees to generate a report."})
+      return;
+    }
+
+    const printHtml = generatePrintHtml(reportData, teacher.name, new Date(), `Earning Preview - ${monthData.month}`);
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    } else {
+      toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Please allow popups to print the report.' });
+    }
+  };
+
+
   const handlePrintHistory = (payout: TeacherPayout & { report?: Report }) => {
     if (isSettingsLoading) {
       toast({ title: 'Please wait', description: 'Settings are loading.' });
@@ -398,12 +437,12 @@ export default function TeacherProfilePage() {
             <TabsContent value="earnings" className="mt-4">
                <Card>
                 <CardHeader>
-                    <CardTitle>Unpaid Earnings by Month</CardTitle>
-                    <CardDescription>Earnings from collected student fees, grouped by the month the fee was for.</CardDescription>
+                    <CardTitle>Unpaid Earnings</CardTitle>
+                    <CardDescription>Aggregated earnings from all collected student fees that have not yet been paid out.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {monthlyEarnings.length > 0 ? (
-                        <Accordion type="single" collapsible className="w-full">
+                        <Accordion type="single" collapsible className="w-full" defaultValue={monthlyEarnings[0].month}>
                             {monthlyEarnings.map(monthData => (
                                 <AccordionItem value={monthData.month} key={monthData.month}>
                                     <AccordionTrigger>
@@ -451,10 +490,14 @@ export default function TeacherProfilePage() {
                                                     ))}
                                                 </TableBody>
                                             </Table>
-                                            <div className="mt-4 flex justify-end">
+                                            <div className="mt-4 flex justify-end gap-2">
+                                                 <Button variant="outline" onClick={() => handlePrintCurrentCycle(monthData)} disabled={monthData.teacherShare <= 0}>
+                                                    <Printer className="mr-2" />
+                                                    Print Preview
+                                                </Button>
                                                  <Button onClick={() => handlePayout(monthData)} disabled={payingMonth === monthData.month || monthData.teacherShare <= 0}>
                                                     {payingMonth === monthData.month ? <Loader2 className="mr-2 animate-spin" /> : <Wallet className="mr-2" />}
-                                                    {payingMonth === monthData.month ? 'Processing...' : `Pay ${monthData.month}`}
+                                                    {payingMonth === monthData.month ? 'Processing...' : `Pay Out Cycle`}
                                                 </Button>
                                             </div>
                                         </div>
@@ -583,6 +626,5 @@ export default function TeacherProfilePage() {
             </TabsContent>
         </Tabs>
       </div>
-    </div>
   );
 }

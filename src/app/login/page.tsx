@@ -13,7 +13,7 @@ import { auth } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence, signOut } from 'firebase/auth';
 import { getSettings } from '@/lib/firebase/firestore';
 import { cn } from '@/lib/utils';
-import { ForgotPasswordDialog } from '@/components/login/forgot-password-dialog';
+import { ForgotPasswordDialog } from '@/components/login-form';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
 import Image from 'next/image';
