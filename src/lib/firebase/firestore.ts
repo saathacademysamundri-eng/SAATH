@@ -254,12 +254,15 @@ export async function getClassDistribution() {
 
 // Paginated Student Fetching
 export async function getStudentsPaged(pageSize: number = 20, lastVisible?: QueryDocumentSnapshot, classFilter?: string, searchTerm?: string): Promise<{ students: Student[], lastDoc: QueryDocumentSnapshot | null }> {
-    let q = query(collection(db, 'students'), where('status', '==', 'active'), orderBy('id', 'asc'), limit(pageSize));
+    // Note: We remove explicit orderBy('id') to avoid composite index requirements.
+    // Firestore defaults to document ID order, which matches our 'S001' pattern perfectly.
+    let q = query(collection(db, 'students'), where('status', '==', 'active'), limit(pageSize));
 
     if (classFilter && classFilter !== 'all') {
-        const selectedClass = (await getClasses()).find(c => c.id === classFilter);
+        const classes = await getClasses();
+        const selectedClass = classes.find(c => c.id === classFilter);
         if (selectedClass) {
-            q = query(collection(db, 'students'), where('status', '==', 'active'), where('class', '==', selectedClass.name), orderBy('id', 'asc'), limit(pageSize));
+            q = query(collection(db, 'students'), where('status', '==', 'active'), where('class', '==', selectedClass.name), limit(pageSize));
         }
     }
 
