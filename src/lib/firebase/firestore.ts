@@ -133,31 +133,53 @@ async function getSumSafe(collName: string, fieldName: string, filters: { field:
     }
 }
 
+/**
+ * Helper to perform count aggregation with doc-fetch fallback if indexes are missing.
+ */
+async function getCountSafe(collName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
+    let q = query(collection(db, collName));
+    filters.forEach(f => {
+        q = query(q, where(f.field, f.op, f.value));
+    });
+
+    try {
+        const snapshot = await getCountFromServer(q);
+        return snapshot.data().count;
+    } catch (error: any) {
+        if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+            console.warn(`Firestore Index missing for count on ${collName}. Falling back to doc-fetch count.`);
+            const snapshot = await getDocs(q);
+            return snapshot.size;
+        }
+        console.error(`Count aggregation failed for ${collName}:`, error);
+        return 0;
+    }
+}
+
 // Optimized Dashboard Statistics using Firestore Aggregations
 export async function getDashboardStats() {
     const now = new Date();
     const monthStart = startOfMonth(now);
     const thirtyDaysAgo = subDays(now, 30);
 
-    // Run basic counts (usually don't need composite indexes)
-    const [totalStudentsCount, newAdmissionsCount] = await Promise.all([
-        getCountFromServer(query(collection(db, 'students'), where('status', '==', 'active'))),
-        getCountFromServer(query(collection(db, 'activities'), where('type', '==', 'new_admission'), where('date', '>=', Timestamp.fromDate(thirtyDaysAgo))))
-    ]);
-
-    // Run sums with fallback logic
-    const [incomeThisMonth, expensesThisMonth, pendingDues] = await Promise.all([
+    // Run counts and sums with fallback logic
+    const [totalStudents, newAdmissions, incomeThisMonth, expensesThisMonth, pendingDues] = await Promise.all([
+        getCountSafe('students', [{ field: 'status', op: '==', value: 'active' }]),
+        getCountSafe('activities', [
+            { field: 'type', op: '==', value: 'new_admission' },
+            { field: 'date', op: '>=', value: Timestamp.fromDate(thirtyDaysAgo) }
+        ]),
         getSumSafe('income', 'amount', [{ field: 'date', op: '>=', value: Timestamp.fromDate(monthStart) }]),
         getSumSafe('expenses', 'amount', [{ field: 'date', op: '>=', value: Timestamp.fromDate(monthStart) }]),
         getSumSafe('students', 'totalFee', [{ field: 'status', op: '==', value: 'active' }, { field: 'totalFee', op: '>', value: 0 }])
     ]);
 
     return {
-        totalStudents: totalStudentsCount.data().count,
+        totalStudents,
+        newAdmissions,
         incomeThisMonth,
         expensesThisMonth,
-        pendingDues,
-        newAdmissions: newAdmissionsCount.data().count
+        pendingDues
     };
 }
 
@@ -974,7 +996,7 @@ export async function deleteExpense(expenseId: string) {
                 if (payoutDoc.exists()) {
                     const payoutData = payoutDoc.data() as TeacherPayout;
                     for (const incomeId of payoutData.incomeIds) {
-                        const incomeRef = doc(db, 'income', id);
+                        const incomeRef = doc(db, 'income', incomeId);
                         transaction.update(incomeRef, { [`paidOutTo.${payoutData.teacherId}`]: deleteField() });
                     }
                     const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payoutRef.id), limit(1));
