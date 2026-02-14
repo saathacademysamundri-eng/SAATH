@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,14 +14,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState, useEffect } from 'react';
-import { getTodaysAttendanceSummary, getTodaysMessagesCount, getExams, createNotification } from '@/lib/firebase/firestore';
+import { getTodaysAttendanceSummary, getTodaysMessagesCount, getExams, createNotification, getDashboardStats, getRecentActivities } from '@/lib/firebase/firestore';
 import { TodaysAttendance } from './todays-attendance';
 import { RecentActivities } from './recent-activities';
 import { TodaysTeacherAttendance } from './todays-teacher-attendance';
 import { ClassDistribution } from './class-distribution';
-import { ADMIN_UID } from '@/lib/data';
+import { ADMIN_UID, Activity } from '@/lib/data';
 import { format } from 'date-fns';
-
+import { Skeleton } from '@/components/ui/skeleton';
 
 const iconMap: { [key: string]: React.ElementType } = {
   Users,
@@ -36,23 +34,37 @@ const iconMap: { [key: string]: React.ElementType } = {
   Scale,
 };
 
-
 export default function DashboardPage() {
-    const { income, expenses, students, teachers, activities } = useAppContext();
+    const [stats, setStats] = useState<any>(null);
+    const [activities, setActivities] = useState<Activity[]>([]);
     const [attendance, setAttendance] = useState({ present: 0, absent: 0 });
     const [messagesSent, setMessagesSent] = useState(0);
-
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        getTodaysAttendanceSummary().then(setAttendance);
-        getTodaysMessagesCount().then(setMessagesSent);
+        const loadDashboard = async () => {
+            setLoading(true);
+            const [statsData, activitiesData, attendanceData, messagesData] = await Promise.all([
+                getDashboardStats(),
+                getRecentActivities(10),
+                getTodaysAttendanceSummary(),
+                getTodaysMessagesCount()
+            ]);
+            setStats(statsData);
+            setActivities(activitiesData);
+            setAttendance(attendanceData);
+            setMessagesSent(messagesData);
+            setLoading(false);
+        };
+
+        loadDashboard();
 
         const checkMissedDeadlines = async () => {
             const lastCheck = localStorage.getItem('lastDeadlineCheck');
             const today = new Date().toISOString().split('T')[0];
 
             if (lastCheck === today) {
-                return; // Already checked today
+                return;
             }
 
             const allExams = await getExams();
@@ -80,60 +92,36 @@ export default function DashboardPage() {
         checkMissedDeadlines();
     }, []);
 
-    const totalIncome = useMemo(() => {
-        const thisMonth = new Date().getMonth();
-        const thisYear = new Date().getFullYear();
-        return income
-            .filter(item => {
-                const itemDate = new Date(item.date);
-                return itemDate.getMonth() === thisMonth && itemDate.getFullYear() === thisYear;
-            })
-            .reduce((sum, item) => sum + item.amount, 0);
-    }, [income]);
-
-    const totalExpenses = useMemo(() => {
-        const thisMonth = new Date().getMonth();
-        const thisYear = new Date().getFullYear();
-        return expenses
-            .filter(item => {
-                const itemDate = new Date(item.date);
-                return itemDate.getMonth() === thisMonth && itemDate.getFullYear() === thisYear;
-            })
-            .reduce((sum, item) => sum + item.amount, 0);
-    }, [expenses]);
+    const topRowStats = useMemo(() => [
+        { title: 'Total Students', value: stats?.totalStudents || 0, icon: 'Users', color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
+        { title: 'Students Present', value: attendance.present, subtitle: 'Attendance for today', icon: 'UserCheck', color: 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800' },
+        { title: 'Students Absent', value: attendance.absent, subtitle: 'Attendance for today', icon: 'UserX', color: 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800' },
+        { title: 'Pending Dues', value: stats?.pendingDues.toLocaleString() || 0, subtitle: 'All outstanding fees', icon: 'Scale', color: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800' },
+        { title: 'New Admissions', value: stats?.newAdmissions || 0, subtitle: 'In the last 30 days', icon: 'UserPlus', color: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' },
+    ], [stats, attendance]);
     
-    const netProfit = totalIncome - totalExpenses;
-    
-    const studentsPresent = attendance.present;
-    const studentsAbsent = attendance.absent;
+    const bottomRowStats = useMemo(() => [
+        { title: 'Income (This Month)', value: `${stats?.incomeThisMonth.toLocaleString() || 0}`, unit: 'PKR', icon: 'TrendingUp', color: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' },
+        { title: 'Expenses (This Month)', value: `${stats?.expensesThisMonth.toLocaleString() || 0}`, unit: 'PKR', icon: 'TrendingDown', color: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' },
+        { title: 'Net Profit / Loss', value: `${((stats?.incomeThisMonth || 0) - (stats?.expensesThisMonth || 0)).toLocaleString()}`, unit: 'PKR', icon: 'Scale', color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
+    ], [stats]);
 
-    const totalPendingDues = useMemo(() => {
-        return students.reduce((sum, student) => sum + (student.totalFee > 0 ? student.totalFee : 0), 0);
-    }, [students]);
-    
-    const newAdmissions = useMemo(() => {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        return activities.filter(activity => 
-            activity.type === 'new_admission' && activity.date > thirtyDaysAgo
-        ).length;
-    }, [activities]);
-
-
-    const topRowStats = [
-        { title: 'Total Students', value: students.length.toLocaleString(), subtitle: '+2% from last month', icon: 'Users', color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
-        { title: 'Students Present', value: studentsPresent, subtitle: 'Attendance for today', icon: 'UserCheck', color: 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800' },
-        { title: 'Students Absent', value: studentsAbsent, subtitle: 'Attendance for today', icon: 'UserX', color: 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800' },
-        { title: 'Pending Dues', value: totalPendingDues.toLocaleString(), subtitle: 'All outstanding fees', icon: 'Scale', color: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800' },
-        { title: 'New Admissions', value: newAdmissions, subtitle: 'In the last 30 days', icon: 'UserPlus', color: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' },
-    ];
-    
-    const bottomRowStats = [
-        { title: 'Income (This Month)', value: `${totalIncome.toLocaleString()}`, unit: 'PKR', icon: 'TrendingUp', color: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' },
-        { title: 'Expenses (This Month)', value: `${totalExpenses.toLocaleString()}`, unit: 'PKR', icon: 'TrendingDown', color: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' },
-        { title: 'Net Profit / Loss', value: `${netProfit.toLocaleString()}`, unit: 'PKR', icon: 'Scale', color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
-    ];
-
+  if (loading) {
+    return (
+        <div className="flex flex-col gap-6">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+            </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+            </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+                <Skeleton className="lg:col-span-3 h-[400px]" />
+                <Skeleton className="lg:col-span-2 h-[400px]" />
+            </div>
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -180,7 +168,7 @@ export default function DashboardPage() {
                 <TodaysAttendance />
             </div>
             <div className="lg:col-span-2">
-                <RecentActivities />
+                <RecentActivities initialActivities={activities} />
             </div>
        </div>
 
