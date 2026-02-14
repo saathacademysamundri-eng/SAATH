@@ -108,31 +108,55 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
     }
 }
 
+/**
+ * Helper to perform sum aggregation with doc-fetch fallback if indexes are missing.
+ * This ensures the dashboard works even before the user creates recommended indexes.
+ */
+async function getSumSafe(collName: string, fieldName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
+    let q = query(collection(db, collName));
+    filters.forEach(f => {
+        q = query(q, where(f.field, f.op, f.value));
+    });
+
+    try {
+        const agg = await getAggregateFromServer(q, { total: sum(fieldName) });
+        return agg.data().total || 0;
+    } catch (error: any) {
+        // If index is missing (FAILED_PRECONDITION or similar message), fall back to fetching docs
+        if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+            console.warn(`Firestore Index missing for sum aggregation on ${collName}. Falling back to doc-fetch sum.`);
+            const snapshot = await getDocs(q);
+            return snapshot.docs.reduce((acc, doc) => acc + (Number(doc.data()[fieldName]) || 0), 0);
+        }
+        console.error(`Sum aggregation failed for ${collName}:`, error);
+        return 0;
+    }
+}
+
 // Optimized Dashboard Statistics using Firestore Aggregations
 export async function getDashboardStats() {
     const now = new Date();
     const monthStart = startOfMonth(now);
     const thirtyDaysAgo = subDays(now, 30);
 
-    const [
-        totalStudentsCount,
-        monthlyIncomeSum,
-        monthlyExpensesSum,
-        pendingDuesSum,
-        newAdmissionsCount
-    ] = await Promise.all([
+    // Run basic counts (usually don't need composite indexes)
+    const [totalStudentsCount, newAdmissionsCount] = await Promise.all([
         getCountFromServer(query(collection(db, 'students'), where('status', '==', 'active'))),
-        getAggregateFromServer(query(collection(db, 'income'), where('date', '>=', Timestamp.fromDate(monthStart))), { total: sum('amount') }),
-        getAggregateFromServer(query(collection(db, 'expenses'), where('date', '>=', Timestamp.fromDate(monthStart))), { total: sum('amount') }),
-        getAggregateFromServer(query(collection(db, 'students'), where('status', '==', 'active'), where('totalFee', '>', 0)), { total: sum('totalFee') }),
         getCountFromServer(query(collection(db, 'activities'), where('type', '==', 'new_admission'), where('date', '>=', Timestamp.fromDate(thirtyDaysAgo))))
+    ]);
+
+    // Run sums with fallback logic
+    const [incomeThisMonth, expensesThisMonth, pendingDues] = await Promise.all([
+        getSumSafe('income', 'amount', [{ field: 'date', op: '>=', value: Timestamp.fromDate(monthStart) }]),
+        getSumSafe('expenses', 'amount', [{ field: 'date', op: '>=', value: Timestamp.fromDate(monthStart) }]),
+        getSumSafe('students', 'totalFee', [{ field: 'status', op: '==', value: 'active' }, { field: 'totalFee', op: '>', value: 0 }])
     ]);
 
     return {
         totalStudents: totalStudentsCount.data().count,
-        incomeThisMonth: monthlyIncomeSum.data().total || 0,
-        expensesThisMonth: monthlyExpensesSum.data().total || 0,
-        pendingDues: pendingDuesSum.data().total || 0,
+        incomeThisMonth,
+        expensesThisMonth,
+        pendingDues,
         newAdmissions: newAdmissionsCount.data().count
     };
 }
@@ -140,8 +164,12 @@ export async function getDashboardStats() {
 export async function getClassDistribution() {
     const classes = await getClasses();
     const distribution = await Promise.all(classes.map(async (c) => {
-        const snapshot = await getCountFromServer(query(collection(db, 'students'), where('status', '==', 'active'), where('class', '==', c.name)));
-        return { name: c.name, studentCount: snapshot.data().count };
+        try {
+            const snapshot = await getCountFromServer(query(collection(db, 'students'), where('status', '==', 'active'), where('class', '==', c.name)));
+            return { name: c.name, studentCount: snapshot.data().count };
+        } catch (e) {
+            return { name: c.name, studentCount: 0 };
+        }
     }));
     return distribution;
 }
