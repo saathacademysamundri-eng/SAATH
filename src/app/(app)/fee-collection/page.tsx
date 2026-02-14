@@ -12,8 +12,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student, type Income } from '@/lib/data';
-import { getStudents, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
-import { Printer, Search, Loader2, CalendarIcon } from 'lucide-react';
+import { getStudent, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
+import { Printer, Search, Loader2 } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
@@ -26,6 +26,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import html2canvas from 'html2canvas';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 type PrintFormat = 'thermal' | 'a4' | 'jpg';
 
@@ -81,6 +83,7 @@ function StudentSearchResultsDialog({
 export default function FeeCollectionPage() {
   const [search, setSearch] = useState('');
   const [searchedStudent, setSearchedStudent] = useState<Student | null>(null);
+  const [studentIncome, setStudentIncome] = useState<Income[]>([]);
   const [paidAmount, setPaidAmount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -92,14 +95,12 @@ export default function FeeCollectionPage() {
   
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
-  const { students, income, refreshData } = useAppContext();
+  const { refreshData } = useAppContext();
   
   const lastPayment = useMemo(() => {
-    if (!searchedStudent) return null;
-    return income
-      .filter(i => i.studentId === searchedStudent.id)
-      .sort((a, b) => b.date.getTime() - a.date.getTime())[0] || null;
-  }, [searchedStudent, income]);
+    if (studentIncome.length === 0) return null;
+    return [...studentIncome].sort((a, b) => b.date.getTime() - a.date.getTime())[0] || null;
+  }, [studentIncome]);
 
   const monthOptions = useMemo(() => {
     const options = [];
@@ -112,6 +113,12 @@ export default function FeeCollectionPage() {
     return options;
   }, []);
 
+  const fetchStudentIncome = async (studentId: string) => {
+    const q = query(collection(db, 'income'), where('studentId', '==', studentId), limit(10));
+    const snapshot = await getDocs(q);
+    const history = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, date: doc.data().date.toDate() } as Income));
+    setStudentIncome(history);
+  };
 
   const handleSearch = async () => {
     if (!search.trim()) {
@@ -128,21 +135,26 @@ export default function FeeCollectionPage() {
     setSearchedStudent(null);
     setSearchResults([]);
 
-    const searchTerm = search.trim().toLowerCase();
+    const searchTerm = search.trim();
     
-    const isRollNumber = /^(s|S)?\d+$/.test(searchTerm);
-    let potentialRollNumber = searchTerm;
-    if (/^\d+$/.test(searchTerm)) {
-        potentialRollNumber = `S${searchTerm.padStart(3, '0')}`;
+    // Attempt specific roll number search first
+    const student = await getStudent(searchTerm);
+    if (student) {
+        setSearchedStudent(student);
+        await fetchStudentIncome(student.id);
+        setPaidAmount(0);
+        setIsSearching(false);
+        return;
     }
 
-    const results = students.filter(student => 
-        student.id.toLowerCase() === potentialRollNumber.toLowerCase() ||
-        student.name.toLowerCase().includes(searchTerm)
-    );
+    // Attempt name search
+    const q = query(collection(db, 'students'), where('name', '>=', searchTerm), where('name', '<=', searchTerm + '\uf8ff'), limit(20));
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Student));
 
     if (results.length === 1) {
       setSearchedStudent(results[0]);
+      await fetchStudentIncome(results[0].id);
       setPaidAmount(0);
     } else if (results.length > 1) {
       setSearchResults(results);
@@ -158,8 +170,9 @@ export default function FeeCollectionPage() {
     setIsSearching(false);
   };
   
-  const handleStudentSelect = (student: Student) => {
+  const handleStudentSelect = async (student: Student) => {
     setSearchedStudent(student);
+    await fetchStudentIncome(student.id);
     setPaidAmount(0);
     setIsSearchResultsOpen(false);
   };
@@ -175,14 +188,6 @@ export default function FeeCollectionPage() {
       });
       return;
     }
-     if (paidAmount > searchedStudent.totalFee) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid Amount',
-        description: `Paid amount cannot be greater than the due amount of ${searchedStudent.totalFee.toLocaleString()} PKR.`,
-      });
-      return;
-    }
 
     setIsProcessingPayment(true);
     
@@ -191,6 +196,8 @@ export default function FeeCollectionPage() {
     let newFeeStatus: Student['feeStatus'] = 'Partial';
     if (newTotalFee <= 0) {
       newFeeStatus = 'Paid';
+    } else if (newTotalFee >= searchedStudent.monthlyFee) {
+        newFeeStatus = 'Overdue';
     }
 
     const receiptId = `RCPT-${Date.now()}`;
@@ -222,6 +229,7 @@ export default function FeeCollectionPage() {
         feeStatus: newFeeStatus
       };
       setSearchedStudent(updatedStudent);
+      await fetchStudentIncome(searchedStudent.id);
 
       toast({
         title: 'Payment Recorded',
@@ -447,58 +455,6 @@ export default function FeeCollectionPage() {
     }
   };
 
-  const getA4HtmlWithStyles = async (currentPaidAmount: number, newBalance: number, originalTotal: number, receiptId: string, receiptDate?: Date) => {
-    if (isSettingsLoading || !searchedStudent) return '';
-    
-    const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
-    let qrCodeDataUrl = '';
-    try {
-        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
-    } catch (error) {
-        console.error('QR code generation failed:', error);
-    }
-        
-    const dateToPrint = receiptDate || new Date();
-    
-    const paidStampHtml = `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); opacity: 0.1; font-size: 10rem; font-weight: bold; color: #000; pointer-events: none; z-index: -1;">PAID</div>`;
-
-    return `<div style="font-family: 'Segoe UI', sans-serif; color: black; background: white; padding: 2rem; max-width: 800px; margin: auto; border: 1px solid #ddd; position: relative;">
-        ${paidStampHtml}
-        <div style="text-align: center; margin-bottom: 2rem;">
-            ${settings.logo ? `<img src="${settings.logo}" alt="Logo" style="height: 80px; margin: auto; object-fit: contain;">` : ''}
-            <h1 style="font-size: 2rem; margin: 0.5rem 0; color: black;">${settings.name}</h1>
-            <p style="color: #555; margin: 0;">${settings.address}</p>
-            <p style="color: #555; margin: 0;">${settings.phone}</p>
-        </div>
-        <h2 style="text-align: center; font-size: 1.5rem; margin-bottom: 2rem; color: black;">Receiving Receipt</h2>
-        <table style="width: 100%; margin-bottom: 1rem; color: black;">
-          <tr><td style="color: black;"><strong>Receipt #:</strong> ${receiptId}</td><td style="text-align: right; color: black;"><strong>Date:</strong> ${format(dateToPrint, 'PPP')}</td></tr>
-          <tr><td colspan="2" style="color: black;"><strong>Student:</strong> ${searchedStudent.name} (${searchedStudent.id})</td></tr>
-           <tr><td colspan="2" style="color: black;"><strong>Class:</strong> ${searchedStudent.class}</td></tr>
-        </table>
-        <table style="width: 100%; border-collapse: collapse; font-size: 1.1rem; color: black;">
-            <thead style="background-color: #f2f2f2;">
-                <tr><th style="padding: 10px; text-align: left; color: black;">Description</th><th style="padding: 10px; text-align: right; color: black;">Amount (PKR)</th></tr>
-            </thead>
-            <tbody>
-                <tr><td style="padding: 10px; border-bottom: 1px solid #eee; color: black;">Tuition Fee</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; color: black;">${originalTotal.toLocaleString()}</td></tr>
-            </tbody>
-        </table>
-        <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
-             <table style="width: 50%; color: black;">
-                <tr><td style="color: black;">Total Due:</td><td style="text-align: right; color: black;">${originalTotal.toLocaleString()}</td></tr>
-                <tr><td style="color: black;">Amount Paid:</td><td style="text-align: right; color: black;">${currentPaidAmount.toLocaleString()}</td></tr>
-                <tr style="font-weight: bold; border-top: 2px solid #333;"><td style="color: black;">Balance:</td><td style="text-align: right; color: black;">${newBalance.toLocaleString()}</td></tr>
-             </table>
-        </div>
-         <div style="text-align: center; margin-top: 3rem; color: black;">
-            ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p style="color: black;">Scan for live fee status</p>` : ''}
-            <p style="margin-top: 2rem; color: black;">*** Thank you for your payment! ***</p>
-            <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
-        </div>
-    </div>`;
-  };
-
   const handleReprint = async () => {
     if (!searchedStudent || !lastPayment) {
         toast({
@@ -514,22 +470,7 @@ export default function FeeCollectionPage() {
     const balanceBeforePaymentVal = balanceAfterPaymentVal + amountPaidVal;
     const originalReceiptIdVal = lastPayment.receiptId || lastPayment.id;
 
-    if (printFormat === 'jpg') {
-        const a4Html = await getA4HtmlWithStyles(amountPaidVal, balanceAfterPaymentVal, balanceBeforePaymentVal, originalReceiptIdVal, lastPayment.date);
-        
-        if (printRef.current) {
-            printRef.current.innerHTML = a4Html;
-            html2canvas(printRef.current.firstElementChild as HTMLElement, { scale: 2, useCORS: true, backgroundColor: 'white' }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `receipt-${searchedStudent.id}-${originalReceiptIdVal}.jpg`;
-                link.href = canvas.toDataURL('image/jpeg', 0.95);
-                link.click();
-                if (printRef.current) printRef.current.innerHTML = '';
-            });
-        }
-    } else {
-      handlePrintPaidReceipt(amountPaidVal, balanceAfterPaymentVal, balanceBeforePaymentVal, originalReceiptIdVal, lastPayment.date);
-    }
+    handlePrintPaidReceipt(amountPaidVal, balanceAfterPaymentVal, balanceBeforePaymentVal, originalReceiptIdVal, lastPayment.date);
   };
   
   const currentBalanceValue = searchedStudent ? searchedStudent.totalFee : 0;

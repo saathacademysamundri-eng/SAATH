@@ -9,10 +9,11 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import { useAppContext } from "@/hooks/use-app-context"
-import { Users, FileText } from "lucide-react"
+import { Users } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { Student } from "@/lib/data"
+import { getStudentsPaged } from "@/lib/firebase/firestore"
 
 export function SearchCommand({
   open,
@@ -21,7 +22,9 @@ export function SearchCommand({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { students } = useAppContext()
+  const [students, setStudents] = useState<Student[]>([])
+  const [search, setSearch] = useState("")
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -36,18 +39,43 @@ export function SearchCommand({
     return () => document.removeEventListener("keydown", down)
   }, [open, onOpenChange])
 
+  useEffect(() => {
+    if (open) {
+      const fetchInitialStudents = async () => {
+        setLoading(true)
+        try {
+          const result = await getStudentsPaged(50)
+          setStudents(result.students)
+        } catch (error) {
+          console.error("Failed to fetch students for search", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+      fetchInitialStudents()
+    }
+  }, [open])
+
   const handleSelect = (studentId: string) => {
     router.push(`/students/${studentId}`)
     onOpenChange(false)
   }
 
+  const filteredStudents = students.filter(student => 
+    student.name.toLowerCase().includes(search.toLowerCase()) || 
+    student.id.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search for a student by name or roll number..." />
+      <CommandInput 
+        placeholder="Search for a student by name or roll number..." 
+        onValueChange={setSearch}
+      />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty>{loading ? "Loading..." : "No results found."}</CommandEmpty>
         <CommandGroup heading="Students">
-          {students.map((student) => (
+          {filteredStudents.map((student) => (
             <CommandItem
               key={student.id}
               value={`${student.name} ${student.id}`}

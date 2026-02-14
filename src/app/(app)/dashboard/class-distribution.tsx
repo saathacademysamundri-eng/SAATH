@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { useAppContext } from '@/hooks/use-app-context';
 import { Pie, PieChart, ResponsiveContainer, Tooltip, Cell, LabelList } from 'recharts';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getClassDistribution } from '@/lib/firebase/firestore';
 
 const chartColors = [
   'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))',
@@ -15,17 +16,27 @@ const chartColors = [
 ];
 
 export function ClassDistribution() {
-  const { classes, students, loading } = useAppContext();
+  const { classes, loading: appLoading } = useAppContext();
+  const [classData, setClassData] = useState<{name: string, studentCount: number, fill: string}[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const classData = useMemo(() => {
-    if (loading) return [];
-
-    return classes.map((c, index) => ({
-      name: c.name,
-      studentCount: students.filter(s => s.class === c.name).length,
-      fill: chartColors[index % chartColors.length],
-    })).filter(c => c.studentCount > 0);
-  }, [classes, students, loading]);
+  useEffect(() => {
+    const fetchDistribution = async () => {
+        setLoading(true);
+        try {
+            const data = await getClassDistribution();
+            setClassData(data.map((d, index) => ({
+                ...d,
+                fill: chartColors[index % chartColors.length]
+            })).filter(d => d.studentCount > 0));
+        } catch (error) {
+            console.error("Failed to fetch class distribution:", error);
+        } finally {
+            setLoading(false);
+        }
+    }
+    fetchDistribution();
+  }, []);
 
   const chartConfig: ChartConfig = useMemo(() => {
     const config: ChartConfig = {};
@@ -38,7 +49,7 @@ export function ClassDistribution() {
     return config;
   }, [classData]);
 
-  if (loading) {
+  if (loading || appLoading) {
     return (
         <Card>
             <CardHeader>

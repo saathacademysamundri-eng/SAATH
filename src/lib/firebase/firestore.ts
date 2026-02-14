@@ -1,3 +1,4 @@
+
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp, getCountFromServer, getAggregateFromServer, sum, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
 import { app, auth, firebaseConfig } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID } from '@/lib/data';
@@ -136,6 +137,15 @@ export async function getDashboardStats() {
     };
 }
 
+export async function getClassDistribution() {
+    const classes = await getClasses();
+    const distribution = await Promise.all(classes.map(async (c) => {
+        const snapshot = await getCountFromServer(query(collection(db, 'students'), where('status', '==', 'active'), where('class', '==', c.name)));
+        return { name: c.name, studentCount: snapshot.data().count };
+    }));
+    return distribution;
+}
+
 // Paginated Student Fetching
 export async function getStudentsPaged(pageSize: number = 20, lastVisible?: QueryDocumentSnapshot, classFilter?: string, searchTerm?: string): Promise<{ students: Student[], lastDoc: QueryDocumentSnapshot | null }> {
     let q = query(collection(db, 'students'), where('status', '==', 'active'), orderBy('id', 'asc'), limit(pageSize));
@@ -148,8 +158,6 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
         q = query(q, startAfter(lastVisible));
     }
 
-    // Note: Complex search combined with pagination requires different strategy or local filtering for small searches.
-    // For this optimization, we prioritize pagination.
     const snapshot = await getDocs(q);
     const students = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, archivedAt: doc.data().archivedAt?.toDate() } as Student));
     const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
@@ -159,7 +167,7 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
 
 export async function getStudents(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
-    const q = query(studentsCollection, limit(100)); // Added limit to prevent accidental 1000 doc fetch
+    const q = query(studentsCollection, where('status', '==', 'active'), limit(500));
     const studentsSnap = await getDocs(q);
     const allStudents = studentsSnap.docs.map(doc => {
         const data = doc.data();
@@ -169,13 +177,13 @@ export async function getStudents(): Promise<Student[]> {
             archivedAt: data.archivedAt?.toDate() 
         } as Student;
     });
-    return allStudents.filter(s => s.status === 'active').sort((a, b) => a.id.localeCompare(b.id));
+    return allStudents.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function getAlumni(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
     const q = query(studentsCollection, where('status', '==', 'graduated'), limit(100));
-    const studentsSnap = await getDocs(q);
+    const studentsSnap = await getDocs(studentsCollection);
     const allStudents = studentsSnap.docs.map(doc => {
         const data = doc.data();
         return { 
@@ -190,7 +198,7 @@ export async function getAlumni(): Promise<Student[]> {
 export async function getArchivedStudents(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
     const q = query(studentsCollection, where('status', '==', 'archived'), limit(100));
-    const studentsSnap = await getDocs(q);
+    const studentsSnap = await getDocs(studentsCollection);
     const allStudents = studentsSnap.docs.map(doc => {
         const data = doc.data();
         return { 
@@ -938,7 +946,7 @@ export async function deleteExpense(expenseId: string) {
                 if (payoutDoc.exists()) {
                     const payoutData = payoutDoc.data() as TeacherPayout;
                     for (const incomeId of payoutData.incomeIds) {
-                        const incomeRef = doc(db, 'income', incomeId);
+                        const incomeRef = doc(db, 'income', id);
                         transaction.update(incomeRef, { [`paidOutTo.${payoutData.teacherId}`]: deleteField() });
                     }
                     const reportQuery = query(collection(db, "reports"), where("payoutId", "==", payoutRef.id), limit(1));
