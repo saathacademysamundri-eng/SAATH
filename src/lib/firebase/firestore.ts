@@ -109,32 +109,7 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
 }
 
 /**
- * Helper to perform sum aggregation with doc-fetch fallback if indexes are missing.
- * This ensures the dashboard works even before the user creates recommended indexes.
- */
-async function getSumSafe(collName: string, fieldName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
-    let q = query(collection(db, collName));
-    filters.forEach(f => {
-        q = query(q, where(f.field, f.op, f.value));
-    });
-
-    try {
-        const agg = await getAggregateFromServer(q, { total: sum(fieldName) });
-        return agg.data().total || 0;
-    } catch (error: any) {
-        // If index is missing (FAILED_PRECONDITION or similar message), fall back to fetching docs
-        if (error.code === 'failed-precondition' || error.message?.includes('index')) {
-            console.warn(`Firestore Index missing for sum aggregation on ${collName}. Falling back to doc-fetch sum.`);
-            const snapshot = await getDocs(q);
-            return snapshot.docs.reduce((acc, doc) => acc + (Number(doc.data()[fieldName]) || 0), 0);
-        }
-        console.error(`Sum aggregation failed for ${collName}:`, error);
-        return 0;
-    }
-}
-
-/**
- * Helper to perform count aggregation with doc-fetch fallback if indexes are missing.
+ * Enhanced helper to perform count aggregation with memory-filtered fallback if indexes are missing.
  */
 async function getCountSafe(collName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
     let q = query(collection(db, collName));
@@ -146,12 +121,94 @@ async function getCountSafe(collName: string, filters: { field: string, op: any,
         const snapshot = await getCountFromServer(q);
         return snapshot.data().count;
     } catch (error: any) {
+        // If index is missing, we must remove range filters from the query and filter in memory
         if (error.code === 'failed-precondition' || error.message?.includes('index')) {
-            console.warn(`Firestore Index missing for count on ${collName}. Falling back to doc-fetch count.`);
-            const snapshot = await getDocs(q);
-            return snapshot.size;
+            console.warn(`Firestore Index missing for count on ${collName}. Falling back to memory-filtered count.`);
+            
+            // Use only equality filters for the fallback query
+            const eqFilters = filters.filter(f => f.op === '==');
+            let qFallback = query(collection(db, collName));
+            eqFilters.forEach(f => {
+                qFallback = query(qFallback, where(f.field, f.op, f.value));
+            });
+
+            const snapshot = await getDocs(qFallback);
+            const rangeFilters = filters.filter(f => f.op !== '==');
+            
+            // Perform manual filtering for ranges
+            let filteredDocs = snapshot.docs;
+            rangeFilters.forEach(f => {
+                filteredDocs = filteredDocs.filter(d => {
+                    const data = d.data();
+                    const val = data[f.field];
+                    const fieldVal = val instanceof Timestamp ? val.toDate().getTime() : (val instanceof Date ? val.getTime() : val);
+                    const compareVal = f.value instanceof Timestamp ? f.value.toDate().getTime() : (f.value instanceof Date ? f.value.getTime() : f.value);
+
+                    if (f.op === '>=') return fieldVal >= compareVal;
+                    if (f.op === '>') return fieldVal > compareVal;
+                    if (f.op === '<=') return fieldVal <= compareVal;
+                    if (f.op === '<') return fieldVal < compareVal;
+                    return true;
+                });
+            });
+            
+            return filteredDocs.length;
         }
         console.error(`Count aggregation failed for ${collName}:`, error);
+        return 0;
+    }
+}
+
+/**
+ * Enhanced helper to perform sum aggregation with memory-filtered fallback if indexes are missing.
+ */
+async function getSumSafe(collName: string, fieldName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
+    let q = query(collection(db, collName));
+    filters.forEach(f => {
+        q = query(q, where(f.field, f.op, f.value));
+    });
+
+    try {
+        const agg = await getAggregateFromServer(q, { total: sum(fieldName) });
+        return agg.data().total || 0;
+    } catch (error: any) {
+        if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+            console.warn(`Firestore Index missing for sum on ${collName}. Falling back to memory-filtered sum.`);
+            
+            const eqFilters = filters.filter(f => f.op === '==');
+            let qFallback = query(collection(db, collName));
+            eqFilters.forEach(f => {
+                qFallback = query(qFallback, where(f.field, f.op, f.value));
+            });
+
+            const snapshot = await getDocs(qFallback);
+            const rangeFilters = filters.filter(f => f.op !== '==');
+            
+            let total = 0;
+            snapshot.docs.forEach(d => {
+                const data = d.data();
+                let matches = true;
+                
+                // Verify range filters manually
+                for (const f of rangeFilters) {
+                    const val = data[f.field];
+                    const fieldVal = val instanceof Timestamp ? val.toDate().getTime() : (val instanceof Date ? val.getTime() : val);
+                    const compareVal = f.value instanceof Timestamp ? f.value.toDate().getTime() : (f.value instanceof Date ? f.value.getTime() : f.value);
+
+                    if (f.op === '>=' && !(fieldVal >= compareVal)) { matches = false; break; }
+                    if (f.op === '>' && !(fieldVal > compareVal)) { matches = false; break; }
+                    if (f.op === '<=' && !(fieldVal <= compareVal)) { matches = false; break; }
+                    if (f.op === '<' && !(fieldVal < compareVal)) { matches = false; break; }
+                }
+
+                if (matches) {
+                    total += (Number(data[fieldName]) || 0);
+                }
+            });
+            
+            return total;
+        }
+        console.error(`Sum aggregation failed for ${collName}:`, error);
         return 0;
     }
 }
@@ -186,12 +243,11 @@ export async function getDashboardStats() {
 export async function getClassDistribution() {
     const classes = await getClasses();
     const distribution = await Promise.all(classes.map(async (c) => {
-        try {
-            const snapshot = await getCountFromServer(query(collection(db, 'students'), where('status', '==', 'active'), where('class', '==', c.name)));
-            return { name: c.name, studentCount: snapshot.data().count };
-        } catch (e) {
-            return { name: c.name, studentCount: 0 };
-        }
+        const count = await getCountSafe('students', [
+            { field: 'status', op: '==', value: 'active' },
+            { field: 'class', op: '==', value: c.name }
+        ]);
+        return { name: c.name, studentCount: count };
     }));
     return distribution;
 }
@@ -201,7 +257,10 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
     let q = query(collection(db, 'students'), where('status', '==', 'active'), orderBy('id', 'asc'), limit(pageSize));
 
     if (classFilter && classFilter !== 'all') {
-        q = query(collection(db, 'students'), where('status', '==', 'active'), where('class', '==', classFilter), orderBy('id', 'asc'), limit(pageSize));
+        const selectedClass = (await getClasses()).find(c => c.id === classFilter);
+        if (selectedClass) {
+            q = query(collection(db, 'students'), where('status', '==', 'active'), where('class', '==', selectedClass.name), orderBy('id', 'asc'), limit(pageSize));
+        }
     }
 
     if (lastVisible) {
@@ -209,8 +268,16 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
     }
 
     const snapshot = await getDocs(q);
-    const students = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, archivedAt: doc.data().archivedAt?.toDate() } as Student));
+    let students = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, archivedAt: doc.data().archivedAt?.toDate() } as Student));
     const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+
+    // Apply simple name search in memory if requested
+    if (searchTerm) {
+        students = students.filter(s => 
+            s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            s.id.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }
 
     return { students, lastDoc };
 }
@@ -233,7 +300,7 @@ export async function getStudents(): Promise<Student[]> {
 export async function getAlumni(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
     const q = query(studentsCollection, where('status', '==', 'graduated'), limit(100));
-    const studentsSnap = await getDocs(studentsCollection);
+    const studentsSnap = await getDocs(q);
     const allStudents = studentsSnap.docs.map(doc => {
         const data = doc.data();
         return { 
