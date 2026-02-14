@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -7,15 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { type Student, type Income } from '@/lib/data';
-import { getStudent } from '@/lib/firebase/firestore';
+import { getStudent, getIncome } from '@/lib/firebase/firestore';
 import { Loader2, Search, Printer } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
-import { useAppContext } from '@/hooks/use-app-context';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSettings } from '@/hooks/use-settings';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useSearchParams } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 export default function StudentLedgerPage() {
   const searchParams = useSearchParams()
@@ -26,10 +26,9 @@ export default function StudentLedgerPage() {
   const [studentIncome, setStudentIncome] = useState<Income[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const { toast } = useToast();
-  const { income, loading: isAppLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
 
-  const handleSearch = async (searchId?: string) => {
+  const handleSearch = useCallback(async (searchId?: string) => {
     const idToSearch = searchId || search.trim();
     if (!idToSearch) {
       toast({
@@ -41,28 +40,42 @@ export default function StudentLedgerPage() {
       return;
     }
     setIsSearching(true);
-    const student = await getStudent(idToSearch);
-    if (student) {
-      setSearchedStudent(student);
-      const relatedIncome = income.filter(i => i.studentId === student.id);
-      setStudentIncome(relatedIncome);
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Not Found',
-        description: 'No student found with that roll number.',
-      });
-      setSearchedStudent(null);
-      setStudentIncome([]);
+    try {
+        const student = await getStudent(idToSearch);
+        if (student) {
+          setSearchedStudent(student);
+          // Fetch student income history directly
+          const q = query(collection(db, 'income'), where('studentId', '==', student.id));
+          const snapshot = await getDocs(q);
+          const history = snapshot.docs.map(doc => ({ 
+              ...doc.data(), 
+              id: doc.id, 
+              date: doc.data().date.toDate() 
+          } as Income));
+          
+          setStudentIncome(history.sort((a, b) => b.date.getTime() - a.date.getTime()));
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Not Found',
+            description: 'No student found with that roll number.',
+          });
+          setSearchedStudent(null);
+          setStudentIncome([]);
+        }
+    } catch (error) {
+        console.error("Ledger search failed:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate ledger.' });
+    } finally {
+        setIsSearching(false);
     }
-    setIsSearching(false);
-  };
+  }, [search, toast]);
 
   useEffect(() => {
     if (prefilledSearch) {
         handleSearch(prefilledSearch);
     }
-  }, [prefilledSearch, income]);
+  }, [prefilledSearch, handleSearch]);
   
   const totalPaid = useMemo(() => {
     return studentIncome.reduce((acc, i) => acc + i.amount, 0);
@@ -240,8 +253,14 @@ export default function StudentLedgerPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isAppLoading ? (
-                  <TableRow><TableCell colSpan={3} className="h-24 text-center">Loading...</TableCell></TableRow>
+                {isSearching ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={i}>
+                          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                          <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                      </TableRow>
+                  ))
                 ) : studentIncome.length > 0 ? (
                   studentIncome.map((item) => (
                     <TableRow key={item.id}>

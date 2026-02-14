@@ -1,9 +1,7 @@
-
 'use client';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAppContext } from '@/hooks/use-app-context';
 import { Activity } from '@/lib/data';
 import { formatDistanceToNow } from 'date-fns';
 import { History } from 'lucide-react';
@@ -17,12 +15,11 @@ const activityTypeMap: { [key: string]: { variant: "default" | "secondary" | "de
 };
 
 
-export function RecentActivities() {
-    const { activities, loading } = useAppContext();
-
+export function RecentActivities({ initialActivities = [] }: { initialActivities?: Activity[] }) {
     const sortedActivities = useMemo(() => {
-        return [...activities].sort((a, b) => b.date.getTime() - a.date.getTime());
-    }, [activities]);
+        if (!Array.isArray(initialActivities)) return [];
+        return [...initialActivities].sort((a, b) => b.date.getTime() - a.date.getTime());
+    }, [initialActivities]);
 
     const activitiesForScrolling = useMemo(() => {
         if (sortedActivities.length === 0) return [];
@@ -41,9 +38,7 @@ export function RecentActivities() {
             </CardHeader>
             <CardContent>
                  <div className="h-64 overflow-hidden relative">
-                    {loading ? (
-                        <div className="text-center text-muted-foreground">Loading activities...</div>
-                    ) : sortedActivities.length > 0 ? (
+                    {sortedActivities.length > 0 ? (
                         <div className="absolute top-0 animate-scroll-up-slow">
                             <div className="space-y-4">
                                 {activitiesForScrolling.map((activity, index) => (

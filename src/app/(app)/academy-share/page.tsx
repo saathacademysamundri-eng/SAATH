@@ -1,13 +1,9 @@
-
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useAppContext } from '@/hooks/use-app-context';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMemo, useState } from 'react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { TrendingUp, Printer, X, TrendingDown, Wallet, BookOpen, UserCheck, ChevronsRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
@@ -16,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Payout } from '@/lib/data';
+import { TeacherPayout, Expense, Report } from '@/lib/data';
+import { getAllPayouts, getExpenses } from '@/lib/firebase/firestore';
 
 const months = [
     { value: '1', label: 'January' }, { value: '2', label: 'February' }, { value: '3', label: 'March' },
@@ -26,13 +23,36 @@ const months = [
 ];
 
 export default function AcademySharePage() {
-  const { allPayouts, loading: isAppLoading, expenses } = useAppContext();
+  const [allPayouts, setAllPayouts] = useState<(TeacherPayout & { report?: Report, academyShare?: number })[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const router = useRouter();
   
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+        const [payoutsData, expensesData] = await Promise.all([
+            getAllPayouts(),
+            getExpenses()
+        ]);
+        setAllPayouts(payoutsData);
+        setExpenses(expensesData);
+    } catch (error) {
+        console.error("Failed to fetch academy share data:", error);
+    } finally {
+        setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const availableYears = useMemo(() => {
     const years = new Set(allPayouts.map(p => p.payoutDate.getFullYear().toString()));
@@ -82,7 +102,7 @@ export default function AcademySharePage() {
     return filteredManualExpenses.reduce((acc, curr) => acc + curr.amount, 0);
   }, [filteredManualExpenses]);
 
-  const netAcademyEarnings = totalAcademyShare - totalManualExpenses - totalTeacherPayouts;
+  const netAcademyEarnings = totalAcademyShare - totalManualExpenses;
 
   const handleClearFilters = () => {
       setSelectedYear(null);
@@ -119,12 +139,12 @@ export default function AcademySharePage() {
         </tr>
       `).join('');
       
-    const payoutTableHeaders = ["Teacher", "Payout Date", "Amount"];
+    const payoutTableHeaders = ["Teacher", "Payout Date", "Academy Share (30%)"];
     const payoutTableRows = filteredPayouts.map(item => `
         <tr>
           <td>${item.teacherName}</td>
           <td>${format(item.payoutDate, 'PPP')}</td>
-          <td style="text-align: right;">${item.amount.toLocaleString()} PKR</td>
+          <td style="text-align: right;">${(item.academyShare || 0).toLocaleString()} PKR</td>
         </tr>
       `).join('');
 
@@ -147,7 +167,7 @@ export default function AcademySharePage() {
             .report-title { text-align: center; margin: 2rem 0; }
             .report-title h2 { font-size: 1.8rem; font-weight: bold; margin: 0 0 0.5rem 0; }
             .report-title p { font-size: 1rem; color: #555; }
-            .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; text-align: center; }
+            .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; text-align: center; }
             .summary-card { padding: 1.5rem; border-radius: 8px; }
             .summary-card p { margin: 0; font-size: 1.1rem; color: #555; }
             .summary-card .amount { font-size: 2rem; font-weight: bold; margin-top: 0.5rem; }
@@ -155,8 +175,6 @@ export default function AcademySharePage() {
             .income .amount { color: #2e7d32; }
             .expense { background-color: #ffebee; }
             .expense .amount { color: #c62828; }
-            .payout { background-color: #fff3e0; }
-            .payout .amount { color: #e65100; }
             .net { background-color: #e3f2fd; }
             .net .amount { color: #1565c0; }
             table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; margin-bottom: 2rem; }
@@ -188,10 +206,6 @@ export default function AcademySharePage() {
                         <p>Total Academy Share</p>
                         <p class="amount">${totalAcademyShare.toLocaleString()} PKR</p>
                     </div>
-                    <div class="summary-card payout">
-                        <p>Total Teacher Payouts</p>
-                        <p class="amount">${totalTeacherPayouts.toLocaleString()} PKR</p>
-                    </div>
                     <div class="summary-card expense">
                         <p>Total Manual Expenses</p>
                         <p class="amount">${totalManualExpenses.toLocaleString()} PKR</p>
@@ -202,7 +216,7 @@ export default function AcademySharePage() {
                     </div>
                 </div>
                 
-                <h3 class="table-title">Teacher Payout Breakdown</h3>
+                <h3 class="table-title">Academy Share from Payouts</h3>
                 <table>
                     <thead>
                         <tr>
@@ -210,7 +224,7 @@ export default function AcademySharePage() {
                         </tr>
                     </thead>
                     <tbody>
-                        ${payoutTableRows.length > 0 ? payoutTableRows : `<tr><td colspan="${payoutTableHeaders.length}" style="text-align: center;">No teacher payouts for this period.</td></tr>`}
+                        ${payoutTableRows.length > 0 ? payoutTableRows : `<tr><td colspan="${payoutTableHeaders.length}" style="text-align: center;">No shares recorded for this period.</td></tr>`}
                     </tbody>
                 </table>
                 
@@ -227,10 +241,9 @@ export default function AcademySharePage() {
                 </table>
 
                 <table class="final-summary">
-                    <tr><th>Total Academy Share</th><td>${totalAcademyShare.toLocaleString()} PKR</td></tr>
-                    <tr><th>Total Teacher Payouts</th><td>-${totalTeacherPayouts.toLocaleString()} PKR</td></tr>
+                    <tr><th>Gross Academy Share</th><td>${totalAcademyShare.toLocaleString()} PKR</td></tr>
                     <tr><th>Total Manual Expenses</th><td>-${totalManualExpenses.toLocaleString()} PKR</td></tr>
-                    <tr style="font-weight: bold; border-top: 2px solid #333;"><th>Net Profit</th><td>${netAcademyEarnings.toLocaleString()} PKR</td></tr>
+                    <tr style="font-weight: bold; border-top: 2px solid #333;"><th>Net Academy Profit</th><td>${netAcademyEarnings.toLocaleString()} PKR</td></tr>
                 </table>
             </div>
             <div class="footer">
@@ -250,7 +263,7 @@ export default function AcademySharePage() {
         <div>
             <h1 className="text-2xl font-bold tracking-tight">Academy Share</h1>
             <p className="text-muted-foreground">
-                An overview of the academy's share from collected student fees after payouts.
+                An overview of the academy's share from collected student fees.
             </p>
         </div>
         <div className="flex items-center gap-2">
@@ -277,41 +290,27 @@ export default function AcademySharePage() {
             </Select>
 
             {(selectedYear || selectedMonth) && <Button variant="ghost" size="icon" onClick={handleClearFilters}><X className="h-4 w-4" /></Button>}
-             <Button onClick={handlePrint} disabled={isSettingsLoading}>
+             <Button onClick={handlePrint} disabled={isSettingsLoading || loading}>
                 <Printer className="mr-2 h-4 w-4" />
                 Print
             </Button>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
               <CardTitle className="flex items-center gap-2">
                   <TrendingUp />
-                  Total Academy Share
+                  Total Academy Share (30%)
               </CardTitle>
               <CardDescription>
-                  The cumulative 30% share from all payouts for the selected period.
+                  The cumulative 30% share from all processed payouts.
               </CardDescription>
           </CardHeader>
           <CardContent>
-              <p className="text-4xl font-bold text-primary">{totalAcademyShare.toLocaleString()} PKR</p>
+              {loading ? <Skeleton className="h-10 w-32" /> : <p className="text-4xl font-bold text-primary">{totalAcademyShare.toLocaleString()} PKR</p>}
           </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <UserCheck className="text-orange-600" />
-                    Total Teacher Payouts
-                </CardTitle>
-                <CardDescription>
-                    The total amount paid out to teachers for the selected period.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-4xl font-bold text-orange-600">{totalTeacherPayouts.toLocaleString()} PKR</p>
-            </CardContent>
         </Card>
         <Card>
           <CardHeader>
@@ -320,11 +319,11 @@ export default function AcademySharePage() {
                   Total Manual Expenses
               </CardTitle>
               <CardDescription>
-                  Operational costs like utility bills for the selected period.
+                  Operational costs recorded manually.
               </CardDescription>
           </CardHeader>
           <CardContent>
-              <p className="text-4xl font-bold text-destructive">{totalManualExpenses.toLocaleString()} PKR</p>
+              {loading ? <Skeleton className="h-10 w-32" /> : <p className="text-4xl font-bold text-destructive">{totalManualExpenses.toLocaleString()} PKR</p>}
           </CardContent>
         </Card>
         <Card>
@@ -334,11 +333,11 @@ export default function AcademySharePage() {
                   Net Academy Profit
               </CardTitle>
               <CardDescription>
-                  The academy's final profit after deducting all expenses.
+                  Final profit after deducting manual expenses.
               </CardDescription>
           </CardHeader>
           <CardContent>
-              <p className="text-4xl font-bold text-green-600">{netAcademyEarnings.toLocaleString()} PKR</p>
+              {loading ? <Skeleton className="h-10 w-32" /> : <p className="text-4xl font-bold text-green-600">{netAcademyEarnings.toLocaleString()} PKR</p>}
           </CardContent>
         </Card>
       </div>
@@ -348,10 +347,10 @@ export default function AcademySharePage() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <ChevronsRight />
-                    Teacher Payout Breakdown
+                    Share Breakdown
                 </CardTitle>
                 <CardDescription>
-                    A detailed list of all teacher salary payouts for the selected period.
+                    Academy share from individual teacher payouts.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -360,23 +359,31 @@ export default function AcademySharePage() {
                         <TableRow>
                             <TableHead>Teacher</TableHead>
                             <TableHead>Payout Date</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-right">Share (30%)</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredPayouts.map((payout) => (
+                        {loading ? (
+                            Array.from({ length: 3 }).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : filteredPayouts.map((payout) => (
                             <TableRow key={payout.id}>
                                 <TableCell className="font-medium">{payout.teacherName}</TableCell>
                                 <TableCell>{format(payout.payoutDate, 'PPP')}</TableCell>
                                 <TableCell className="text-right font-medium">
-                                    {payout.amount.toLocaleString()} PKR
+                                    {(payout.academyShare || 0).toLocaleString()} PKR
                                 </TableCell>
                             </TableRow>
                         ))}
-                        {filteredPayouts.length === 0 && (
+                        {!loading && filteredPayouts.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
-                                    No teacher payouts for this period.
+                                    No share data found for this period.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -391,7 +398,7 @@ export default function AcademySharePage() {
             Manual Expense Breakdown
           </CardTitle>
           <CardDescription>
-            A detailed list of all manually entered expenses for the selected period.
+            Detailed list of operational expenses.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -404,7 +411,15 @@ export default function AcademySharePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredManualExpenses.map((expense) => (
+              {loading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={i}>
+                          <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                          <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                      </TableRow>
+                  ))
+              ) : filteredManualExpenses.map((expense) => (
                 <TableRow key={expense.id}>
                   <TableCell className="font-medium">{expense.description}</TableCell>
                   <TableCell>
@@ -415,10 +430,10 @@ export default function AcademySharePage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredManualExpenses.length === 0 && (
+              {!loading && filteredManualExpenses.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
-                        No manual expenses recorded for this period.
+                        No manual expenses recorded.
                     </TableCell>
                 </TableRow>
               )}

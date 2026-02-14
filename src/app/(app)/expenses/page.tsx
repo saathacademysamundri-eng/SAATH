@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,12 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { addExpense, deleteExpense, updateExpense } from '@/lib/firebase/firestore';
+import { addExpense, deleteExpense, updateExpense, getExpenses } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, MoreHorizontal, PlusCircle, Printer, Trash, Edit, AlertCircle, Check, ChevronsUpDown } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
-import { useAppContext } from '@/hooks/use-app-context';
 import { Expense } from '@/lib/data';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useSettings } from '@/hooks/use-settings';
@@ -283,10 +280,28 @@ function DeleteExpenseDialog({ expense, onExpenseDeleted }: { expense: Expense, 
 }
 
 export default function ExpensesPage() {
-    const { expenses, loading, refreshData } = useAppContext();
+    const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [loading, setLoading] = useState(true);
     const { settings, isSettingsLoading } = useSettings();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [openDialogs, setOpenDialogs] = useState<{ [key: string]: 'edit' | 'delete' | null }>({});
+    const { toast } = useToast();
+
+    const fetchExpenses = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await getExpenses();
+            setExpenses(data);
+        } catch (error) {
+            console.error("Failed to fetch expenses:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchExpenses();
+    }, [fetchExpenses]);
 
     const totalExpenses = useMemo(() => {
         return expenses.reduce((sum, item) => sum + item.amount, 0);
@@ -294,12 +309,12 @@ export default function ExpensesPage() {
     
     const handleActionComplete = () => {
         setOpenDialogs({});
-        refreshData();
+        fetchExpenses();
     }
     
-    const onExpenseAdded = (expense: Expense) => {
+    const onExpenseAdded = () => {
         setIsAddDialogOpen(false);
-        refreshData();
+        fetchExpenses();
     }
     
     const handleSetDialog = (id: string, type: 'edit' | 'delete' | null) => {
@@ -307,7 +322,6 @@ export default function ExpensesPage() {
     }
 
     const amountToWords = (num: number) => {
-        // Basic implementation for converting number to words for vouchers
         const a = ['','one ','two ','three ','four ', 'five ','six ','seven ','eight ','nine ','ten ','eleven ','twelve ','thirteen ','fourteen ','fifteen ','sixteen ','seventeen ','eighteen ','nineteen '];
         const b = ['', '', 'twenty','thirty','forty','fifty', 'sixty','seventy','eighty','ninety'];
         
@@ -472,7 +486,7 @@ export default function ExpensesPage() {
                 </p>
             </div>
             <div className="flex items-center gap-2">
-                <Button onClick={handlePrintReport} variant="outline" disabled={isSettingsLoading}>
+                <Button onClick={handlePrintReport} variant="outline" disabled={isSettingsLoading || loading}>
                     <Printer className="mr-2" /> Print Report
                 </Button>
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -506,8 +520,19 @@ export default function ExpensesPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    
-                        {expenses.map((item) => (
+                    {loading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                                <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                        expenses.map((item) => (
                             <Dialog key={item.id} open={!!openDialogs[item.id]} onOpenChange={(open) => !open && handleSetDialog(item.id, null)}>
                                 <TableRow>
                                     <TableCell>{format(item.date, 'PPP')}</TableCell>
@@ -552,7 +577,8 @@ export default function ExpensesPage() {
                                 {openDialogs[item.id] === 'edit' && <EditExpenseDialog expense={item} onExpenseUpdated={handleActionComplete} />}
                                 {openDialogs[item.id] === 'delete' && <DeleteExpenseDialog expense={item} onExpenseDeleted={handleActionComplete} />}
                             </Dialog>
-                        ))}
+                        ))
+                    )}
                      {!loading && expenses.length === 0 && (
                          <TableRow>
                             <TableCell colSpan={6} className="text-center text-muted-foreground h-24">

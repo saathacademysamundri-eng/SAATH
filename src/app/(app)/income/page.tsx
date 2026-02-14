@@ -1,10 +1,9 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,13 +12,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { type Income } from '@/lib/data';
-import { deleteIncomeRecord, updateIncomeRecord } from '@/lib/firebase/firestore';
+import { deleteIncomeRecord, updateIncomeRecord, getIncome } from '@/lib/firebase/firestore';
 import { cn } from '@/lib/utils';
 import { addDays, format } from 'date-fns';
 import { CalendarIcon, Loader2, MoreHorizontal, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { useAppContext } from '@/hooks/use-app-context';
 
 function EditIncomeDialog({
   incomeRecord,
@@ -143,16 +141,32 @@ function DeleteIncomeConfirmation({
 
 
 export default function IncomePage() {
-    const { income, loading, refreshData } = useAppContext();
+    const [income, setIncome] = useState<Income[]>([]);
+    const [loading, setLoading] = useState(true);
     const [date, setDate] = useState<DateRange | undefined>({
         from: addDays(new Date(), -30),
         to: new Date(),
     });
-     const [openDialogs, setOpenDialogs] = useState<{ [key: string]: 'edit' | 'delete' | null }>({});
+    const [openDialogs, setOpenDialogs] = useState<{ [key: string]: 'edit' | 'delete' | null }>({});
 
+    const fetchIncome = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await getIncome();
+            setIncome(data);
+        } catch (error) {
+            console.error("Failed to fetch income:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchIncome();
+    }, [fetchIncome]);
 
     const handleActionComplete = () => {
-      refreshData();
+      fetchIncome();
       setOpenDialogs({});
     }
 
@@ -244,8 +258,18 @@ export default function IncomePage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    
-                        {filteredIncome.map((item) => (
+                    {loading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                                <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                        filteredIncome.map((item) => (
                             <Dialog key={item.id} open={!!openDialogs[item.id]} onOpenChange={(open) => !open && handleSetDialog(item.id, null)}>
                                 <TableRow>
                                     <TableCell>{format(item.date, 'PPP')}</TableCell>
@@ -269,7 +293,8 @@ export default function IncomePage() {
                                 {openDialogs[item.id] === 'edit' && <EditIncomeDialog incomeRecord={item} onIncomeUpdated={handleActionComplete} />}
                                 {openDialogs[item.id] === 'delete' && <DeleteIncomeConfirmation incomeRecord={item} onIncomeDeleted={handleActionComplete} />}
                             </Dialog>
-                        ))}
+                        ))
+                    )}
                      {!loading && filteredIncome.length === 0 && (
                          <TableRow>
                             <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
