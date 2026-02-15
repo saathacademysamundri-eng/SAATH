@@ -325,7 +325,7 @@ export async function getAlumni(): Promise<Student[]> {
 export async function getArchivedStudents(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
     const q = query(studentsCollection, where('status', '==', 'archived'), limit(100));
-    const studentsSnap = await getDocs(studentsCollection);
+    const studentsSnap = await getDocs(q);
     const allStudents = studentsSnap.docs.map(doc => {
         const data = doc.data();
         return { 
@@ -955,7 +955,7 @@ export async function getIncome(): Promise<Income[]> {
 }
 
 /**
- * Fetches recent income records for dashboard summaries. 
+ * Highly optimized query for fetching recent income records for dashboard summaries. 
  * Defaults to last 500 records to maintain high performance.
  */
 export async function getRecentIncome(recordLimit: number = 500): Promise<Income[]> {
