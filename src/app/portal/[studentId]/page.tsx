@@ -108,7 +108,7 @@ export default function StudentPortalDashboard() {
   if (error || !student) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950">
-        <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl shadow-xl text-center max-w-md border border-slate-100 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl shadow-xl text-center max-w-md border border-slate-200 dark:border-slate-800">
             <div className="bg-red-50 dark:bg-red-950/20 p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
                 <ShieldCheck className="h-10 w-10 text-red-500" />
             </div>
@@ -125,7 +125,7 @@ export default function StudentPortalDashboard() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
       {/* Sticky Nav */}
-      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b dark:border-slate-800">
+      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-10 w-auto">
@@ -147,7 +147,7 @@ export default function StudentPortalDashboard() {
         {/* Profile Card */}
         <div className="relative group">
             <div className="absolute -inset-1 bg-gradient-to-r from-primary via-purple-500 to-indigo-500 rounded-3xl blur opacity-15 group-hover:opacity-25 transition duration-1000"></div>
-            <Card className="relative border-none shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-slate-900">
+            <Card className="relative border border-slate-200 dark:border-slate-800 shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-slate-900">
                 <div className="absolute top-0 right-0 p-8 opacity-[0.03] dark:opacity-[0.05] rotate-12">
                     <GraduationCap className="h-64 w-64" />
                 </div>
@@ -167,10 +167,10 @@ export default function StudentPortalDashboard() {
                             <p className="text-xl text-slate-400 dark:text-slate-500 font-bold tracking-tight">Roll No: <span className="text-primary">{student.id}</span> • Class: <span className="text-primary">{student.class}</span></p>
                         </div>
                         <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                            <Badge variant="secondary" className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 font-black px-4 py-1.5 rounded-xl text-xs uppercase tracking-widest border-none">
+                            <Badge variant="secondary" className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 font-black px-4 py-1.5 rounded-xl text-xs uppercase tracking-widest border border-slate-200 dark:border-slate-700">
                                 <User className="h-3.5 w-3.5 mr-2 text-primary" /> {student.fatherName}
                             </Badge>
-                            <Badge variant="secondary" className="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-black px-4 py-1.5 rounded-xl text-xs uppercase tracking-widest border-none">
+                            <Badge variant="secondary" className="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-black px-4 py-1.5 rounded-xl text-xs uppercase tracking-widest border border-indigo-100 dark:border-indigo-900/50">
                                 <Star className="h-3.5 w-3.5 mr-2" /> Session {settings.academicSession}
                             </Badge>
                         </div>
@@ -181,7 +181,7 @@ export default function StudentPortalDashboard() {
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <Card className="border-none shadow-md rounded-3xl bg-white dark:bg-slate-900 transition-transform hover:scale-[1.02] duration-300">
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-md rounded-3xl bg-white dark:bg-slate-900 transition-transform hover:scale-[1.02] duration-300">
             <CardContent className="p-8 flex items-center gap-6">
                 <div className="bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-2xl text-emerald-600 dark:text-emerald-400">
                     <CheckCircle2 className="h-8 w-8" />
@@ -193,7 +193,7 @@ export default function StudentPortalDashboard() {
             </CardContent>
           </Card>
           
-          <Card className="border-none shadow-md rounded-3xl bg-white dark:bg-slate-900 transition-transform hover:scale-[1.02] duration-300">
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-md rounded-3xl bg-white dark:bg-slate-900 transition-transform hover:scale-[1.02] duration-300">
             <CardContent className="p-8 flex items-center gap-6">
                 <div className={cn("p-4 rounded-2xl", student.totalFee > 0 ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400" : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400")}>
                     <AlertCircle className="h-8 w-8" />
@@ -207,7 +207,7 @@ export default function StudentPortalDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-md rounded-3xl bg-white dark:bg-slate-900 transition-transform hover:scale-[1.02] duration-300">
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-md rounded-3xl bg-white dark:bg-slate-900 transition-transform hover:scale-[1.02] duration-300">
             <CardContent className="p-8 flex items-center gap-6">
                 <div className="bg-primary/5 dark:bg-primary/10 p-4 rounded-2xl text-primary dark:text-primary-foreground/80">
                     <Wallet className="h-8 w-8" />
@@ -224,7 +224,7 @@ export default function StudentPortalDashboard() {
 
         {/* Detailed Content Tabs */}
         <Tabs defaultValue="results" className="w-full">
-          <TabsList className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-[2rem] shadow-inner border dark:border-slate-800 w-full sm:w-fit mb-10 overflow-hidden">
+          <TabsList className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-[2rem] shadow-inner border border-slate-300 dark:border-slate-800 w-full sm:w-fit mb-10 overflow-hidden">
             <TabsTrigger value="results" className="flex-1 sm:flex-none text-sm font-black uppercase tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-xl rounded-[1.8rem] px-10 py-4 transition-all duration-500">
               <GraduationCap className="mr-2 h-4 w-4" /> Results
             </TabsTrigger>
@@ -234,8 +234,8 @@ export default function StudentPortalDashboard() {
           </TabsList>
 
           <TabsContent value="results" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <Card className="shadow-2xl border-none rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900">
-              <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 px-10 py-8 border-b dark:border-slate-800">
+            <Card className="shadow-2xl border border-slate-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900">
+              <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 px-10 py-8 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-4">
                     <div className="bg-primary p-3 rounded-2xl text-white shadow-lg shadow-primary/20">
                         <BookOpen className="h-6 w-6" />
@@ -267,7 +267,7 @@ export default function StudentPortalDashboard() {
                         const percentage = (obtained / total) * 100;
 
                         return (
-                          <TableRow key={exam.id} className="border-slate-50 dark:border-slate-800 hover:bg-primary/[0.02] dark:hover:bg-primary/[0.05] transition-all group">
+                          <TableRow key={exam.id} className="border-slate-100 dark:border-slate-800 hover:bg-primary/[0.02] dark:hover:bg-primary/[0.05] transition-all group">
                             <TableCell className="py-8 pl-10">
                                 <div className="font-black text-slate-900 dark:text-white text-lg group-hover:text-primary transition-colors">{exam.name}</div>
                                 <div className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.1em] mt-1">{format(exam.date, 'MMMM yyyy')}</div>
@@ -309,8 +309,8 @@ export default function StudentPortalDashboard() {
           </TabsContent>
 
           <TabsContent value="ledger" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <Card className="shadow-2xl border-none rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900">
-              <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 px-10 py-8 border-b dark:border-slate-800">
+            <Card className="shadow-2xl border border-slate-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900">
+              <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 px-10 py-8 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-4">
                     <div className="bg-emerald-500 p-3 rounded-2xl text-white shadow-lg shadow-emerald-500/20">
                         <Wallet className="h-6 w-6" />
@@ -334,22 +334,22 @@ export default function StudentPortalDashboard() {
                     </TableHeader>
                     <TableBody>
                       {incomeHistory.length > 0 ? incomeHistory.map(inc => (
-                        <TableRow key={inc.id} className="border-slate-50 dark:border-slate-800 hover:bg-emerald-[0.02] dark:hover:bg-emerald-[0.05] transition-all">
+                        <TableRow key={inc.id} className="border-slate-100 dark:border-slate-800 hover:bg-emerald-[0.02] dark:hover:bg-emerald-[0.05] transition-all">
                           <TableCell className="py-8 pl-10">
                             <div className="flex items-center gap-4">
-                                <div className="bg-slate-100 dark:bg-slate-800 p-2.5 rounded-xl text-slate-500">
+                                <div className="bg-slate-100 dark:bg-slate-800 p-2.5 rounded-xl text-slate-500 border border-slate-200 dark:border-slate-700">
                                     <Calendar className="h-5 w-5" />
                                 </div>
                                 <span className="font-black text-slate-700 dark:text-slate-200 text-lg tracking-tight">{format(inc.date, 'PPP')}</span>
                             </div>
                           </TableCell>
                           <TableCell className="py-8">
-                            <code className="text-xs bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg font-mono text-slate-500 dark:text-slate-400 font-black border border-slate-100 dark:border-slate-700">
+                            <code className="text-xs bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg font-mono text-slate-500 dark:text-slate-400 font-black border border-slate-200 dark:border-slate-700">
                                 {inc.receiptId || inc.id.substring(0, 8)}
                             </code>
                           </TableCell>
                           <TableCell className="py-8">
-                            <Badge variant="secondary" className="font-black text-[10px] uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-xl px-4 py-1 border-none">
+                            <Badge variant="secondary" className="font-black text-[10px] uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-xl px-4 py-1 border border-emerald-100 dark:border-emerald-900/50">
                                 {inc.forMonth || format(inc.date, 'MMMM yyyy')}
                             </Badge>
                           </TableCell>
@@ -377,7 +377,7 @@ export default function StudentPortalDashboard() {
       </div>
       
       {/* Soft Branded Footer */}
-      <footer className="mt-24 pt-16 border-t dark:border-slate-800 bg-white dark:bg-slate-900">
+      <footer className="mt-24 pt-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 pb-16">
             <div className="space-y-6 text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-3">
@@ -398,7 +398,7 @@ export default function StudentPortalDashboard() {
                 </div>
             </div>
         </div>
-        <div className="border-t dark:border-slate-800 py-8 bg-slate-50 dark:bg-slate-950">
+        <div className="border-t border-slate-200 dark:border-slate-800 py-8 bg-slate-50 dark:bg-slate-950">
             <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
                 <p>&copy; {new Date().getFullYear()} {settings.name}</p>
                 <div className="flex items-center gap-4">
