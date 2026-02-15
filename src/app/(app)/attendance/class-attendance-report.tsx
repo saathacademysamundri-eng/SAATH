@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Student } from '@/lib/data';
-import { getAttendanceForClassInMonth } from '@/lib/firebase/firestore';
+import { getAttendanceForClassInMonth, getStudents } from '@/lib/firebase/firestore';
 import { format, getDaysInMonth } from 'date-fns';
 import { Loader2, Printer, FileText } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
@@ -27,15 +26,32 @@ const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(n
 const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
 
 export function ClassAttendanceReport() {
-    const { classes, students, loading: appLoading } = useAppContext();
+    const { classes, loading: contextLoading } = useAppContext();
     const { settings, isSettingsLoading } = useSettings();
     const { toast } = useToast();
 
+    const [students, setStudents] = useState<Student[]>([]);
+    const [isFetchingStudents, setIsFetchingStudents] = useState(true);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [isLoading, setIsLoading] = useState(false);
     const [monthlyData, setMonthlyData] = useState<MonthlyAttendance>({});
+
+    useEffect(() => {
+        async function loadStudents() {
+            setIsFetchingStudents(true);
+            try {
+                const data = await getStudents();
+                setStudents(data);
+            } catch (error) {
+                console.error("Failed to fetch students for report:", error);
+            } finally {
+                setIsFetchingStudents(false);
+            }
+        }
+        loadStudents();
+    }, []);
 
     const classStudents = useMemo(() => {
         if (!selectedClassId) return [];
@@ -259,7 +275,7 @@ export function ClassAttendanceReport() {
             <div className="flex flex-wrap gap-4 items-end">
                 <div className="space-y-2">
                     <Label>Class</Label>
-                    <Select onValueChange={(v) => setSelectedClassId(v)} disabled={appLoading}>
+                    <Select onValueChange={(v) => setSelectedClassId(v)} disabled={contextLoading || isFetchingStudents}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Select a class" />
                         </SelectTrigger>
@@ -304,9 +320,9 @@ export function ClassAttendanceReport() {
                 </Button>
             </div>
             
-            {isLoading && <Skeleton className="h-96 w-full" />}
+            {(isLoading || isFetchingStudents) && <Skeleton className="h-96 w-full" />}
             
-            {!isLoading && Object.keys(monthlyData).length > 0 && (
+            {!isLoading && !isFetchingStudents && Object.keys(monthlyData).length > 0 && (
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>

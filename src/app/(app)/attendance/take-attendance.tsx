@@ -7,23 +7,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { saveAttendance } from '@/lib/firebase/firestore';
+import { saveAttendance, getStudents } from '@/lib/firebase/firestore';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { useAppContext } from '@/hooks/use-app-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
+import { Student } from '@/lib/data';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
 
 export function TakeAttendance() {
-    const { classes, students, loading } = useAppContext();
+    const { classes, loading: contextLoading } = useAppContext();
+    const [students, setStudents] = useState<Student[]>([]);
+    const [loadingStudents, setLoadingStudents] = useState(false);
+    const [isFetching, setIsFetching] = useState(true);
+    
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [attendance, setAttendance] = useState<{ [studentId: string]: AttendanceStatus }>({});
-    const [loadingStudents, setLoadingStudents] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+
+    useEffect(() => {
+        async function loadStudents() {
+            setIsFetching(true);
+            try {
+                const data = await getStudents();
+                setStudents(data);
+            } catch (error) {
+                console.error("Failed to load students for attendance:", error);
+            } finally {
+                setIsFetching(false);
+            }
+        }
+        loadStudents();
+    }, []);
 
     const handleClassChange = (classId: string) => {
         setSelectedClassId(classId);
@@ -80,12 +99,12 @@ export function TakeAttendance() {
         <div className="space-y-4">
             <div className="max-w-xs space-y-2">
                 <Label htmlFor="class-select">Select Class</Label>
-                <Select onValueChange={handleClassChange} disabled={loading}>
+                <Select onValueChange={handleClassChange} disabled={contextLoading || isFetching}>
                     <SelectTrigger id="class-select">
                         <SelectValue placeholder="Select a class..." />
                     </SelectTrigger>
                     <SelectContent>
-                        {loading ? (
+                        {contextLoading || isFetching ? (
                             <SelectItem value="loading" disabled>Loading classes...</SelectItem>
                         ) : (
                             classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
@@ -120,7 +139,7 @@ export function TakeAttendance() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {loadingStudents || loading ? (
+                                {loadingStudents || contextLoading || isFetching ? (
                                     Array.from({ length: 5 }).map((_, i) => (
                                         <TableRow key={i}>
                                             <TableCell><Skeleton className="h-5 w-12" /></TableCell>
