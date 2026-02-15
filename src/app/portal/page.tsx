@@ -115,6 +115,7 @@ export default function StudentPortalLoginPage() {
               value={rollNumber}
               onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
               className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg focus:outline-none focus:border-sky-400 text-white transition-colors"
+              suppressHydrationWarning
             />
           </div>
 
@@ -128,6 +129,7 @@ export default function StudentPortalLoginPage() {
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg focus:outline-none focus:border-sky-400 text-white transition-colors"
+              suppressHydrationWarning
             />
           </div>
 
@@ -167,7 +169,7 @@ export default function StudentPortalLoginPage() {
         </form>
 
         {/* Footer */}
-        <div className="mt-8 text-center space-y-2 text-xs text-slate-400">
+        <div className="mt-8 text-center space-y-2 text-xs text-slate-400" suppressHydrationWarning>
           <p>&copy; {new Date().getFullYear()} {settings.name}. All Rights Reserved.</p>
           <p className="uppercase tracking-widest text-[10px]">
             Powered by Schoolup Platform
