@@ -39,7 +39,7 @@ const GlassCard = ({ children, className = "", onClick }: { children: React.Reac
 );
 
 const PortalBadge = ({ children, colorClass }: { children: React.ReactNode, colorClass: string }) => (
-  <span className={cn("px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold border", colorClass)}>
+  <span className={cn("px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest border", colorClass)}>
     {children}
   </span>
 );
@@ -168,8 +168,10 @@ export default function StudentPortalDashboard() {
   }, [exams, student]);
 
   const handleCelebrate = () => {
-    setShowCelebration(true);
-    setTimeout(() => setShowCelebration(false), 5000);
+    if (student?.feeStatus === 'Paid') {
+        setShowCelebration(true);
+        setTimeout(() => setShowCelebration(false), 5000);
+    }
   };
 
   const handleSignOut = () => {
@@ -206,7 +208,7 @@ export default function StudentPortalDashboard() {
       isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'
     )}>
       
-      {/* Background Mesh */}
+      {/* Background Mesh Restored from Code */}
       <div className="fixed inset-0 -z-10 opacity-50 dark:opacity-20 pointer-events-none"
            style={{
              backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc',
@@ -277,10 +279,10 @@ export default function StudentPortalDashboard() {
                   {student.name}
                 </h2>
                 <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
-                  <PortalBadge colorClass="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200/50 dark:border-blue-800/50 font-black tracking-widest uppercase">
-                    ID: {student.id}
+                  <PortalBadge colorClass="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200/50 dark:border-blue-800/50">
+                    Roll No: {student.id}
                   </PortalBadge>
-                  <PortalBadge colorClass="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-blue-800/50 font-black tracking-widest uppercase">
+                  <PortalBadge colorClass="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-blue-800/50">
                     {student.class}
                   </PortalBadge>
                 </div>
@@ -301,16 +303,16 @@ export default function StudentPortalDashboard() {
 
             {/* Quick Stats (Desktop) */}
             <div className="hidden lg:flex flex-col gap-3 min-w-[140px]">
-              <div className="bg-white dark:bg-slate-700/50 p-3 rounded-xl flex items-center gap-3 border border-slate-200 dark:border-slate-600 shadow-sm">
+              <GlassCard className="bg-white/50 dark:bg-slate-700/50 p-3 rounded-xl flex items-center gap-3 border border-slate-200 dark:border-slate-600 shadow-sm">
                 <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 border border-blue-500/20">
                   <Award size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Profile</p>
-                  <p className="font-black text-lg tracking-tighter uppercase">Verified</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Verified</p>
+                  <p className="font-black text-lg tracking-tighter uppercase">Profile</p>
                 </div>
-              </div>
-              <div className="bg-white dark:bg-slate-700/50 p-3 rounded-xl flex items-center gap-3 border border-slate-200 dark:border-slate-600 shadow-sm">
+              </GlassCard>
+              <GlassCard className="bg-white/50 dark:bg-slate-700/50 p-3 rounded-xl flex items-center gap-3 border border-slate-200 dark:border-slate-600 shadow-sm">
                 <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                   <Percent size={20} />
                 </div>
@@ -318,7 +320,7 @@ export default function StudentPortalDashboard() {
                   <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Attendance</p>
                   <p className="font-black text-lg tracking-tighter text-emerald-500">98%</p>
                 </div>
-              </div>
+              </GlassCard>
             </div>
           </div>
         </GlassCard>
@@ -333,14 +335,14 @@ export default function StudentPortalDashboard() {
               <div className="space-y-4">
                 <IconBox icon={CheckCircle} className="bg-gradient-to-br from-green-400 to-emerald-600 text-white shadow-green-500/30 border-green-400/20" />
                 <div>
-                  <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Fees Paid</p>
+                  <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Aggregate Paid</p>
                   <h3 className="text-3xl font-black mt-1 tabular-nums tracking-tighter">{totalPaid.toLocaleString()} <span className="text-sm font-normal text-slate-500">PKR</span></h3>
                 </div>
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2 text-green-600 dark:text-green-400 text-xs font-black uppercase tracking-[0.2em]">
               <TrendingUp size={16} />
-              <span>Financial Status Verified</span>
+              <span>Identity & Status Verified</span>
             </div>
           </GlassCard>
 
@@ -360,7 +362,7 @@ export default function StudentPortalDashboard() {
             </div>
             <div className="mt-4 flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xs font-black uppercase tracking-[0.2em]">
               {student.totalFee > 0 ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
-              <span>{student.totalFee > 0 ? 'Pending Payment' : 'Accounts Cleared'}</span>
+              <span>{student.totalFee > 0 ? 'Pending Payment' : 'Accounts Verified'}</span>
             </div>
           </GlassCard>
 
@@ -371,7 +373,7 @@ export default function StudentPortalDashboard() {
               <div className="space-y-4">
                 <IconBox icon={FileText} className="bg-gradient-to-br from-blue-400 to-indigo-600 text-white shadow-blue-500/30 border-blue-400/20" />
                 <div>
-                  <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Current Billing</p>
+                  <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Fee Category</p>
                   <h3 className={cn(
                     "text-3xl font-black mt-1 uppercase tracking-tighter",
                     student.feeStatus === 'Paid' ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
@@ -390,7 +392,7 @@ export default function StudentPortalDashboard() {
             </div>
             <div className="mt-4 flex items-center gap-2 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-[0.2em]">
               <Receipt size={16} />
-              <span>Session Cycle Active</span>
+              <span>Current Session Cycle</span>
             </div>
           </GlassCard>
         </div>
@@ -445,7 +447,7 @@ export default function StudentPortalDashboard() {
                         <th className="px-10 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Examination Name</th>
                         <th className="px-10 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Subjects</th>
                         <th className="px-10 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Raw Score</th>
-                        <th className="px-10 py-4 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Performance</th>
+                        <th className="px-10 py-4 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Verified Score</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -465,7 +467,7 @@ export default function StudentPortalDashboard() {
                                     <td className="px-10 py-6">
                                         <div className="flex flex-wrap gap-2">
                                             {exam.subjects.map(sub => (
-                                                <PortalBadge key={sub} colorClass="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border-indigo-100 dark:border-indigo-800/50 uppercase tracking-widest text-[9px] font-black">{sub}</PortalBadge>
+                                                <PortalBadge key={sub} colorClass="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border-indigo-100 dark:border-indigo-800/50">{sub}</PortalBadge>
                                             ))}
                                         </div>
                                     </td>
@@ -520,11 +522,11 @@ export default function StudentPortalDashboard() {
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {exam.subjects.map(sub => (
-                                        <PortalBadge key={sub} colorClass="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border-indigo-100 dark:border-indigo-800/50 uppercase tracking-widest text-[9px] font-black">{sub}</PortalBadge>
+                                        <PortalBadge key={sub} colorClass="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border-indigo-100 dark:border-indigo-800/50">{sub}</PortalBadge>
                                     ))}
                                 </div>
                                 <div className="flex justify-between items-center pt-2 text-[10px] font-black uppercase tracking-[0.2em]">
-                                    <span className="text-slate-400">Composite Score</span>
+                                    <span className="text-slate-400">Total Score</span>
                                     <span className="text-slate-900 dark:text-white">{obtained} / {total}</span>
                                 </div>
                             </div>
@@ -627,7 +629,7 @@ export default function StudentPortalDashboard() {
                             </code>
                             </td>
                             <td className="px-10 py-6">
-                            <PortalBadge colorClass="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50 uppercase tracking-widest text-[9px] font-black">
+                            <PortalBadge colorClass="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50">
                                 {item.forMonth || format(item.date, 'MMMM yyyy')}
                             </PortalBadge>
                             </td>
@@ -664,7 +666,7 @@ export default function StudentPortalDashboard() {
                         </div>
                         <div className="flex justify-between items-center pt-2">
                         <span className="px-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 font-mono text-[10px] text-slate-500 font-black border border-slate-200 dark:border-slate-700 uppercase">{item.receiptId || 'OFFICIAL'}</span>
-                        <PortalBadge colorClass="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50 uppercase tracking-widest text-[9px] font-black">{item.forMonth || 'CYCLE'}</PortalBadge>
+                        <PortalBadge colorClass="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50">{item.forMonth || 'CYCLE'}</PortalBadge>
                         </div>
                     </div>
                     ))}
@@ -672,7 +674,7 @@ export default function StudentPortalDashboard() {
 
                 {/* Summary */}
                 <div className="p-6 sm:p-10 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-3 gap-6 bg-slate-50/30 dark:bg-slate-800/10">
-                    <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl flex items-center gap-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <GlassCard className="bg-white dark:bg-slate-800 p-5 rounded-2xl flex items-center gap-5 border border-slate-200 dark:border-slate-700 shadow-sm">
                     <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 border border-blue-500/20">
                         <Calculator size={24} />
                     </div>
@@ -680,8 +682,8 @@ export default function StudentPortalDashboard() {
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aggregate Paid</p>
                         <p className="text-xl font-black tracking-tighter uppercase">{totalPaid.toLocaleString()} PKR</p>
                     </div>
-                    </div>
-                    <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl flex items-center gap-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    </GlassCard>
+                    <GlassCard className="bg-white dark:bg-slate-800 p-5 rounded-2xl flex items-center gap-5 border border-slate-200 dark:border-slate-700 shadow-sm">
                     <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 border border-purple-500/20">
                         <Receipt size={24} />
                     </div>
@@ -689,7 +691,7 @@ export default function StudentPortalDashboard() {
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Verified Cycles</p>
                         <p className="text-xl font-black tracking-tighter uppercase">{incomeHistory.length} Payments</p>
                     </div>
-                    </div>
+                    </GlassCard>
                     <div className={cn(
                         "p-5 rounded-2xl flex items-center gap-5 border shadow-sm transition-colors",
                         student.totalFee === 0 ? "bg-emerald-500/5 border-emerald-500/20" : "bg-amber-500/5 border-amber-500/20"
@@ -716,7 +718,7 @@ export default function StudentPortalDashboard() {
 
         {/* Footer */}
         <footer className="mt-8 border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2rem] sm:rounded-[3rem] overflow-hidden shadow-2xl border border-white/30 dark:border-slate-700/50 mb-10">
-            <div className="max-w-7xl mx-auto px-6 sm:px-10 py-10 sm:py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+            <div className="max-w-7xl mx-auto px-6 sm:px-10 py-10 sm:py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 text-slate-600 dark:text-slate-400">
               <div className="lg:col-span-2 space-y-6">
                 <div className="flex items-center gap-4">
                   <div className="h-14 w-auto flex items-center justify-center p-1">
@@ -727,20 +729,20 @@ export default function StudentPortalDashboard() {
                     <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mt-1">Excellence in Education</p>
                   </div>
                 </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md font-medium">
+                <p className="text-sm leading-relaxed max-w-md font-medium">
                   Dedicated to providing excellence in education through personalized learning and state-of-the-art academic resources in Samundri.
                 </p>
                 <div className="flex gap-4">
-                  <a href="https://www.facebook.com/saathsamundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-blue-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
+                  <a href="https://www.facebook.com/saathsamundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-blue-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
                     <Facebook size={18} />
                   </a>
-                  <a href="https://www.instagram.com/saath_samundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-pink-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
+                  <a href="https://www.instagram.com/saath_samundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-pink-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
                     <Instagram size={18} />
                   </a>
-                  <a href="https://www.youtube.com/@SAATHSamundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-red-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
+                  <a href="https://www.youtube.com/@SAATHSamundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-red-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
                     <Youtube size={18} />
                   </a>
-                  <a href="mailto:info@saathsamundri.com" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-primary hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
+                  <a href="mailto:info@saathsamundri.com" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-primary hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
                     <Mail size={18} />
                   </a>
                 </div>
