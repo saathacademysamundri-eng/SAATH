@@ -168,7 +168,7 @@ export default function StudentPortalLoginPage() {
         <div className="mt-8 text-center space-y-2 text-xs text-slate-400" suppressHydrationWarning>
           <p suppressHydrationWarning>&copy; {new Date().getFullYear()} {settings.name}. All Rights Reserved.</p>
           <p className="uppercase tracking-widest text-[10px]">
-            Powered by Schoolup Platform
+            Powered by SchoolUP.
           </p>
           <p className="uppercase tracking-widest text-[10px]">
             Developed by <span className="text-sky-400 font-bold">MIAN MUDASSAR</span>
