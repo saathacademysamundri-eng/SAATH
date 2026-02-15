@@ -130,10 +130,13 @@ export default function StudentPortalDashboard() {
           }
 
           setStudent(studentData);
+          
+          // Speed optimization: Fetch all verified data concurrently "from the beginning"
           const [examsData, historyData] = await Promise.all([
             getStudentExams(studentData.id, studentData.class),
             getStudentIncomeHistory(studentData.id)
           ]);
+          
           setExams(examsData);
           setIncomeHistory(historyData);
         } else {
@@ -168,7 +171,7 @@ export default function StudentPortalDashboard() {
   }, [exams, student]);
 
   const handleCelebrate = () => {
-    if (student?.feeStatus === 'Paid') {
+    if (student?.feeStatus === 'Paid' || student?.totalFee === 0) {
         setShowCelebration(true);
         setTimeout(() => setShowCelebration(false), 5000);
     }
@@ -208,7 +211,7 @@ export default function StudentPortalDashboard() {
       isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'
     )}>
       
-      {/* Background Mesh Restored from Code */}
+      {/* Background Mesh Restored exactly from provided code */}
       <div className="fixed inset-0 -z-10 opacity-50 dark:opacity-20 pointer-events-none"
            style={{
              backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc',
@@ -462,7 +465,7 @@ export default function StudentPortalDashboard() {
                                 <tr key={exam.id} className="hover:bg-primary/[0.02] dark:hover:bg-primary/[0.05] transition-colors group">
                                     <td className="px-10 py-6">
                                         <div className="font-black text-lg text-blue-600 dark:text-blue-400 tracking-tighter uppercase">{exam.name}</div>
-                                        <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{format(exam.date, 'MMMM yyyy')}</div>
+                                        <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Verified Record • {format(exam.date, 'MMMM yyyy')}</div>
                                     </td>
                                     <td className="px-10 py-6">
                                         <div className="flex flex-wrap gap-2">
@@ -511,7 +514,7 @@ export default function StudentPortalDashboard() {
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <span className="font-black text-lg text-blue-600 dark:text-blue-400 tracking-tighter uppercase">{exam.name}</span>
-                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{format(exam.date, 'MMMM yyyy')}</p>
+                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Verified • {format(exam.date, 'MMMM yyyy')}</p>
                                     </div>
                                     <span className={cn(
                                         "px-4 py-1.5 rounded-2xl text-[10px] font-black tracking-widest border",
@@ -777,10 +780,10 @@ export default function StudentPortalDashboard() {
             </div>
             <div className="py-8 bg-slate-100/50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 text-center">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500" suppressHydrationWarning>
-                    &copy; {new Date().getFullYear()} {settings.name} • Formal Rights Reserved. 
+                    &copy; {new Date().getFullYear()} {settings.name} • All Rights Reserved. 
                 </p>
                 <div className="mt-2 text-[9px] font-black uppercase tracking-widest text-slate-500 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-4">
-                    <span className="opacity-60">Architected via <span className="text-primary hover:underline cursor-pointer transition-all">SchoolUP Ecosystem</span></span>
+                    <span className="opacity-60">Powered By <span className="text-primary hover:underline cursor-pointer transition-all">SchoolUP</span></span>
                     <span className="hidden sm:block text-slate-300 dark:text-slate-700">|</span>
                     <span className="opacity-100 font-bold">Developed by <span className="text-primary underline-offset-4 underline decoration-primary/20 hover:decoration-primary cursor-pointer transition-all">Mian Mudassar</span></span>
                 </div>
