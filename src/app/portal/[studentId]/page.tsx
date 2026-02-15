@@ -723,7 +723,7 @@ export default function StudentPortalDashboard() {
                   </div>
                   <div>
                     <h4 className="font-black text-xl tracking-tighter uppercase text-slate-900 dark:text-white leading-none">{settings.name}</h4>
-                    <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mt-1">Excellence in Education</p>
+                    <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mt-1">Digital Learning Ecosystem</p>
                   </div>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md font-medium">
