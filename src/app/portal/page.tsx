@@ -96,10 +96,6 @@ export default function StudentPortalLoginPage() {
           <h1 className="text-2xl font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-pink-200 uppercase text-center">
             {settings.name || "SAATH ACADEMY"}
           </h1>
-
-          <p className="text-slate-400 text-sm tracking-widest uppercase mt-1">
-            Samundri
-          </p>
         </div>
 
         {/* Form */}
@@ -170,7 +166,7 @@ export default function StudentPortalLoginPage() {
 
         {/* Footer */}
         <div className="mt-8 text-center space-y-2 text-xs text-slate-400" suppressHydrationWarning>
-          <p>&copy; {new Date().getFullYear()} {settings.name}. All Rights Reserved.</p>
+          <p suppressHydrationWarning>&copy; {new Date().getFullYear()} {settings.name}. All Rights Reserved.</p>
           <p className="uppercase tracking-widest text-[10px]">
             Powered by Schoolup Platform
           </p>
