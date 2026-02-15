@@ -14,17 +14,22 @@ service cloud.firestore {
     }
 
     // Rules for specific collections
+    // Students: Publicly readable by ID for the portal, write protected
     match /students/{studentId} {
-      allow read, write: if isAuthenticated();
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
     match /teachers/{teacherId} {
-      allow read, write: if isAuthenticated();
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
     match /classes/{classId}/{document=**} {
-      allow read, write: if isAuthenticated();
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
     match /income/{incomeId} {
-       allow read, write: if isAuthenticated();
+       allow read: if true;
+       allow write: if isAuthenticated();
     }
     match /expenses/{expenseId} {
        allow read, write: if isAuthenticated();
@@ -39,16 +44,19 @@ service cloud.firestore {
         allow read, write: if isAuthenticated();
     }
     match /exams/{examId} {
-      allow read, write: if isAuthenticated();
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
     match /attendance/{attendanceId} {
-       allow read, write: if isAuthenticated();
+       allow read: if true;
+       allow write: if isAuthenticated();
     }
     match /teacher_attendance/{attendanceId} {
       allow list, read, write: if isAuthenticated();
     }
     match /settings/{settingId} {
-       allow read, write: if isAuthenticated();
+       allow read: if true;
+       allow write: if isAuthenticated();
     }
     match /message_logs/{logId} {
         allow create: if isAuthenticated();

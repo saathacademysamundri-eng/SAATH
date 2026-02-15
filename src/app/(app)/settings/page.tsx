@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useSettings } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History, Archive, GraduationCap, DollarSign, RefreshCw } from 'lucide-react';
+import { Database, Loader2, Palette, Wifi, MessageSquarePlus, Send, Globe, LayoutTemplate, ShieldCheck, Trash2, History, Archive, GraduationCap, DollarSign, RefreshCw, Link as LinkIcon, ExternalLink, Copy } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { seedDatabase, clearActivityHistory, getRecentActivities, syncTeacherAuthAccounts } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -584,6 +584,11 @@ export default function SettingsPage() {
 
     setIsSendingUnpaid(false);
   };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied to clipboard", description: "The link has been copied." });
+  };
   
   return (
     <div className="flex flex-col gap-6">
@@ -597,6 +602,7 @@ export default function SettingsPage() {
           <TabsList className="h-auto flex-wrap justify-start">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="appearance"> <Palette className="mr-2 h-4 w-4"/> Appearance</TabsTrigger>
+            <TabsTrigger value="portals"> <LinkIcon className="mr-2 h-4 w-4"/> Portal Links</TabsTrigger>
             <TabsTrigger value="security"> <ShieldCheck className="mr-2 h-4 w-4"/> Security</TabsTrigger>
             <TabsTrigger value="data">Data Management</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
@@ -710,6 +716,57 @@ export default function SettingsPage() {
                         Save Appearance Settings
                     </Button>
                 </CardFooter>
+            </Card>
+          </TabsContent>
+          <TabsContent value="portals">
+            <Card className="max-w-3xl">
+                <CardHeader>
+                    <CardTitle>Public Portal Links</CardTitle>
+                    <CardDescription>Share these links with your students and teachers to access their dedicated portals.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="rounded-lg border p-4 space-y-4">
+                        <div>
+                            <Label className="text-lg font-bold flex items-center gap-2">
+                                <GraduationCap className="h-5 w-5 text-primary" />
+                                Student Portal
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Students can use their Roll Number to view results and fee history.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Input value={`${typeof window !== 'undefined' ? window.location.origin : ''}/portal`} readOnly />
+                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(`${window.location.origin}/portal`)}>
+                                <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button variant="secondary" asChild>
+                                <Link href="/portal" target="_blank">
+                                    <ExternalLink className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="rounded-lg border p-4 space-y-4">
+                        <div>
+                            <Label className="text-lg font-bold flex items-center gap-2">
+                                <History className="h-5 w-5 text-primary" />
+                                Teacher Portal
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Teachers can log in to mark attendance, enter marks, and view earnings.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Input value={`${typeof window !== 'undefined' ? window.location.origin : ''}/login`} readOnly />
+                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(`${window.location.origin}/login`)}>
+                                <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button variant="secondary" asChild>
+                                <Link href="/login" target="_blank">
+                                    <ExternalLink className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
             </Card>
           </TabsContent>
            <TabsContent value="security">

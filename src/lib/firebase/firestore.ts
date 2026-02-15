@@ -1757,3 +1757,47 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         return null;
     }
 }
+
+export async function getStudentExams(studentId: string, className: string): Promise<Exam[]> {
+    try {
+        const q = query(
+            collection(db, 'exams'),
+            where('className', '==', className),
+            where('status', '==', 'approved'),
+            limit(100)
+        );
+        const snapshot = await getDocs(q);
+        const exams = snapshot.docs.map(doc => ({ 
+            ...doc.data(), 
+            id: doc.id, 
+            date: doc.data().date.toDate(),
+            submissionDeadline: doc.data().submissionDeadline?.toDate() 
+        } as Exam));
+        
+        // Filter exams that have results for this student
+        return exams.filter(exam => exam.results?.some(r => r.studentId === studentId));
+    } catch (e) {
+        console.error("Failed to fetch student exams:", e);
+        return [];
+    }
+}
+
+export async function getStudentIncomeHistory(studentId: string): Promise<Income[]> {
+    try {
+        const q = query(
+            collection(db, 'income'),
+            where('studentId', '==', studentId),
+            orderBy('date', 'desc'),
+            limit(100)
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ 
+            ...doc.data(), 
+            id: doc.id, 
+            date: doc.data().date.toDate() 
+        } as Income));
+    } catch (e) {
+        console.error("Failed to fetch student income history:", e);
+        return [];
+    }
+}
