@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/logo';
-import { ArrowLeft, Wallet, GraduationCap, Calendar, CheckCircle2, AlertCircle, ShieldCheck, User, BookOpen, Star, LogOut } from 'lucide-react';
+import { ArrowLeft, Wallet, GraduationCap, Calendar, CheckCircle2, AlertCircle, ShieldCheck, User, BookOpen, Star, LogOut, Phone, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -123,7 +123,7 @@ export default function StudentPortalDashboard() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-10">
       {/* Sticky Nav */}
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -225,10 +225,10 @@ export default function StudentPortalDashboard() {
         {/* Detailed Content Tabs */}
         <Tabs defaultValue="results" className="w-full">
           <TabsList className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-[2rem] shadow-inner border border-slate-300 dark:border-slate-800 w-full sm:w-fit mb-10 overflow-hidden">
-            <TabsTrigger value="results" className="flex-1 sm:flex-none text-sm font-black uppercase tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-xl rounded-[1.8rem] px-10 py-4 transition-all duration-500">
+            <TabsTrigger value="results" className="flex-1 sm:flex-none text-sm font-black uppercase tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-xl rounded-[1.8rem] px-10 py-4 transition-all duration-500 border border-transparent data-[state=active]:border-slate-200 dark:data-[state=active]:border-slate-800">
               <GraduationCap className="mr-2 h-4 w-4" /> Results
             </TabsTrigger>
-            <TabsTrigger value="ledger" className="flex-1 sm:flex-none text-sm font-black uppercase tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-xl rounded-[1.8rem] px-10 py-4 transition-all duration-500">
+            <TabsTrigger value="ledger" className="flex-1 sm:flex-none text-sm font-black uppercase tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-xl rounded-[1.8rem] px-10 py-4 transition-all duration-500 border border-transparent data-[state=active]:border-slate-200 dark:data-[state=active]:border-slate-800">
               <Wallet className="mr-2 h-4 w-4" /> Ledger
             </TabsTrigger>
           </TabsList>
@@ -376,35 +376,41 @@ export default function StudentPortalDashboard() {
         </Tabs>
       </div>
       
-      {/* Soft Branded Footer */}
-      <footer className="mt-24 pt-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 pb-16">
-            <div className="space-y-6 text-center md:text-left">
+      {/* Refined Modern Footer */}
+      <footer className="mt-16 pt-10 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50">
+        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-10 pb-10">
+            <div className="space-y-4 text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-3">
-                    <div className="h-10 w-auto">
+                    <div className="h-8 w-auto">
                         <Logo noText />
                     </div>
-                    <span className="font-black text-slate-900 dark:text-white tracking-tighter text-2xl uppercase">{settings.name}</span>
+                    <span className="font-black text-slate-900 dark:text-white tracking-tighter text-xl uppercase">{settings.name}</span>
                 </div>
-                <p className="text-slate-400 dark:text-slate-500 max-w-sm text-sm leading-relaxed font-bold mx-auto md:mx-0">
+                <p className="text-slate-500 dark:text-slate-400 max-w-sm text-xs leading-relaxed font-bold mx-auto md:mx-0">
                     Providing excellence in education and personalized learning experiences for every student since our inception.
                 </p>
             </div>
-            <div className="space-y-6 text-center md:text-right">
+            <div className="space-y-4 text-center md:text-right">
                 <p className="font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] text-[10px]">Contact Administration</p>
-                <div className="text-slate-500 dark:text-slate-400 text-sm space-y-2 font-bold">
-                    <p className="tracking-tight">{settings.address}</p>
-                    <p className="text-primary text-lg">Hotline: {settings.phone}</p>
+                <div className="text-slate-500 dark:text-slate-400 text-xs space-y-2 font-bold">
+                    <p className="flex items-center justify-center md:justify-end gap-2">
+                        <MapPin className="h-3 w-3 text-primary" />
+                        {settings.address}
+                    </p>
+                    <p className="flex items-center justify-center md:justify-end gap-2 text-primary text-base">
+                        <Phone className="h-4 w-4" />
+                        Hotline: {settings.phone}
+                    </p>
                 </div>
             </div>
         </div>
-        <div className="border-t border-slate-200 dark:border-slate-800 py-8 bg-slate-50 dark:bg-slate-950">
-            <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                <p>&copy; {new Date().getFullYear()} {settings.name}</p>
-                <div className="flex items-center gap-4">
-                    <span className="opacity-30">Powered by SchoolUP Platform</span>
+        <div className="border-t border-slate-200 dark:border-slate-800 py-6 bg-slate-50/80 dark:bg-slate-950/80">
+            <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4 text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
+                <p>&copy; {new Date().getFullYear()} {settings.name}. All Rights Reserved.</p>
+                <div className="flex items-center gap-3">
+                    <span className="opacity-50">Powered by SchoolUP Platform</span>
                     <span className="h-1 w-1 bg-slate-300 dark:bg-slate-700 rounded-full"></span>
-                    <span className="text-primary">Dev by Mian Mudassar</span>
+                    <span className="text-primary font-black">Dev by Mian Mudassar</span>
                 </div>
             </div>
         </div>
