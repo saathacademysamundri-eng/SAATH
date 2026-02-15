@@ -100,7 +100,8 @@ export default function StudentsPage() {
       const result = await getStudentsPaged(20, lastDoc, classFilter, search);
       
       setStudents(result.students);
-      setHasMore(result.students.length === 20 && !search); 
+      // Pagination only applies when NO class filter is active
+      setHasMore(classFilter === 'all' && result.students.length === 20 && !search); 
       
       if (isInitial) {
         setLastDocs([result.lastDoc]);
@@ -118,6 +119,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     fetchPage(0, true);
+    setSelectedStudents([]); // Reset selection when filter changes
   }, [classFilter, search]);
 
   const handleNextPage = () => {
@@ -263,7 +265,7 @@ export default function StudentsPage() {
         </Dialog>
       </div>
 
-      {selectedStudents.length > 0 && (
+      {selectedStudents.length > 0 && classFilter !== 'all' && (
         <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 p-2 rounded-lg mb-2 animate-in fade-in slide-in-from-top-2">
             <Badge variant="secondary" className="px-3 py-1 text-sm font-bold ml-2">
                 {selectedStudents.length} Students Selected
@@ -290,7 +292,7 @@ export default function StudentsPage() {
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            {search ? 'Search results across entire database' : `Viewing page ${currentPage + 1}. Filter by class or search to narrow results.`}
+            {classFilter !== 'all' ? `Viewing all students in the selected class. Select them to perform bulk actions.` : `Viewing page ${currentPage + 1}. Search to find any student in the database.`}
           </CardDescription>
           <div className="flex flex-col md:flex-row gap-4 pt-2">
             <div className="relative flex-grow">
@@ -317,12 +319,14 @@ export default function StudentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">
-                    <Checkbox
-                        checked={students.length > 0 && selectedStudents.length === students.length}
-                        onCheckedChange={handleSelectAll}
-                    />
-                </TableHead>
+                {classFilter !== 'all' && (
+                  <TableHead className="w-12">
+                      <Checkbox
+                          checked={students.length > 0 && selectedStudents.length === students.length}
+                          onCheckedChange={handleSelectAll}
+                      />
+                  </TableHead>
+                )}
                 <TableHead>Student</TableHead>
                 <TableHead>Father's Name</TableHead>
                 <TableHead>Fee Status</TableHead>
@@ -335,7 +339,7 @@ export default function StudentsPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Checkbox disabled /></TableCell>
+                    {classFilter !== 'all' && <TableCell><Checkbox disabled /></TableCell>}
                     <TableCell><Skeleton className="h-10 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-16" /></TableCell>
@@ -347,12 +351,14 @@ export default function StudentsPage() {
               ) : students.length > 0 ? (
                 students.map((student) => (
                   <TableRow key={student.id}>
-                    <TableCell>
-                        <Checkbox
-                            checked={selectedStudents.some(s => s.id === student.id)}
-                            onCheckedChange={(checked) => handleSelectStudent(student, !!checked)}
-                        />
-                    </TableCell>
+                    {classFilter !== 'all' && (
+                      <TableCell>
+                          <Checkbox
+                              checked={selectedStudents.some(s => s.id === student.id)}
+                              onCheckedChange={(checked) => handleSelectStudent(student, !!checked)}
+                          />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
@@ -415,7 +421,7 @@ export default function StudentsPage() {
               )}
             </TableBody>
           </Table>
-          {!search && (
+          {classFilter === 'all' && !search && (
             <div className="flex items-center justify-end space-x-2 py-4">
                 <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 0 || loading}>
                 <ChevronLeft className="h-4 w-4 mr-2" /> Previous

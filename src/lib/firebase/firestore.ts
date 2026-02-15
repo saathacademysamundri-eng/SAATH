@@ -239,7 +239,7 @@ export async function getClassDistribution() {
 export async function getStudentsPaged(pageSize: number = 20, lastVisible?: QueryDocumentSnapshot, classFilter?: string, searchTerm?: string): Promise<{ students: Student[], lastDoc: QueryDocumentSnapshot | null }> {
     const studentsCollection = collection(db, 'students');
     
-    // 1. Handle Search Case (Fetch wider results and filter client-side to ensure matches are found)
+    // 1. Handle Search Case
     if (searchTerm) {
         const q = query(
             studentsCollection, 
@@ -269,16 +269,15 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
 
         return { 
             students: results.slice(0, pageSize), 
-            lastDoc: null // Pagination usually disabled during active search
+            lastDoc: null 
         };
     }
 
-    // 2. Handle Class Filter Case
+    // 2. Handle Class Filter Case - Load FULL list for selection (up to 500)
     if (classFilter && classFilter !== 'all') {
         const classes = await getClasses();
         const selectedClass = classes.find(c => c.id === classFilter);
         if (selectedClass) {
-            // Fetch students of this class and filter status client-side to avoid composite index requirement
             const q = query(
                 studentsCollection, 
                 where('class', '==', selectedClass.name), 
@@ -290,11 +289,12 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
                 .filter(s => s.status === 'active')
                 .sort((a, b) => a.id.localeCompare(b.id));
             
-            return { students: results.slice(0, pageSize), lastDoc: null };
+            // Return full class results to allow "Select All" to work for the whole class
+            return { students: results, lastDoc: null };
         }
     }
 
-    // 3. Standard Default Viewing (All Classes, No Search)
+    // 3. Standard Default Viewing (All Classes, Paged)
     let q = query(
         studentsCollection, 
         where('status', '==', 'active'), 
@@ -1569,7 +1569,7 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
         await logActivity('exam_created', logMessage, `/exams`);
         return { success: true, message: 'Exam created successfully.', id: docRef.id };
     } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: 'exams/[auto-id]', operation: 'create', requestResourceData: examData });
+        const permissionError = new FirestorePermissionError({ path: 'exams/[auto-id]', operation: 'create', requestResourceData: { name: examData.name } });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }
@@ -1696,7 +1696,7 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
         await logActivity('exam_results_saved', `Saved results for an exam.`);
         return { success: true, message: 'Exam results saved successfully.' };
     } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { results } });
+        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { results_count: results.length } });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }
