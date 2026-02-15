@@ -727,7 +727,7 @@ export default function StudentPortalDashboard() {
                   </div>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md font-medium">
-                  Dedicated to providing a transformative educational experience through personalized learning and state-of-the-art academic resources in Samundri.
+                  Dedicated to providing a transformative Digital Learning Ecosystem through personalized learning and state-of-the-art academic resources in Samundri.
                 </p>
                 <div className="flex gap-4">
                   <a href="https://www.facebook.com/saathsamundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-blue-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
