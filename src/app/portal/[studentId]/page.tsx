@@ -53,19 +53,20 @@ const IconBox = ({ icon: Icon, className }: { icon: any, className: string }) =>
 const CardConfetti = () => {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl sm:rounded-3xl">
-      {[...Array(12)].map((_, i) => (
+      {[...Array(16)].map((_, i) => (
         <div 
           key={i}
           className="absolute top-[-20px] animate-fall"
           style={{
             left: `${Math.random() * 100}%`,
             animationDelay: `${Math.random() * 2}s`,
-            animationDuration: `${2 + Math.random() * 3}s`,
-            backgroundColor: ['#60a5fa', '#a78bfa', '#f472b6', '#34d399', '#fbbf24'][Math.floor(Math.random() * 5)],
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            opacity: 0.6
+            animationDuration: `${3 + Math.random() * 4}s`,
+            backgroundColor: ['#f472b6', '#ec4899', '#fb7185', '#fda4af', '#fdf2f8'][Math.floor(Math.random() * 5)],
+            width: '10px',
+            height: '14px',
+            borderRadius: '50% 0 50% 0', // Petal shape
+            opacity: 0.7,
+            transform: `rotate(${Math.random() * 360}deg)`
           }}
         />
       ))}
@@ -224,7 +225,7 @@ export default function StudentPortalDashboard() {
             </div>
             <div className="flex flex-col">
               <h1 className="font-black text-sm sm:text-lg leading-tight tracking-tighter uppercase">{settings.name}</h1>
-              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest">Digital Learning Ecosystem</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest">Excellence in Education</p>
             </div>
           </div>
 
@@ -279,7 +280,7 @@ export default function StudentPortalDashboard() {
                   <PortalBadge colorClass="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200/50 dark:border-blue-800/50 font-black tracking-widest uppercase">
                     ID: {student.id}
                   </PortalBadge>
-                  <PortalBadge colorClass="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-purple-800/50 font-black tracking-widest uppercase">
+                  <PortalBadge colorClass="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-blue-800/50 font-black tracking-widest uppercase">
                     {student.class}
                   </PortalBadge>
                 </div>
@@ -723,11 +724,11 @@ export default function StudentPortalDashboard() {
                   </div>
                   <div>
                     <h4 className="font-black text-xl tracking-tighter uppercase text-slate-900 dark:text-white leading-none">{settings.name}</h4>
-                    <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mt-1">Digital Learning Ecosystem</p>
+                    <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mt-1">Excellence in Education</p>
                   </div>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md font-medium">
-                  Dedicated to providing a transformative Digital Learning Ecosystem through personalized learning and state-of-the-art academic resources in Samundri.
+                  Dedicated to providing excellence in education through personalized learning and state-of-the-art academic resources in Samundri.
                 </p>
                 <div className="flex gap-4">
                   <a href="https://www.facebook.com/saathsamundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-blue-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
