@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from '@/components/ui/card';
 import {
   DropdownMenu,
@@ -27,10 +28,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, PlusCircle, Search, Trash, Edit, Archive, GraduationCap, ChevronRight, Printer, ChevronsRight, ChevronLeft } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Search, Trash, Edit, Archive, GraduationCap, ChevronRight, Printer, ChevronsRight, ChevronLeft, X } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
 import { Dialog, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -52,11 +53,12 @@ import { updateStudentStatus, getStudentsPaged } from '@/lib/firebase/firestore'
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PromoteStudentDialog } from './promote-student-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BulkPromoteDialog } from './bulk-promote-dialog';
 import { useSettings } from '@/hooks/use-settings';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
+import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
 
 export default function StudentsPage() {
   const { classes, loading: contextLoading } = useAppContext();
@@ -74,7 +76,6 @@ export default function StudentsPage() {
 
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
   const [isBulkPromoteOpen, setIsBulkPromoteOpen] = useState(false);
-  const [isBulkGraduateOpen, setIsBulkGraduateOpen] = useState(false);
 
   const [dialogState, setDialogState] = useState<{
     isAddOpen: boolean;
@@ -99,7 +100,7 @@ export default function StudentsPage() {
       const result = await getStudentsPaged(20, lastDoc, classFilter, search);
       
       setStudents(result.students);
-      setHasMore(result.students.length === 20 && !search); // Pagination disabled during active search for stability
+      setHasMore(result.students.length === 20 && !search); 
       
       if (isInitial) {
         setLastDocs([result.lastDoc]);
@@ -139,34 +140,6 @@ export default function StudentsPage() {
     setDialogState({ ...dialogState, isEditOpen: true, selectedStudent: student });
   };
   
-  const handleArchiveAction = (student: Student, open: boolean) => {
-    setDialogState({ ...dialogState, isArchiveOpen: open, selectedStudent: student });
-  }
-  
-  const handleGraduateAction = (student: Student | null, open: boolean) => {
-     setDialogState({ ...dialogState, isGraduateOpen: open, selectedStudent: student });
-  }
-
-  const handlePromoteClick = (student: Student) => {
-    setDialogState({ ...dialogState, isPromoteOpen: true, selectedStudent: student });
-  }
-
-  const closeDialogs = () => {
-    setDialogState({ isAddOpen: false, isEditOpen: false, isArchiveOpen: false, isGraduateOpen: false, isPromoteOpen: false, selectedStudent: null });
-  };
-
-  const onStudentAdded = () => {
-    fetchPage(0, true);
-    setDialogState({ ...dialogState, isAddOpen: false });
-  };
-
-  const onStudentUpdated = () => {
-    fetchPage(currentPage);
-    closeDialogs();
-    setSelectedStudents([]);
-    setIsBulkPromoteOpen(false);
-  };
-  
   const handleConfirmAction = async (student: Student | null, status: 'archived' | 'graduated') => {
     if (!student) return;
     const result = await updateStudentStatus(student.id, status);
@@ -176,8 +149,7 @@ export default function StudentsPage() {
     } else {
       toast({ variant: "destructive", title: "Action Failed", description: result.message });
     }
-    closeDialogs();
-    setIsBulkGraduateOpen(false);
+    setDialogState({ ...dialogState, isArchiveOpen: false, isGraduateOpen: false, selectedStudent: null });
     setSelectedStudents([]);
   }
 
@@ -196,8 +168,80 @@ export default function StudentsPage() {
       setSelectedStudents(prev => prev.filter(s => s.id !== student.id));
     }
   };
-  
-  const showBulkActions = classFilter !== 'all';
+
+  const handlePrintSelected = () => {
+    if (selectedStudents.length === 0) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Please allow popups to print.' });
+        return;
+    }
+
+    const tableRows = selectedStudents.map(s => `
+        <tr>
+            <td>${s.id}</td>
+            <td>${s.name}</td>
+            <td>${s.fatherName}</td>
+            <td>${s.phone}</td>
+            <td>${s.class}</td>
+            <td style="text-align: center;">${s.feeStatus}</td>
+        </tr>
+    `).join('');
+
+    const printHtml = `
+        <html>
+            <head>
+                <title>Student Information Report</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+                    .header h1 { margin: 0; font-size: 24px; color: #1a1a1a; }
+                    .header p { margin: 5px 0 0; color: #666; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #e2e8f0; padding: 12px 15px; text-align: left; font-size: 14px; }
+                    th { background-color: #f8fafc; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; }
+                    tr:nth-child(even) { background-color: #fcfcfc; }
+                    .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #94a3b8; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Student Information Report</h1>
+                    <p>Generated on ${format(new Date(), 'PPP')}</p>
+                    <p>Total Records: ${selectedStudents.length}</p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Roll #</th>
+                            <th>Name</th>
+                            <th>Father's Name</th>
+                            <th>Phone</th>
+                            <th>Class</th>
+                            <th style="text-align: center;">Fee Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+                <div class="footer">
+                    Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
+                </div>
+            </body>
+        </html>
+    `;
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+    setTimeout(() => {
+        printWindow.print();
+    }, 500);
+  };
+
+  const onStudentUpdated = () => {
+    fetchPage(currentPage);
+    setDialogState({ ...dialogState, isEditOpen: false, selectedStudent: null });
+    setSelectedStudents([]);
+    setIsBulkPromoteOpen(false);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -215,14 +259,38 @@ export default function StudentsPage() {
               Add Student
             </Button>
           </DialogTrigger>
-          <AddStudentForm onStudentAdded={onStudentAdded} />
+          <AddStudentForm onStudentAdded={() => { fetchPage(0, true); setDialogState({ ...dialogState, isAddOpen: false }); }} />
         </Dialog>
       </div>
+
+      {selectedStudents.length > 0 && (
+        <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 p-2 rounded-lg mb-2 animate-in fade-in slide-in-from-top-2">
+            <Badge variant="secondary" className="px-3 py-1 text-sm font-bold ml-2">
+                {selectedStudents.length} Students Selected
+            </Badge>
+            <div className="ml-auto flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handlePrintSelected}>
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print Information
+                </Button>
+                <Button size="sm" onClick={() => setIsBulkPromoteOpen(true)}>
+                    <ChevronsRight className="h-4 w-4 mr-2" />
+                    Bulk Promote
+                </Button>
+                <Separator orientation="vertical" className="h-6 mx-1" />
+                <Button variant="ghost" size="sm" onClick={() => setSelectedStudents([])}>
+                    <X className="h-4 w-4 mr-2" />
+                    Clear
+                </Button>
+            </div>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            {search ? 'Search results for student across database' : `Viewing page ${currentPage + 1}. Filter by class or search to narrow results.`}
+            {search ? 'Search results across entire database' : `Viewing page ${currentPage + 1}. Filter by class or search to narrow results.`}
           </CardDescription>
           <div className="flex flex-col md:flex-row gap-4 pt-2">
             <div className="relative flex-grow">
@@ -249,12 +317,12 @@ export default function StudentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                 {showBulkActions && <TableHead className="w-12">
+                <TableHead className="w-12">
                     <Checkbox
-                        checked={selectedStudents.length > 0 && selectedStudents.length === students.length}
+                        checked={students.length > 0 && selectedStudents.length === students.length}
                         onCheckedChange={handleSelectAll}
                     />
-                 </TableHead>}
+                </TableHead>
                 <TableHead>Student</TableHead>
                 <TableHead>Father's Name</TableHead>
                 <TableHead>Fee Status</TableHead>
@@ -267,7 +335,7 @@ export default function StudentsPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {showBulkActions && <TableCell><Checkbox disabled /></TableCell>}
+                    <TableCell><Checkbox disabled /></TableCell>
                     <TableCell><Skeleton className="h-10 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-16" /></TableCell>
@@ -279,12 +347,12 @@ export default function StudentsPage() {
               ) : students.length > 0 ? (
                 students.map((student) => (
                   <TableRow key={student.id}>
-                    {showBulkActions && <TableCell>
+                    <TableCell>
                         <Checkbox
                             checked={selectedStudents.some(s => s.id === student.id)}
                             onCheckedChange={(checked) => handleSelectStudent(student, !!checked)}
                         />
-                    </TableCell>}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
@@ -366,6 +434,13 @@ export default function StudentsPage() {
               <EditStudentForm student={dialogState.selectedStudent} onStudentUpdated={onStudentUpdated} />
           </Dialog>
       )}
+
+      <Dialog open={isBulkPromoteOpen} onOpenChange={setIsBulkPromoteOpen}>
+          <BulkPromoteDialog 
+              students={selectedStudents} 
+              onStudentsPromoted={onStudentUpdated} 
+          />
+      </Dialog>
     </div>
   );
 }
