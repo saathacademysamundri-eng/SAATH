@@ -39,9 +39,7 @@ service cloud.firestore {
         allow read, write: if isAuthenticated();
     }
     match /exams/{examId} {
-      allow get, write: if isAuthenticated();
-      // Allow a teacher to list exams assigned to them.
-      allow list: if isAuthenticated();
+      allow read, write: if isAuthenticated();
     }
     match /attendance/{attendanceId} {
        allow read, write: if isAuthenticated();

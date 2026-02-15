@@ -1510,9 +1510,11 @@ export async function updateExamStatus(examId: string, status: 'approved' | 'rej
              await logActivity('exam_updated', `Exam "${exam.name}" was ${status}.`);
         }
         return { success: true, message: 'Exam status updated.' };
-    } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { status } });
-        errorEmitter.emit('permission-error', permissionError);
+    } catch (serverError: any) {
+        if (serverError.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { status } });
+            errorEmitter.emit('permission-error', permissionError);
+        }
         return { success: false, message: (serverError as Error).message };
     }
 }
