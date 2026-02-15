@@ -237,13 +237,27 @@ export async function getClassDistribution() {
 }
 
 export async function getStudentsPaged(pageSize: number = 20, lastVisible?: QueryDocumentSnapshot, classFilter?: string, searchTerm?: string): Promise<{ students: Student[], lastDoc: QueryDocumentSnapshot | null }> {
-    let q = query(collection(db, 'students'), where('status', '==', 'active'), limit(pageSize));
+    // Base query for active students only, ordered by Roll Number (id) for stable pagination
+    let q = query(
+        collection(db, 'students'), 
+        where('status', '==', 'active'), 
+        orderBy('id'), 
+        limit(pageSize)
+    );
 
     if (classFilter && classFilter !== 'all') {
         const classes = await getClasses();
         const selectedClass = classes.find(c => c.id === classFilter);
         if (selectedClass) {
-            q = query(collection(db, 'students'), where('status', '==', 'active'), where('class', '==', selectedClass.name), limit(pageSize));
+            // Note: This specific composite query requires an index in Firestore: 
+            // Collection: students, Fields: status (ASC), class (ASC), id (ASC)
+            q = query(
+                collection(db, 'students'), 
+                where('status', '==', 'active'), 
+                where('class', '==', selectedClass.name), 
+                orderBy('id'), 
+                limit(pageSize)
+            );
         }
     }
 
@@ -324,7 +338,7 @@ export async function getAlumni(): Promise<Student[]> {
 
 export async function getArchivedStudents(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
-    const q = query(studentsCollection, where('status', '==', 'archived'), limit(100));
+    const q = query(studentsCollection, where('status', '==', 'archived'), limit(500));
     const studentsSnap = await getDocs(q);
     const allStudents = studentsSnap.docs.map(doc => {
         const data = doc.data();
@@ -449,7 +463,7 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
 
                 if (updatedTotal <= 0) {
                     updateData.feeStatus = 'Paid';
-                } else if (updatedTotal < studentData.monthlyFee!) {
+                } else if (updatedTotal < (studentData.monthlyFee || oldStudentData.monthlyFee)) {
                     updateData.feeStatus = 'Partial';
                 } else {
                     updateData.feeStatus = 'Pending';
@@ -499,7 +513,7 @@ export async function updateStudentStatus(studentId: string, status: 'active' | 
             await logActivity('student_reactivated', `Reactivated student: ${student.name} (ID: ${studentId}).`);
         }
         
-        return { success: true, message: `Student status updated successfully.` };
+        return { success: true, message: `Student status updated to ${status}.` };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({
             path: studentRef.path,
