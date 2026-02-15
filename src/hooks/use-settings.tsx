@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { getSettings as getDBSettings, logActivity, updateSettings as updateDBSettings } from '@/lib/firebase/firestore';
@@ -111,24 +109,8 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-// Function to get initial settings from cache or defaults
-const getInitialSettings = (): Settings => {
-    if (typeof window !== 'undefined') {
-        const cachedSettings = sessionStorage.getItem('cachedSettings');
-        if (cachedSettings) {
-            try {
-                return { ...defaultSettings, ...JSON.parse(cachedSettings) };
-            } catch (e) {
-                console.error("Failed to parse cached settings", e);
-            }
-        }
-    }
-    return defaultSettings;
-};
-
-
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-  const [settings, setSettingsState] = useState<Settings>(getInitialSettings);
+  const [settings, setSettingsState] = useState<Settings>(defaultSettings);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
 
   const loadSettings = useCallback(async () => {
@@ -151,14 +133,20 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error) {
       console.error("Failed to load settings:", error);
-      // Fallback to initial (possibly cached) state
-      setSettingsState(getInitialSettings());
     } finally {
       setIsSettingsLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    const cached = sessionStorage.getItem('cachedSettings');
+    if (cached) {
+      try {
+        setSettingsState(prev => ({ ...prev, ...JSON.parse(cached) }));
+      } catch (e) {
+        console.error("Failed to parse cached settings", e);
+      }
+    }
     loadSettings();
   }, [loadSettings]);
 

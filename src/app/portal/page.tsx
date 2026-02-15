@@ -65,7 +65,7 @@ export default function StudentPortalLoginPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-5" suppressHydrationWarning>
             <div className="space-y-2">
               <label htmlFor="rollNumber" className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                 Roll Number

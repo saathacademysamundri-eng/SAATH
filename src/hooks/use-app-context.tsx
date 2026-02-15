@@ -15,34 +15,10 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const getInitialState = (): Omit<AppContextType, 'loading' | 'refreshData'> => {
-  if (typeof window !== 'undefined') {
-    const cachedData = sessionStorage.getItem('appContextCache');
-    if (cachedData) {
-      try {
-        const parsed = JSON.parse(cachedData);
-        return {
-          teachers: parsed.teachers || [],
-          classes: parsed.classes || [],
-          allSubjects: parsed.allSubjects || [],
-        };
-      } catch (e) {
-        console.error("Failed to parse app context cache", e);
-      }
-    }
-  }
-  return {
-    teachers: [],
-    classes: [],
-    allSubjects: [],
-  };
-};
-
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [initialState] = useState(getInitialState);
-  const [teachers, setTeachers] = useState<Teacher[]>(initialState.teachers);
-  const [classes, setClasses] = useState<Class[]>(initialState.classes);
-  const [allSubjects, setAllSubjects] = useState<Subject[]>(initialState.allSubjects);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async (isInitialLoad = false) => {
@@ -85,6 +61,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    // Apply cached data after mount to prevent hydration mismatch
+    const cachedData = sessionStorage.getItem('appContextCache');
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        setTeachers(parsed.teachers || []);
+        setClasses(parsed.classes || []);
+        setAllSubjects(parsed.allSubjects || []);
+      } catch (e) {
+        console.error("Failed to parse app context cache", e);
+      }
+    }
     fetchData(true);
   }, [fetchData]);
 

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
@@ -19,17 +18,17 @@ interface LockContextType {
 const LockContext = createContext<LockContextType | undefined>(undefined);
 
 export const LockProvider = ({ children }: { children: ReactNode }) => {
-  const [isLocked, setIsLocked] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem(LOCK_STORAGE_KEY) === 'locked';
-    }
-    return false;
-  });
+  // Initialize with false to match server render
+  const [isLocked, setIsLocked] = useState(false);
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const { settings, isSettingsLoading } = useSettings();
   const [isLockReady, setIsLockReady] = useState(false);
 
   useEffect(() => {
+    // Check lock state and set readiness only after mounting
+    const savedLockState = sessionStorage.getItem(LOCK_STORAGE_KEY) === 'locked';
+    setIsLocked(savedLockState);
+    
     if (!isSettingsLoading) {
         setIsLockReady(true);
     }
