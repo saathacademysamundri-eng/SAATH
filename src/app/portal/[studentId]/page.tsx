@@ -7,7 +7,7 @@ import { Student, Exam, Income } from '@/lib/data';
 import { useSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/logo';
 import { 
-  Shield, Sun, Moon, LogOut, CheckCircle, Clock, 
+  Shield, Sun, Moon, LogOut, CheckCircle, CheckCircle2, Clock, 
   FileText, GraduationCap, BookOpen, Download, 
   Calculator, Receipt, Facebook, Youtube, Instagram, 
   MapPin, Phone, Mail, TrendingUp, CalendarCheck, 
@@ -210,7 +210,7 @@ export default function StudentPortalDashboard() {
       isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'
     )}>
       
-      {/* Background Mesh from Original Design */}
+      {/* Background Mesh */}
       <div className="fixed inset-0 -z-10 opacity-50 dark:opacity-20 pointer-events-none"
            style={{
              backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc',
@@ -253,7 +253,7 @@ export default function StudentPortalDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-        {/* Profile Hero - Mobile Responsive */}
+        {/* Profile Hero */}
         <GlassCard className="p-6 sm:p-8 relative overflow-hidden animate-fade-in-up border-slate-200 dark:border-slate-700">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             {/* Avatar */}
@@ -327,7 +327,7 @@ export default function StudentPortalDashboard() {
           </div>
         </GlassCard>
 
-        {/* Finance Cards - Responsive Grid */}
+        {/* Finance Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Paid Card */}
           <GlassCard className="p-5 sm:p-6 relative overflow-hidden group cursor-pointer hover:-translate-y-1 transition-transform border-slate-200 dark:border-slate-700" onClick={handleCelebrate}>
@@ -423,7 +423,7 @@ export default function StudentPortalDashboard() {
           </div>
         </div>
 
-        {/* Tab Content - Mobile Responsive Views */}
+        {/* Tab Content */}
         <div className="animate-fade-in pb-12">
           {activeTab === 'results' ? (
             <div className="space-y-6">
@@ -600,7 +600,7 @@ export default function StudentPortalDashboard() {
                     </button>
                 </div>
 
-                {/* Adaptive Ledger View - Desktop Table / Mobile Cards */}
+                {/* Adaptive Ledger View */}
                 <div className="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
                     {incomeHistory.length > 0 ? incomeHistory.map((item) => (
                     <div key={item.id} className="hover:bg-emerald-[0.02] dark:hover:bg-emerald-[0.05] transition-colors p-5 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6 text-center sm:text-left">
@@ -639,7 +639,7 @@ export default function StudentPortalDashboard() {
                     )}
                 </div>
 
-                {/* Fiscal Summary Section */}
+                {/* Fiscal Summary */}
                 <div className="p-5 sm:p-10 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 bg-slate-50/30 dark:bg-slate-800/10">
                     <GlassCard className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl flex items-center gap-4 sm:gap-5 border border-slate-200 dark:border-slate-700 shadow-sm">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 border border-blue-500/20">
@@ -683,7 +683,7 @@ export default function StudentPortalDashboard() {
           )}
         </div>
 
-        {/* Footer Redesign - Compact and Legible */}
+        {/* Footer */}
         <footer className="mt-8 border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[1.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl border border-white/30 dark:border-slate-700/50 mb-8 sm:mb-10">
             <div className="max-w-7xl mx-auto px-6 sm:px-10 py-10 sm:py-16 grid grid-cols-1 lg:grid-cols-4 gap-10 sm:gap-12 text-slate-600 dark:text-slate-400">
               <div className="lg:col-span-2 space-y-6 text-center lg:text-left">
