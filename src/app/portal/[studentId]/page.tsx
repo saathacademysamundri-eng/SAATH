@@ -50,7 +50,6 @@ const IconBox = ({ icon: Icon, className }: { icon: any, className: string }) =>
   </div>
 );
 
-// Confetti/Falling Flowers effect for the card
 const CardConfetti = () => {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl sm:rounded-3xl">
@@ -190,6 +189,7 @@ export default function StudentPortalDashboard() {
             <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
             <p className="text-slate-400 mb-8 leading-relaxed">{error || 'Security verification failed.'}</p>
             <Button onClick={() => router.push('/portal')} className="w-full rounded-xl py-6 font-bold bg-primary hover:bg-primary/90 text-white shadow-xl">
+              <ArrowLeft className="mr-2 h-5 w-5" />
               Back to Portal
             </Button>
         </GlassCard>
@@ -224,7 +224,7 @@ export default function StudentPortalDashboard() {
             </div>
             <div className="flex flex-col">
               <h1 className="font-black text-sm sm:text-lg leading-tight tracking-tighter uppercase">{settings.name}</h1>
-              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-widest">Digital Learning Ecosystem</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest">Digital Learning Ecosystem</p>
             </div>
           </div>
 
@@ -773,7 +773,7 @@ export default function StudentPortalDashboard() {
               </div>
             </div>
             <div className="py-8 bg-slate-100/50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 text-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500" suppressHydrationWarning>
                     &copy; {new Date().getFullYear()} {settings.name} • Formal Rights Reserved. 
                 </p>
                 <div className="mt-2 text-[9px] font-black uppercase tracking-widest text-slate-500 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-4">
@@ -789,7 +789,7 @@ export default function StudentPortalDashboard() {
       <style jsx global>{`
         @keyframes fall {
           0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(200px) rotate(360deg); opacity: 0; }
+          100% { transform: translateY(300px) rotate(360deg); opacity: 0; }
         }
         .animate-fall {
           animation: fall linear forwards;
