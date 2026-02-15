@@ -1774,8 +1774,10 @@ export async function getStudentExams(studentId: string, className: string): Pro
             submissionDeadline: doc.data().submissionDeadline?.toDate() 
         } as Exam));
         
-        // Filter exams that have results for this student
-        return exams.filter(exam => exam.results?.some(r => r.studentId === studentId));
+        // Sort exams by date descending in memory
+        return exams
+            .filter(exam => exam.results?.some(r => r.studentId === studentId))
+            .sort((a, b) => b.date.getTime() - a.date.getTime());
     } catch (e) {
         console.error("Failed to fetch student exams:", e);
         return [];
@@ -1784,6 +1786,7 @@ export async function getStudentExams(studentId: string, className: string): Pro
 
 export async function getStudentIncomeHistory(studentId: string): Promise<Income[]> {
     try {
+        // Optimized query requiring composite index: studentId (Asc) + date (Desc)
         const q = query(
             collection(db, 'income'),
             where('studentId', '==', studentId),
@@ -1796,7 +1799,29 @@ export async function getStudentIncomeHistory(studentId: string): Promise<Income
             id: doc.id, 
             date: doc.data().date.toDate() 
         } as Income));
-    } catch (e) {
+    } catch (e: any) {
+        // Fallback for missing composite index: query by studentId only and sort in memory
+        if (e.code === 'failed-precondition' || e.message?.includes('index')) {
+            try {
+                const qFallback = query(
+                    collection(db, 'income'),
+                    where('studentId', '==', studentId),
+                    limit(100)
+                );
+                const snapshot = await getDocs(qFallback);
+                return snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return { 
+                        ...data, 
+                        id: doc.id, 
+                        date: data.date.toDate() 
+                    } as Income;
+                }).sort((a, b) => b.date.getTime() - a.date.getTime());
+            } catch (fallbackError) {
+                console.error("Fallback income history fetch failed:", fallbackError);
+                return [];
+            }
+        }
         console.error("Failed to fetch student income history:", e);
         return [];
     }
