@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -13,7 +12,7 @@ import {
   Calculator, Receipt, Facebook, Twitter, Instagram, 
   MapPin, Phone, Mail, TrendingUp, CalendarCheck, 
   ChevronRight, Award, Percent, Star, User, AlertCircle,
-  TrendingDown
+  TrendingDown, ArrowLeft
 } from 'lucide-react';
 import { 
   XAxis, YAxis, CartesianGrid, 
@@ -25,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from 'next-themes';
+import { Badge } from '@/components/ui/badge';
 
 // --- Sub-components ---
 
@@ -152,7 +152,7 @@ export default function StudentPortalDashboard() {
   if (error || !student) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-900">
-        <GlassCard className="p-10 text-center max-w-md animate-fade-in">
+        <GlassCard className="p-10 text-center max-w-md animate-fade-in border-slate-700">
             <div className="bg-rose-500/10 p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
                 <AlertCircle className="h-10 w-10 text-rose-500" />
             </div>
@@ -651,7 +651,7 @@ export default function StudentPortalDashboard() {
                     <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mt-1">Excellence in Education</p>
                   </div>
                 </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-md font-bold">
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md font-bold">
                   Dedicated to providing a transformative educational experience through personalized learning, expert faculty, and state-of-the-art academic resources.
                 </p>
                 <div className="flex gap-4">
