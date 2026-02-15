@@ -9,7 +9,7 @@ import { Logo } from '@/components/logo';
 import { 
   Shield, Sun, Moon, LogOut, CheckCircle, Clock, 
   FileText, GraduationCap, BookOpen, Download, 
-  Calculator, Receipt, Facebook, Twitter, Instagram, 
+  Calculator, Receipt, Facebook, Youtube, Instagram, 
   MapPin, Phone, Mail, TrendingUp, CalendarCheck, 
   ChevronRight, Award, Percent, AlertCircle, User, ArrowLeft
 } from 'lucide-react';
@@ -50,6 +50,30 @@ const IconBox = ({ icon: Icon, className }: { icon: any, className: string }) =>
   </div>
 );
 
+// Confetti/Falling Flowers effect for the card
+const CardConfetti = () => {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl sm:rounded-3xl">
+      {[...Array(12)].map((_, i) => (
+        <div 
+          key={i}
+          className="absolute top-[-20px] animate-fall"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 2}s`,
+            animationDuration: `${2 + Math.random() * 3}s`,
+            backgroundColor: ['#60a5fa', '#a78bfa', '#f472b6', '#34d399', '#fbbf24'][Math.floor(Math.random() * 5)],
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            opacity: 0.6
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 function PortalSkeleton() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-8">
@@ -81,7 +105,7 @@ export default function StudentPortalDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'results' | 'ledger'>('results');
-  const [showToast, setShowToast] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     if (!studentId || !providedPhone) {
@@ -143,13 +167,13 @@ export default function StudentPortalDashboard() {
     }).filter((item): item is { name: string; score: number } => item !== null);
   }, [exams, student]);
 
-  const handleConfetti = () => {
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+  const handleCelebrate = () => {
+    setShowCelebration(true);
+    setTimeout(() => setShowCelebration(false), 5000);
   };
 
   const handleSignOut = () => {
-    router.push('https://www.saathsamundri.com');
+    window.location.href = 'https://www.saathsamundri.com';
   };
 
   if (loading || isSettingsLoading) {
@@ -195,12 +219,12 @@ export default function StudentPortalDashboard() {
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white shadow-lg overflow-hidden p-1.5">
+            <div className="h-12 sm:h-14 w-auto flex items-center justify-center">
               <Logo noText />
             </div>
             <div className="flex flex-col">
-              <h1 className="font-bold text-sm sm:text-lg leading-tight tracking-tight uppercase">{settings.name}</h1>
-              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">Student Portal</p>
+              <h1 className="font-black text-sm sm:text-lg leading-tight tracking-tighter uppercase">{settings.name}</h1>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-widest">Digital Learning Ecosystem</p>
             </div>
           </div>
 
@@ -225,7 +249,7 @@ export default function StudentPortalDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
         {/* Profile Hero */}
-        <GlassCard className="p-4 sm:p-8 relative overflow-hidden animate-fade-in-up">
+        <GlassCard className="p-4 sm:p-8 relative overflow-hidden animate-fade-in-up border-slate-200 dark:border-slate-700">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
@@ -240,7 +264,7 @@ export default function StudentPortalDashboard() {
               <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 rounded-full border-4 border-white dark:border-slate-800 flex items-center justify-center shadow-md">
                 <CheckCircle size={12} className="text-white" />
               </div>
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full shadow-md">
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full shadow-md uppercase tracking-widest">
                 ACTIVE
               </div>
             </div>
@@ -248,50 +272,50 @@ export default function StudentPortalDashboard() {
             {/* Info */}
             <div className="flex-1 text-center sm:text-left space-y-3">
               <div>
-                <h2 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 tracking-tight uppercase">
+                <h2 className="text-3xl sm:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 tracking-tighter uppercase">
                   {student.name}
                 </h2>
                 <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
-                  <PortalBadge colorClass="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200/50 dark:border-blue-800/50">
-                    Roll No: {student.id}
+                  <PortalBadge colorClass="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200/50 dark:border-blue-800/50 font-black tracking-widest uppercase">
+                    ID: {student.id}
                   </PortalBadge>
-                  <PortalBadge colorClass="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-purple-800/50">
+                  <PortalBadge colorClass="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-purple-800/50 font-black tracking-widest uppercase">
                     {student.class}
                   </PortalBadge>
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-slate-600 dark:text-slate-400 pt-2 font-bold uppercase tracking-wide">
+              <div className="flex flex-col sm:flex-row items-center gap-4 text-[10px] sm:text-xs text-slate-600 dark:text-slate-400 pt-2 font-black uppercase tracking-[0.2em]">
                 <div className="flex items-center gap-2">
-                  <User size={18} className="text-primary" />
+                  <User size={16} className="text-primary" />
                   <span>{student.fatherName}</span>
                 </div>
                 <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
                 <div className="flex items-center gap-2">
-                  <CalendarCheck size={18} className="text-primary" />
-                  <span>Session {settings.academicSession}</span>
+                  <CalendarCheck size={16} className="text-primary" />
+                  <span>SESSION {settings.academicSession}</span>
                 </div>
               </div>
             </div>
 
             {/* Quick Stats (Desktop) */}
             <div className="hidden lg:flex flex-col gap-3 min-w-[140px]">
-              <div className="bg-white/50 dark:bg-slate-700/50 p-3 rounded-xl flex items-center gap-3 border border-slate-200 dark:border-slate-600 shadow-sm">
+              <div className="bg-white dark:bg-slate-700/50 p-3 rounded-xl flex items-center gap-3 border border-slate-200 dark:border-slate-600 shadow-sm">
                 <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 border border-blue-500/20">
                   <Award size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Performance</p>
-                  <p className="font-bold text-lg tracking-tight">Active</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Profile</p>
+                  <p className="font-black text-lg tracking-tighter uppercase">Verified</p>
                 </div>
               </div>
-              <div className="bg-white/50 dark:bg-slate-700/50 p-3 rounded-xl flex items-center gap-3 border border-slate-200 dark:border-slate-600 shadow-sm">
-                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 border border-purple-500/20">
+              <div className="bg-white dark:bg-slate-700/50 p-3 rounded-xl flex items-center gap-3 border border-slate-200 dark:border-slate-600 shadow-sm">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                   <Percent size={20} />
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Attendance</p>
-                  <p className="font-bold text-lg tracking-tight text-green-500">98%</p>
+                  <p className="font-black text-lg tracking-tighter text-emerald-500">98%</p>
                 </div>
               </div>
             </div>
@@ -301,20 +325,21 @@ export default function StudentPortalDashboard() {
         {/* Finance Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Paid Card */}
-          <GlassCard className="p-6 relative overflow-hidden group cursor-pointer hover:-translate-y-1 transition-transform border-slate-200 dark:border-slate-700" onClick={handleConfetti}>
+          <GlassCard className="p-6 relative overflow-hidden group cursor-pointer hover:-translate-y-1 transition-transform border-slate-200 dark:border-slate-700" onClick={handleCelebrate}>
+            {showCelebration && <CardConfetti />}
             <div className="absolute top-0 right-0 w-32 h-32 bg-green-400/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="relative flex justify-between items-start">
               <div className="space-y-4">
                 <IconBox icon={CheckCircle} className="bg-gradient-to-br from-green-400 to-emerald-600 text-white shadow-green-500/30 border-green-400/20" />
                 <div>
                   <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Fees Paid</p>
-                  <h3 className="text-3xl font-bold mt-1 tabular-nums">{totalPaid.toLocaleString()} <span className="text-sm font-normal text-slate-500">PKR</span></h3>
+                  <h3 className="text-3xl font-black mt-1 tabular-nums tracking-tighter">{totalPaid.toLocaleString()} <span className="text-sm font-normal text-slate-500">PKR</span></h3>
                 </div>
               </div>
             </div>
-            <div className="mt-4 flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-black uppercase tracking-widest">
+            <div className="mt-4 flex items-center gap-2 text-green-600 dark:text-green-400 text-xs font-black uppercase tracking-[0.2em]">
               <TrendingUp size={16} />
-              <span>Verified Records</span>
+              <span>Financial Status Verified</span>
             </div>
           </GlassCard>
 
@@ -326,15 +351,15 @@ export default function StudentPortalDashboard() {
                 <IconBox icon={Clock} className="bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-amber-500/30 border-amber-400/20" />
                 <div>
                   <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Dues Pending</p>
-                  <h3 className={cn("text-3xl font-bold mt-1 tabular-nums", student.totalFee > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400")}>
+                  <h3 className={cn("text-3xl font-black mt-1 tabular-nums tracking-tighter", student.totalFee > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")}>
                     {student.totalFee.toLocaleString()} <span className="text-sm font-normal text-slate-500">PKR</span>
                   </h3>
                 </div>
               </div>
             </div>
-            <div className="mt-4 flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm font-black uppercase tracking-widest">
+            <div className="mt-4 flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xs font-black uppercase tracking-[0.2em]">
               {student.totalFee > 0 ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
-              <span>{student.totalFee > 0 ? 'Pending Payment' : 'Account Cleared'}</span>
+              <span>{student.totalFee > 0 ? 'Pending Payment' : 'Accounts Cleared'}</span>
             </div>
           </GlassCard>
 
@@ -345,9 +370,9 @@ export default function StudentPortalDashboard() {
               <div className="space-y-4">
                 <IconBox icon={FileText} className="bg-gradient-to-br from-blue-400 to-indigo-600 text-white shadow-blue-500/30 border-blue-400/20" />
                 <div>
-                  <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Current Status</p>
+                  <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Current Billing</p>
                   <h3 className={cn(
-                    "text-3xl font-bold mt-1 uppercase tracking-tighter",
+                    "text-3xl font-black mt-1 uppercase tracking-tighter",
                     student.feeStatus === 'Paid' ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
                   )}>
                     {student.feeStatus}
@@ -359,12 +384,12 @@ export default function StudentPortalDashboard() {
                 student.feeStatus === 'Paid' ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800" : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
               )}>
                 <span className={cn("w-2 h-2 rounded-full animate-pulse", student.feeStatus === 'Paid' ? "bg-green-500" : "bg-amber-500")} />
-                {student.feeStatus === 'Paid' ? 'Verified' : 'Action Required'}
+                {student.feeStatus === 'Paid' ? 'VERIFIED' : 'ACTION REQUIRED'}
               </div>
             </div>
-            <div className="mt-4 flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-black uppercase tracking-widest">
+            <div className="mt-4 flex items-center gap-2 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-[0.2em]">
               <Receipt size={16} />
-              <span>Session {settings.academicSession}</span>
+              <span>Session Cycle Active</span>
             </div>
           </GlassCard>
         </div>
@@ -402,8 +427,8 @@ export default function StudentPortalDashboard() {
                     <div className="flex items-center gap-4">
                     <IconBox icon={GraduationCap} className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-indigo-400/20" />
                     <div>
-                        <h3 className="text-xl font-bold tracking-tight uppercase">Academic Records</h3>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest mt-0.5">Official examination results matrix</p>
+                        <h3 className="text-xl font-black tracking-tighter uppercase">Academic Matrix</h3>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest mt-0.5">Verified Examination Records</p>
                     </div>
                     </div>
                     <div className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase tracking-[0.2em]">
@@ -433,8 +458,8 @@ export default function StudentPortalDashboard() {
                             return (
                                 <tr key={exam.id} className="hover:bg-primary/[0.02] dark:hover:bg-primary/[0.05] transition-colors group">
                                     <td className="px-10 py-6">
-                                        <div className="font-bold text-lg text-blue-600 dark:text-blue-400 tracking-tight uppercase">{exam.name}</div>
-                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{format(exam.date, 'MMMM yyyy')}</div>
+                                        <div className="font-black text-lg text-blue-600 dark:text-blue-400 tracking-tighter uppercase">{exam.name}</div>
+                                        <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{format(exam.date, 'MMMM yyyy')}</div>
                                     </td>
                                     <td className="px-10 py-6">
                                         <div className="flex flex-wrap gap-2">
@@ -444,7 +469,7 @@ export default function StudentPortalDashboard() {
                                         </div>
                                     </td>
                                     <td className="px-10 py-6 text-center">
-                                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-base tabular-nums">
+                                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black text-base tabular-nums">
                                             {obtained} <span className="text-slate-400 dark:text-slate-500 font-normal">/ {total}</span>
                                         </div>
                                     </td>
@@ -462,7 +487,7 @@ export default function StudentPortalDashboard() {
                             );
                         }) : (
                             <tr>
-                                <td colSpan={4} className="h-48 text-center text-slate-400 font-black uppercase tracking-widest opacity-20">No Results Found</td>
+                                <td colSpan={4} className="h-48 text-center text-slate-400 font-black uppercase tracking-widest opacity-20 italic">No academic data synchronized</td>
                             </tr>
                         )}
                     </tbody>
@@ -482,8 +507,8 @@ export default function StudentPortalDashboard() {
                             <div key={exam.id} className="p-6 space-y-4">
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <span className="font-bold text-lg text-blue-600 dark:text-blue-400 tracking-tight uppercase">{exam.name}</span>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{format(exam.date, 'MMMM yyyy')}</p>
+                                        <span className="font-black text-lg text-blue-600 dark:text-blue-400 tracking-tighter uppercase">{exam.name}</span>
+                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{format(exam.date, 'MMMM yyyy')}</p>
                                     </div>
                                     <span className={cn(
                                         "px-4 py-1.5 rounded-2xl text-[10px] font-black tracking-widest border",
@@ -498,7 +523,7 @@ export default function StudentPortalDashboard() {
                                     ))}
                                 </div>
                                 <div className="flex justify-between items-center pt-2 text-[10px] font-black uppercase tracking-[0.2em]">
-                                    <span className="text-slate-400">Total Score</span>
+                                    <span className="text-slate-400">Composite Score</span>
                                     <span className="text-slate-900 dark:text-white">{obtained} / {total}</span>
                                 </div>
                             </div>
@@ -511,7 +536,7 @@ export default function StudentPortalDashboard() {
                     <div className="p-6 border-t border-slate-200 dark:border-slate-700 h-[300px]">
                         <h4 className="font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center gap-3 text-slate-400">
                         <TrendingUp size={18} className="text-blue-500" />
-                        Growth Analysis Matrix
+                        Analytic Growth Projection
                         </h4>
                         <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={performanceData}>
@@ -560,13 +585,13 @@ export default function StudentPortalDashboard() {
                     <div className="flex items-center gap-4">
                     <IconBox icon={BookOpen} className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/20 border-emerald-400/20" />
                     <div>
-                        <h3 className="text-xl font-bold tracking-tight uppercase">Verified Fee Ledger</h3>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest mt-0.5">Comprehensive transaction timeline</p>
+                        <h3 className="text-xl font-black tracking-tighter uppercase">Fiscal Statement</h3>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest mt-0.5">Verified Financial History</p>
                     </div>
                     </div>
                     <button className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm transition-all font-black text-[10px] uppercase tracking-widest">
                         <Download size={16} className="text-primary" />
-                        <span>Download Statement</span>
+                        <span>Export Ledger</span>
                     </button>
                 </div>
 
@@ -590,8 +615,8 @@ export default function StudentPortalDashboard() {
                                 <CalendarCheck size={18} />
                                 </div>
                                 <div>
-                                <p className="font-bold text-slate-800 dark:text-slate-200 tracking-tight">{format(item.date, 'MMMM do, yyyy')}</p>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{format(item.date, 'hh:mm a')}</p>
+                                <p className="font-black text-slate-800 dark:text-slate-200 tracking-tight">{format(item.date, 'MMMM do, yyyy')}</p>
+                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{format(item.date, 'hh:mm a')}</p>
                                 </div>
                             </div>
                             </td>
@@ -607,13 +632,13 @@ export default function StudentPortalDashboard() {
                             </td>
                             <td className="px-10 py-6 text-right">
                             <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tighter">
-                                +{item.amount.toLocaleString()} <span className="text-xs font-bold opacity-40 ml-1">PKR</span>
+                                +{item.amount.toLocaleString()} <span className="text-xs font-bold opacity-40 ml-1 uppercase">PKR</span>
                             </span>
                             </td>
                         </tr>
                         )) : (
                             <tr>
-                                <td colSpan={4} className="h-48 text-center text-slate-400 font-black uppercase tracking-widest opacity-20">No Financial Records</td>
+                                <td colSpan={4} className="h-48 text-center text-slate-400 font-black uppercase tracking-widest opacity-20 italic">No verified transactions discovered</td>
                             </tr>
                         )}
                     </tbody>
@@ -630,15 +655,15 @@ export default function StudentPortalDashboard() {
                             <CalendarCheck size={18} />
                             </div>
                             <div>
-                            <p className="font-bold text-sm tracking-tight">{format(item.date, 'MMM d, yyyy')}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{format(item.date, 'hh:mm a')}</p>
+                            <p className="font-black text-sm tracking-tight">{format(item.date, 'MMM d, yyyy')}</p>
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{format(item.date, 'hh:mm a')}</p>
                             </div>
                         </div>
                         <span className="text-xl font-black text-emerald-600 tabular-nums tracking-tighter">+{item.amount.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center pt-2">
-                        <span className="px-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 font-mono text-[10px] text-slate-500 font-black border border-slate-200 dark:border-slate-700">{item.receiptId || 'OFFICIAL'}</span>
-                        <PortalBadge colorClass="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50 uppercase tracking-widest text-[9px] font-black">{item.forMonth || 'MONTHLY'}</PortalBadge>
+                        <span className="px-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 font-mono text-[10px] text-slate-500 font-black border border-slate-200 dark:border-slate-700 uppercase">{item.receiptId || 'OFFICIAL'}</span>
+                        <PortalBadge colorClass="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50 uppercase tracking-widest text-[9px] font-black">{item.forMonth || 'CYCLE'}</PortalBadge>
                         </div>
                     </div>
                     ))}
@@ -652,7 +677,7 @@ export default function StudentPortalDashboard() {
                     </div>
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aggregate Paid</p>
-                        <p className="text-xl font-black tracking-tighter">{totalPaid.toLocaleString()} PKR</p>
+                        <p className="text-xl font-black tracking-tighter uppercase">{totalPaid.toLocaleString()} PKR</p>
                     </div>
                     </div>
                     <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl flex items-center gap-5 border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -661,11 +686,11 @@ export default function StudentPortalDashboard() {
                     </div>
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Verified Cycles</p>
-                        <p className="text-xl font-black tracking-tighter">{incomeHistory.length} Payments</p>
+                        <p className="text-xl font-black tracking-tighter uppercase">{incomeHistory.length} Payments</p>
                     </div>
                     </div>
                     <div className={cn(
-                        "p-5 rounded-2xl flex items-center gap-5 border shadow-sm",
+                        "p-5 rounded-2xl flex items-center gap-5 border shadow-sm transition-colors",
                         student.totalFee === 0 ? "bg-emerald-500/5 border-emerald-500/20" : "bg-amber-500/5 border-amber-500/20"
                     )}>
                     <div className={cn(
@@ -693,7 +718,7 @@ export default function StudentPortalDashboard() {
             <div className="max-w-7xl mx-auto px-6 sm:px-10 py-10 sm:py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
               <div className="lg:col-span-2 space-y-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white shadow-xl p-2">
+                  <div className="h-14 w-auto flex items-center justify-center p-1">
                     <Logo noText />
                   </div>
                   <div>
@@ -702,28 +727,35 @@ export default function StudentPortalDashboard() {
                   </div>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md font-medium">
-                  Dedicated to providing a transformative educational experience through personalized learning and state-of-the-art academic resources.
+                  Dedicated to providing a transformative educational experience through personalized learning and state-of-the-art academic resources in Samundri.
                 </p>
                 <div className="flex gap-4">
-                  {[Facebook, Twitter, Instagram, Mail].map((Icon, i) => (
-                    <a key={i} href="#" className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-primary hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
-                      <Icon size={16} />
-                    </a>
-                  ))}
+                  <a href="https://www.facebook.com/saathsamundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-blue-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
+                    <Facebook size={18} />
+                  </a>
+                  <a href="https://www.instagram.com/saath_samundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-pink-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
+                    <Instagram size={18} />
+                  </a>
+                  <a href="https://www.youtube.com/@SAATHSamundri" target="_blank" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-red-600 hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
+                    <Youtube size={18} />
+                  </a>
+                  <a href="mailto:info@saathsamundri.com" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-primary hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
+                    <Mail size={18} />
+                  </a>
                 </div>
               </div>
               
               <div className="space-y-6">
-                <h5 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400">Navigation Matrix</h5>
+                <h5 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Navigation Matrix</h5>
                 <ul className="space-y-4 text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">
-                  <li><button onClick={() => router.push('/portal')} className="hover:text-primary transition-colors flex items-center gap-2 group"><ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /> Main Portal</button></li>
+                  <li><button onClick={() => window.location.href = 'https://www.saathsamundri.com'} className="hover:text-primary transition-colors flex items-center gap-2 group"><ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /> Official Website</button></li>
                   <li><button className="hover:text-primary transition-colors flex items-center gap-2 group"><ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /> Academic Calendar</button></li>
-                  <li><button className="hover:text-primary transition-colors flex items-center gap-2 group"><ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /> Help & Support</button></li>
+                  <li><button className="hover:text-primary transition-colors flex items-center gap-2 group"><ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /> Student Governance</button></li>
                 </ul>
               </div>
 
               <div className="space-y-6">
-                <h5 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400">Administration Contact</h5>
+                <h5 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Administrative Support</h5>
                 <ul className="space-y-5 text-sm font-bold text-slate-600 dark:text-slate-300">
                   <li className="flex items-start gap-4">
                     <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary flex-shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -735,42 +767,33 @@ export default function StudentPortalDashboard() {
                     <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary flex-shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm">
                         <Phone size={16} />
                     </div>
-                    <span className="text-primary font-black tracking-tight text-base">{settings.phone}</span>
+                    <a href="https://wa.me/923438775425?text=I%20want%20to%20get%20information%20about%20the%20academy." target="_blank" className="text-primary font-black tracking-tight text-base hover:underline">{settings.phone}</a>
                   </li>
                 </ul>
               </div>
             </div>
             <div className="py-8 bg-slate-100/50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 text-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-                    &copy; {new Date().getFullYear()} {settings.name} • All Rights Reserved. 
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
+                    &copy; {new Date().getFullYear()} {settings.name} • Formal Rights Reserved. 
                 </p>
                 <div className="mt-2 text-[9px] font-black uppercase tracking-widest text-slate-500 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-4">
-                    <span>Powered by <span className="text-primary hover:underline cursor-pointer transition-all">SchoolUP Platform</span></span>
-                    <span className="hidden sm:block text-slate-300">|</span>
-                    <span>Developed by <span className="text-primary hover:underline cursor-pointer transition-all">Mian Mudassar</span></span>
+                    <span className="opacity-60">Architected via <span className="text-primary hover:underline cursor-pointer transition-all">SchoolUP Ecosystem</span></span>
+                    <span className="hidden sm:block text-slate-300 dark:text-slate-700">|</span>
+                    <span className="opacity-100 font-bold">Developed by <span className="text-primary underline-offset-4 underline decoration-primary/20 hover:decoration-primary cursor-pointer transition-all">Mian Mudassar</span></span>
                 </div>
             </div>
         </footer>
 
       </main>
 
-      {/* Toast Notification */}
-      <div className={cn(
-        "fixed bottom-6 right-6 transform transition-all duration-500 z-50",
-        showToast ? "translate-y-0 opacity-100 scale-100" : "translate-y-20 opacity-0 scale-90"
-      )}>
-        <div className="bg-white dark:bg-slate-800 rounded-2xl px-8 py-5 shadow-[0_20px_50px_rgba(0,0,0,0.2)] border-l-4 border-emerald-500 flex items-center gap-5 border border-slate-200 dark:border-slate-700">
-          <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 shadow-inner">
-            <CheckCircle size={24} />
-          </div>
-          <div>
-            <p className="font-black text-base uppercase tracking-tight text-slate-900 dark:text-white">Congratulations!</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">Your payment status is verified</p>
-          </div>
-        </div>
-      </div>
-
       <style jsx global>{`
+        @keyframes fall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(200px) rotate(360deg); opacity: 0; }
+        }
+        .animate-fall {
+          animation: fall linear forwards;
+        }
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-15px); }
