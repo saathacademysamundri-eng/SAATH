@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -10,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAppContext } from '@/hooks/use-app-context';
 import { useSettings } from '@/hooks/use-settings';
 import { Student } from '@/lib/data';
-import { Armchair, Printer } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { Armchair, Printer, Loader2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
+import { getStudents } from '@/lib/firebase/firestore';
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = (array: any[]) => {
@@ -26,13 +26,31 @@ const shuffleArray = (array: any[]) => {
 };
 
 export default function SeatingPlanPage() {
-  const { classes, students, loading: appLoading } = useAppContext();
+  const { classes, loading: contextLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [examName, setExamName] = useState('Mid-Term Exam');
   const [rows, setRows] = useState(5);
   const [cols, setCols] = useState(5);
   const [seatingPlan, setSeatingPlan] = useState<(Student | null)[][]>([]);
+
+  useEffect(() => {
+    async function loadStudents() {
+      setLoading(true);
+      try {
+        const sData = await getStudents();
+        setStudents(sData);
+      } catch (e) {
+        console.error("Failed to load students for seating plan:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStudents();
+  }, []);
 
   const handleGeneratePlan = () => {
     if (!selectedClassId) return;
@@ -152,7 +170,7 @@ export default function SeatingPlanPage() {
         <CardContent className="flex flex-wrap gap-4 items-end">
           <div className="space-y-2">
             <Label>Class</Label>
-            <Select onValueChange={setSelectedClassId} disabled={appLoading}>
+            <Select onValueChange={setSelectedClassId} disabled={contextLoading}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select a class" />
               </SelectTrigger>
@@ -173,8 +191,8 @@ export default function SeatingPlanPage() {
             <Label htmlFor="cols">Columns</Label>
             <Input id="cols" type="number" value={cols} onChange={e => setCols(Number(e.target.value))} className="w-24" />
           </div>
-          <Button onClick={handleGeneratePlan} disabled={!selectedClassId}>
-            <Armchair className="mr-2" />
+          <Button onClick={handleGeneratePlan} disabled={!selectedClassId || loading}>
+            {loading ? <Loader2 className="mr-2 animate-spin h-4 w-4" /> : <Armchair className="mr-2" />}
             Generate Plan
           </Button>
           {seatingPlan.length > 0 && (

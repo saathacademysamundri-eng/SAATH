@@ -4,21 +4,42 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
-import { Users, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Users, Search, Loader2 } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getStudents } from '@/lib/firebase/firestore';
+import { Student } from '@/lib/data';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MyStudentsPage() {
   const { teacher } = useTeacherAuth();
-  const { students, classes } = useAppContext();
+  const { classes, loading: contextLoading } = useAppContext();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
   const router = useRouter();
+
+  useEffect(() => {
+    async function loadStudents() {
+      setLoading(true);
+      try {
+        const sData = await getStudents();
+        setStudents(sData);
+      } catch (e) {
+        console.error("Failed to load students for teacher:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStudents();
+  }, []);
 
   const teacherClasses = useMemo(() => {
     if (!teacher) return [];
@@ -29,9 +50,9 @@ export default function MyStudentsPage() {
   }, [teacher, classes]);
 
   const teacherStudents = useMemo(() => {
-    if (!teacher) return [];
-    return students.filter(student => 
-      student.subjects.some(sub => sub.teacher_id === teacher.id)
+    if (!teacher || students.length === 0) return [];
+    return (students || []).filter(student => 
+      student.subjects && student.subjects.some(sub => sub.teacher_id === teacher.id)
     );
   }, [teacher, students]);
   
@@ -87,37 +108,48 @@ export default function MyStudentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents.length > 0 ? filteredStudents.map(student => (
-                  <TableRow key={student.id}>
-                    <TableCell>
-                        <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10">
-                                <AvatarImage src={student.imageUrl} alt={student.name} />
-                                <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <div className="font-medium">{student.name}</div>
-                                <div className="text-xs text-muted-foreground">{student.id}</div>
-                            </div>
+                {loading ? (
+                   Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                    </TableRow>
+                   ))
+                ) : filteredStudents.length > 0 ? (
+                  filteredStudents.map(student => (
+                    <TableRow key={student.id}>
+                      <TableCell>
+                          <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10">
+                                  <AvatarImage src={student.imageUrl} alt={student.name} />
+                                  <AvatarFallback>{student.name?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                  <div className="font-medium">{student.name}</div>
+                                  <div className="text-xs text-muted-foreground">{student.id}</div>
+                              </div>
+                          </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">{student.class}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {student.subjects && student.subjects
+                            .filter(sub => sub.teacher_id === teacher?.id)
+                            .map(sub => <Badge key={sub.subject_name} variant="outline">{sub.subject_name}</Badge>)}
                         </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">{student.class}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {student.subjects
-                          .filter(sub => sub.teacher_id === teacher?.id)
-                          .map(sub => <Badge key={sub.subject_name} variant="outline">{sub.subject_name}</Badge>)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={
-                          student.feeStatus === 'Paid' ? 'secondary' : 
-                          student.feeStatus === 'Overdue' ? 'destructive' :
-                          'outline'
-                      }>{student.feeStatus}</Badge>
-                    </TableCell>
-                  </TableRow>
-                )) : (
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={
+                            student.feeStatus === 'Paid' ? 'secondary' : 
+                            student.feeStatus === 'Overdue' ? 'destructive' :
+                            'outline'
+                        }>{student.feeStatus}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
                     <TableRow>
                         <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
                             No students found.

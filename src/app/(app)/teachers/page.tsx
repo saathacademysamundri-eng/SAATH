@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -20,8 +19,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { MoreHorizontal, Printer, Search, PlusCircle, Edit, Trash, QrCode } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { MoreHorizontal, Printer, Search, PlusCircle, Edit, Trash, QrCode, Loader2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
@@ -30,7 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { EditTeacherDialog } from './edit-teacher-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAppContext } from '@/hooks/use-app-context';
-import { Teacher } from '@/lib/data';
+import { Teacher, Student, Income } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,12 +42,16 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { deleteTeacher } from '@/lib/firebase/firestore';
+import { deleteTeacher, getStudents, getIncome } from '@/lib/firebase/firestore';
 import { QrCodeDialog } from './qr-code-dialog';
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
-  const { teachers, students: allStudents, income, loading, refreshData } = useAppContext();
+  const { teachers, loading: contextLoading, refreshData } = useAppContext();
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [income, setIncome] = useState<Income[]>([]);
+  const [statsLoading, setStatsLoading] = useState(true);
+  
   const router = useRouter();
   const { toast } = useToast();
 
@@ -64,26 +67,42 @@ export default function TeachersPage() {
     selectedTeacher: null,
   });
 
+  useEffect(() => {
+    async function loadStatsData() {
+      setStatsLoading(true);
+      try {
+        const [sData, iData] = await Promise.all([getStudents(), getIncome()]);
+        setAllStudents(sData);
+        setIncome(iData);
+      } catch (e) {
+        console.error("Failed to load statistics data for teachers:", e);
+      } finally {
+        setStatsLoading(false);
+      }
+    }
+    loadStatsData();
+  }, []);
+
   const teacherStats = useMemo(() => {
     const stats = new Map<string, { studentCount: number; netEarnings: number }>();
 
     teachers.forEach(teacher => {
-        const taughtStudents = allStudents.filter(student => 
-            student.subjects.some(sub => sub.teacher_id === teacher.id)
+        const taughtStudents = (allStudents || []).filter(student => 
+            student.subjects && student.subjects.some(sub => sub.teacher_id === teacher.id)
         );
         
         // Filter for income that has NOT been paid out to THIS teacher
-        const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
+        const unpaidIncome = (income || []).filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
         
         let grossEarnings = 0;
 
         unpaidIncome.forEach(inc => {
             const student = allStudents.find(s => s.id === inc.studentId);
-            if (student && student.subjects.some(sub => sub.teacher_id === teacher.id)) {
+            if (student && student.subjects && student.subjects.some(sub => sub.teacher_id === teacher.id)) {
                 const relevantSubjects = student.subjects.filter(s => s.teacher_id === teacher.id);
                 
                 relevantSubjects.forEach(subject => {
-                    const feeShareForSubject = student.subjects.find(s => s.subject_name === subject.subject_name)?.fee_share || 0;
+                    const feeShareForSubject = subject.fee_share || 0;
                     if (student.monthlyFee > 0) {
                       const proportion = feeShareForSubject / student.monthlyFee;
                       const earnedShare = inc.amount * proportion;
@@ -165,7 +184,23 @@ export default function TeachersPage() {
       </div>
       
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {loading ? null : (
+          {contextLoading ? (
+             Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="flex flex-col">
+                    <CardHeader className="flex-row gap-4 items-start">
+                        <Skeleton className="w-12 h-12 rounded-full" />
+                        <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-3 w-32" />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                </Card>
+             ))
+          ) : (
             filteredTeachers.map((teacher) => {
               const stats = teacherStats.get(teacher.id) || { studentCount: 0, netEarnings: 0 };
               return (
@@ -216,11 +251,19 @@ export default function TeachersPage() {
                           </div>
                            <div>
                                 <p className="text-xs text-muted-foreground">Current Net Earnings (70%)</p>
-                                <p className="text-2xl font-bold text-green-600">{stats.netEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                                {statsLoading ? (
+                                    <Skeleton className="h-8 w-24" />
+                                ) : (
+                                    <p className="text-2xl font-bold text-green-600">{stats.netEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR</p>
+                                )}
                            </div>
                            <div>
                                 <p className="text-xs text-muted-foreground">Students Taught</p>
-                                <p className="text-2xl font-bold">{stats.studentCount}</p>
+                                {statsLoading ? (
+                                    <Skeleton className="h-8 w-12" />
+                                ) : (
+                                    <p className="text-2xl font-bold">{stats.studentCount}</p>
+                                )}
                            </div>
                         </CardContent>
                         <CardFooter className="flex gap-2">
@@ -245,7 +288,7 @@ export default function TeachersPage() {
               )
             })
           )}
-           {!loading && filteredTeachers.length === 0 && (
+           {!contextLoading && filteredTeachers.length === 0 && (
             <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground">No teachers found.</p>
             </div>

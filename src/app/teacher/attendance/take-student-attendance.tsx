@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { saveAttendance } from '@/lib/firebase/firestore';
+import { saveAttendance, getStudents } from '@/lib/firebase/firestore';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
@@ -14,18 +15,36 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
+import { Student } from '@/lib/data';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
 
 export function TakeStudentAttendance() {
-    const { classes, students, loading } = useAppContext();
+    const { classes, loading: contextLoading } = useAppContext();
     const { teacher } = useTeacherAuth();
+    const [students, setStudents] = useState<Student[]>([]);
+    const [loading, setLoading] = useState(true);
     
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [attendance, setAttendance] = useState<{ [studentId: string]: AttendanceStatus }>({});
     const [loadingStudents, setLoadingStudents] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+
+    useEffect(() => {
+      async function loadStudents() {
+        setLoading(true);
+        try {
+          const sData = await getStudents();
+          setStudents(sData);
+        } catch (e) {
+          console.error("Failed to load students for attendance:", e);
+        } finally {
+          setLoading(false);
+        }
+      }
+      loadStudents();
+    }, []);
 
     const teacherClasses = useMemo(() => {
         if (!teacher) return [];
@@ -44,9 +63,9 @@ export function TakeStudentAttendance() {
         if (!selectedClassId) return [];
         const currentClassName = classes.find(c => c.id === selectedClassId)?.name;
         // Teachers should only see students in their class that they teach at least one subject to.
-        return students.filter(s => 
+        return (students || []).filter(s => 
             s.class === currentClassName && 
-            s.subjects.some(sub => sub.teacher_id === teacher?.id)
+            s.subjects && s.subjects.some(sub => sub.teacher_id === teacher?.id)
         );
     }, [selectedClassId, students, classes, teacher]);
 
@@ -92,12 +111,12 @@ export function TakeStudentAttendance() {
         <div className="space-y-4">
             <div className="max-w-xs space-y-2">
                 <Label htmlFor="class-select">Select Class</Label>
-                <Select onValueChange={handleClassChange} disabled={loading}>
+                <Select onValueChange={handleClassChange} disabled={contextLoading || loading}>
                     <SelectTrigger id="class-select">
                         <SelectValue placeholder="Select a class..." />
                     </SelectTrigger>
                     <SelectContent>
-                        {loading ? (
+                        {contextLoading || loading ? (
                             <SelectItem value="loading" disabled>Loading classes...</SelectItem>
                         ) : (
                             teacherClasses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
@@ -133,7 +152,7 @@ export function TakeStudentAttendance() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {loadingStudents || loading ? (
+                                    {loadingStudents || contextLoading || loading ? (
                                         Array.from({ length: 5 }).map((_, i) => (
                                             <TableRow key={i}>
                                                 <TableCell><Skeleton className="h-5 w-12" /></TableCell>

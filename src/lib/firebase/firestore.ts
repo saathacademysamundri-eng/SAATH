@@ -287,7 +287,7 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
 
 export async function getStudents(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
-    const q = query(studentsCollection, where('status', '==', 'active'), limit(500));
+    const q = query(studentsCollection, where('status', '==', 'active'), limit(2000));
     const studentsSnap = await getDocs(q);
     const allStudents = studentsSnap.docs.map(doc => {
         const data = doc.data();
@@ -336,7 +336,7 @@ export async function getArchivedStudents(): Promise<Student[]> {
 }
 
 export async function getStudentsByClass(className: string): Promise<Student[]> {
-    const q = query(collection(db, 'students'), where('class', '==', className), where("status", "==", "active"), limit(200));
+    const q = query(collection(db, 'students'), where('class', '==', className), where("status", "==", "active"), limit(500));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => doc.data() as Student);
 }
@@ -930,7 +930,7 @@ export async function getIncomePaged(pageSize: number = 20, lastVisible?: QueryD
 }
 
 export async function getIncome(): Promise<Income[]> {
-    const q = query(collection(db, "income"), orderBy("date", "desc"), limit(100)); // Added limit
+    const q = query(collection(db, "income"), orderBy("date", "desc"), limit(5000));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -1034,7 +1034,7 @@ export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>, expe
 }
 
 export async function getExpenses(): Promise<Expense[]> {
-    const q = query(collection(db, "expenses"), orderBy("date", "desc"), limit(100)); // Added limit
+    const q = query(collection(db, "expenses"), orderBy("date", "desc"), limit(500));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Expense));
 }
@@ -1099,7 +1099,7 @@ export async function addReport(reportData: Omit<Report, 'id' | 'reportDate'>) {
 }
 
 export async function getReports(): Promise<Report[]> {
-    const q = query(collection(db, "reports"), limit(50));
+    const q = query(collection(db, "reports"), limit(100));
     const querySnapshot = await getDocs(q);
     const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), reportDate: doc.data().reportDate.toDate() } as Report));
     return reports.sort((a,b) => b.reportDate.getTime() - a.reportDate.getTime());
@@ -1203,7 +1203,7 @@ export async function deletePayout(payoutId: string) {
 
 
 export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
-    const q = query(collection(db, "teacher_payouts"), where("teacherId", "==", teacherId), limit(50));
+    const q = query(collection(db, "teacher_payouts"), where("teacherId", "==", teacherId), limit(100));
     const querySnapshot = await getDocs(q);
     let payouts = querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data(), payoutDate: docSnap.data().payoutDate.toDate() } as TeacherPayout));
 
@@ -1224,7 +1224,7 @@ export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayo
 }
 
 export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
-    const q = query(collection(db, "teacher_payouts"), orderBy("payoutDate", "desc"), limit(50));
+    const q = query(collection(db, "teacher_payouts"), orderBy("payoutDate", "desc"), limit(200));
     const querySnapshot = await getDocs(q);
     const payouts = querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data(), payoutDate: docSnap.data().payoutDate.toDate() } as TeacherPayout));
     
@@ -1243,7 +1243,7 @@ export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Repor
 }
 
 export async function getAcademyShare(): Promise<Payout[]> {
-    const q = query(collection(db, "academy_share"), limit(100));
+    const q = query(collection(db, "academy_share"), limit(500));
     const querySnapshot = await getDocs(q);
     const shares = querySnapshot.docs.map(docSnap => {
         const data = docSnap.data();
@@ -1444,7 +1444,7 @@ export async function getAllTeacherAttendanceForMonth(month: number, year: numbe
             collection(db, 'teacher_attendance'),
             where('date', '>=', monthStartStr),
             where('date', '<=', monthEndStr),
-            limit(500)
+            limit(1000)
         );
         const querySnapshot = await getDocs(q);
 
@@ -1550,7 +1550,7 @@ export async function deleteExam(examId: string) {
 
 
 export async function getExams(): Promise<Exam[]> {
-    const q = query(collection(db, "exams"), orderBy("date", "desc"), limit(50));
+    const q = query(collection(db, "exams"), orderBy("date", "desc"), limit(500));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(docSnap => {
         const data = docSnap.data();
@@ -1568,7 +1568,7 @@ export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
         const q = query(
             collection(db, 'exams'), 
             where("teacherId", "==", teacherId),
-            limit(50)
+            limit(200)
         );
         const querySnapshot = await getDocs(q);
         const examsList = querySnapshot.docs.map(docSnap => {

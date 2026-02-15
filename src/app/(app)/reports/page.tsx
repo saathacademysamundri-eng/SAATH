@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -16,24 +15,30 @@ import {
   FileDown,
   BookCopy,
   CalendarCheck2,
+  Loader2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { type Student } from '@/lib/data';
+import { type Student, type Income } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { ClassAttendanceDialog } from './class-attendance-dialog';
 import { DailyAttendanceSummaryDialog } from './daily-attendance-summary-dialog';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { getStudents, getIncome } from '@/lib/firebase/firestore';
 
 const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(0, i), 'MMMM') }));
 const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
 
 
 export default function ReportsPage() {
-  const { students, income, loading: studentsLoading, classes } = useAppContext();
+  const { loading: contextLoading, classes } = useAppContext();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [income, setIncome] = useState<Income[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const router = useRouter();
@@ -41,6 +46,22 @@ export default function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [unpaidDuesClassFilter, setUnpaidDuesClassFilter] = useState<string>('all');
+
+  useEffect(() => {
+    async function loadData() {
+      setDataLoading(true);
+      try {
+        const [sData, iData] = await Promise.all([getStudents(), getIncome()]);
+        setStudents(sData);
+        setIncome(iData);
+      } catch (e) {
+        console.error("Failed to load data for reports:", e);
+      } finally {
+        setDataLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
 
   const reportCards = [
@@ -429,12 +450,12 @@ export default function ReportsPage() {
                         </Button>
                     ) : (
                         <>
-                            <Button variant="outline" className="w-full" onClick={() => handlePrint(report.id)} disabled={!report.isEnabled || studentsLoading || isSettingsLoading}>
-                              <Printer className="mr-2 h-4 w-4" />
+                            <Button variant="outline" className="w-full" onClick={() => handlePrint(report.id)} disabled={!report.isEnabled || dataLoading || isSettingsLoading}>
+                              {dataLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <Printer className="mr-2 h-4 w-4" />}
                               Print
                             </Button>
-                            <Button variant="outline" className="w-full" onClick={() => handleExport(report.id)} disabled={!report.isEnabled || studentsLoading}>
-                              <FileDown className="mr-2 h-4 w-4" />
+                            <Button variant="outline" className="w-full" onClick={() => handleExport(report.id)} disabled={!report.isEnabled || dataLoading}>
+                              {dataLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <FileDown className="mr-2 h-4 w-4" />}
                               Export
                             </Button>
                         </>
