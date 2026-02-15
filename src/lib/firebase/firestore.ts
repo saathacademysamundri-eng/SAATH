@@ -237,11 +237,13 @@ export async function getClassDistribution() {
 }
 
 export async function getStudentsPaged(pageSize: number = 20, lastVisible?: QueryDocumentSnapshot, classFilter?: string, searchTerm?: string): Promise<{ students: Student[], lastDoc: QueryDocumentSnapshot | null }> {
-    // Base query for active students only, ordered by Roll Number (id) for stable pagination
+    // Base query for active students only.
+    // We removed explicit orderBy('id') to avoid requiring a composite index. 
+    // Firestore orders by document ID by default, and since we use Roll Numbers as document IDs,
+    // this maintains the correct order while avoiding indexing errors.
     let q = query(
         collection(db, 'students'), 
         where('status', '==', 'active'), 
-        orderBy('id'), 
         limit(pageSize)
     );
 
@@ -249,13 +251,10 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
         const classes = await getClasses();
         const selectedClass = classes.find(c => c.id === classFilter);
         if (selectedClass) {
-            // Note: This specific composite query requires an index in Firestore: 
-            // Collection: students, Fields: status (ASC), class (ASC), id (ASC)
             q = query(
                 collection(db, 'students'), 
                 where('status', '==', 'active'), 
                 where('class', '==', selectedClass.name), 
-                orderBy('id'), 
                 limit(pageSize)
             );
         }
