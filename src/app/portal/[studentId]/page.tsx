@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getStudent, getStudentExams, getStudentIncomeHistory } from '@/lib/firebase/firestore';
 import { Student, Exam, Income } from '@/lib/data';
@@ -11,8 +11,7 @@ import {
   FileText, GraduationCap, BookOpen, Download, 
   Calculator, Receipt, Facebook, Twitter, Instagram, 
   MapPin, Phone, Mail, TrendingUp, CalendarCheck, 
-  ChevronRight, Award, Percent, Star, User, AlertCircle,
-  TrendingDown, ArrowLeft
+  ChevronRight, Award, Percent, AlertCircle
 } from 'lucide-react';
 import { 
   XAxis, YAxis, CartesianGrid, 
@@ -24,15 +23,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from 'next-themes';
-import { Badge } from '@/components/ui/badge';
 
-// --- Sub-components ---
+// --- Sub-components (Exactly as provided) ---
 
 const GlassCard = ({ children, className = "", onClick }: { children: React.ReactNode, className?: string, onClick?: () => void }) => (
   <div 
     onClick={onClick}
     className={cn(
-      "bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/30 dark:border-slate-700/50 rounded-2xl sm:rounded-[2.5rem] shadow-sm transition-all duration-300",
+      "bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/30 dark:border-slate-700/50 rounded-2xl sm:rounded-3xl shadow-sm transition-all duration-300",
       className
     )}
   >
@@ -40,8 +38,8 @@ const GlassCard = ({ children, className = "", onClick }: { children: React.Reac
   </div>
 );
 
-const PortalBadge = ({ children, colorClass }: { children: React.ReactNode, colorClass: string }) => (
-  <span className={cn("px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest border border-transparent shadow-sm", colorClass)}>
+const Badge = ({ children, colorClass }: { children: React.ReactNode, colorClass: string }) => (
+  <span className={cn("px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold", colorClass)}>
     {children}
   </span>
 );
@@ -57,7 +55,7 @@ function PortalSkeleton() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <Skeleton className="h-16 w-full rounded-2xl" />
-        <Skeleton className="h-64 w-full rounded-[2.5rem]" />
+        <Skeleton className="h-64 w-full rounded-3xl" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Skeleton className="h-40 w-full rounded-3xl" />
           <Skeleton className="h-40 w-full rounded-3xl" />
@@ -83,6 +81,7 @@ export default function StudentPortalDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'results' | 'ledger'>('results');
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     if (!studentId || !providedPhone) {
@@ -142,8 +141,13 @@ export default function StudentPortalDashboard() {
         name: exam.name.length > 10 ? exam.name.substring(0, 8) + '...' : exam.name,
         score: total > 0 ? Math.round((obtained / total) * 100) : 0,
       };
-    }).filter(Boolean);
+    }).filter((item): item is { name: string; score: number } => item !== null);
   }, [exams, student]);
+
+  const handleConfetti = () => {
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
 
   if (loading || isSettingsLoading) {
     return <PortalSkeleton />;
@@ -158,506 +162,551 @@ export default function StudentPortalDashboard() {
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
             <p className="text-slate-400 mb-8 leading-relaxed">{error || 'Security verification failed.'}</p>
-            <Button onClick={() => router.push('/portal')} className="w-full rounded-xl py-6 font-bold bg-primary hover:bg-primary/90 text-white">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Portal
+            <Button onClick={() => router.push('/portal')} className="w-full rounded-xl py-6 font-bold bg-primary hover:bg-primary/90 text-white shadow-xl">
+              Back to Portal
             </Button>
         </GlassCard>
       </div>
     );
   }
 
+  const isDarkMode = theme === 'dark';
+
   return (
     <div className={cn(
       "min-h-screen transition-colors duration-300 font-sans selection:bg-primary/30",
-      theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'
+      isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-800'
     )}>
       
-      {/* Background Mesh */}
+      {/* Background Mesh (Exactly as provided) */}
       <div className="fixed inset-0 -z-10 opacity-50 dark:opacity-20 pointer-events-none"
            style={{
-             backgroundColor: theme === 'dark' ? '#020617' : '#f8fafc',
-             backgroundImage: theme === 'dark' 
+             backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc',
+             backgroundImage: isDarkMode 
               ? `radial-gradient(at 0% 0%, hsla(266,59%,20%,1) 0px, transparent 50%), radial-gradient(at 100% 0%, hsla(189,100%,20%,1) 0px, transparent 50%)`
               : `radial-gradient(at 0% 0%, hsla(266,59%,94%,1) 0px, transparent 50%), radial-gradient(at 100% 0%, hsla(189,100%,96%,1) 0px, transparent 50%)`
            }}
       />
 
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+      {/* Navigation (Exactly as provided) */}
+      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white shadow-lg overflow-hidden p-1.5">
               <Logo noText />
             </div>
             <div className="flex flex-col">
-              <h1 className="font-black text-xs sm:text-base leading-tight tracking-tighter uppercase">{settings.name}</h1>
-              <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Student Portal</p>
+              <h1 className="font-bold text-sm sm:text-lg leading-tight tracking-tight uppercase">{settings.name}</h1>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">Student Portal</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             <button 
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(isDarkMode ? 'light' : 'dark')}
               className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:scale-110 transition-transform border border-slate-200 dark:border-slate-700"
             >
-              {theme === 'dark' ? <Sun size={18} className="text-yellow-500" /> : <Moon size={18} className="text-blue-500" />}
+              {isDarkMode ? <Sun size={20} className="text-yellow-500" /> : <Moon size={20} className="text-blue-500" />}
             </button>
             <button 
               onClick={() => router.push('/portal')}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-100 dark:border-rose-900/50 transition-all text-xs sm:text-sm font-black uppercase tracking-widest"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 transition-all text-xs sm:text-sm font-medium"
             >
-              <LogOut size={14} />
+              <LogOut size={16} />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-        {/* Profile Hero */}
-        <GlassCard className="p-6 sm:p-10 relative overflow-hidden animate-fade-in-up border-slate-200 dark:border-slate-700">
-          <div className="absolute top-0 right-0 p-12 opacity-[0.03] dark:opacity-[0.05] rotate-12 pointer-events-none">
-              <GraduationCap size={240} />
-          </div>
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 relative z-10">
+        {/* Profile Hero (Exactly as provided) */}
+        <GlassCard className="p-4 sm:p-8 relative overflow-hidden animate-fade-in-up">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
-              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full p-1.5 bg-gradient-to-br from-primary via-purple-500 to-indigo-500 animate-float shadow-2xl">
-                <div className="w-full h-full rounded-full bg-white dark:bg-slate-800 p-1 overflow-hidden">
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 animate-float shadow-lg">
+                <div className="w-full h-full rounded-full bg-white dark:bg-slate-800 p-1">
                   <Avatar className="w-full h-full rounded-full">
                     <AvatarImage src={student.imageUrl} className="object-cover" />
-                    <AvatarFallback className="bg-primary/5 text-primary text-5xl font-black">{student.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="text-4xl font-bold text-primary bg-primary/5">{student.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </div>
               </div>
-              <div className="absolute bottom-3 right-3 w-8 h-8 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-800 flex items-center justify-center shadow-lg">
-                <CheckCircle size={16} className="text-white" />
+              <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 rounded-full border-4 border-white dark:border-slate-800 flex items-center justify-center shadow-md">
+                <CheckCircle size={12} className="text-white" />
               </div>
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-full shadow-lg uppercase tracking-[0.2em]">
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full shadow-md">
                 ACTIVE
               </div>
             </div>
 
             {/* Info */}
-            <div className="flex-1 text-center sm:text-left space-y-4">
-              <div className="space-y-2">
-                <h2 className="text-4xl sm:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">
+            <div className="flex-1 text-center sm:text-left space-y-3">
+              <div>
+                <h2 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 tracking-tight">
                   {student.name}
                 </h2>
-                <div className="flex flex-wrap justify-center sm:justify-start gap-3 mt-4">
-                  <PortalBadge colorClass="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border-blue-100 dark:border-blue-800">
+                <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
+                  <Badge colorClass="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/50">
                     Roll No: {student.id}
-                  </PortalBadge>
-                  <PortalBadge colorClass="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border-purple-100 dark:border-purple-800">
+                  </Badge>
+                  <Badge colorClass="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200/50 dark:border-purple-800/50">
                     {student.class}
-                  </PortalBadge>
+                  </Badge>
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row items-center gap-6 text-sm text-slate-500 dark:text-slate-400 pt-2 font-bold">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-inner">
-                    <User size={18} className="text-primary" />
+              <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-slate-600 dark:text-slate-400 pt-2 font-medium">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-600 shadow-inner">
+                    <span className="font-bold text-xs">M</span>
                   </div>
-                  <span className="uppercase tracking-widest text-[11px]">{student.fatherName}</span>
+                  <span className="uppercase tracking-wider">{student.fatherName}</span>
                 </div>
-                <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-inner">
-                    <Star size={18} className="text-amber-500" />
-                  </div>
-                  <span className="uppercase tracking-widest text-[11px]">SESSION {settings.academicSession}</span>
+                <div className="hidden sm:block w-1 h-1 rounded-full bg-slate-400" />
+                <div className="flex items-center gap-2">
+                  <CalendarCheck size={16} />
+                  <span className="uppercase tracking-wider">SESSION {settings.academicSession}</span>
                 </div>
               </div>
             </div>
 
-            {/* Attendance (Desktop Placeholder) */}
-            <div className="hidden lg:flex flex-col gap-4 min-w-[180px]">
-              <GlassCard className="bg-white/40 dark:bg-slate-800/40 p-4 flex items-center gap-4 border-slate-200 dark:border-slate-700">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                  <Award size={24} />
+            {/* Quick Stats (Desktop) */}
+            <div className="hidden lg:flex flex-col gap-3 min-w-[140px]">
+              <div className="bg-white/50 dark:bg-slate-700/50 p-3 rounded-xl flex items-center gap-3 border border-white/20 dark:border-slate-600/30">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                  <Award size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Performance</p>
-                  <p className="font-black text-xl tracking-tight">Excellent</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Performance</p>
+                  <p className="font-bold text-lg tracking-tight">Active</p>
                 </div>
-              </GlassCard>
-              <GlassCard className="bg-white/40 dark:bg-slate-800/40 p-4 flex items-center gap-4 border-slate-200 dark:border-slate-700">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
-                  <Percent size={24} />
+              </div>
+              <div className="bg-white/50 dark:bg-slate-700/50 p-3 rounded-xl flex items-center gap-3 border border-white/20 dark:border-slate-600/30">
+                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                  <Percent size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Portal Access</p>
-                  <p className="font-black text-xl tracking-tight text-emerald-500">SECURE</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Verification</p>
+                  <p className="font-bold text-lg tracking-tight text-green-500">Secure</p>
                 </div>
-              </GlassCard>
+              </div>
             </div>
           </div>
         </GlassCard>
 
-        {/* Finance Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Finance Cards (Exactly as provided) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Paid Card */}
-          <GlassCard className="p-8 relative overflow-hidden group border-slate-200 dark:border-slate-700">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
-            <div className="relative space-y-6">
-              <IconBox icon={CheckCircle} className="bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-emerald-500/30" />
-              <div>
-                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Total Fees Paid</p>
-                <h3 className="text-4xl font-black mt-2 tabular-nums">{totalPaid.toLocaleString()} <span className="text-sm font-bold opacity-30">PKR</span></h3>
+          <GlassCard className="p-6 relative overflow-hidden group cursor-pointer hover:-translate-y-1 transition-transform border-slate-200 dark:border-slate-700" onClick={handleConfetti}>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-green-400/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative flex justify-between items-start">
+              <div className="space-y-4">
+                <IconBox icon={CheckCircle} className="bg-gradient-to-br from-green-400 to-emerald-600 text-white shadow-green-500/30" />
+                <div>
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fees Paid</p>
+                  <h3 className="text-3xl font-bold mt-1 tabular-nums">{totalPaid.toLocaleString()} <span className="text-sm font-normal text-slate-500">PKR</span></h3>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-black uppercase tracking-widest bg-emerald-500/5 py-2 px-4 rounded-xl border border-emerald-500/10 w-fit">
-                <TrendingUp size={14} />
-                <span>Verified Payments</span>
-              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-bold uppercase tracking-widest">
+              <TrendingUp size={16} />
+              <span>Verified Credit</span>
             </div>
           </GlassCard>
 
           {/* Dues Card */}
-          <GlassCard className="p-8 relative overflow-hidden group border-slate-200 dark:border-slate-700">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-rose-500/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
-            <div className="relative space-y-6">
-              <IconBox icon={Clock} className="bg-gradient-to-br from-rose-400 to-orange-600 text-white shadow-rose-500/30" />
-              <div>
-                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Outstanding Dues</p>
-                <h3 className={cn("text-4xl font-black mt-2 tabular-nums", student.totalFee > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400")}>
-                    {student.totalFee.toLocaleString()} <span className="text-sm font-bold opacity-30">PKR</span>
-                </h3>
+          <GlassCard className="p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform border-slate-200 dark:border-slate-700">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative flex justify-between items-start">
+              <div className="space-y-4">
+                <IconBox icon={Clock} className="bg-gradient-to-br from-amber-400 to-orange-600 text-white shadow-amber-500/30" />
+                <div>
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Dues Pending</p>
+                  <h3 className={cn("text-3xl font-bold mt-1 tabular-nums", student.totalFee > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400")}>
+                    {student.totalFee.toLocaleString()} <span className="text-sm font-normal text-slate-500">PKR</span>
+                  </h3>
+                </div>
               </div>
-              <div className={cn(
-                "flex items-center gap-2 text-xs font-black uppercase tracking-widest py-2 px-4 rounded-xl border w-fit",
-                student.totalFee > 0 ? "text-rose-600 dark:text-rose-400 bg-rose-500/5 border-rose-500/10" : "text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 border-emerald-500/10"
-              )}>
-                {student.totalFee > 0 ? <AlertCircle size={14} /> : <CheckCircle size={14} />}
-                <span>{student.totalFee > 0 ? 'Action Required' : 'No Pending Dues'}</span>
-              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm font-bold uppercase tracking-widest">
+              {student.totalFee > 0 ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
+              <span>{student.totalFee > 0 ? 'Pending Payment' : 'No pending dues'}</span>
             </div>
           </GlassCard>
 
           {/* Status Card */}
-          <GlassCard className="p-8 relative overflow-hidden group border-slate-200 dark:border-slate-700 sm:col-span-2 lg:col-span-1">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
-            <div className="relative space-y-6">
-              <div className="flex justify-between items-start">
+          <GlassCard className="p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform sm:col-span-2 lg:col-span-1 border-slate-200 dark:border-slate-700">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative flex justify-between items-start">
+              <div className="space-y-4">
                 <IconBox icon={FileText} className="bg-gradient-to-br from-blue-400 to-indigo-600 text-white shadow-blue-500/30" />
-                <div className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 border shadow-sm",
-                    student.feeStatus === 'Paid' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                )}>
-                    <span className={cn("w-2 h-2 rounded-full animate-pulse", student.feeStatus === 'Paid' ? "bg-emerald-500" : "bg-amber-500")} />
-                    {student.feeStatus === 'Paid' ? 'Verified' : 'Pending'}
+                <div>
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fee Status</p>
+                  <h3 className={cn(
+                    "text-3xl font-bold mt-1 uppercase tracking-tight",
+                    student.feeStatus === 'Paid' ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                  )}>
+                    {student.feeStatus}
+                  </h3>
                 </div>
               </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Account Billing Status</p>
-                <h3 className={cn(
-                    "text-4xl font-black mt-2 uppercase tracking-tighter",
-                    student.feeStatus === 'Paid' ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
-                )}>
-                    {student.feeStatus}
-                </h3>
+              <div className={cn(
+                "px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border shadow-sm",
+                student.feeStatus === 'Paid' ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800" : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+              )}>
+                <span className={cn("w-2 h-2 rounded-full animate-pulse", student.feeStatus === 'Paid' ? "bg-green-500" : "bg-amber-500")} />
+                {student.feeStatus === 'Paid' ? 'Verified' : 'Review'}
               </div>
-              <div className="flex items-center gap-2 text-primary dark:text-primary-foreground/80 text-xs font-black uppercase tracking-widest bg-primary/5 py-2 px-4 rounded-xl border border-primary/10 w-fit">
-                <Receipt size={14} />
-                <span>Last Activity: {incomeHistory[0] ? format(incomeHistory[0].date, 'MMM d, yyyy') : 'N/A'}</span>
-              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-bold uppercase tracking-widest">
+              <Receipt size={16} />
+              <span>Last paid: {incomeHistory[0] ? format(incomeHistory[0].date, 'MMM d, yyyy') : 'N/A'}</span>
             </div>
           </GlassCard>
         </div>
 
-        {/* Custom Nav Tabs */}
-        <div className="flex justify-center pt-4">
-          <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-md rounded-[2.5rem] p-2 inline-flex relative shadow-xl border border-slate-200 dark:border-slate-800">
+        {/* Tabs (Exactly as provided) */}
+        <div className="flex justify-center">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-1.5 inline-flex relative shadow-md border border-slate-200 dark:border-slate-700">
             <div 
-              className="absolute top-2 bottom-2 w-[calc(50%-8px)] bg-gradient-to-r from-primary to-indigo-600 rounded-[2rem] transition-all duration-500 ease-out shadow-lg"
-              style={{ left: activeTab === 'results' ? '8px' : '50%' }}
+              className="absolute top-1.5 bottom-1.5 w-1/2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl transition-all duration-300 ease-out shadow-lg"
+              style={{ left: activeTab === 'results' ? '6px' : '50%' }}
             />
             <button 
               onClick={() => setActiveTab('results')}
-              className={cn(
-                "relative z-10 px-8 sm:px-12 py-4 rounded-[2rem] text-xs font-black uppercase tracking-[0.2em] transition-all duration-500 flex items-center gap-3",
-                activeTab === 'results' ? 'text-white' : 'text-slate-500 dark:text-slate-400 hover:text-primary'
-              )}
+              className={`relative z-10 flex-1 sm:flex-none px-6 sm:px-12 py-2.5 rounded-xl font-black uppercase tracking-widest transition-colors duration-300 flex items-center justify-center gap-2 text-xs ${activeTab === 'results' ? 'text-white' : 'text-slate-500 dark:text-slate-400 hover:text-primary'}`}
             >
-              <TrendingUp size={16} />
-              <span>Academic Results</span>
+              <TrendingUp size={18} />
+              <span>RESULTS</span>
             </button>
             <button 
               onClick={() => setActiveTab('ledger')}
-              className={cn(
-                "relative z-10 px-8 sm:px-12 py-4 rounded-[2rem] text-xs font-black uppercase tracking-[0.2em] transition-all duration-500 flex items-center gap-3",
-                activeTab === 'ledger' ? 'text-white' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-500'
-              )}
+              className={`relative z-10 flex-1 sm:flex-none px-6 sm:px-12 py-2.5 rounded-xl font-black uppercase tracking-widest transition-colors duration-300 flex items-center justify-center gap-2 text-xs ${activeTab === 'ledger' ? 'text-white' : 'text-slate-500 dark:text-slate-400 hover:text-primary'}`}
             >
-              <BookOpen size={16} />
-              <span>Financial Ledger</span>
+              <BookOpen size={18} />
+              <span>LEDGER</span>
             </button>
           </div>
         </div>
 
         {/* Content Area */}
-        <div className="animate-fade-in pb-12">
+        <div className="animate-fade-in pb-8">
           {activeTab === 'results' ? (
-            <div className="space-y-8">
+            <div className="space-y-6">
                 <GlassCard className="overflow-hidden border-slate-200 dark:border-slate-700">
-                    <div className="p-8 sm:p-10 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-6 bg-slate-50/50 dark:bg-slate-800/20">
-                        <div className="flex items-center gap-6">
-                            <IconBox icon={Award} className="bg-gradient-to-br from-primary to-indigo-600 text-white shadow-primary/20" />
-                            <div>
-                                <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Academic Progress</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest mt-1">Session {settings.academicSession} Examination Reports</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <CalendarCheck size={16} className="text-primary" />
-                            <span className="text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">Active Cycle</span>
-                        </div>
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50 dark:bg-slate-800/20">
+                    <div className="flex items-center gap-4">
+                    <IconBox icon={GraduationCap} className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white" />
+                    <div>
+                        <h3 className="text-xl font-bold tracking-tight">Academic Performance</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest mt-0.5">Current session examination results</p>
                     </div>
+                    </div>
+                    <div className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-black uppercase tracking-widest">
+                        Cycle {settings.academicSession}
+                    </div>
+                </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-slate-50 dark:bg-slate-800/10">
-                                    <th className="px-10 py-6 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Exam Title</th>
-                                    <th className="px-10 py-6 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Enrolled Subjects</th>
-                                    <th className="px-10 py-6 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Raw Marks</th>
-                                    <th className="px-10 py-6 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Performance</th>
+                {/* Desktop Table */}
+                <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full">
+                    <thead className="bg-slate-50/50 dark:bg-slate-800/50">
+                        <tr>
+                        <th className="px-10 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Exam</th>
+                        <th className="px-10 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Enrolled Subjects</th>
+                        <th className="px-10 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Raw Marks</th>
+                        <th className="px-10 py-4 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {exams.length > 0 ? exams.map((exam) => {
+                            const result = exam.results?.find(r => r.studentId === student.id);
+                            if (!result) return null;
+                            const obtained = Object.values(result.marks).reduce((sum, m) => sum + (typeof m === 'number' ? m : 0), 0);
+                            const total = exam.subjects.length * exam.totalMarks;
+                            const percentage = total > 0 ? (obtained / total) * 100 : 0;
+
+                            return (
+                                <tr key={exam.id} className="hover:bg-primary/[0.02] dark:hover:bg-primary/[0.05] transition-colors group">
+                                    <td className="px-10 py-6">
+                                        <div className="font-bold text-lg text-blue-600 dark:text-blue-400 tracking-tight">{exam.name}</div>
+                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{format(exam.date, 'MMMM yyyy')}</div>
+                                    </td>
+                                    <td className="px-10 py-6">
+                                        <div className="flex flex-wrap gap-2">
+                                            {exam.subjects.map(sub => (
+                                                <Badge key={sub} colorClass="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800/50">{sub}</Badge>
+                                            ))}
+                                        </div>
+                                    </td>
+                                    <td className="px-10 py-6 text-center">
+                                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-base tabular-nums">
+                                            {obtained} <span className="text-slate-400 dark:text-slate-500 font-normal">/ {total}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-10 py-6 text-right">
+                                        <div className={cn(
+                                            "inline-flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-sm tracking-widest border",
+                                            percentage >= 80 ? "bg-emerald-500 text-white border-emerald-400 shadow-emerald-500/20 shadow-lg" : 
+                                            percentage >= 50 ? "bg-blue-500 text-white border-blue-400 shadow-blue-500/20 shadow-lg" : 
+                                            "bg-rose-500 text-white border-rose-400 shadow-rose-500/20 shadow-lg"
+                                        )}>
+                                            {percentage.toFixed(1)}%
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {exams.length > 0 ? exams.map((exam) => {
-                                    const result = exam.results?.find(r => r.studentId === student.id);
-                                    if (!result) return null;
-                                    const obtained = Object.values(result.marks).reduce((sum, m) => sum + (typeof m === 'number' ? m : 0), 0);
-                                    const total = exam.subjects.length * exam.totalMarks;
-                                    const percentage = total > 0 ? (obtained / total) * 100 : 0;
+                            );
+                        }) : (
+                            <tr>
+                                <td colSpan={4} className="h-48 text-center text-slate-400 font-black uppercase tracking-widest opacity-20">No Results Found</td>
+                            </tr>
+                        )}
+                    </tbody>
+                    </table>
+                </div>
 
-                                    return (
-                                        <tr key={exam.id} className="hover:bg-primary/[0.02] dark:hover:bg-primary/[0.05] transition-colors group">
-                                            <td className="px-10 py-8">
-                                                <div className="font-black text-xl text-slate-900 dark:text-white group-hover:text-primary transition-colors tracking-tight">{exam.name}</div>
-                                                <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{format(exam.date, 'MMMM yyyy')}</div>
-                                            </td>
-                                            <td className="px-10 py-8">
-                                                <div className="flex flex-wrap gap-2">
-                                                    {exam.subjects.map(sub => (
-                                                        <Badge key={sub} variant="outline" className="font-bold text-[10px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 px-3 py-1 rounded-lg"> {sub} </Badge>
-                                                    ))}
-                                                </div>
-                                            </td>
-                                            <td className="px-10 py-8 text-center">
-                                                <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black text-lg tracking-tighter tabular-nums">
-                                                    {obtained} <span className="text-slate-300 dark:text-slate-600 font-bold text-sm">/ {total}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-10 py-8 text-right">
-                                                <div className={cn(
-                                                    "inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-sm tracking-widest border shadow-sm",
-                                                    percentage >= 80 ? "bg-emerald-500 text-white border-emerald-400" : 
-                                                    percentage >= 50 ? "bg-primary text-white border-primary/50" : 
-                                                    "bg-rose-500 text-white border-rose-400"
-                                                )}>
-                                                    {percentage.toFixed(1)}%
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                }) : (
-                                    <tr>
-                                        <td colSpan={4} className="h-64 text-center">
-                                            <div className="flex flex-col items-center gap-4 opacity-20 dark:opacity-10">
-                                                <GraduationCap size={80} />
-                                                <p className="text-2xl font-black uppercase tracking-[0.2em]">No records found</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                {/* Mobile List */}
+                <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800">
+                    {exams.map((exam) => {
+                        const result = exam.results?.find(r => r.studentId === student.id);
+                        if (!result) return null;
+                        const obtained = Object.values(result.marks).reduce((sum, m) => sum + (typeof m === 'number' ? m : 0), 0);
+                        const total = exam.subjects.length * exam.totalMarks;
+                        const percentage = total > 0 ? (obtained / total) * 100 : 0;
+
+                        return (
+                            <div key={exam.id} className="p-6 space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <span className="font-bold text-lg text-blue-600 dark:text-blue-400 tracking-tight">{exam.name}</span>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{format(exam.date, 'MMMM yyyy')}</p>
+                                    </div>
+                                    <span className={cn(
+                                        "px-4 py-1.5 rounded-2xl text-xs font-black tracking-widest border",
+                                        percentage >= 80 ? "bg-emerald-500 text-white border-emerald-400" : "bg-blue-500 text-white border-blue-400"
+                                    )}>
+                                        {percentage.toFixed(1)}%
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {exam.subjects.map(sub => (
+                                        <Badge key={sub} colorClass="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800/50">{sub}</Badge>
+                                    ))}
+                                </div>
+                                <div className="flex justify-between items-center pt-2 text-xs font-bold uppercase tracking-widest">
+                                    <span className="text-slate-400">Total Marks</span>
+                                    <span className="text-slate-900 dark:text-white">{obtained} / {total}</span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Chart (Exactly as provided) */}
+                {performanceData.length > 0 && (
+                    <div className="p-6 border-t border-slate-200 dark:border-slate-700 h-[300px]">
+                        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center gap-3 text-slate-400">
+                        <TrendingUp size={18} className="text-blue-500" />
+                        Growth Analysis Matrix
+                        </h4>
+                        <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={performanceData}>
+                            <defs>
+                            <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                            </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#334155' : '#e2e8f0'} />
+                            <XAxis 
+                                dataKey="name" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{fill: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 10, fontWeight: 900}} 
+                                dy={10} 
+                            />
+                            <YAxis 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{fill: isDarkMode ? '#94a3b8' : '#64748b', fontSize: 10, fontWeight: 900}} 
+                                domain={[0, 100]}
+                            />
+                            <Tooltip 
+                                contentStyle={{ 
+                                    backgroundColor: isDarkMode ? '#1e293b' : '#fff', 
+                                    borderRadius: '1rem', 
+                                    border: '1px solid #e2e8f0', 
+                                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                    padding: '1rem'
+                                }}
+                                itemStyle={{ color: '#8b5cf6', fontWeight: 900, fontSize: '1rem' }}
+                                labelStyle={{ fontWeight: 900, marginBottom: '0.25rem', color: '#64748b', fontSize: '0.7rem' }}
+                            />
+                            <Area type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={4} fillOpacity={1} fill="url(#colorScore)" />
+                        </AreaChart>
+                        </ResponsiveContainer>
                     </div>
-
-                    {/* Chart Integration */}
-                    {performanceData.length > 0 && (
-                        <div className="p-8 sm:p-12 border-t border-slate-200 dark:border-slate-800 h-[400px]">
-                            <h4 className="font-black text-xs uppercase tracking-[0.3em] mb-10 flex items-center gap-3 text-slate-400">
-                                <TrendingUp size={18} className="text-primary" />
-                                Growth Analysis Matrix
-                            </h4>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={performanceData}>
-                                    <defs>
-                                        <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#1e293b' : '#f1f5f9'} />
-                                    <XAxis 
-                                        dataKey="name" 
-                                        axisLine={false} 
-                                        tickLine={false} 
-                                        tick={{fill: theme === 'dark' ? '#475569' : '#94a3b8', fontSize: 10, fontWeight: 900}} 
-                                        dy={15} 
-                                    />
-                                    <YAxis 
-                                        axisLine={false} 
-                                        tickLine={false} 
-                                        tick={{fill: theme === 'dark' ? '#475569' : '#94a3b8', fontSize: 10, fontWeight: 900}} 
-                                        domain={[0, 100]}
-                                    />
-                                    <Tooltip 
-                                        contentStyle={{ 
-                                            backgroundColor: theme === 'dark' ? '#0f172a' : '#fff', 
-                                            borderRadius: '1.5rem', 
-                                            border: '1px solid #e2e8f0', 
-                                            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
-                                            padding: '1.5rem'
-                                        }}
-                                        itemStyle={{ color: 'hsl(var(--primary))', fontWeight: 900, fontSize: '1rem' }}
-                                        labelStyle={{ fontWeight: 900, marginBottom: '0.5rem', color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}
-                                    />
-                                    <Area type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={4} fillOpacity={1} fill="url(#colorScore)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    )}
+                )}
                 </GlassCard>
             </div>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
                 <GlassCard className="overflow-hidden border-slate-200 dark:border-slate-700">
-                    <div className="p-8 sm:p-10 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-6 bg-slate-50/50 dark:bg-slate-800/20">
-                        <div className="flex items-center gap-6">
-                            <IconBox icon={Receipt} className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/20" />
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50 dark:bg-slate-800/20">
+                    <div className="flex items-center gap-4">
+                    <IconBox icon={BookOpen} className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/20" />
+                    <div>
+                        <h3 className="text-xl font-bold tracking-tight">Verified Fee Ledger</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest mt-0.5">Comprehensive transaction timeline</p>
+                    </div>
+                    </div>
+                    <button className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm transition-all font-black text-[10px] uppercase tracking-widest">
+                        <Download size={16} className="text-primary" />
+                        <span>Download Statement</span>
+                    </button>
+                </div>
+
+                {/* Desktop Table */}
+                <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full">
+                    <thead className="bg-slate-50/50 dark:bg-slate-800/50">
+                        <tr>
+                        <th className="px-10 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Transaction Date</th>
+                        <th className="px-10 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Verified Receipt ID</th>
+                        <th className="px-10 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Billing Cycle</th>
+                        <th className="px-10 py-4 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Credit Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {incomeHistory.length > 0 ? incomeHistory.map((item) => (
+                        <tr key={item.id} className="hover:bg-emerald-[0.02] dark:hover:bg-emerald-[0.05] transition-colors group">
+                            <td className="px-10 py-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 border border-emerald-100 dark:border-emerald-800/50 shadow-inner">
+                                <CalendarCheck size={18} />
+                                </div>
+                                <div>
+                                <p className="font-bold text-slate-800 dark:text-slate-200 tracking-tight">{format(item.date, 'MMMM do, yyyy')}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{format(item.date, 'hh:mm a')}</p>
+                                </div>
+                            </div>
+                            </td>
+                            <td className="px-10 py-6">
+                            <code className="text-xs bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl font-mono text-slate-500 dark:text-slate-400 font-bold border border-slate-200 dark:border-slate-700 shadow-inner">
+                                {item.receiptId || item.id.substring(0, 12).toUpperCase()}
+                            </code>
+                            </td>
+                            <td className="px-10 py-6">
+                            <Badge colorClass="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50 uppercase tracking-widest text-[9px] font-black">
+                                {item.forMonth || format(item.date, 'MMMM yyyy')}
+                            </Badge>
+                            </td>
+                            <td className="px-10 py-6 text-right">
+                            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tighter">
+                                +{item.amount.toLocaleString()} <span className="text-xs font-bold opacity-40 ml-1">PKR</span>
+                            </span>
+                            </td>
+                        </tr>
+                        )) : (
+                            <tr>
+                                <td colSpan={4} className="h-48 text-center text-slate-400 font-black uppercase tracking-widest opacity-20">No Financial Records</td>
+                            </tr>
+                        )}
+                    </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile List */}
+                <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800">
+                    {incomeHistory.map((item) => (
+                    <div key={item.id} className="p-6 space-y-4">
+                        <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 shadow-inner">
+                            <CalendarCheck size={18} />
+                            </div>
                             <div>
-                                <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Verified Transactions</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest mt-1">Comprehensive fee ledger & history</p>
+                            <p className="font-bold text-sm tracking-tight">{format(item.date, 'MMM d, yyyy')}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{format(item.date, 'hh:mm a')}</p>
                             </div>
                         </div>
-                        <button className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm transition-all font-black text-[10px] uppercase tracking-widest">
-                            <Download size={16} className="text-primary" />
-                            <span>Download Statement</span>
-                        </button>
+                        <span className="text-xl font-black text-emerald-600 tabular-nums tracking-tighter">+{item.amount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-2">
+                        <span className="px-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 font-mono text-[10px] text-slate-500 font-black border border-slate-200 dark:border-slate-700">{item.receiptId || 'OFFICIAL'}</span>
+                        <Badge colorClass="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50 uppercase tracking-widest text-[9px] font-black">{item.forMonth || 'MONTHLY'}</Badge>
+                        </div>
                     </div>
+                    ))}
+                </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-slate-50 dark:bg-slate-800/10">
-                                    <th className="px-10 py-6 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Transaction Timeline</th>
-                                    <th className="px-10 py-6 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Verified Receipt ID</th>
-                                    <th className="px-10 py-6 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Billing Period</th>
-                                    <th className="px-10 py-6 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Credit Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {incomeHistory.length > 0 ? incomeHistory.map((item) => (
-                                    <tr key={item.id} className="hover:bg-emerald-[0.02] dark:hover:bg-emerald-[0.05] transition-colors group">
-                                        <td className="px-10 py-8">
-                                            <div className="flex items-center gap-5">
-                                                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 border border-emerald-100 dark:border-emerald-800/50 shadow-inner">
-                                                    <CalendarCheck size={20} />
-                                                </div>
-                                                <div>
-                                                    <p className="font-black text-lg text-slate-800 dark:text-slate-200 tracking-tight">{format(item.date, 'MMMM do, yyyy')}</p>
-                                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{format(item.date, 'hh:mm a')}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-10 py-8">
-                                            <code className="text-xs bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl font-mono text-slate-500 dark:text-slate-400 font-black border border-slate-200 dark:border-slate-700 shadow-inner">
-                                                {item.receiptId || item.id.substring(0, 12).toUpperCase()}
-                                            </code>
-                                        </td>
-                                        <td className="px-10 py-8">
-                                            <PortalBadge colorClass="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border-indigo-100 dark:border-indigo-800">
-                                                {item.forMonth || format(item.date, 'MMMM yyyy')}
-                                            </PortalBadge>
-                                        </td>
-                                        <td className="px-10 py-8 text-right">
-                                            <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tighter">
-                                                +{item.amount.toLocaleString()} <span className="text-xs font-bold opacity-40 ml-1">PKR</span>
-                                            </span>
-                                        </td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan={4} className="h-64 text-center">
-                                            <div className="flex flex-col items-center gap-4 opacity-20 dark:opacity-10">
-                                                <Wallet size={80} />
-                                                <p className="text-2xl font-black uppercase tracking-[0.2em]">No payments recorded</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                {/* Summary (Exactly as provided) */}
+                <div className="p-6 sm:p-10 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-3 gap-6 bg-slate-50/30 dark:bg-slate-800/10">
+                    <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl flex items-center gap-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 border border-blue-500/20">
+                        <Calculator size={24} />
                     </div>
-
-                    <div className="p-8 sm:p-12 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-8 bg-slate-50/30 dark:bg-slate-800/10">
-                        <GlassCard className="bg-white dark:bg-slate-800 p-6 flex items-center gap-5 border-slate-200 dark:border-slate-700">
-                            <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600 border border-blue-500/20">
-                                <Calculator size={28} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aggregate Paid</p>
-                                <p className="text-2xl font-black tracking-tighter">{totalPaid.toLocaleString()} PKR</p>
-                            </div>
-                        </GlassCard>
-                        <GlassCard className="bg-white dark:bg-slate-800 p-6 flex items-center gap-5 border-slate-200 dark:border-slate-700">
-                            <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-600 border border-purple-500/20">
-                                <TrendingUp size={28} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transactions</p>
-                                <p className="text-2xl font-black tracking-tighter">{incomeHistory.length} Payments</p>
-                            </div>
-                        </GlassCard>
-                        <GlassCard className={cn(
-                            "p-6 flex items-center gap-5 border",
-                            student.totalFee === 0 ? "bg-emerald-500/10 border-emerald-500/20" : "bg-rose-500/10 border-rose-500/20"
-                        )}>
-                            <div className={cn(
-                                "w-14 h-14 rounded-2xl flex items-center justify-center border",
-                                student.totalFee === 0 ? "bg-emerald-500 text-white border-emerald-400" : "bg-rose-500 text-white border-rose-400"
-                            )}>
-                                {student.totalFee === 0 ? <CheckCircle size={28} /> : <AlertCircle size={28} />}
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Financial Status</p>
-                                <p className={cn(
-                                    "text-2xl font-black tracking-tighter uppercase",
-                                    student.totalFee === 0 ? "text-emerald-600" : "text-rose-600"
-                                )}>{student.totalFee === 0 ? 'CLEARED' : 'PENDING'}</p>
-                            </div>
-                        </GlassCard>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aggregate Paid</p>
+                        <p className="text-xl font-black tracking-tighter">{totalPaid.toLocaleString()} PKR</p>
                     </div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl flex items-center gap-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 border border-purple-500/20">
+                        <Receipt size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Verified Cycles</p>
+                        <p className="text-xl font-black tracking-tighter">{incomeHistory.length} Payments</p>
+                    </div>
+                    </div>
+                    <div className={cn(
+                        "p-5 rounded-2xl flex items-center gap-5 border shadow-sm",
+                        student.totalFee === 0 ? "bg-emerald-500/5 border-emerald-500/20" : "bg-amber-500/5 border-amber-500/20"
+                    )}>
+                    <div className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center border shadow-lg",
+                        student.totalFee === 0 ? "bg-emerald-500 text-white border-emerald-400" : "bg-amber-500 text-white border-amber-400"
+                    )}>
+                        {student.totalFee === 0 ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Fiscal Status</p>
+                        <p className={cn(
+                            "text-xl font-black tracking-tighter uppercase",
+                            student.totalFee === 0 ? "text-emerald-600" : "text-amber-600"
+                        )}>{student.totalFee === 0 ? 'CLEARED' : 'PENDING'}</p>
+                    </div>
+                    </div>
+                </div>
                 </GlassCard>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <footer className="mt-16 border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[3rem] overflow-hidden shadow-2xl border border-white/30 dark:border-slate-700/50 mb-10">
-            <div className="max-w-7xl mx-auto px-10 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+        {/* Footer (Exactly as provided but simplified for spacing) */}
+        <footer className="mt-8 border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/30 dark:border-slate-700/50 mb-10">
+            <div className="max-w-7xl mx-auto px-10 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
               <div className="lg:col-span-2 space-y-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white shadow-xl p-2">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white shadow-xl p-2">
                     <Logo noText />
                   </div>
                   <div>
-                    <h4 className="font-black text-2xl tracking-tighter uppercase text-slate-900 dark:text-white leading-none">{settings.name}</h4>
+                    <h4 className="font-black text-xl tracking-tighter uppercase text-slate-900 dark:text-white leading-none">{settings.name}</h4>
                     <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mt-1">Excellence in Education</p>
                   </div>
                 </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md font-bold">
-                  Dedicated to providing a transformative educational experience through personalized learning, expert faculty, and state-of-the-art academic resources.
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md font-medium">
+                  Dedicated to providing a transformative educational experience through personalized learning and state-of-the-art academic resources.
                 </p>
                 <div className="flex gap-4">
                   {[Facebook, Twitter, Instagram, Mail].map((Icon, i) => (
-                    <a key={i} href="#" className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-primary hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
-                      <Icon size={18} />
+                    <a key={i} href="#" className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-primary hover:text-white border border-slate-200 dark:border-slate-700 transition-all duration-300">
+                      <Icon size={16} />
                     </a>
                   ))}
                 </div>
@@ -676,32 +725,47 @@ export default function StudentPortalDashboard() {
                 <h5 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400">Administration Contact</h5>
                 <ul className="space-y-5 text-sm font-bold text-slate-600 dark:text-slate-300">
                   <li className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary flex-shrink-0 border border-slate-200 dark:border-slate-700">
-                        <MapPin size={18} />
+                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary flex-shrink-0 border border-slate-200 dark:border-slate-700">
+                        <MapPin size={16} />
                     </div>
-                    <span className="leading-tight">{settings.address}</span>
+                    <span className="leading-tight text-xs font-bold uppercase tracking-tight">{settings.address}</span>
                   </li>
                   <li className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary flex-shrink-0 border border-slate-200 dark:border-slate-700">
-                        <Phone size={18} />
+                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary flex-shrink-0 border border-slate-200 dark:border-slate-700">
+                        <Phone size={16} />
                     </div>
-                    <span className="text-primary font-black tracking-tight text-lg">{settings.phone}</span>
+                    <span className="text-primary font-black tracking-tight text-base">{settings.phone}</span>
                   </li>
                 </ul>
               </div>
             </div>
-            <div className="py-8 bg-slate-100/50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 text-center">
+            <div className="py-6 bg-slate-100/50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 text-center">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
                     &copy; {new Date().getFullYear()} {settings.name} • All Rights Reserved. 
-                    <span className="text-primary ml-2">Engineered by SchoolUP Platform</span>
                 </p>
-                <div className="mt-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                    Developed by <span className="text-primary hover:underline cursor-pointer transition-all">Mian Mudassar</span>
+                <div className="mt-1 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    Powered by <span className="text-primary hover:underline cursor-pointer transition-all">SchoolUP Platform</span>
                 </div>
             </div>
         </footer>
 
       </main>
+
+      {/* Toast Notification (Exactly as provided) */}
+      <div className={cn(
+        "fixed bottom-6 right-6 transform transition-all duration-500 z-50",
+        showToast ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0"
+      )}>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl px-6 py-4 shadow-2xl border-l-4 border-emerald-500 flex items-center gap-4 border border-slate-200 dark:border-slate-700">
+          <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+            <CheckCircle size={20} />
+          </div>
+          <div>
+            <p className="font-black text-sm uppercase tracking-tight">Success!</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">Verified Payment Records</p>
+          </div>
+        </div>
+      </div>
 
       <style jsx global>{`
         @keyframes float {
