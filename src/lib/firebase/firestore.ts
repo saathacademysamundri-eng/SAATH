@@ -237,43 +237,81 @@ export async function getClassDistribution() {
 }
 
 export async function getStudentsPaged(pageSize: number = 20, lastVisible?: QueryDocumentSnapshot, classFilter?: string, searchTerm?: string): Promise<{ students: Student[], lastDoc: QueryDocumentSnapshot | null }> {
-    // Base query for active students only.
-    // We removed explicit orderBy('id') to avoid requiring a composite index. 
-    // Firestore orders by document ID by default, and since we use Roll Numbers as document IDs,
-    // this maintains the correct order while avoiding indexing errors.
-    let q = query(
-        collection(db, 'students'), 
-        where('status', '==', 'active'), 
-        limit(pageSize)
-    );
+    const studentsCollection = collection(db, 'students');
+    
+    // 1. Handle Search Case (Fetch wider results and filter client-side to ensure matches are found)
+    if (searchTerm) {
+        const q = query(
+            studentsCollection, 
+            where('status', '==', 'active'), 
+            limit(1000)
+        );
+        const snapshot = await getDocs(q);
+        let results = snapshot.docs.map(doc => ({ 
+            ...doc.data(), 
+            id: doc.id,
+            archivedAt: doc.data().archivedAt?.toDate() 
+        } as Student));
+        
+        const term = searchTerm.toLowerCase();
+        results = results.filter(s => 
+            s.name.toLowerCase().includes(term) || 
+            s.id.toLowerCase().includes(term)
+        );
 
+        if (classFilter && classFilter !== 'all') {
+            const classes = await getClasses();
+            const cls = classes.find(c => c.id === classFilter);
+            if (cls) {
+                results = results.filter(s => s.class === cls.name);
+            }
+        }
+
+        return { 
+            students: results.slice(0, pageSize), 
+            lastDoc: null // Pagination usually disabled during active search
+        };
+    }
+
+    // 2. Handle Class Filter Case
     if (classFilter && classFilter !== 'all') {
         const classes = await getClasses();
         const selectedClass = classes.find(c => c.id === classFilter);
         if (selectedClass) {
-            q = query(
-                collection(db, 'students'), 
-                where('status', '==', 'active'), 
+            // Fetch students of this class and filter status client-side to avoid composite index requirement
+            const q = query(
+                studentsCollection, 
                 where('class', '==', selectedClass.name), 
-                limit(pageSize)
+                limit(500)
             );
+            const snapshot = await getDocs(q);
+            const results = snapshot.docs
+                .map(doc => ({ ...doc.data(), id: doc.id } as Student))
+                .filter(s => s.status === 'active')
+                .sort((a, b) => a.id.localeCompare(b.id));
+            
+            return { students: results.slice(0, pageSize), lastDoc: null };
         }
     }
+
+    // 3. Standard Default Viewing (All Classes, No Search)
+    let q = query(
+        studentsCollection, 
+        where('status', '==', 'active'), 
+        limit(pageSize)
+    );
 
     if (lastVisible) {
         q = query(q, startAfter(lastVisible));
     }
 
     const snapshot = await getDocs(q);
-    let students = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, archivedAt: doc.data().archivedAt?.toDate() } as Student));
+    const students = snapshot.docs.map(doc => ({ 
+        ...doc.data(), 
+        id: doc.id, 
+        archivedAt: doc.data().archivedAt?.toDate() 
+    } as Student));
     const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
-
-    if (searchTerm) {
-        students = students.filter(s => 
-            s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            s.id.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }
 
     return { students, lastDoc };
 }
@@ -337,6 +375,7 @@ export async function getAlumni(): Promise<Student[]> {
 
 export async function getArchivedStudents(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
+    // Filter specifically for archived status
     const q = query(studentsCollection, where('status', '==', 'archived'), limit(500));
     const studentsSnap = await getDocs(q);
     const allStudents = studentsSnap.docs.map(doc => {

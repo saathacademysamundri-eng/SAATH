@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -98,7 +99,7 @@ export default function StudentsPage() {
       const result = await getStudentsPaged(20, lastDoc, classFilter, search);
       
       setStudents(result.students);
-      setHasMore(result.students.length === 20);
+      setHasMore(result.students.length === 20 && !search); // Pagination disabled during active search for stability
       
       if (isInitial) {
         setLastDocs([result.lastDoc]);
@@ -197,7 +198,6 @@ export default function StudentsPage() {
   };
   
   const showBulkActions = classFilter !== 'all';
-  const is12thGrade = classes.find(c => c.id === classFilter)?.name === '12th Grade';
 
   return (
     <div className="flex flex-col gap-6">
@@ -222,7 +222,7 @@ export default function StudentsPage() {
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            Viewing page {currentPage + 1}. Filter by class or search to narrow results.
+            {search ? 'Search results for student across database' : `Viewing page ${currentPage + 1}. Filter by class or search to narrow results.`}
           </CardDescription>
           <div className="flex flex-col md:flex-row gap-4 pt-2">
             <div className="relative flex-grow">
@@ -347,15 +347,17 @@ export default function StudentsPage() {
               )}
             </TableBody>
           </Table>
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 0 || loading}>
-              <ChevronLeft className="h-4 w-4 mr-2" /> Previous
-            </Button>
-            <div className="text-sm font-medium">Page {currentPage + 1}</div>
-            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!hasMore || loading}>
-              Next <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          </div>
+          {!search && (
+            <div className="flex items-center justify-end space-x-2 py-4">
+                <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 0 || loading}>
+                <ChevronLeft className="h-4 w-4 mr-2" /> Previous
+                </Button>
+                <div className="text-sm font-medium">Page {currentPage + 1}</div>
+                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!hasMore || loading}>
+                Next <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
       
