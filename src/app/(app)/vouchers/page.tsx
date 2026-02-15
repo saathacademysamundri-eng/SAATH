@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -22,6 +20,8 @@ import type { Student } from '@/lib/data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 
 function StudentSearchResultsDialog({
@@ -74,7 +74,7 @@ function StudentSearchResultsDialog({
 
 
 export default function VouchersPage() {
-  const { classes, students, loading: appLoading } = useAppContext();
+  const { classes, loading: appLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
 
@@ -92,40 +92,102 @@ export default function VouchersPage() {
   const [individualIssueDate, setIndividualIssueDate] = useState<Date>(new Date());
   const [individualDueDate, setIndividualDueDate] = useState<Date>(addDays(new Date(), 10));
 
-  const studentsInClass = useMemo(() => {
-    if (!selectedClassId) return [];
-    const className = classes.find(c => c.id === selectedClassId)?.name;
-    return students.filter(student => student.class === className);
-  }, [selectedClassId, students, classes]);
+  // Students list for class bulk printing - fetched on demand when class selected
+  const [classStudents, setClassStudents] = useState<Student[]>([]);
+  const [isLoadingClassStudents, setIsLoadingClassStudents] = useState(false);
+
+  const handleClassChange = async (classId: string) => {
+    setSelectedClassId(classId);
+    const className = classes.find(c => c.id === classId)?.name;
+    if (className) {
+        setIsLoadingClassStudents(true);
+        const q = query(collection(db, 'students'), where('class', '==', className), where('status', '==', 'active'), limit(500));
+        const snap = await getDocs(q);
+        const data = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Student));
+        setClassStudents(data);
+        setIsLoadingClassStudents(false);
+    }
+  };
 
   const handleSearch = async () => {
-    if (!search.trim()) {
+    const queryTerm = search.trim();
+    if (!queryTerm) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please enter a student name or roll number.' });
       return;
     }
+    
     setIsSearching(true);
     setSearchedStudent(null);
     setSearchResults([]);
 
-    const searchTerm = search.trim().toLowerCase();
-    const isRollNumber = /^\d+$/.test(searchTerm);
-    let potentialRollNumber = searchTerm;
-    if (isRollNumber) {
-        potentialRollNumber = `S${searchTerm.padStart(3, '0')}`;
+    // 1. Smart ID Formatting
+    let formattedId = queryTerm;
+    if (/^\d+$/.test(queryTerm)) {
+      formattedId = `S${queryTerm.padStart(3, '0')}`;
+    } else if (/^s\d+$/i.test(queryTerm)) {
+      formattedId = `S${queryTerm.substring(1).padStart(3, '0')}`;
     }
 
-    const results = students.filter(student => 
-        student.id.toLowerCase() === potentialRollNumber.toLowerCase() ||
-        student.name.toLowerCase().includes(searchTerm)
-    );
-    
+    // 2. Try exact ID match
+    let student = await getStudent(formattedId);
+    if (!student && formattedId !== queryTerm) {
+      student = await getStudent(queryTerm);
+    }
+
+    if (student && student.status === 'active') {
+      handleStudentSelect(student);
+      setIsSearching(false);
+      return;
+    }
+
+    // 3. Name or ID Prefix Search
+    const resultsMap = new Map<string, Student>();
+
+    const runSearchQuery = async (term: string) => {
+      const capitalized = term.charAt(0).toUpperCase() + term.slice(1);
+      
+      const qName = query(
+        collection(db, 'students'),
+        where('name', '>=', capitalized),
+        where('name', '<=', capitalized + '\uf8ff'),
+        limit(20)
+      );
+      
+      const qId = query(
+        collection(db, 'students'),
+        where('id', '>=', term.toUpperCase()),
+        where('id', '<=', term.toUpperCase() + '\uf8ff'),
+        limit(20)
+      );
+
+      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(qId)]);
+      
+      nameSnap.forEach(doc => {
+        const data = doc.data() as Student;
+        if (data.status === 'active') resultsMap.set(doc.id, { ...data, id: doc.id });
+      });
+      
+      idSnap.forEach(doc => {
+        const data = doc.data() as Student;
+        if (data.status === 'active') resultsMap.set(doc.id, { ...data, id: doc.id });
+      });
+    };
+
+    await runSearchQuery(queryTerm);
+
+    const results = Array.from(resultsMap.values());
+
     if (results.length === 1) {
-      setSearchedStudent(results[0]);
+      handleStudentSelect(results[0]);
     } else if (results.length > 1) {
       setSearchResults(results);
       setIsSearchResultsOpen(true);
     } else {
-      toast({ variant: 'destructive', title: 'Not Found', description: 'No student found matching your search.' });
+      toast({
+        variant: 'destructive',
+        title: 'Not Found',
+        description: 'No student found matching your search.',
+      });
     }
     setIsSearching(false);
   };
@@ -204,11 +266,11 @@ export default function VouchersPage() {
         toast({ variant: 'destructive', title: 'No Class Selected', description: 'Please select a class.' });
         return;
       }
-      if (studentsInClass.length === 0) {
-        toast({ variant: 'destructive', title: 'No Students Found', description: 'The selected class has no students.' });
+      if (classStudents.length === 0) {
+        toast({ variant: 'destructive', title: 'No Students Found', description: 'The selected class has no active students.' });
         return;
       }
-      vouchersToPrint = studentsInClass;
+      vouchersToPrint = classStudents;
       issueDateToUse = bulkIssueDate;
       dueDateToUse = bulkDueDate;
     } else if (target === 'individual') {
@@ -390,7 +452,7 @@ export default function VouchersPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label>Select Class</Label>
-              <Select onValueChange={setSelectedClassId} disabled={appLoading}>
+              <Select onValueChange={handleClassChange} disabled={appLoading}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a class..." />
                 </SelectTrigger>
@@ -436,9 +498,9 @@ export default function VouchersPage() {
               </Popover>
             </div>
           </div>
-           <Button onClick={() => handlePrint('class')} disabled={!selectedClassId || isSettingsLoading} size="lg">
-              <Printer className="mr-2" />
-              Print Vouchers ({studentsInClass.length} Students)
+           <Button onClick={() => handlePrint('class')} disabled={!selectedClassId || isSettingsLoading || isLoadingClassStudents} size="lg">
+              {isLoadingClassStudents ? <Loader2 className="animate-spin mr-2" /> : <Printer className="mr-2" />}
+              Print Vouchers ({classStudents.length} Students)
             </Button>
         </CardContent>
       </Card>

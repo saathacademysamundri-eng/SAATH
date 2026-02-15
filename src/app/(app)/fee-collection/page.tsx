@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -121,7 +120,8 @@ export default function FeeCollectionPage() {
   };
 
   const handleSearch = async () => {
-    if (!search.trim()) {
+    const queryTerm = search.trim();
+    if (!queryTerm) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -135,27 +135,68 @@ export default function FeeCollectionPage() {
     setSearchedStudent(null);
     setSearchResults([]);
 
-    const searchTerm = search.trim();
-    
-    // Attempt specific roll number search first
-    const student = await getStudent(searchTerm);
-    if (student) {
-        setSearchedStudent(student);
-        await fetchStudentIncome(student.id);
-        setPaidAmount(0);
-        setIsSearching(false);
-        return;
+    // 1. Smart ID Formatting
+    // If user enters "1", convert to "S001"
+    // If user enters "s1" or "S1", convert to "S001"
+    let formattedId = queryTerm;
+    if (/^\d+$/.test(queryTerm)) {
+      formattedId = `S${queryTerm.padStart(3, '0')}`;
+    } else if (/^s\d+$/i.test(queryTerm)) {
+      formattedId = `S${queryTerm.substring(1).padStart(3, '0')}`;
     }
 
-    // Attempt name search
-    const q = query(collection(db, 'students'), where('name', '>=', searchTerm), where('name', '<=', searchTerm + '\uf8ff'), limit(20));
-    const snapshot = await getDocs(q);
-    const results = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Student));
+    // 2. Try exact ID match first
+    let student = await getStudent(formattedId);
+    if (!student && formattedId !== queryTerm) {
+      student = await getStudent(queryTerm);
+    }
+
+    if (student && student.status === 'active') {
+      handleStudentSelect(student);
+      setIsSearching(false);
+      return;
+    }
+
+    // 3. Name or ID Prefix Search (Multiple results)
+    const resultsMap = new Map<string, Student>();
+
+    const runSearchQuery = async (term: string) => {
+      // Capitalize for better match likelihood in Firestore
+      const capitalized = term.charAt(0).toUpperCase() + term.slice(1);
+      
+      const qName = query(
+        collection(db, 'students'),
+        where('name', '>=', capitalized),
+        where('name', '<=', capitalized + '\uf8ff'),
+        limit(20)
+      );
+      
+      const qId = query(
+        collection(db, 'students'),
+        where('id', '>=', term.toUpperCase()),
+        where('id', '<=', term.toUpperCase() + '\uf8ff'),
+        limit(20)
+      );
+
+      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(qId)]);
+      
+      nameSnap.forEach(doc => {
+        const data = doc.data() as Student;
+        if (data.status === 'active') resultsMap.set(doc.id, { ...data, id: doc.id });
+      });
+      
+      idSnap.forEach(doc => {
+        const data = doc.data() as Student;
+        if (data.status === 'active') resultsMap.set(doc.id, { ...data, id: doc.id });
+      });
+    };
+
+    await runSearchQuery(queryTerm);
+
+    const results = Array.from(resultsMap.values());
 
     if (results.length === 1) {
-      setSearchedStudent(results[0]);
-      await fetchStudentIncome(results[0].id);
-      setPaidAmount(0);
+      handleStudentSelect(results[0]);
     } else if (results.length > 1) {
       setSearchResults(results);
       setIsSearchResultsOpen(true);
