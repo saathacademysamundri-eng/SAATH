@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { saveAttendance, getStudents } from '@/lib/firebase/firestore';
+import { saveAttendance, getStudentsByTeacher } from '@/lib/firebase/firestore';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
@@ -32,10 +32,13 @@ export function TakeStudentAttendance() {
     const { toast } = useToast();
 
     useEffect(() => {
+      if (!teacher) return;
+
       async function loadStudents() {
         setLoading(true);
         try {
-          const sData = await getStudents();
+          // Optimization: Only load students taught by this teacher
+          const sData = await getStudentsByTeacher(teacher!.id);
           setStudents(sData);
         } catch (e) {
           console.error("Failed to load students for attendance:", e);
@@ -44,7 +47,7 @@ export function TakeStudentAttendance() {
         }
       }
       loadStudents();
-    }, []);
+    }, [teacher]);
 
     const teacherClasses = useMemo(() => {
         if (!teacher) return [];
@@ -62,12 +65,9 @@ export function TakeStudentAttendance() {
     const classStudents = useMemo(() => {
         if (!selectedClassId) return [];
         const currentClassName = classes.find(c => c.id === selectedClassId)?.name;
-        // Teachers should only see students in their class that they teach at least one subject to.
-        return (students || []).filter(s => 
-            s.class === currentClassName && 
-            s.subjects && s.subjects.some(sub => sub.teacher_id === teacher?.id)
-        );
-    }, [selectedClassId, students, classes, teacher]);
+        // Optimization: Students are already pre-filtered by teacherId from useEffect
+        return (students || []).filter(s => s.class === currentClassName);
+    }, [selectedClassId, students, classes]);
 
     useEffect(() => {
         const initialAttendance: { [studentId: string]: AttendanceStatus } = {};

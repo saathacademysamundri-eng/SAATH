@@ -108,9 +108,6 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
     }
 }
 
-/**
- * Enhanced helper to perform count aggregation with memory-filtered fallback if indexes are missing.
- */
 async function getCountSafe(collName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
     let q = query(collection(db, collName));
     filters.forEach(f => {
@@ -121,11 +118,7 @@ async function getCountSafe(collName: string, filters: { field: string, op: any,
         const snapshot = await getCountFromServer(q);
         return snapshot.data().count;
     } catch (error: any) {
-        // If index is missing, we must remove range filters from the query and filter in memory
         if (error.code === 'failed-precondition' || error.message?.includes('index')) {
-            console.warn(`Firestore Index missing for count on ${collName}. Falling back to memory-filtered count.`);
-            
-            // Use only equality filters for the fallback query
             const eqFilters = filters.filter(f => f.op === '==');
             let qFallback = query(collection(db, collName));
             eqFilters.forEach(f => {
@@ -135,7 +128,6 @@ async function getCountSafe(collName: string, filters: { field: string, op: any,
             const snapshot = await getDocs(qFallback);
             const rangeFilters = filters.filter(f => f.op !== '==');
             
-            // Perform manual filtering for ranges
             let filteredDocs = snapshot.docs;
             rangeFilters.forEach(f => {
                 filteredDocs = filteredDocs.filter(d => {
@@ -159,9 +151,6 @@ async function getCountSafe(collName: string, filters: { field: string, op: any,
     }
 }
 
-/**
- * Enhanced helper to perform sum aggregation with memory-filtered fallback if indexes are missing.
- */
 async function getSumSafe(collName: string, fieldName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
     let q = query(collection(db, collName));
     filters.forEach(f => {
@@ -173,8 +162,6 @@ async function getSumSafe(collName: string, fieldName: string, filters: { field:
         return agg.data().total || 0;
     } catch (error: any) {
         if (error.code === 'failed-precondition' || error.message?.includes('index')) {
-            console.warn(`Firestore Index missing for sum on ${collName}. Falling back to memory-filtered sum.`);
-            
             const eqFilters = filters.filter(f => f.op === '==');
             let qFallback = query(collection(db, collName));
             eqFilters.forEach(f => {
@@ -189,7 +176,6 @@ async function getSumSafe(collName: string, fieldName: string, filters: { field:
                 const data = d.data();
                 let matches = true;
                 
-                // Verify range filters manually
                 for (const f of rangeFilters) {
                     const val = data[f.field];
                     const fieldVal = val instanceof Timestamp ? val.toDate().getTime() : (val instanceof Date ? val.getTime() : val);
@@ -213,13 +199,11 @@ async function getSumSafe(collName: string, fieldName: string, filters: { field:
     }
 }
 
-// Optimized Dashboard Statistics using Firestore Aggregations
 export async function getDashboardStats() {
     const now = new Date();
     const monthStart = startOfMonth(now);
     const thirtyDaysAgo = subDays(now, 30);
 
-    // Run counts and sums with fallback logic
     const [totalStudents, newAdmissions, incomeThisMonth, expensesThisMonth, pendingDues] = await Promise.all([
         getCountSafe('students', [{ field: 'status', op: '==', value: 'active' }]),
         getCountSafe('activities', [
@@ -252,10 +236,7 @@ export async function getClassDistribution() {
     return distribution;
 }
 
-// Paginated Student Fetching
 export async function getStudentsPaged(pageSize: number = 20, lastVisible?: QueryDocumentSnapshot, classFilter?: string, searchTerm?: string): Promise<{ students: Student[], lastDoc: QueryDocumentSnapshot | null }> {
-    // Note: We remove explicit orderBy('id') to avoid composite index requirements.
-    // Firestore defaults to document ID order, which matches our 'S001' pattern perfectly.
     let q = query(collection(db, 'students'), where('status', '==', 'active'), limit(pageSize));
 
     if (classFilter && classFilter !== 'all') {
@@ -274,7 +255,6 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
     let students = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, archivedAt: doc.data().archivedAt?.toDate() } as Student));
     const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
 
-    // Apply simple name search in memory if requested
     if (searchTerm) {
         students = students.filter(s => 
             s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -298,6 +278,33 @@ export async function getStudents(): Promise<Student[]> {
         } as Student;
     });
     return allStudents.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * Highly optimized query for teachers to fetch only students they teach.
+ * Requires teacherIds array field on student documents.
+ */
+export async function getStudentsByTeacher(teacherId: string): Promise<Student[]> {
+    try {
+        const q = query(
+            collection(db, 'students'), 
+            where('status', '==', 'active'), 
+            where('teacherIds', 'array-contains', teacherId),
+            limit(1000)
+        );
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+            return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Student));
+        }
+
+        // Fallback for legacy data without teacherIds field
+        const allStudents = await getStudents();
+        return allStudents.filter(s => s.subjects && s.subjects.some(sub => sub.teacher_id === teacherId));
+    } catch (e) {
+        console.error("getStudentsByTeacher failed:", e);
+        return [];
+    }
 }
 
 export async function getAlumni(): Promise<Student[]> {
@@ -365,9 +372,13 @@ export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id:
         assignedAt: Timestamp.now(),
     }));
 
+    // Extract unique teacher IDs for high-performance indexing
+    const teacherIds = [...new Set(student.subjects.map(s => s.teacher_id))];
+
     const studentWithStatus = { 
         ...student, 
         subjects: subjectsWithAssignment,
+        teacherIds,
         status: 'active' as const 
     };
 
@@ -427,6 +438,8 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
                         assignedAt: existing?.assignedAt || Timestamp.now()
                     };
                 });
+                // Update indexed teacher IDs
+                updateData.teacherIds = [...new Set(studentData.subjects.map(s => s.teacher_id))];
             }
 
             if (studentData.monthlyFee !== undefined && studentData.monthlyFee !== oldStudentData.monthlyFee) {
@@ -569,7 +582,6 @@ export async function checkAndGenerateMonthlyFees() {
             return { success: true, message: "Fees for the current month have already been generated." };
         }
         
-        // Use a lightweight fetch for processing
         const studentsCollection = collection(db, 'students');
         const q = query(studentsCollection, where("status", "==", "active"));
         const studentsSnap = await getDocs(q);
@@ -603,7 +615,7 @@ export async function checkAndGenerateMonthlyFees() {
             });
             
             count++;
-            if (count >= 400) break; // Safety limit for client-side batching
+            if (count >= 400) break;
         }
         
         batch.set(stateRef, { lastGeneratedMonth: currentMonth });
@@ -942,6 +954,23 @@ export async function getIncome(): Promise<Income[]> {
     });
 }
 
+/**
+ * Fetches recent income records for dashboard summaries. 
+ * Defaults to last 500 records to maintain high performance.
+ */
+export async function getRecentIncome(recordLimit: number = 500): Promise<Income[]> {
+    const q = query(collection(db, "income"), orderBy("date", "desc"), limit(recordLimit));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            date: data.date.toDate(),
+        } as Income;
+    });
+}
+
 export async function getIncomeByReceiptId(receiptId: string): Promise<Income | null> {
     const q = query(collection(db, "income"), where("receiptId", "==", receiptId), limit(1));
     const querySnapshot = await getDocs(q);
@@ -1265,7 +1294,6 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
         await setDoc(docRef, attendanceData, { merge: true });
         await logActivity('attendance_marked', `Marked attendance for class ${attendanceData.className}.`);
         
-        // WhatsApp notification moved to server logic or handled asynchronously to avoid blocking UI
         return { success: true, message: 'Attendance saved successfully.' };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'write', requestResourceData: attendanceData });

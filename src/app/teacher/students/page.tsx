@@ -12,25 +12,27 @@ import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getStudents } from '@/lib/firebase/firestore';
+import { getStudentsByTeacher } from '@/lib/firebase/firestore';
 import { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MyStudentsPage() {
   const { teacher } = useTeacherAuth();
-  const { classes, loading: contextLoading } = useAppContext();
+  const { classes } = useAppContext();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
-  const router = useRouter();
 
   useEffect(() => {
+    if (!teacher) return;
+
     async function loadStudents() {
       setLoading(true);
       try {
-        const sData = await getStudents();
+        // Optimization: Fetch only students taught by this specific teacher
+        const sData = await getStudentsByTeacher(teacher!.id);
         setStudents(sData);
       } catch (e) {
         console.error("Failed to load students for teacher:", e);
@@ -39,7 +41,7 @@ export default function MyStudentsPage() {
       }
     }
     loadStudents();
-  }, []);
+  }, [teacher]);
 
   const teacherClasses = useMemo(() => {
     if (!teacher) return [];
@@ -48,18 +50,11 @@ export default function MyStudentsPage() {
         c.subjects.some(s => teacherSubjectNames.has(s.name))
     );
   }, [teacher, classes]);
-
-  const teacherStudents = useMemo(() => {
-    if (!teacher || students.length === 0) return [];
-    return (students || []).filter(student => 
-      student.subjects && student.subjects.some(sub => sub.teacher_id === teacher.id)
-    );
-  }, [teacher, students]);
   
   const filteredStudents = useMemo(() => {
     const classToFilter = teacherClasses.find(c => c.id === classFilter)?.name;
     
-    return teacherStudents.filter(student => {
+    return students.filter(student => {
         const searchMatch = student.name.toLowerCase().includes(search.toLowerCase()) || 
           student.id.toLowerCase().includes(search.toLowerCase());
         
@@ -67,7 +62,7 @@ export default function MyStudentsPage() {
 
         return searchMatch && classMatch;
     });
-  }, [teacherStudents, search, classFilter, teacherClasses]);
+  }, [students, search, classFilter, teacherClasses]);
 
   return (
     <div className="flex flex-col gap-6">

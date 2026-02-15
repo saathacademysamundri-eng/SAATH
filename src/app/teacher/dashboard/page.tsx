@@ -6,25 +6,32 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
 import { BookCopy, DollarSign, Users, Search, ClipboardCheck, Loader2 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
-import { format, getMonth, getYear } from 'date-fns';
+import { format, startOfMonth, subMonths } from 'date-fns';
 import { Student, Income } from '@/lib/data';
 import { MonthlyTeacherAttendance } from './monthly-attendance';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getStudents, getIncome } from '@/lib/firebase/firestore';
+import { getStudentsByTeacher, getRecentIncome } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TeacherDashboardPage() {
   const { teacher } = useTeacherAuth();
-  const { classes, loading: contextLoading } = useAppContext();
+  const { classes } = useAppContext();
   const [students, setStudents] = useState<Student[]>([]);
   const [income, setIncome] = useState<Income[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
+    if (!teacher) return;
+
     async function loadDashboardData() {
       setDataLoading(true);
       try {
-        const [sData, iData] = await Promise.all([getStudents(), getIncome()]);
+        // Optimization: Fetch only students taught by this teacher
+        // and only the last few months of income records
+        const [sData, iData] = await Promise.all([
+            getStudentsByTeacher(teacher!.id),
+            getRecentIncome(1000) // Fetches enough recent income for current summaries
+        ]);
         setStudents(sData);
         setIncome(iData);
       } catch (e) {
@@ -34,18 +41,12 @@ export default function TeacherDashboardPage() {
       }
     }
     loadDashboardData();
-  }, []);
+  }, [teacher]);
   
-  const teacherStudents = useMemo(() => {
-    if (!teacher || students.length === 0) return [];
-    return (students || []).filter(student => 
-      student.subjects && student.subjects.some(sub => sub.teacher_id === teacher.id)
-    );
-  }, [teacher, students]);
-
   const totalUnpaidEarnings = useMemo(() => {
     if (!teacher || students.length === 0 || income.length === 0) return 0;
 
+    // Filter for income that has NOT been paid out to THIS teacher
     const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
 
     let grossEarnings = 0;
@@ -69,7 +70,7 @@ export default function TeacherDashboardPage() {
   }, [teacher, students, income]);
   
   const stats = [
-    { title: 'Total Students', value: teacherStudents.length, icon: Users },
+    { title: 'My Students', value: students.length, icon: Users },
     { title: "Current Net Earnings (70%)", value: dataLoading ? 'Calculating...' : `${totalUnpaidEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR`, icon: DollarSign },
     { title: 'Subjects Taught', value: teacher?.subjects?.length || 0, icon: BookCopy },
   ];
