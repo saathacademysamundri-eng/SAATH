@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { Teacher } from '@/lib/data';
+import { Teacher, ADMIN_UID } from '@/lib/data';
 import { getTeacherByEmail } from '@/lib/firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
@@ -29,6 +29,23 @@ export const TeacherAuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user && user.email) {
          try {
+          // Check for Admin bypass
+          if (user.uid === ADMIN_UID) {
+            const adminTeacher: Teacher = {
+                id: ADMIN_UID,
+                name: "Super Admin",
+                email: user.email,
+                phone: "Admin",
+                fatherName: "Admin",
+                address: "Admin Office",
+                subjects: [],
+                imageUrl: ""
+            };
+            setTeacher(adminTeacher);
+            setLoading(false);
+            return;
+          }
+
           const storedTeacher = sessionStorage.getItem(TEACHER_SESSION_KEY);
           if (storedTeacher) {
             const parsed = JSON.parse(storedTeacher);
@@ -67,6 +84,12 @@ export const TeacherAuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       const user = userCredential.user;
+
+      if (user.uid === ADMIN_UID) {
+          // Special case for admin logging in via teacher portal
+          router.push('/teacher/dashboard');
+          return { success: true, message: 'Admin logged in to teacher view.' };
+      }
 
       if (user.email) {
         const teacherData = await getTeacherByEmail(user.email);

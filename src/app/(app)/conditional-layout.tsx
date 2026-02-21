@@ -44,6 +44,7 @@ import {
   Archive,
   Armchair,
   Newspaper,
+  MonitorPlay,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -135,6 +136,14 @@ function MainSidebar() {
               </Button>
             </SidebarMenuItem>
           ))}
+          <SidebarMenuItem>
+              <Button asChild variant="ghost" className="w-full justify-start gap-2 h-10 group-data-[collapsible=icon]:justify-center text-blue-500 hover:text-blue-600 hover:bg-blue-500/10">
+                  <Link href="/teacher/dashboard">
+                    <MonitorPlay className={cn("h-6 w-6")} />
+                    <span className='group-data-[collapsible=icon]:hidden font-semibold'>Teacher View</span>
+                  </Link>
+              </Button>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>

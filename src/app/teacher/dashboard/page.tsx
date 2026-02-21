@@ -4,14 +4,15 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
-import { BookCopy, DollarSign, Users, Search, ClipboardCheck, Loader2 } from 'lucide-react';
+import { BookCopy, DollarSign, Users, Search, ClipboardCheck, Loader2, AlertCircle } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { format, startOfMonth, subMonths } from 'date-fns';
-import { Student, Income } from '@/lib/data';
+import { Student, Income, ADMIN_UID } from '@/lib/data';
 import { MonthlyTeacherAttendance } from './monthly-attendance';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getStudentsByTeacher, getRecentIncome } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function TeacherDashboardPage() {
   const { teacher } = useTeacherAuth();
@@ -20,6 +21,8 @@ export default function TeacherDashboardPage() {
   const [income, setIncome] = useState<Income[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
+  const isAdminView = teacher?.id === ADMIN_UID;
+
   useEffect(() => {
     if (!teacher) return;
 
@@ -27,12 +30,11 @@ export default function TeacherDashboardPage() {
       setDataLoading(true);
       try {
         // Optimization: Fetch only students taught by this teacher
-        // and only the last few months of income records
-        const [sData, iData] = await Promise.all([
-            getStudentsByTeacher(teacher!.id),
-            getRecentIncome(1000) // Fetches enough recent income for current summaries
-        ]);
+        const sData = await getStudentsByTeacher(teacher!.id);
         setStudents(sData);
+        
+        // Fetch recent income for earnings calculation
+        const iData = await getRecentIncome(1000);
         setIncome(iData);
       } catch (e) {
         console.error("Failed to load dashboard data for teacher:", e);
@@ -46,9 +48,7 @@ export default function TeacherDashboardPage() {
   const totalUnpaidEarnings = useMemo(() => {
     if (!teacher || students.length === 0 || income.length === 0) return 0;
 
-    // Filter for income that has NOT been paid out to THIS teacher
     const unpaidIncome = income.filter(i => !i.paidOutTo || !i.paidOutTo[teacher.id]);
-
     let grossEarnings = 0;
 
     unpaidIncome.forEach(inc => {
@@ -66,7 +66,7 @@ export default function TeacherDashboardPage() {
         }
     });
 
-    return grossEarnings * 0.7; // Teacher's share is 70%
+    return grossEarnings * 0.7; 
   }, [teacher, students, income]);
   
   const stats = [
@@ -77,6 +77,16 @@ export default function TeacherDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
+       {isAdminView && (
+         <Alert className="bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Super Admin View</AlertTitle>
+            <AlertDescription>
+                You are currently viewing the Teacher Portal as a Super Admin.
+            </AlertDescription>
+         </Alert>
+       )}
+
        <Card className="bg-gradient-to-r from-primary/10 to-background border-primary/20">
         <CardHeader className="flex flex-col sm:flex-row items-center gap-4">
             <Avatar className="h-20 w-20 border-2 border-primary">
@@ -108,7 +118,7 @@ export default function TeacherDashboardPage() {
       </div>
 
        <div className="grid grid-cols-1 gap-6">
-          <MonthlyTeacherAttendance />
+          {!isAdminView && <MonthlyTeacherAttendance />}
        </div>
     </div>
   );
