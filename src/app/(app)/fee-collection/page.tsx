@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student, type Income } from '@/lib/data';
 import { getStudent, updateStudentFeeStatus, addIncome, logActivity } from '@/lib/firebase/firestore';
-import { Printer, Search, Loader2 } from 'lucide-react';
+import { Printer, Search, Loader2, Tag, AlertTriangle } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
@@ -21,7 +21,7 @@ import QRCode from 'qrcode';
 import { format, addMonths, startOfMonth } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendWhatsappMessage as sendWhatsappMessageFlow } from '@/ai/flows/send-whatsapp-flow';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
@@ -77,18 +77,106 @@ function StudentSearchResultsDialog({
   );
 }
 
+function DiscountDialog({ 
+    open, 
+    onOpenChange, 
+    student, 
+    onSuccess 
+}: { 
+    open: boolean, 
+    onOpenChange: (open: boolean) => void, 
+    student: Student, 
+    onSuccess: (updatedStudent: Student) => void 
+}) {
+    const [amount, setAmount] = useState<number>(0);
+    const [isApplying, setIsApplying] = useState(false);
+    const { toast } = useToast();
+
+    const handleApply = async () => {
+        if (amount <= 0 || amount > student.totalFee) {
+            toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Discount must be greater than 0 and not exceed current dues.' });
+            return;
+        }
+
+        setIsApplying(true);
+        const newTotalFee = student.totalFee - amount;
+        let newFeeStatus: Student['feeStatus'] = 'Partial';
+        if (newTotalFee <= 0) {
+            newFeeStatus = 'Paid';
+        } else if (newTotalFee >= student.monthlyFee) {
+            newFeeStatus = 'Overdue';
+        }
+
+        const result = await updateStudentFeeStatus(student.id, newTotalFee, newFeeStatus);
+        if (result.success) {
+            await logActivity('fee_discount', `Applied ${amount} PKR discount to ${student.name}. Remaining dues: ${newTotalFee} PKR.`);
+            toast({ title: 'Discount Applied', description: `${amount} PKR has been deducted from ${student.name}'s account.` });
+            onSuccess({ ...student, totalFee: newTotalFee, feeStatus: newFeeStatus });
+            onOpenChange(false);
+            setAmount(0);
+        } else {
+            toast({ variant: 'destructive', title: 'Action Failed', description: result.message });
+        }
+        setIsApplying(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Tag className="h-5 w-5 text-amber-500" />
+                        Apply Special Discount
+                    </DialogTitle>
+                    <DialogDescription>
+                        This will permanently reduce <strong>{student.name}</strong>'s current dues. 
+                        This action is not recorded as income and will not be shared with teachers.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-md border border-amber-200 dark:border-amber-800 flex gap-3 text-amber-800 dark:text-amber-200 text-sm mb-4">
+                    <AlertTriangle className="h-5 w-5 shrink-0" />
+                    <p>Use this for one-time reductions. Discounts are completed within this month and do not carry over.</p>
+                </div>
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="discount-amt">Discount Amount (PKR)</Label>
+                        <Input 
+                            id="discount-amt" 
+                            type="number" 
+                            placeholder="Enter amount to deduct..."
+                            value={amount || ''}
+                            onChange={(e) => setAmount(Number(e.target.value))}
+                            autoFocus
+                        />
+                        <p className="text-xs text-muted-foreground">Current Dues: {student.totalFee.toLocaleString()} PKR</p>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="ghost">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleApply} disabled={isApplying || amount <= 0} className="bg-amber-600 hover:bg-amber-700">
+                        {isApplying ? <Loader2 className="animate-spin mr-2" /> : <Tag className="mr-2" />}
+                        Confirm Discount
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 export default function FeeCollectionPage() {
   const [search, setSearch] = useState('');
   const [searchedStudent, setSearchedStudent] = useState<Student | null>(null);
   const [studentIncome, setStudentIncome] = useState<Income[]>([]);
   const [paidAmount, setPaidAmount] = useState(0);
-  const [discountAmount, setDiscountAmount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
+  const [isDiscountOpen, setIsDiscountOpen] = useState(false);
   const [forMonth, setForMonth] = useState(() => format(new Date(), 'yyyy-MM'));
   const printRef = useRef<HTMLDivElement>(null);
   
@@ -175,7 +263,7 @@ export default function FeeCollectionPage() {
         limit(20)
       );
 
-      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(idSnap)]);
+      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(qId)]);
       
       nameSnap.forEach(doc => {
         const data = doc.data() as Student;
@@ -212,20 +300,16 @@ export default function FeeCollectionPage() {
     setSearchedStudent(student);
     await fetchStudentIncome(student.id);
     setPaidAmount(0);
-    setDiscountAmount(0);
     setIsSearchResultsOpen(false);
   };
 
 
   const handlePayment = async () => {
-    if (!searchedStudent) return;
-    
-    const totalReduction = paidAmount + discountAmount;
-    if (totalReduction <= 0) {
+    if (!searchedStudent || paidAmount <= 0) {
       toast({
         variant: 'destructive',
         title: 'Invalid Amount',
-        description: 'Please enter a valid paid amount or discount.',
+        description: 'Please enter a valid amount being paid.',
       });
       return;
     }
@@ -233,8 +317,7 @@ export default function FeeCollectionPage() {
     setIsProcessingPayment(true);
     
     const originalTotal = searchedStudent.totalFee;
-    const effectiveDuesBeforePay = originalTotal - discountAmount;
-    const newTotalFee = effectiveDuesBeforePay - paidAmount;
+    const newTotalFee = originalTotal - paidAmount;
 
     let newFeeStatus: Student['feeStatus'] = 'Partial';
     if (newTotalFee <= 0) {
@@ -243,34 +326,27 @@ export default function FeeCollectionPage() {
         newFeeStatus = 'Overdue';
     }
 
-    // 1. Process Discount Logging
-    if (discountAmount > 0) {
-        await logActivity('fee_discount', `Applied ${discountAmount} PKR discount to ${searchedStudent.name}.`);
-    }
-
-    // 2. Process Income Record (Only if money was paid)
+    // 1. Process Income Record
     let receiptId = `RCPT-${Date.now()}`;
-    if (paidAmount > 0) {
-        const incomeResult = await addIncome({
-            studentName: searchedStudent.name,
-            studentId: searchedStudent.id,
-            amount: paidAmount,
-            receiptId: receiptId,
-            forMonth: forMonth,
+    const incomeResult = await addIncome({
+        studentName: searchedStudent.name,
+        studentId: searchedStudent.id,
+        amount: paidAmount,
+        receiptId: receiptId,
+        forMonth: forMonth,
+    });
+        
+    if (!incomeResult.success || !incomeResult.id) {
+        toast({
+            variant: "destructive",
+            title: "Payment Failed",
+            description: `Failed to record income: ${incomeResult.message}`,
         });
-          
-        if (!incomeResult.success || !incomeResult.id) {
-            toast({
-                variant: "destructive",
-                title: "Payment Failed",
-                description: `Failed to record income: ${incomeResult.message}`,
-            });
-            setIsProcessingPayment(false);
-            return;
-        }
+        setIsProcessingPayment(false);
+        return;
     }
 
-    // 3. Update Student Record
+    // 2. Update Student Record
     const result = await updateStudentFeeStatus(searchedStudent.id, newTotalFee, newFeeStatus);
 
     if (result.success) {
@@ -284,10 +360,10 @@ export default function FeeCollectionPage() {
 
       toast({
         title: 'Transaction Recorded',
-        description: `Applied ${discountAmount} PKR discount and received ${paidAmount} PKR for ${searchedStudent.name}.`,
+        description: `Successfully received ${paidAmount} PKR from ${searchedStudent.name}.`,
       });
 
-      if (paidAmount > 0 && settings.paymentReceiptMsg && searchedStudent.phone) {
+      if (settings.paymentReceiptMsg && searchedStudent.phone) {
         let messageBody = settings.paymentReceiptTemplate || 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!';
         messageBody = messageBody.replace(/{student_name}/g, searchedStudent.name)
                                   .replace(/{amount}/g, paidAmount.toLocaleString() + ' PKR');
@@ -299,10 +375,8 @@ export default function FeeCollectionPage() {
         }
       }
       
-      // Use effective dues (after discount) as the total due on the printed receipt
-      handlePrintPaidReceipt(paidAmount, newTotalFee, effectiveDuesBeforePay, receiptId);
+      handlePrintPaidReceipt(paidAmount, newTotalFee, originalTotal, receiptId);
       setPaidAmount(0);
-      setDiscountAmount(0);
       refreshData();
     } else {
         toast({
@@ -612,34 +686,34 @@ export default function FeeCollectionPage() {
               </Card>
 
               <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle>Payment Collection</CardTitle>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                        onClick={() => setIsDiscountOpen(true)}
+                        disabled={searchedStudent.totalFee <= 0}
+                      >
+                        <Tag className="h-4 w-4 mr-2" />
+                        Apply Special Discount
+                      </Button>
                   </CardHeader>
-                  <CardContent className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+                  <CardContent className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                       <div className="space-y-2">
                           <Label>Current Dues (PKR)</Label>
-                          <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled />
-                      </div>
-                      <div className="space-y-2">
-                          <Label htmlFor="discountAmount">Discount Amount (PKR)</Label>
-                          <Input 
-                              id="discountAmount" 
-                              type="number"
-                              placeholder="Enter discount" 
-                              value={discountAmount || ''}
-                              onChange={(e) => setDiscountAmount(Number(e.target.value))}
-                              disabled={isProcessingPayment || searchedStudent.totalFee === 0}
-                          />
+                          <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled className="bg-muted font-bold" />
                       </div>
                       <div className="space-y-2">
                           <Label htmlFor="paidAmount">Amount being Paid (PKR)</Label>
                           <Input 
                               id="paidAmount" 
                               type="number"
-                              placeholder="Enter amount" 
+                              placeholder="Enter cash received" 
                               value={paidAmount || ''}
                               onChange={(e) => setPaidAmount(Number(e.target.value))}
-                              disabled={isProcessingPayment || searchedStudent.totalFee === 0}
+                              disabled={isProcessingPayment || searchedStudent.totalFee <= 0}
+                              className="border-green-300 focus:ring-green-500"
                           />
                       </div>
                       <div className="space-y-2">
@@ -657,16 +731,26 @@ export default function FeeCollectionPage() {
                       </div>
                       <div className="space-y-2">
                           <Label>Remaining Dues (PKR)</Label>
-                          <Input value={Math.max(0, currentBalanceValue - discountAmount - paidAmount).toLocaleString()} readOnly disabled />
+                          <Input value={Math.max(0, currentBalanceValue - paidAmount).toLocaleString()} readOnly disabled className="bg-muted" />
                       </div>
                   </CardContent>
-                  <CardContent className='flex gap-2'>
-                      <Button onClick={handlePayment} disabled={isProcessingPayment || searchedStudent.totalFee === 0 || (paidAmount + discountAmount) <= 0}>
-                          {isProcessingPayment ? <Loader2 className="animate-spin" /> : null}
-                          {isProcessingPayment ? 'Processing...' : 'Collect & Print Receipt'}
+                  <CardContent className='flex gap-2 border-t pt-6'>
+                      <Button onClick={handlePayment} size="lg" disabled={isProcessingPayment || searchedStudent.totalFee <= 0 || paidAmount <= 0}>
+                          {isProcessingPayment ? <Loader2 className="animate-spin mr-2" /> : <Printer className="mr-2" />}
+                          {isProcessingPayment ? 'Processing...' : 'Collect Cash & Print Receipt'}
                       </Button>
                   </CardContent>
               </Card>
+
+              <DiscountDialog 
+                open={isDiscountOpen} 
+                onOpenChange={setIsDiscountOpen} 
+                student={searchedStudent} 
+                onSuccess={(updated) => {
+                    setSearchedStudent(updated);
+                    refreshData();
+                }} 
+              />
           </div>
         )}
       </div>
