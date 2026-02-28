@@ -71,6 +71,7 @@ export default function TeacherProfilePage() {
         
         setTeacher(teacherData);
         
+        // Cash Basis Logic: Filter for income that has not been paid to this teacher yet
         const unpaidIncome = allIncome.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
         const earningsByMonth: { [key: string]: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> & { year: number, monthIndex: number } } = {};
 
@@ -84,9 +85,10 @@ export default function TeacherProfilePage() {
                         const assignedMonthKey = format(assignedAt, 'yyyy-MM');
                         const incomeMonthKey = inc.forMonth || format(inc.date, 'yyyy-MM');
 
-                        // Only include if the subject was assigned on or before the payment's targeted month
+                        // Ensure teacher only gets share if they were teaching the student in that targeted month
                         if (assignedMonthKey > incomeMonthKey) return;
 
+                        // Calculate share based on ACTUAL cash collected (proportion of monthly fee)
                         const feeShareForSubject = subject.fee_share || 0;
                         if (student.monthlyFee > 0) {
                           const proportion = feeShareForSubject / student.monthlyFee;
