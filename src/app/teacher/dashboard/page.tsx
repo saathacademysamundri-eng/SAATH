@@ -4,13 +4,12 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
-import { BookCopy, DollarSign, Users, Search, ClipboardCheck, Loader2, AlertCircle } from 'lucide-react';
+import { BookCopy, DollarSign, Users, AlertCircle } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
-import { format, startOfMonth, subMonths } from 'date-fns';
 import { Student, Income, ADMIN_UID } from '@/lib/data';
 import { MonthlyTeacherAttendance } from './monthly-attendance';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getStudentsByTeacher, getRecentIncome } from '@/lib/firebase/firestore';
+import { getStudentsByTeacher, getIncome } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -33,8 +32,8 @@ export default function TeacherDashboardPage() {
         const sData = await getStudentsByTeacher(teacher!.id);
         setStudents(sData);
         
-        // Fetch recent income for earnings calculation
-        const iData = await getRecentIncome(1000);
+        // Fetch full income for earnings calculation (matching admin logic)
+        const iData = await getIncome();
         setIncome(iData);
       } catch (e) {
         console.error("Failed to load dashboard data for teacher:", e);
@@ -107,7 +106,7 @@ export default function TeacherDashboardPage() {
               <stat.icon className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {dataLoading && stat.title.includes('Earnings') ? (
+              {dataLoading ? (
                 <Skeleton className="h-8 w-32" />
               ) : (
                 <div className="text-3xl font-bold">{stat.value}</div>
