@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useAppContext } from '@/hooks/use-app-context';
 import QRCode from 'qrcode';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendWhatsappMessage as sendWhatsappMessageFlow } from '@/ai/flows/send-whatsapp-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
