@@ -9,7 +9,8 @@ import {
     BookCopy,
     ClipboardCheck,
     ArrowLeft,
-    User
+    User,
+    DollarSign
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -57,6 +58,7 @@ function TeacherSidebar() {
     { href: '/teacher/students', label: 'My Students', icon: Users },
     { href: '/teacher/exams', label: 'Exams', icon: ClipboardPenLine },
     { href: '/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
+    { href: '/teacher/earnings', label: 'My Earnings', icon: DollarSign },
   ];
 
   if (!teacher) return null;

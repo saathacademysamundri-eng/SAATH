@@ -1,17 +1,17 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
-import { BookCopy, DollarSign, Users, AlertCircle } from 'lucide-react';
+import { BookCopy, DollarSign, Users, ArrowRight } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { Student, Income, ADMIN_UID } from '@/lib/data';
 import { MonthlyTeacherAttendance } from './monthly-attendance';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getStudentsByTeacher, getIncome, getAllStudents } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function TeacherDashboardPage() {
   const { teacher } = useTeacherAuth();
@@ -75,9 +75,24 @@ export default function TeacherDashboardPage() {
   }, [teacher, allStudents, income]);
   
   const stats = [
-    { title: 'My Students', value: students.length, icon: Users },
-    { title: "Current Net Earnings (70%)", value: dataLoading ? 'Calculating...' : `${totalUnpaidEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PKR`, icon: DollarSign },
-    { title: 'Subjects Taught', value: teacher?.subjects?.length || 0, icon: BookCopy },
+    { 
+        title: 'My Students', 
+        value: students.length, 
+        icon: Users,
+        link: '/teacher/students'
+    },
+    { 
+        title: "Unpaid Net Earnings", 
+        value: dataLoading ? 'Calculating...' : `${totalUnpaidEarnings.toLocaleString('en-US', { maximumFractionDigits: 0 })} PKR`, 
+        icon: DollarSign,
+        link: '/teacher/earnings'
+    },
+    { 
+        title: 'Subjects Taught', 
+        value: teacher?.subjects?.length || 0, 
+        icon: BookCopy,
+        link: null
+    },
   ];
 
   return (
@@ -88,9 +103,9 @@ export default function TeacherDashboardPage() {
                 <AvatarImage src={teacher?.imageUrl} alt={teacher?.name} />
                 <AvatarFallback className="text-3xl">{teacher?.name?.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className="text-center sm:text-left">
+            <div className="text-center sm:text-left flex-1">
                 <CardTitle className="text-3xl font-bold">Welcome, {teacher?.name}!</CardTitle>
-                <CardDescription className="mt-1 text-lg">Here is an overview of your dashboard.</CardDescription>
+                <CardDescription className="mt-1 text-lg">Here is your academy overview for today.</CardDescription>
             </div>
         </CardHeader>
        </Card>
@@ -106,6 +121,13 @@ export default function TeacherDashboardPage() {
                 <Skeleton className="h-8 w-32" />
               ) : (
                 <div className="text-3xl font-bold">{stat.value}</div>
+              )}
+              {stat.link && (
+                  <Button variant="link" className="px-0 h-auto mt-2 text-xs" asChild>
+                      <Link href={stat.link}>
+                          View Details <ArrowRight className="ml-1 h-3 w-3" />
+                      </Link>
+                  </Button>
               )}
             </CardContent>
           </Card>
