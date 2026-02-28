@@ -1,7 +1,7 @@
 
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp, getCountFromServer, getAggregateFromServer, sum, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
 import { app, auth, firebaseConfig } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID } from '@/lib/data';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID, Discount } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -75,7 +75,7 @@ export async function clearActivityHistory() {
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'activities', operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
-        return { success: false, message: (serverError as Error).message };
+        return { success: false, message: 'Permission denied.' };
     }
 }
 
@@ -239,7 +239,6 @@ export async function getClassDistribution() {
 export async function getStudentsPaged(pageSize: number = 20, lastVisible?: QueryDocumentSnapshot, classFilter?: string, searchTerm?: string): Promise<{ students: Student[], lastDoc: QueryDocumentSnapshot | null }> {
     const studentsCollection = collection(db, 'students');
     
-    // 1. Handle Search Case
     if (searchTerm) {
         const q = query(
             studentsCollection, 
@@ -273,7 +272,6 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
         };
     }
 
-    // 2. Handle Class Filter Case - Load FULL list for selection (up to 500)
     if (classFilter && classFilter !== 'all') {
         const classes = await getClasses();
         const selectedClass = classes.find(c => c.id === classFilter);
@@ -289,12 +287,10 @@ export async function getStudentsPaged(pageSize: number = 20, lastVisible?: Quer
                 .filter(s => s.status === 'active')
                 .sort((a, b) => a.id.localeCompare(b.id));
             
-            // Return full class results to allow "Select All" to work for the whole class
             return { students: results, lastDoc: null };
         }
     }
 
-    // 3. Standard Default Viewing (All Classes, Paged)
     let q = query(
         studentsCollection, 
         where('status', '==', 'active'), 
@@ -331,10 +327,6 @@ export async function getStudents(): Promise<Student[]> {
     return allStudents.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-/**
- * Highly optimized query for teachers to fetch only students they teach.
- * Requires teacherIds array field on student documents.
- */
 export async function getStudentsByTeacher(teacherId: string): Promise<Student[]> {
     try {
         const q = query(
@@ -349,7 +341,6 @@ export async function getStudentsByTeacher(teacherId: string): Promise<Student[]
             return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Student));
         }
 
-        // Fallback for legacy data without teacherIds field
         const allStudents = await getStudents();
         return allStudents.filter(s => s.subjects && s.subjects.some(sub => sub.teacher_id === teacherId));
     } catch (e) {
@@ -375,7 +366,6 @@ export async function getAlumni(): Promise<Student[]> {
 
 export async function getArchivedStudents(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
-    // Filter specifically for archived status
     const q = query(studentsCollection, where('status', '==', 'archived'), limit(500));
     const studentsSnap = await getDocs(q);
     const allStudents = studentsSnap.docs.map(doc => {
@@ -424,7 +414,6 @@ export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id:
         assignedAt: Timestamp.now(),
     }));
 
-    // Extract unique teacher IDs for high-performance indexing
     const teacherIds = [...new Set(student.subjects.map(s => s.teacher_id))];
 
     const studentWithStatus = { 
@@ -490,7 +479,6 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
                         assignedAt: existing?.assignedAt || Timestamp.now()
                     };
                 });
-                // Update indexed teacher IDs
                 updateData.teacherIds = [...new Set(studentData.subjects.map(s => s.teacher_id))];
             }
 
@@ -1006,10 +994,6 @@ export async function getIncome(): Promise<Income[]> {
     });
 }
 
-/**
- * Highly optimized query for fetching recent income records for dashboard summaries. 
- * Defaults to last 500 records to maintain high performance.
- */
 export async function getRecentIncome(recordLimit: number = 500): Promise<Income[]> {
     const q = query(collection(db, "income"), orderBy("date", "desc"), limit(recordLimit));
     const querySnapshot = await getDocs(q);
@@ -1098,6 +1082,91 @@ export async function updateIncomeRecord(incomeId: string, newAmount: number) {
     }
 }
 
+// Discount Functions
+export async function applyFeeDiscount(studentId: string, amount: number) {
+    const studentRef = doc(db, 'students', studentId);
+    const discountRef = doc(collection(db, 'discounts'));
+    
+    try {
+        await runTransaction(db, async (transaction) => {
+            const studentDoc = await transaction.get(studentRef);
+            if (!studentDoc.exists()) throw new Error("Student not found");
+            const studentData = studentDoc.data() as Student;
+
+            const newTotalFee = Math.max(0, studentData.totalFee - amount);
+            let newFeeStatus: Student['feeStatus'] = 'Partial';
+            if (newTotalFee <= 0) {
+                newFeeStatus = 'Paid';
+            } else if (newTotalFee >= studentData.monthlyFee) {
+                newFeeStatus = 'Overdue';
+            }
+
+            transaction.update(studentRef, { totalFee: newTotalFee, feeStatus: newFeeStatus });
+            
+            transaction.set(discountRef, {
+                studentId,
+                studentName: studentData.name,
+                phone: studentData.phone || 'N/A',
+                amount,
+                date: serverTimestamp(),
+                month: formatDate(new Date(), 'yyyy-MM')
+            });
+        });
+
+        await logActivity('fee_discount', `Applied ${amount} PKR discount to ${studentId}.`);
+        return { success: true, message: 'Discount applied successfully.' };
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: 'discounts/[auto-id]', operation: 'create' });
+        errorEmitter.emit('permission-error', permissionError);
+        return { success: false, message: (serverError as Error).message };
+    }
+}
+
+export async function getDiscounts(): Promise<Discount[]> {
+    const q = query(collection(db, "discounts"), orderBy("date", "desc"), limit(500));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(), 
+        date: doc.data().date.toDate() 
+    } as Discount));
+}
+
+export async function deleteDiscount(discountId: string) {
+    const discountRef = doc(db, 'discounts', discountId);
+    try {
+        await runTransaction(db, async (transaction) => {
+            const discountDoc = await transaction.get(discountRef);
+            if (!discountDoc.exists()) throw new Error("Discount record not found.");
+            const discountData = discountDoc.data() as Discount;
+
+            const studentRef = doc(db, 'students', discountData.studentId);
+            const studentDoc = await transaction.get(studentRef);
+
+            if (studentDoc.exists()) {
+                const studentData = studentDoc.data() as Student;
+                const reversedTotal = studentData.totalFee + discountData.amount;
+                
+                let newFeeStatus: Student['feeStatus'] = 'Partial';
+                if (reversedTotal <= 0) {
+                    newFeeStatus = 'Paid';
+                } else if (reversedTotal >= studentData.monthlyFee) {
+                    newFeeStatus = 'Overdue';
+                }
+
+                transaction.update(studentRef, { totalFee: reversedTotal, feeStatus: newFeeStatus });
+            }
+            transaction.delete(discountRef);
+        });
+
+        await logActivity('discount_reversed', `Reversed discount of ${discountId}.`);
+        return { success: true, message: 'Discount successfully reversed.' };
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: 'discounts', operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
+        return { success: false, message: (serverError as Error).message };
+    }
+}
 
 
 // Expense Functions
@@ -1826,7 +1895,6 @@ export async function getStudentExams(studentId: string, className: string): Pro
             submissionDeadline: doc.data().submissionDeadline?.toDate() 
         } as Exam));
         
-        // Sort exams by date descending in memory
         return exams
             .filter(exam => exam.results?.some(r => r.studentId === studentId))
             .sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -1838,7 +1906,6 @@ export async function getStudentExams(studentId: string, className: string): Pro
 
 export async function getStudentIncomeHistory(studentId: string): Promise<Income[]> {
     try {
-        // Optimized query requiring composite index: studentId (Asc) + date (Desc)
         const q = query(
             collection(db, 'income'),
             where('studentId', '==', studentId),
@@ -1852,7 +1919,6 @@ export async function getStudentIncomeHistory(studentId: string): Promise<Income
             date: doc.data().date.toDate() 
         } as Income));
     } catch (e: any) {
-        // Fallback for missing composite index: query by studentId only and sort in memory
         if (e.code === 'failed-precondition' || e.message?.includes('index')) {
             try {
                 const qFallback = query(

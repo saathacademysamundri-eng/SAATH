@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student, type Income } from '@/lib/data';
-import { getStudent, updateStudentFeeStatus, addIncome, logActivity } from '@/lib/firebase/firestore';
+import { getStudent, updateStudentFeeStatus, addIncome, logActivity, applyFeeDiscount } from '@/lib/firebase/firestore';
 import { Printer, Search, Loader2, Tag, AlertTriangle } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -99,19 +100,14 @@ function DiscountDialog({
         }
 
         setIsApplying(true);
-        const newTotalFee = student.totalFee - amount;
-        let newFeeStatus: Student['feeStatus'] = 'Partial';
-        if (newTotalFee <= 0) {
-            newFeeStatus = 'Paid';
-        } else if (newTotalFee >= student.monthlyFee) {
-            newFeeStatus = 'Overdue';
-        }
-
-        const result = await updateStudentFeeStatus(student.id, newTotalFee, newFeeStatus);
+        const result = await applyFeeDiscount(student.id, amount);
+        
         if (result.success) {
-            await logActivity('fee_discount', `Applied ${amount} PKR discount to ${student.name}. Remaining dues: ${newTotalFee} PKR.`);
-            toast({ title: 'Discount Applied', description: `${amount} PKR has been deducted from ${student.name}'s account.` });
-            onSuccess({ ...student, totalFee: newTotalFee, feeStatus: newFeeStatus });
+            toast({ title: 'Discount Applied', description: `${amount} PKR has been deducted and recorded in the report.` });
+            const updatedStudent = await getStudent(student.id);
+            if (updatedStudent) {
+                onSuccess(updatedStudent);
+            }
             onOpenChange(false);
             setAmount(0);
         } else {
@@ -251,7 +247,7 @@ export default function FeeCollectionPage() {
         limit(20)
       );
 
-      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(qId)]);
+      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(idSnap)]);
       
       nameSnap.forEach(doc => {
         const data = doc.data() as Student;

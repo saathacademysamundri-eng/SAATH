@@ -24,7 +24,7 @@ export type DailyAttendanceSummary = {
 
 export type Activity = {
     id: string;
-    type: 'new_admission' | 'fee_payment' | 'fee_discount' | 'exam_created' | 'teacher_payout' | 'settings_updated' | 'student_deactivated' | 'student_reactivated' | 'teacher_deleted' | 'class_added' | 'class_updated' | 'database_seeded' | 'fee_reversal' | 'fee_updated' | 'expense_added' | 'expense_updated' | 'expense_deleted' | 'teacher_added' | 'teacher_updated' | 'attendance_marked' | 'exam_updated' | 'exam_deleted' | 'exam_results_saved' | 'student_deleted' | 'student_archived' | 'student_graduated' | 'fee_generated' | 'student_updated';
+    type: 'new_admission' | 'fee_payment' | 'fee_discount' | 'exam_created' | 'teacher_payout' | 'settings_updated' | 'student_deactivated' | 'student_reactivated' | 'teacher_deleted' | 'class_added' | 'class_updated' | 'database_seeded' | 'fee_reversal' | 'fee_updated' | 'expense_added' | 'expense_updated' | 'expense_deleted' | 'teacher_added' | 'teacher_updated' | 'attendance_marked' | 'exam_updated' | 'exam_deleted' | 'exam_results_saved' | 'student_deleted' | 'student_archived' | 'student_graduated' | 'fee_generated' | 'student_updated' | 'discount_reversed';
     message: string;
     link?: string;
     date: Date;
@@ -89,6 +89,16 @@ export type Income = {
     date: Date;
     forMonth?: string; // e.g., "2024-07"
     paidOutTo?: { [teacherId: string]: string }; // Tracks which teacher has been paid for this income via which payout
+}
+
+export type Discount = {
+    id: string;
+    studentId: string;
+    studentName: string;
+    phone: string;
+    amount: number;
+    date: Date;
+    month: string; // e.g., "2025-07"
 }
 
 export type TeacherPayout = {

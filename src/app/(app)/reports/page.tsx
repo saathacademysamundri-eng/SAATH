@@ -16,6 +16,7 @@ import {
   BookCopy,
   CalendarCheck2,
   Loader2,
+  Tag,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type Student, type Income } from '@/lib/data';
@@ -23,6 +24,7 @@ import { useRouter } from 'next/navigation';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { ClassAttendanceDialog } from './class-attendance-dialog';
 import { DailyAttendanceSummaryDialog } from './daily-attendance-summary-dialog';
+import { DiscountReportDialog } from './discount-report-dialog';
 import { useState, useMemo, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -105,6 +107,15 @@ export default function ReportsPage() {
       icon: BadgeAlert,
       isEnabled: true,
       type: 'print-export',
+    },
+    {
+      id: 'discount-audit',
+      title: 'Fee Discounts Report',
+      description: 'Audit report of all manual discounts granted. View by month, student, and reverse if needed.',
+      icon: Tag,
+      isEnabled: true,
+      type: 'dialog',
+      dialogComponent: <DiscountReportDialog />,
     },
     {
       id: 'attendance',
