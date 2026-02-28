@@ -327,22 +327,26 @@ export async function getStudents(): Promise<Student[]> {
     return allStudents.sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/**
+ * Fetches all student records regardless of status.
+ * Used for financial reports where archived/graduated student payments must be counted.
+ */
+export async function getAllStudents(): Promise<Student[]> {
+    const studentsCollection = collection(db, 'students');
+    const studentsSnap = await getDocs(query(studentsCollection, limit(5000)));
+    return studentsSnap.docs.map(doc => ({ 
+        ...doc.data(), 
+        id: doc.id,
+        archivedAt: doc.data().archivedAt?.toDate() 
+    } as Student));
+}
+
 export async function getStudentsByTeacher(teacherId: string): Promise<Student[]> {
     try {
-        const q = query(
-            collection(db, 'students'), 
-            where('status', '==', 'active'), 
-            where('teacherIds', 'array-contains', teacherId),
-            limit(1000)
-        );
-        const snapshot = await getDocs(q);
-        
-        if (!snapshot.empty) {
-            return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Student));
-        }
-
-        const allStudents = await getStudents();
-        return allStudents.filter(s => s.subjects && s.subjects.some(sub => sub.teacher_id === teacherId));
+        // We fetch all active students and filter client-side to be 100% accurate for old data
+        // For 2000 students this is very fast.
+        const allActive = await getStudents();
+        return allActive.filter(s => s.subjects && s.subjects.some(sub => sub.teacher_id === teacherId));
     } catch (e) {
         console.error("getStudentsByTeacher failed:", e);
         return [];
