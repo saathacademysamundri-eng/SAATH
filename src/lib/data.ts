@@ -24,7 +24,7 @@ export type DailyAttendanceSummary = {
 
 export type Activity = {
     id: string;
-    type: 'new_admission' | 'fee_payment' | 'exam_created' | 'teacher_payout' | 'settings_updated' | 'student_deactivated' | 'student_reactivated' | 'teacher_deleted' | 'class_added' | 'class_updated' | 'database_seeded' | 'fee_reversal' | 'fee_updated' | 'expense_added' | 'expense_updated' | 'expense_deleted' | 'teacher_added' | 'teacher_updated' | 'attendance_marked' | 'exam_updated' | 'exam_deleted' | 'exam_results_saved' | 'student_deleted' | 'student_archived' | 'student_graduated' | 'fee_generated' | 'student_updated';
+    type: 'new_admission' | 'fee_payment' | 'fee_discount' | 'exam_created' | 'teacher_payout' | 'settings_updated' | 'student_deactivated' | 'student_reactivated' | 'teacher_deleted' | 'class_added' | 'class_updated' | 'database_seeded' | 'fee_reversal' | 'fee_updated' | 'expense_added' | 'expense_updated' | 'expense_deleted' | 'teacher_added' | 'teacher_updated' | 'attendance_marked' | 'exam_updated' | 'exam_deleted' | 'exam_results_saved' | 'student_deleted' | 'student_archived' | 'student_graduated' | 'fee_generated' | 'student_updated';
     message: string;
     link?: string;
     date: Date;

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student, type Income } from '@/lib/data';
-import { getStudent, updateStudentFeeStatus, addIncome } from '@/lib/firebase/firestore';
+import { getStudent, updateStudentFeeStatus, addIncome, logActivity } from '@/lib/firebase/firestore';
 import { Printer, Search, Loader2 } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -84,6 +85,7 @@ export default function FeeCollectionPage() {
   const [searchedStudent, setSearchedStudent] = useState<Student | null>(null);
   const [studentIncome, setStudentIncome] = useState<Income[]>([]);
   const [paidAmount, setPaidAmount] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [printFormat, setPrintFormat] = useState<PrintFormat>('thermal');
@@ -136,8 +138,6 @@ export default function FeeCollectionPage() {
     setSearchResults([]);
 
     // 1. Smart ID Formatting
-    // If user enters "1", convert to "S001"
-    // If user enters "s1" or "S1", convert to "S001"
     let formattedId = queryTerm;
     if (/^\d+$/.test(queryTerm)) {
       formattedId = `S${queryTerm.padStart(3, '0')}`;
@@ -161,7 +161,6 @@ export default function FeeCollectionPage() {
     const resultsMap = new Map<string, Student>();
 
     const runSearchQuery = async (term: string) => {
-      // Capitalize for better match likelihood in Firestore
       const capitalized = term.charAt(0).toUpperCase() + term.slice(1);
       
       const qName = query(
@@ -215,17 +214,20 @@ export default function FeeCollectionPage() {
     setSearchedStudent(student);
     await fetchStudentIncome(student.id);
     setPaidAmount(0);
+    setDiscountAmount(0);
     setIsSearchResultsOpen(false);
   };
 
 
   const handlePayment = async () => {
     if (!searchedStudent) return;
-    if (paidAmount <= 0) {
+    
+    const totalReduction = paidAmount + discountAmount;
+    if (totalReduction <= 0) {
       toast({
         variant: 'destructive',
         title: 'Invalid Amount',
-        description: 'Please enter a valid amount to collect.',
+        description: 'Please enter a valid paid amount or discount.',
       });
       return;
     }
@@ -233,7 +235,9 @@ export default function FeeCollectionPage() {
     setIsProcessingPayment(true);
     
     const originalTotal = searchedStudent.totalFee;
-    const newTotalFee = originalTotal - paidAmount;
+    const effectiveDuesBeforePay = originalTotal - discountAmount;
+    const newTotalFee = effectiveDuesBeforePay - paidAmount;
+
     let newFeeStatus: Student['feeStatus'] = 'Partial';
     if (newTotalFee <= 0) {
       newFeeStatus = 'Paid';
@@ -241,26 +245,34 @@ export default function FeeCollectionPage() {
         newFeeStatus = 'Overdue';
     }
 
-    const receiptId = `RCPT-${Date.now()}`;
-
-    const incomeResult = await addIncome({
-        studentName: searchedStudent.name,
-        studentId: searchedStudent.id,
-        amount: paidAmount,
-        receiptId: receiptId,
-        forMonth: forMonth,
-    });
-      
-    if (!incomeResult.success || !incomeResult.id) {
-        toast({
-            variant: "destructive",
-            title: "Payment Failed",
-            description: `Failed to record income: ${incomeResult.message}`,
-        });
-        setIsProcessingPayment(false);
-        return;
+    // 1. Process Discount Logging
+    if (discountAmount > 0) {
+        await logActivity('fee_discount', `Applied ${discountAmount} PKR discount to ${searchedStudent.name}.`);
     }
 
+    // 2. Process Income Record (Only if money was paid)
+    let receiptId = `RCPT-${Date.now()}`;
+    if (paidAmount > 0) {
+        const incomeResult = await addIncome({
+            studentName: searchedStudent.name,
+            studentId: searchedStudent.id,
+            amount: paidAmount,
+            receiptId: receiptId,
+            forMonth: forMonth,
+        });
+          
+        if (!incomeResult.success || !incomeResult.id) {
+            toast({
+                variant: "destructive",
+                title: "Payment Failed",
+                description: `Failed to record income: ${incomeResult.message}`,
+            });
+            setIsProcessingPayment(false);
+            return;
+        }
+    }
+
+    // 3. Update Student Record
     const result = await updateStudentFeeStatus(searchedStudent.id, newTotalFee, newFeeStatus);
 
     if (result.success) {
@@ -273,11 +285,11 @@ export default function FeeCollectionPage() {
       await fetchStudentIncome(searchedStudent.id);
 
       toast({
-        title: 'Payment Recorded',
-        description: `Paid ${paidAmount} for ${searchedStudent.name}. New balance is ${newTotalFee}.`,
+        title: 'Transaction Recorded',
+        description: `Applied ${discountAmount} PKR discount and received ${paidAmount} PKR for ${searchedStudent.name}.`,
       });
 
-      if (settings.paymentReceiptMsg && searchedStudent.phone) {
+      if (paidAmount > 0 && settings.paymentReceiptMsg && searchedStudent.phone) {
         let messageBody = settings.paymentReceiptTemplate || 'Dear parent, we have received a payment of {amount} for {student_name}. Thank you!';
         messageBody = messageBody.replace(/{student_name}/g, searchedStudent.name)
                                   .replace(/{amount}/g, paidAmount.toLocaleString() + ' PKR');
@@ -289,13 +301,15 @@ export default function FeeCollectionPage() {
         }
       }
       
-      handlePrintPaidReceipt(paidAmount, newTotalFee, originalTotal, receiptId);
+      // Use effective dues (after discount) as the total due on the printed receipt
+      handlePrintPaidReceipt(paidAmount, newTotalFee, effectiveDuesBeforePay, receiptId);
       setPaidAmount(0);
+      setDiscountAmount(0);
       refreshData();
     } else {
         toast({
             variant: "destructive",
-            title: "Payment Failed",
+            title: "Process Failed",
             description: `Student record could not be updated: ${result.message}`,
         });
     }
@@ -368,7 +382,7 @@ export default function FeeCollectionPage() {
                          <div style="text-align: center; margin-top: 3rem;">
                             ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100px; height: 100px; margin: auto;"><p>Scan for live fee status</p>` : ''}
                             <p style="margin-top: 2rem;">*** Thank you for your payment! ***</p>
-                            <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.</p>
+                            <p style="font-size: 0.8rem; color: #888; margin-top: 2rem;">Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Powered by SchoolUP.</p>
                         </div>
                     </div>
                 </body>
@@ -480,7 +494,7 @@ export default function FeeCollectionPage() {
                               </div>
                           ` : ''}
                            <p>*** Thank you for your payment! ***</p>
-                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
+                          Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Powered by SchoolUP.
                       </div>
                   </div>
               </body>
@@ -603,10 +617,21 @@ export default function FeeCollectionPage() {
                   <CardHeader>
                       <CardTitle>Payment Collection</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid md:grid-cols-4 gap-6">
+                  <CardContent className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
                       <div className="space-y-2">
-                          <Label>Total Dues (PKR)</Label>
+                          <Label>Current Dues (PKR)</Label>
                           <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="discountAmount">Discount Amount (PKR)</Label>
+                          <Input 
+                              id="discountAmount" 
+                              type="number"
+                              placeholder="Enter discount" 
+                              value={discountAmount || ''}
+                              onChange={(e) => setDiscountAmount(Number(e.target.value))}
+                              disabled={isProcessingPayment || searchedStudent.totalFee === 0}
+                          />
                       </div>
                       <div className="space-y-2">
                           <Label htmlFor="paidAmount">Amount being Paid (PKR)</Label>
@@ -634,11 +659,11 @@ export default function FeeCollectionPage() {
                       </div>
                       <div className="space-y-2">
                           <Label>Remaining Dues (PKR)</Label>
-                          <Input value={(currentBalanceValue - paidAmount).toLocaleString()} readOnly disabled />
+                          <Input value={Math.max(0, currentBalanceValue - discountAmount - paidAmount).toLocaleString()} readOnly disabled />
                       </div>
                   </CardContent>
                   <CardContent className='flex gap-2'>
-                      <Button onClick={handlePayment} disabled={isProcessingPayment || searchedStudent.totalFee === 0 || paidAmount <= 0}>
+                      <Button onClick={handlePayment} disabled={isProcessingPayment || searchedStudent.totalFee === 0 || (paidAmount + discountAmount) <= 0}>
                           {isProcessingPayment ? <Loader2 className="animate-spin" /> : null}
                           {isProcessingPayment ? 'Processing...' : 'Collect & Print Receipt'}
                       </Button>
