@@ -251,7 +251,7 @@ export default function FeeCollectionPage() {
         limit(20)
       );
 
-      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(idSnap)]);
+      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(qId)]);
       
       nameSnap.forEach(doc => {
         const data = doc.data() as Student;
@@ -314,7 +314,7 @@ export default function FeeCollectionPage() {
         newFeeStatus = 'Overdue';
     }
 
-    // 1. Process Income Record - Always use current month string
+    // 1. Process Income Record - Always use current month string for teacher payouts
     const currentMonth = format(new Date(), 'yyyy-MM');
     let receiptId = `RCPT-${Date.now()}`;
     const incomeResult = await addIncome({

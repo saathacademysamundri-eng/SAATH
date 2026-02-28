@@ -84,6 +84,7 @@ export default function TeacherProfilePage() {
                         const assignedMonthKey = format(assignedAt, 'yyyy-MM');
                         const incomeMonthKey = inc.forMonth || format(inc.date, 'yyyy-MM');
 
+                        // Only include if the subject was assigned on or before the payment's targeted month
                         if (assignedMonthKey > incomeMonthKey) return;
 
                         const feeShareForSubject = subject.fee_share || 0;
