@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useAppContext } from '@/hooks/use-app-context';
 import QRCode from 'qrcode';
-import { format, addMonths, startOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendWhatsappMessage as sendWhatsappMessageFlow } from '@/ai/flows/send-whatsapp-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -177,7 +177,6 @@ export default function FeeCollectionPage() {
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
   const [isDiscountOpen, setIsDiscountOpen] = useState(false);
-  const [forMonth, setForMonth] = useState(() => format(new Date(), 'yyyy-MM'));
   const printRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
@@ -188,17 +187,6 @@ export default function FeeCollectionPage() {
     if (studentIncome.length === 0) return null;
     return [...studentIncome].sort((a, b) => b.date.getTime() - a.date.getTime())[0] || null;
   }, [studentIncome]);
-
-  const monthOptions = useMemo(() => {
-    const options = [];
-    const baseDate = startOfMonth(new Date());
-    for (let i = -6; i <= 1; i++) {
-      const d = addMonths(baseDate, i);
-      const val = format(d, 'yyyy-MM');
-      options.push({ value: val, label: format(d, 'MMMM yyyy') });
-    }
-    return options;
-  }, []);
 
   const fetchStudentIncome = async (studentId: string) => {
     const q = query(collection(db, 'income'), where('studentId', '==', studentId), limit(10));
@@ -263,7 +251,7 @@ export default function FeeCollectionPage() {
         limit(20)
       );
 
-      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(qId)]);
+      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(idSnap)]);
       
       nameSnap.forEach(doc => {
         const data = doc.data() as Student;
@@ -326,14 +314,15 @@ export default function FeeCollectionPage() {
         newFeeStatus = 'Overdue';
     }
 
-    // 1. Process Income Record
+    // 1. Process Income Record - Always use current month string
+    const currentMonth = format(new Date(), 'yyyy-MM');
     let receiptId = `RCPT-${Date.now()}`;
     const incomeResult = await addIncome({
         studentName: searchedStudent.name,
         studentId: searchedStudent.id,
         amount: paidAmount,
         receiptId: receiptId,
-        forMonth: forMonth,
+        forMonth: currentMonth,
     });
         
     if (!incomeResult.success || !incomeResult.id) {
@@ -699,7 +688,7 @@ export default function FeeCollectionPage() {
                         Apply Special Discount
                       </Button>
                   </CardHeader>
-                  <CardContent className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                       <div className="space-y-2">
                           <Label>Current Dues (PKR)</Label>
                           <Input value={searchedStudent.totalFee.toLocaleString()} readOnly disabled className="bg-muted font-bold" />
@@ -715,19 +704,6 @@ export default function FeeCollectionPage() {
                               disabled={isProcessingPayment || searchedStudent.totalFee <= 0}
                               className="border-green-300 focus:ring-green-500"
                           />
-                      </div>
-                      <div className="space-y-2">
-                          <Label htmlFor="forMonth">Payment For Month</Label>
-                          <Select value={forMonth} onValueChange={setForMonth}>
-                            <SelectTrigger id="forMonth">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {monthOptions.map(opt => (
-                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
                       </div>
                       <div className="space-y-2">
                           <Label>Remaining Dues (PKR)</Label>
