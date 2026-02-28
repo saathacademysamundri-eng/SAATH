@@ -12,13 +12,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student, type Income } from '@/lib/data';
 import { getStudent, updateStudentFeeStatus, addIncome, logActivity, applyFeeDiscount } from '@/lib/firebase/firestore';
-import { Printer, Search, Loader2, Tag, AlertTriangle, FileText } from 'lucide-react';
+import { Printer, Search, Loader2, Tag, AlertTriangle, FileText, ArrowRight } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useAppContext } from '@/hooks/use-app-context';
 import QRCode from 'qrcode';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendWhatsappMessage as sendWhatsappMessageFlow } from '@/ai/flows/send-whatsapp-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -26,6 +26,7 @@ import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { useRouter } from 'next/navigation';
 
 type PrintFormat = 'thermal' | 'a4' | 'jpg';
 
@@ -91,6 +92,7 @@ function DiscountDialog({
     const [amount, setAmount] = useState<number>(0);
     const [isApplying, setIsApplying] = useState(false);
     const { toast } = useToast();
+    const router = useRouter();
 
     const handleApply = async () => {
         if (amount <= 0 || amount > student.totalFee) {
@@ -102,7 +104,10 @@ function DiscountDialog({
         const result = await applyFeeDiscount(student.id, amount);
         
         if (result.success) {
-            toast({ title: 'Discount Applied', description: `${amount} PKR has been deducted and recorded in the report.` });
+            toast({ 
+                title: 'Discount Applied', 
+                description: `${amount} PKR has been deducted from ${student.name}'s account.`,
+            });
             const updatedStudent = await getStudent(student.id);
             if (updatedStudent) {
                 onSuccess(updatedStudent);
@@ -124,13 +129,13 @@ function DiscountDialog({
                         Apply Special Discount
                     </DialogTitle>
                     <DialogDescription>
-                        This will permanently reduce <strong>{student.name}</strong>'s current dues. 
-                        This action is not recorded as income and will not be shared with teachers.
+                        This will permanently reduce <strong>{student.name}</strong>'s current dues in the backend. 
+                        The generated voucher will be updated automatically.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-md border border-amber-200 dark:border-amber-800 flex gap-3 text-amber-800 dark:text-amber-200 text-sm mb-4">
                     <AlertTriangle className="h-5 w-5 shrink-0" />
-                    <p>Use this for one-time reductions. Discounts are completed within this month and do not carry over.</p>
+                    <p>This action is not shared with teachers and is not recorded as cash income.</p>
                 </div>
                 <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
@@ -152,7 +157,7 @@ function DiscountDialog({
                     </DialogClose>
                     <Button onClick={handleApply} disabled={isApplying || amount <= 0} className="bg-amber-600 hover:bg-amber-700">
                         {isApplying ? <Loader2 className="animate-spin mr-2" /> : <Tag className="mr-2" />}
-                        Confirm Discount
+                        Confirm & Update System
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -177,6 +182,7 @@ export default function FeeCollectionPage() {
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
   const { refreshData } = useAppContext();
+  const router = useRouter();
   
   const lastPayment = useMemo(() => {
     if (studentIncome.length === 0) return null;
@@ -584,79 +590,6 @@ export default function FeeCollectionPage() {
     handlePrintPaidReceipt(amountPaidVal, balanceAfterPaymentVal, balanceBeforePaymentVal, originalReceiptIdVal, lastPayment.date);
   };
 
-  const handlePrintUpdatedVoucher = async () => {
-    if (!searchedStudent) return;
-    
-    const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
-    let qrCodeDataUrl = '';
-    try {
-      qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
-    } catch (error) {
-      console.error('QR code generation failed:', error);
-    }
-
-    const dueDate = addDays(new Date(), 7);
-    const voucherHtml = `
-        <html>
-            <head><title>Fee Slip - ${searchedStudent.name}</title>
-             <style>
-                body { font-family: Calibri, sans-serif; padding: 20px; }
-                .voucher-container { width: 100%; max-width: 800px; margin: auto; border: 1px solid #ccc; padding: 20px; box-sizing: border-box; }
-                .header { text-align: center; margin-bottom: 20px; }
-                .header img { max-height: 80px; margin-bottom: 10px; }
-                .header h1 { margin: 0; font-size: 1.5rem; }
-                .details, .fee-details { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9rem; }
-                .details td, .fee-details th, .fee-details td { border: 1px solid #ccc; padding: 8px; }
-                .fee-details th { background-color: #f2f2f2; text-align: left;}
-                .total-row td { font-weight: bold; font-size: 1.1rem; }
-                .slip { text-align: center; border: 1px solid #000; padding: 10px; margin-top: 20px; }
-                .qr-section { text-align: center; margin-top: 20px; }
-                .cut-line { margin: 20px 0; border-top: 2px dashed #888; position: relative; }
-                .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; }
-                @media print { @page { size: A4 portrait; margin: 0.5in; } }
-            </style>
-            </head>
-            <body>
-                <div class="voucher-container">
-                    <div class="header">
-                        ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
-                        <h1>${settings.name}</h1>
-                        <p>${settings.address}</p>
-                    </div>
-                    <h2 style="text-align: center;">Fee Slip (Student Copy)</h2>
-                    <table class="details">
-                        <tr><td><strong>Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
-                        <tr><td><strong>Father:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
-                        <tr><td><strong>Date:</strong></td><td>${format(new Date(), 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
-                    </table>
-                    <table class="fee-details">
-                        <thead><tr><th>Description</th><th style="text-align: right;">Amount (PKR)</th></tr></thead>
-                        <tbody><tr><td>Outstanding Balance (Post-Adjustment)</td><td style="text-align: right;">${searchedStudent.totalFee.toLocaleString()}</td></tr></tbody>
-                        <tfoot><tr class="total-row"><td>Total Amount Payable</td><td style="text-align: right;">${searchedStudent.totalFee.toLocaleString()} /-</td></tr></tfoot>
-                    </table>
-                    <div class="qr-section">
-                        ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" style="width: 100px; height: 100px; margin: auto;" /><p>Scan for status</p>` : ''}
-                    </div>
-                    <div class="cut-line"></div>
-                    <div class="slip">
-                        <h3>Academy Copy</h3>
-                        <p>${searchedStudent.name} (${searchedStudent.id}) - ${searchedStudent.class}</p>
-                        <p><strong>Payable: ${searchedStudent.totalFee.toLocaleString()} PKR</strong></p>
-                    </div>
-                    <div class="footer">Copyright &copy; ${new Date().getFullYear()} ${settings.name}</div>
-                </div>
-            </body>
-        </html>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-        printWindow.document.write(voucherHtml);
-        printWindow.document.close();
-        setTimeout(() => printWindow.print(), 500);
-    }
-  };
-  
   const currentBalanceValue = searchedStudent ? searchedStudent.totalFee : 0;
   
   return (
@@ -721,10 +654,6 @@ export default function FeeCollectionPage() {
                                       <SelectItem value="jpg">JPG Image</SelectItem>
                                   </SelectContent>
                               </Select>
-                              <Button onClick={handlePrintUpdatedVoucher} variant="outline" className="text-blue-600 border-blue-200">
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  Print Fee Slip
-                              </Button>
                               <Button onClick={handleReprint} variant="outline" disabled={!lastPayment}>
                                   <Printer className="mr-2" />
                                   Reprint Last Receipt
@@ -749,16 +678,26 @@ export default function FeeCollectionPage() {
               <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle>Payment Collection</CardTitle>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-amber-600 border-amber-200 hover:bg-amber-50"
-                        onClick={() => setIsDiscountOpen(true)}
-                        disabled={searchedStudent.totalFee <= 0}
-                      >
-                        <Tag className="h-4 w-4 mr-2" />
-                        Apply Special Discount
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            onClick={() => router.push('/vouchers')}
+                        >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Go to Vouchers Page
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                            onClick={() => setIsDiscountOpen(true)}
+                            disabled={searchedStudent.totalFee <= 0}
+                        >
+                            <Tag className="h-4 w-4 mr-2" />
+                            Apply Special Discount
+                        </Button>
+                      </div>
                   </CardHeader>
                   <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                       <div className="space-y-2">
