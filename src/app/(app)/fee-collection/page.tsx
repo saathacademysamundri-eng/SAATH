@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -19,13 +18,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { useAppContext } from '@/hooks/use-app-context';
 import QRCode from 'qrcode';
-import { format, addDays } from 'date-fns';
+import { format, addMonths, startOfMonth } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendWhatsappMessage as sendWhatsappMessageFlow } from '@/ai/flows/send-whatsapp-flow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import html2canvas from 'html2canvas';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
@@ -105,9 +103,9 @@ export default function FeeCollectionPage() {
 
   const monthOptions = useMemo(() => {
     const options = [];
-    const now = new Date();
+    const baseDate = startOfMonth(new Date());
     for (let i = -6; i <= 1; i++) {
-      const d = addDays(now, i * 30);
+      const d = addMonths(baseDate, i);
       const val = format(d, 'yyyy-MM');
       options.push({ value: val, label: format(d, 'MMMM yyyy') });
     }
@@ -177,7 +175,7 @@ export default function FeeCollectionPage() {
         limit(20)
       );
 
-      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(qId)]);
+      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(idSnap)]);
       
       nameSnap.forEach(doc => {
         const data = doc.data() as Student;
