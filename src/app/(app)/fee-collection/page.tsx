@@ -314,7 +314,7 @@ export default function FeeCollectionPage() {
         newFeeStatus = 'Overdue';
     }
 
-    // 1. Process Income Record - Always use current month string for teacher payouts
+    // CASH BASIS: Always assign to current month regardless of arrears period
     const currentMonth = format(new Date(), 'yyyy-MM');
     let receiptId = `RCPT-${Date.now()}`;
     const incomeResult = await addIncome({

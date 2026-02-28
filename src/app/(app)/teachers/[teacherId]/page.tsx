@@ -71,7 +71,8 @@ export default function TeacherProfilePage() {
         
         setTeacher(teacherData);
         
-        // Cash Basis Logic: Filter for income that has not been paid to this teacher yet
+        // CASH BASIS: Group unpaid income by the assigned 'forMonth'. 
+        // Arrears are automatically pulled into the month they were paid.
         const unpaidIncome = allIncome.filter(i => !i.paidOutTo || !i.paidOutTo[teacherId]);
         const earningsByMonth: { [key: string]: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> & { year: number, monthIndex: number } } = {};
 
@@ -85,10 +86,10 @@ export default function TeacherProfilePage() {
                         const assignedMonthKey = format(assignedAt, 'yyyy-MM');
                         const incomeMonthKey = inc.forMonth || format(inc.date, 'yyyy-MM');
 
-                        // Ensure teacher only gets share if they were teaching the student in that targeted month
+                        // Don't pay teacher if they weren't assigned at the start of the collection cycle
                         if (assignedMonthKey > incomeMonthKey) return;
 
-                        // Calculate share based on ACTUAL cash collected (proportion of monthly fee)
+                        // UNIVERSAL CASH LOGIC: Calculate share based on ACTUAL cash collected (proportion of monthly fee)
                         const feeShareForSubject = subject.fee_share || 0;
                         if (student.monthlyFee > 0) {
                           const proportion = feeShareForSubject / student.monthlyFee;
@@ -215,7 +216,7 @@ export default function TeacherProfilePage() {
             body { font-family: sans-serif; margin: 0; padding: 20px; color: #333; }
             .header { text-align: center; margin-bottom: 2rem; }
             .header img { height: 60px; margin-bottom: 10px; }
-            .report-title { text-align: center; margin-bottom: 2rem; }
+            .report-title { text-align: center; margin: 2rem 0; }
             .stats { display: flex; justify-content: space-around; margin-bottom: 2rem; }
             .stat-box { border: 1px solid #ddd; padding: 15px; border-radius: 8px; text-align: center; width: 30%; }
             table { width: 100%; border-collapse: collapse; }
