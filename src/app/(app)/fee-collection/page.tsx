@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type Student, type Income } from '@/lib/data';
 import { getStudent, updateStudentFeeStatus, addIncome, logActivity, applyFeeDiscount } from '@/lib/firebase/firestore';
-import { Printer, Search, Loader2, Tag, AlertTriangle } from 'lucide-react';
+import { Printer, Search, Loader2, Tag, AlertTriangle, FileText } from 'lucide-react';
 import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
@@ -247,7 +246,7 @@ export default function FeeCollectionPage() {
         limit(20)
       );
 
-      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(idSnap)]);
+      const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(qId)]);
       
       nameSnap.forEach(doc => {
         const data = doc.data() as Student;
@@ -584,6 +583,79 @@ export default function FeeCollectionPage() {
 
     handlePrintPaidReceipt(amountPaidVal, balanceAfterPaymentVal, balanceBeforePaymentVal, originalReceiptIdVal, lastPayment.date);
   };
+
+  const handlePrintUpdatedVoucher = async () => {
+    if (!searchedStudent) return;
+    
+    const verificationUrl = `${window.location.origin}/p/student/${searchedStudent.id}`;
+    let qrCodeDataUrl = '';
+    try {
+      qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 128, margin: 1 });
+    } catch (error) {
+      console.error('QR code generation failed:', error);
+    }
+
+    const dueDate = addDays(new Date(), 7);
+    const voucherHtml = `
+        <html>
+            <head><title>Fee Slip - ${searchedStudent.name}</title>
+             <style>
+                body { font-family: Calibri, sans-serif; padding: 20px; }
+                .voucher-container { width: 100%; max-width: 800px; margin: auto; border: 1px solid #ccc; padding: 20px; box-sizing: border-box; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .header img { max-height: 80px; margin-bottom: 10px; }
+                .header h1 { margin: 0; font-size: 1.5rem; }
+                .details, .fee-details { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9rem; }
+                .details td, .fee-details th, .fee-details td { border: 1px solid #ccc; padding: 8px; }
+                .fee-details th { background-color: #f2f2f2; text-align: left;}
+                .total-row td { font-weight: bold; font-size: 1.1rem; }
+                .slip { text-align: center; border: 1px solid #000; padding: 10px; margin-top: 20px; }
+                .qr-section { text-align: center; margin-top: 20px; }
+                .cut-line { margin: 20px 0; border-top: 2px dashed #888; position: relative; }
+                .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; }
+                @media print { @page { size: A4 portrait; margin: 0.5in; } }
+            </style>
+            </head>
+            <body>
+                <div class="voucher-container">
+                    <div class="header">
+                        ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
+                        <h1>${settings.name}</h1>
+                        <p>${settings.address}</p>
+                    </div>
+                    <h2 style="text-align: center;">Fee Slip (Student Copy)</h2>
+                    <table class="details">
+                        <tr><td><strong>Name:</strong></td><td>${searchedStudent.name}</td><td><strong>Roll No:</strong></td><td>${searchedStudent.id}</td></tr>
+                        <tr><td><strong>Father:</strong></td><td>${searchedStudent.fatherName}</td><td><strong>Class:</strong></td><td>${searchedStudent.class}</td></tr>
+                        <tr><td><strong>Date:</strong></td><td>${format(new Date(), 'PPP')}</td><td><strong>Due Date:</strong></td><td>${format(dueDate, 'PPP')}</td></tr>
+                    </table>
+                    <table class="fee-details">
+                        <thead><tr><th>Description</th><th style="text-align: right;">Amount (PKR)</th></tr></thead>
+                        <tbody><tr><td>Outstanding Balance (Post-Adjustment)</td><td style="text-align: right;">${searchedStudent.totalFee.toLocaleString()}</td></tr></tbody>
+                        <tfoot><tr class="total-row"><td>Total Amount Payable</td><td style="text-align: right;">${searchedStudent.totalFee.toLocaleString()} /-</td></tr></tfoot>
+                    </table>
+                    <div class="qr-section">
+                        ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" style="width: 100px; height: 100px; margin: auto;" /><p>Scan for status</p>` : ''}
+                    </div>
+                    <div class="cut-line"></div>
+                    <div class="slip">
+                        <h3>Academy Copy</h3>
+                        <p>${searchedStudent.name} (${searchedStudent.id}) - ${searchedStudent.class}</p>
+                        <p><strong>Payable: ${searchedStudent.totalFee.toLocaleString()} PKR</strong></p>
+                    </div>
+                    <div class="footer">Copyright &copy; ${new Date().getFullYear()} ${settings.name}</div>
+                </div>
+            </body>
+        </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.write(voucherHtml);
+        printWindow.document.close();
+        setTimeout(() => printWindow.print(), 500);
+    }
+  };
   
   const currentBalanceValue = searchedStudent ? searchedStudent.totalFee : 0;
   
@@ -649,6 +721,10 @@ export default function FeeCollectionPage() {
                                       <SelectItem value="jpg">JPG Image</SelectItem>
                                   </SelectContent>
                               </Select>
+                              <Button onClick={handlePrintUpdatedVoucher} variant="outline" className="text-blue-600 border-blue-200">
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Print Fee Slip
+                              </Button>
                               <Button onClick={handleReprint} variant="outline" disabled={!lastPayment}>
                                   <Printer className="mr-2" />
                                   Reprint Last Receipt

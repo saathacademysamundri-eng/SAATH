@@ -217,7 +217,7 @@ export default function VouchersPage() {
                     <p>${settings.address}</p>
                     <p>Phone: ${settings.phone}</p>
                 </div>
-                <h2>Fee Voucher (Student Copy)</h2>
+                <h2 style="text-align: center;">Fee Voucher (Student Copy)</h2>
                 <table class="details">
                     <tr><td><strong>Student Name:</strong></td><td>${student.name}</td><td><strong>Roll No:</strong></td><td>${student.id}</td></tr>
                     <tr><td><strong>Father's Name:</strong></td><td>${student.fatherName}</td><td><strong>Class:</strong></td><td>${student.class}</td></tr>
@@ -225,8 +225,8 @@ export default function VouchersPage() {
                 </table>
                 <table class="fee-details">
                     <thead><tr><th>Description</th><th class="text-right">Amount (PKR)</th></tr></thead>
-                    <tbody><tr><td>Tuition Fee</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tbody>
-                    <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tfoot>
+                    <tbody><tr><td>Tuition Fee (Adjusted)</td><td class="text-right">${student.totalFee.toLocaleString()}</td></tr></tbody>
+                    <tfoot><tr class="total-row"><td>Total Amount Due</td><td class="text-right">${student.totalFee.toLocaleString()} /-</td></tr></tfoot>
                 </table>
                 <div class="qr-section">
                   ${qrCodeDataUrl ? `
