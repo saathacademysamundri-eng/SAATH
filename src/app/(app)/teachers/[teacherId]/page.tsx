@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -6,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type Student, type Teacher, type TeacherPayout, type Report, type Income } from '@/lib/data';
-import { getTeacherPayouts, payoutTeacher, deletePayout, getIncome, getStudents } from '@/lib/firebase/firestore';
+import { getTeacherPayouts, payoutTeacher, deletePayout, getIncome, getAllStudents } from '@/lib/firebase/firestore';
 import { Loader2, Phone, Wallet, Printer, Mail, Home, User, Trash2 } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { TeacherEarningsClient } from './teacher-earnings-client';
@@ -58,10 +59,10 @@ export default function TeacherProfilePage() {
 
     setLoading(true);
     try {
-        const [teacherData, allIncome, allStudents] = await Promise.all([
+        const [teacherData, allIncome, allStudentsData] = await Promise.all([
             teachers.find(t => t.id === teacherId) || null,
             getIncome(),
-            getStudents()
+            getAllStudents()
         ]);
 
         if (!teacherData) {
@@ -77,17 +78,12 @@ export default function TeacherProfilePage() {
         const earningsByMonth: { [key: string]: Omit<MonthlyEarnings, 'month' | 'year' | 'monthIndex'> & { year: number, monthIndex: number } } = {};
 
         unpaidIncome.forEach(inc => {
-            const student = allStudents.find(s => s.id === inc.studentId);
-            if (student) {
+            const student = allStudentsData.find(s => s.id === inc.studentId);
+            if (student && student.subjects) {
                 const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacherData.id);
                 if (relevantSubjects.length > 0) {
                      relevantSubjects.forEach(subject => {
-                        const assignedAt = subject.assignedAt ? (subject.assignedAt.toDate ? subject.assignedAt.toDate() : new Date(subject.assignedAt)) : new Date(0);
-                        const assignedMonthKey = format(assignedAt, 'yyyy-MM');
                         const incomeMonthKey = inc.forMonth || format(inc.date, 'yyyy-MM');
-
-                        // Don't pay teacher if they weren't assigned at the start of the collection cycle
-                        if (assignedMonthKey > incomeMonthKey) return;
 
                         // UNIVERSAL CASH LOGIC: Calculate share based on ACTUAL cash collected (proportion of monthly fee)
                         const feeShareForSubject = subject.fee_share || 0;

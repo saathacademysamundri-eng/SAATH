@@ -42,7 +42,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { deleteTeacher, getStudents, getIncome } from '@/lib/firebase/firestore';
+import { deleteTeacher, getAllStudents, getIncome } from '@/lib/firebase/firestore';
 import { QrCodeDialog } from './qr-code-dialog';
 
 export default function TeachersPage() {
@@ -71,7 +71,8 @@ export default function TeachersPage() {
     async function loadStatsData() {
       setStatsLoading(true);
       try {
-        const [sData, iData] = await Promise.all([getStudents(), getIncome()]);
+        // We use getAllStudents to include archived/graduated ones for accurate income reports
+        const [sData, iData] = await Promise.all([getAllStudents(), getIncome()]);
         setAllStudents(sData);
         setIncome(iData);
       } catch (e) {
@@ -87,8 +88,11 @@ export default function TeachersPage() {
     const stats = new Map<string, { studentCount: number; netEarnings: number }>();
 
     teachers.forEach(teacher => {
-        const taughtStudents = (allStudents || []).filter(student => 
-            student.subjects && student.subjects.some(sub => sub.teacher_id === teacher.id)
+        // Count active students only for the "Currently Taught" metric
+        const activeTaughtStudents = (allStudents || []).filter(student => 
+            student.status === 'active' && 
+            student.subjects && 
+            student.subjects.some(sub => sub.teacher_id === teacher.id)
         );
         
         // Filter for income that has NOT been paid out to THIS teacher
@@ -98,8 +102,8 @@ export default function TeachersPage() {
 
         unpaidIncome.forEach(inc => {
             const student = allStudents.find(s => s.id === inc.studentId);
-            if (student && student.subjects && student.subjects.some(sub => sub.teacher_id === teacher.id)) {
-                const relevantSubjects = student.subjects.filter(s => s.teacher_id === teacher.id);
+            if (student && student.subjects) {
+                const relevantSubjects = student.subjects.filter(sub => sub.teacher_id === teacher.id);
                 
                 relevantSubjects.forEach(subject => {
                     const feeShareForSubject = subject.fee_share || 0;
@@ -113,7 +117,7 @@ export default function TeachersPage() {
         });
         
         stats.set(teacher.id, {
-            studentCount: taughtStudents.length,
+            studentCount: activeTaughtStudents.length,
             netEarnings: grossEarnings * 0.7,
         });
     });
@@ -126,11 +130,11 @@ export default function TeachersPage() {
   );
 
   const handleEditClick = (teacher: Teacher) => {
-    setDialogState({ ...dialogState, isEditOpen: true, selectedTeacher: teacher });
+    setDialogState({ ...dialogState, isEditOpen: true, selectedStudent: null, selectedTeacher: teacher });
   };
   
   const handleQrClick = (teacher: Teacher) => {
-    setDialogState({ ...dialogState, isQrOpen: true, selectedTeacher: teacher });
+    setDialogState({ ...dialogState, isQrOpen: true, selectedStudent: null, selectedTeacher: teacher });
   }
 
   const closeDialogs = () => {
@@ -258,7 +262,7 @@ export default function TeachersPage() {
                                 )}
                            </div>
                            <div>
-                                <p className="text-xs text-muted-foreground">Students Taught</p>
+                                <p className="text-xs text-muted-foreground">Active Students</p>
                                 {statsLoading ? (
                                     <Skeleton className="h-8 w-12" />
                                 ) : (
