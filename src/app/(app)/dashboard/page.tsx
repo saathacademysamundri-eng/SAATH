@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,22 +42,22 @@ export default function DashboardPage() {
     const [messagesSent, setMessagesSent] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const loadDashboard = async () => {
-            setLoading(true);
-            const [statsData, activitiesData, attendanceData, messagesData] = await Promise.all([
-                getDashboardStats(),
-                getRecentActivities(10),
-                getTodaysAttendanceSummary(),
-                getTodaysMessagesCount()
-            ]);
-            setStats(statsData);
-            setActivities(activitiesData);
-            setAttendance(attendanceData);
-            setMessagesSent(messagesData);
-            setLoading(false);
-        };
+    const loadDashboard = async () => {
+        setLoading(true);
+        const [statsData, activitiesData, attendanceData, messagesData] = await Promise.all([
+            getDashboardStats(),
+            getRecentActivities(10),
+            getTodaysAttendanceSummary(),
+            getTodaysMessagesCount()
+        ]);
+        setStats(statsData);
+        setActivities(activitiesData);
+        setAttendance(attendanceData);
+        setMessagesSent(messagesData);
+        setLoading(false);
+    };
 
+    useEffect(() => {
         loadDashboard();
 
         const checkMissedDeadlines = async () => {
@@ -96,7 +97,7 @@ export default function DashboardPage() {
         { title: 'Total Students', value: stats?.totalStudents || 0, icon: 'Users', color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
         { title: 'Students Present', value: attendance.present, subtitle: 'Attendance for today', icon: 'UserCheck', color: 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800' },
         { title: 'Students Absent', value: attendance.absent, subtitle: 'Attendance for today', icon: 'UserX', color: 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800' },
-        { title: 'Pending Dues', value: stats?.pendingDues.toLocaleString() || 0, subtitle: 'All outstanding fees', icon: 'Scale', color: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800' },
+        { title: 'Pending Dues', value: stats?.pendingDues.toLocaleString() || 0, subtitle: 'Live outstanding balance', icon: 'Scale', color: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800' },
         { title: 'New Admissions', value: stats?.newAdmissions || 0, subtitle: 'In the last 30 days', icon: 'UserPlus', color: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' },
     ], [stats, attendance]);
     

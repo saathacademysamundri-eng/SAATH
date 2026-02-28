@@ -327,10 +327,6 @@ export async function getStudents(): Promise<Student[]> {
     return allStudents.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-/**
- * Fetches all student records regardless of status.
- * Used for financial reports where archived/graduated student payments must be counted.
- */
 export async function getAllStudents(): Promise<Student[]> {
     const studentsCollection = collection(db, 'students');
     const studentsSnap = await getDocs(query(studentsCollection, limit(5000)));
@@ -343,8 +339,6 @@ export async function getAllStudents(): Promise<Student[]> {
 
 export async function getStudentsByTeacher(teacherId: string): Promise<Student[]> {
     try {
-        // We fetch all active students and filter client-side to be 100% accurate for old data
-        // For 2000 students this is very fast.
         const allActive = await getStudents();
         return allActive.filter(s => s.subjects && s.subjects.some(sub => sub.teacher_id === teacherId));
     } catch (e) {
