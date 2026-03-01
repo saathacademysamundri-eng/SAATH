@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -152,7 +151,7 @@ export function DiscountReportDialog() {
 
 
     return (
-        <DialogContent className="sm:max-w-5xl">
+        <DialogContent className="sm:max-w-5xl w-[95vw] max-w-[95vw] sm:w-full">
             <DialogHeader>
                 <DialogTitle>Fee Discount Audit Report</DialogTitle>
                 <DialogDescription>
@@ -171,16 +170,16 @@ export function DiscountReportDialog() {
                     />
                 </div>
 
-                <div className="border rounded-md max-h-[50vh] overflow-y-auto">
-                    <Table>
+                <div className="border rounded-md max-h-[50vh] overflow-auto">
+                    <Table className="min-w-[800px] sm:min-w-full">
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Student</TableHead>
-                                <TableHead>Roll #</TableHead>
-                                <TableHead>Phone</TableHead>
-                                <TableHead>Cycle</TableHead>
-                                <TableHead className="text-right">Amount (PKR)</TableHead>
+                                <TableHead className="whitespace-nowrap">Date</TableHead>
+                                <TableHead className="whitespace-nowrap">Student</TableHead>
+                                <TableHead className="whitespace-nowrap">Roll #</TableHead>
+                                <TableHead className="whitespace-nowrap">Phone</TableHead>
+                                <TableHead className="whitespace-nowrap">Cycle</TableHead>
+                                <TableHead className="text-right whitespace-nowrap">Amount (PKR)</TableHead>
                                 <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -188,7 +187,7 @@ export function DiscountReportDialog() {
                             {isLoading ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <TableRow key={i}>
-                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
@@ -200,12 +199,12 @@ export function DiscountReportDialog() {
                             ) : filteredDiscounts.length > 0 ? (
                                 filteredDiscounts.map(d => (
                                     <TableRow key={d.id}>
-                                        <TableCell className="text-xs">{format(d.date, 'PP')}</TableCell>
-                                        <TableCell className="font-medium">{d.studentName}</TableCell>
-                                        <TableCell>{d.studentId}</TableCell>
-                                        <TableCell className="text-xs">{d.phone}</TableCell>
-                                        <TableCell>{d.month}</TableCell>
-                                        <TableCell className="text-right font-mono font-bold text-amber-600">
+                                        <TableCell className="text-[10px] sm:text-xs whitespace-nowrap">{format(d.date, 'PP')}</TableCell>
+                                        <TableCell className="font-medium text-sm whitespace-nowrap">{d.studentName}</TableCell>
+                                        <TableCell className="text-sm whitespace-nowrap">{d.studentId}</TableCell>
+                                        <TableCell className="text-[10px] sm:text-xs whitespace-nowrap">{d.phone}</TableCell>
+                                        <TableCell className="text-sm whitespace-nowrap">{d.month}</TableCell>
+                                        <TableCell className="text-right font-mono font-bold text-amber-600 text-sm whitespace-nowrap">
                                             {d.amount.toLocaleString()}
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -215,15 +214,15 @@ export function DiscountReportDialog() {
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </AlertDialogTrigger>
-                                                <AlertDialogContent>
+                                                <AlertDialogContent className="w-[90vw] max-w-md">
                                                     <AlertDialogHeader>
                                                         <AlertDialogTitle>Reverse this discount?</AlertDialogTitle>
                                                         <AlertDialogDescription>
-                                                            This will permanently delete the record and <strong>add ${d.amount.toLocaleString()} PKR back</strong> to ${d.studentName}'s outstanding dues.
+                                                            This will permanently delete the record and <strong>add {d.amount.toLocaleString()} PKR back</strong> to {d.studentName}'s outstanding dues.
                                                         </AlertDialogDescription>
                                                     </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                                                        <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => handleDelete(d.id)} className="bg-destructive hover:bg-destructive/90">
                                                             Confirm Reversal
                                                         </AlertDialogAction>
@@ -245,18 +244,18 @@ export function DiscountReportDialog() {
                 </div>
                 
                 {!isLoading && filteredDiscounts.length > 0 && (
-                    <div className="flex justify-end p-2 bg-muted/50 rounded-lg">
-                        <p className="text-lg font-bold">Total Discounted: <span className="text-amber-600">{totalDiscounted.toLocaleString()} PKR</span></p>
+                    <div className="flex justify-end p-3 bg-muted/50 rounded-lg">
+                        <p className="text-base sm:text-lg font-bold">Total Discounted: <span className="text-amber-600">{totalDiscounted.toLocaleString()} PKR</span></p>
                     </div>
                 )}
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
                 <DialogClose asChild>
-                    <Button variant="ghost">Close</Button>
+                    <Button variant="ghost" className="w-full sm:w-auto">Close</Button>
                 </DialogClose>
-                 <Button onClick={handlePrint} variant="default" disabled={isLoading || filteredDiscounts.length === 0 || isSettingsLoading}>
-                    <Printer className="mr-2" />
+                 <Button onClick={handlePrint} variant="default" className="w-full sm:w-auto" disabled={isLoading || filteredDiscounts.length === 0 || isSettingsLoading}>
+                    <Printer className="mr-2 h-4 w-4" />
                     Print Report
                 </Button>
             </DialogFooter>
