@@ -163,24 +163,24 @@ export function DiscountReportDialog() {
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
-                        placeholder="Search student name, roll number, or month (YYYY-MM)..." 
+                        placeholder="Search student name, roll number, or month..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-8"
                     />
                 </div>
 
-                <div className="border rounded-md max-h-[50vh] overflow-auto">
-                    <Table className="min-w-[800px] sm:min-w-full">
+                <div className="border rounded-md max-h-[50vh] overflow-x-auto overflow-y-auto">
+                    <Table className="min-w-full">
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="whitespace-nowrap">Date</TableHead>
-                                <TableHead className="whitespace-nowrap">Student</TableHead>
-                                <TableHead className="whitespace-nowrap">Roll #</TableHead>
-                                <TableHead className="whitespace-nowrap">Phone</TableHead>
-                                <TableHead className="whitespace-nowrap">Cycle</TableHead>
-                                <TableHead className="text-right whitespace-nowrap">Amount (PKR)</TableHead>
-                                <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
+                                <TableHead className="whitespace-nowrap px-2">Date</TableHead>
+                                <TableHead className="whitespace-nowrap px-2">Student</TableHead>
+                                <TableHead className="whitespace-nowrap px-2">Roll #</TableHead>
+                                <TableHead className="whitespace-nowrap px-2">Phone</TableHead>
+                                <TableHead className="whitespace-nowrap px-2">Cycle</TableHead>
+                                <TableHead className="text-right whitespace-nowrap px-2">Amount (PKR)</TableHead>
+                                <TableHead className="text-right px-2"><span className="sr-only">Actions</span></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -199,15 +199,15 @@ export function DiscountReportDialog() {
                             ) : filteredDiscounts.length > 0 ? (
                                 filteredDiscounts.map(d => (
                                     <TableRow key={d.id}>
-                                        <TableCell className="text-[10px] sm:text-xs whitespace-nowrap">{format(d.date, 'PP')}</TableCell>
-                                        <TableCell className="font-medium text-sm whitespace-nowrap">{d.studentName}</TableCell>
-                                        <TableCell className="text-sm whitespace-nowrap">{d.studentId}</TableCell>
-                                        <TableCell className="text-[10px] sm:text-xs whitespace-nowrap">{d.phone}</TableCell>
-                                        <TableCell className="text-sm whitespace-nowrap">{d.month}</TableCell>
-                                        <TableCell className="text-right font-mono font-bold text-amber-600 text-sm whitespace-nowrap">
+                                        <TableCell className="text-[10px] sm:text-xs whitespace-nowrap px-2">{format(d.date, 'PP')}</TableCell>
+                                        <TableCell className="font-medium text-xs sm:text-sm whitespace-nowrap px-2">{d.studentName}</TableCell>
+                                        <TableCell className="text-xs sm:text-sm whitespace-nowrap px-2">{d.studentId}</TableCell>
+                                        <TableCell className="text-[10px] sm:text-xs whitespace-nowrap px-2">{d.phone}</TableCell>
+                                        <TableCell className="text-xs sm:text-sm whitespace-nowrap px-2">{d.month}</TableCell>
+                                        <TableCell className="text-right font-mono font-bold text-amber-600 text-xs sm:text-sm whitespace-nowrap px-2">
                                             {d.amount.toLocaleString()}
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-right px-2">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
@@ -245,7 +245,7 @@ export function DiscountReportDialog() {
                 
                 {!isLoading && filteredDiscounts.length > 0 && (
                     <div className="flex justify-end p-3 bg-muted/50 rounded-lg">
-                        <p className="text-base sm:text-lg font-bold">Total Discounted: <span className="text-amber-600">{totalDiscounted.toLocaleString()} PKR</span></p>
+                        <p className="text-sm sm:text-lg font-bold">Total Discounted: <span className="text-amber-600">{totalDiscounted.toLocaleString()} PKR</span></p>
                     </div>
                 )}
             </div>
