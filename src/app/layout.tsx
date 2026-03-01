@@ -5,13 +5,24 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SettingsProvider } from '@/hooks/use-settings';
+import { AppProvider } from '@/hooks/use-app-context';
+import { TeacherAuthProvider } from '@/hooks/use-teacher-auth';
 
 export const metadata: Metadata = {
-  title: 'Loading...',
+  title: {
+    default: 'SAATH Academy Samundri',
+    template: '%s | SAATH Academy Samundri',
+  },
   description: 'An Academy Management System',
   manifest: '/manifest.json',
   icons: {
     icon: '/logo.png',
+  },
+  applicationName: 'SAATH Academy Samundri',
+  appleWebApp: {
+    capable: true,
+    title: 'SAATH Academy Samundri',
+    statusBarStyle: 'default',
   },
 };
 
@@ -36,7 +47,11 @@ export default function RootLayout({
             disableTransitionOnChange
         >
           <SettingsProvider>
-            {children}
+            <AppProvider>
+              <TeacherAuthProvider>
+                {children}
+              </TeacherAuthProvider>
+            </AppProvider>
             <Toaster />
           </SettingsProvider>
         </ThemeProvider>

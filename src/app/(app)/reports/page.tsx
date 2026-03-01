@@ -33,13 +33,14 @@ const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i)
 
 
 export default function ReportsPage() {
-  const { students, income, loading: studentsLoading } = useAppContext();
+  const { students, income, loading: studentsLoading, classes } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
   const router = useRouter();
 
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [unpaidDuesClassFilter, setUnpaidDuesClassFilter] = useState<string>('all');
 
 
   const reportCards = [
@@ -79,7 +80,7 @@ export default function ReportsPage() {
     {
       id: 'unpaid-dues',
       title: 'Unpaid Dues Report',
-      description: 'A list of all students with pending or overdue fee payments.',
+      description: 'Generate a class-wise list of all students with pending or overdue fee payments.',
       icon: BadgeAlert,
       isEnabled: true,
       type: 'print-export',
@@ -99,6 +100,13 @@ export default function ReportsPage() {
     const monthName = months.find(m => m.value === selectedMonth)?.label;
     const dateTitle = `${monthName}, ${selectedYear}`;
     
+    let subTitle = '';
+    if (title === 'Paid Students Report') {
+        subTitle = `<p class="date-subtitle">${dateTitle}</p>`;
+    } else if (title === 'Unpaid Dues Report') {
+        subTitle = `<p class="date-subtitle">Class: ${unpaidDuesClassFilter === 'all' ? 'All Classes' : unpaidDuesClassFilter}</p>`;
+    }
+
     return `
       <html>
         <head>
@@ -132,11 +140,11 @@ export default function ReportsPage() {
                 ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
                 <h1>${settings.name}</h1>
                 <p>${settings.address}</p>
-                <p>Phone: ${settings.phone}</p>
+                <p>${settings.phone}</p>
               </div>
               <div class="report-title">
                 <h2>${title}</h2>
-                ${['paid-students', 'unpaid-dues'].includes(title.toLowerCase().replace(/\s+/g, '-')) ? `<p class="date-subtitle">${dateTitle}</p>` : ''}
+                ${subTitle}
               </div>
               <table>
                 <thead>
@@ -150,7 +158,7 @@ export default function ReportsPage() {
               </table>
             </div>
             <div class="footer">
-                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
             </div>
           </div>
         </body>
@@ -195,7 +203,7 @@ export default function ReportsPage() {
         reportTitle = 'Unpaid Dues Report';
         tableHeaders = ["Roll #", "Student Name", "Father's Name", "Phone", "Class", "Outstanding Dues", "Fee Status"];
         tableRows = students
-          .filter(s => s.totalFee > 0)
+          .filter(s => s.totalFee > 0 && (unpaidDuesClassFilter === 'all' || s.class === unpaidDuesClassFilter))
           .map(student => `
             <tr>
               <td>${student.id}</td>
@@ -259,7 +267,9 @@ export default function ReportsPage() {
       filename = 'all-students-report.csv';
     } else if (reportId === 'unpaid-dues') {
       headers = ["ID", "Name", "Father's Name", "Phone", "Class", "Outstanding Dues", "Fee Status"];
-      data = students.filter(s => s.totalFee > 0).map((s: Student) => [
+      data = students
+        .filter(s => s.totalFee > 0 && (unpaidDuesClassFilter === 'all' || s.class === unpaidDuesClassFilter))
+        .map((s: Student) => [
           s.id, s.name, s.fatherName, s.phone, s.class, s.totalFee, s.feeStatus,
         ]);
       filename = 'unpaid-dues-report.csv';
@@ -319,7 +329,8 @@ export default function ReportsPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {reportCards.map((report) => {
           const Icon = report.icon;
-          const isFinancialReport = report.id === 'paid-students' || report.id === 'unpaid-dues';
+          const isPaidStudentsReport = report.id === 'paid-students';
+          const isUnpaidDuesReport = report.id === 'unpaid-dues';
           
           if (report.type === 'dialog') {
             return (
@@ -368,7 +379,7 @@ export default function ReportsPage() {
                 </div>
               </CardHeader>
               <CardContent className="mt-auto flex flex-col gap-4 pt-4">
-                 {isFinancialReport && (
+                 {isPaidStudentsReport && (
                   <div className="flex flex-wrap gap-2 items-end border-t pt-4">
                       <div className="space-y-1 flex-grow">
                           <Label className="text-xs">Month</Label>
@@ -389,6 +400,22 @@ export default function ReportsPage() {
                               </SelectTrigger>
                               <SelectContent>
                                   {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                  </div>
+                )}
+                {isUnpaidDuesReport && (
+                  <div className="flex flex-wrap gap-2 items-end border-t pt-4">
+                      <div className="space-y-1 flex-grow">
+                          <Label className="text-xs">Filter by Class</Label>
+                          <Select value={unpaidDuesClassFilter} onValueChange={setUnpaidDuesClassFilter}>
+                              <SelectTrigger>
+                                  <SelectValue placeholder="All Classes" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value="all">All Classes</SelectItem>
+                                  {classes.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
                               </SelectContent>
                           </Select>
                       </div>

@@ -163,30 +163,25 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [loadSettings]);
 
   const updateSettings = useCallback(async (newSettings: Partial<Settings>, logMessage?: string) => {
+    setSettingsState(currentSettings => {
+        const updatedSettings = { ...currentSettings, ...newSettings };
+        sessionStorage.setItem('cachedSettings', JSON.stringify(updatedSettings));
+        return updatedSettings;
+    });
+
     const { landingPage, ...otherSettings } = newSettings;
-    const updatedSettings: Settings = { 
-      ...settings, 
-      ...otherSettings,
-      landingPage: landingPage ? { sections: landingPage.sections } : settings.landingPage,
-    };
-    setSettingsState(updatedSettings);
-
-    // Update cache immediately
-    sessionStorage.setItem('cachedSettings', JSON.stringify(updatedSettings));
-
-
+    
     if (Object.keys(otherSettings).length > 0) {
-        await updateDBSettings('details', otherSettings);
+      await updateDBSettings('details', otherSettings);
     }
     if (landingPage) {
-        await updateDBSettings('landing-page', { sections: landingPage.sections });
+      await updateDBSettings('landing-page', { sections: landingPage.sections });
     }
 
     if (logMessage) {
         await logActivity('settings_updated', logMessage, '/settings');
     }
-
-  }, [settings]);
+  }, []);
 
   return (
     <SettingsContext.Provider value={{ settings, updateSettings, isSettingsLoading }}>

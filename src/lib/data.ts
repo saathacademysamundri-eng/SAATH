@@ -75,6 +75,7 @@ export type Teacher = {
   phone: string;
   address: string;
   email?: string;
+  password?: string;
   subjects: string[]; // Names of subjects
   imageUrl?: string;
 };
@@ -143,12 +144,30 @@ export type Exam = {
     id: string;
     name: string;
     className: string;
+    teacherId: string;
+    teacherName: string;
     examType: 'Single Subject' | 'Full Test' | 'Manual';
     subjects: string[];
     totalMarks: number;
     date: Date;
+    status?: 'pending' | 'approved' | 'rejected';
     results?: StudentResult[];
+    academicSession: string;
+    submissionDeadline?: Date;
+    scope?: 'class' | 'teacher_students';
+    completionNotified?: boolean;
 }
+
+export type Notification = {
+  id: string;
+  userId: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  timestamp: Date;
+};
+
+export const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
 
 export const dashboardStats = [
@@ -287,11 +306,11 @@ export let students: Student[] = [
 ];
 
 export const teachers: Teacher[] = [
-    { id: 'T01', name: 'Dr. Arshad', fatherName: 'Arshad Father', phone: '03001234567', address: 'Address 1', subjects: ['Physics'] },
-    { id: 'T02', name: 'Mrs. Samina', fatherName: 'Samina Father', phone: '03011234567', address: 'Address 2', subjects: ['Chemistry'] },
-    { id: 'T03', name: 'Mr. Qasim', fatherName: 'Qasim Father', phone: '03021234567', address: 'Address 3', subjects: ['Mathematics', 'Computer Science', 'Pre-Eng. Mathematics'] },
-    { id: 'T04', name: 'Ms. Farhat', fatherName: 'Farhat Father', phone: '03031234567', address: 'Address 4', subjects: ['English'] },
-    { id: 'T05', name: 'Dr. Nida', fatherName: 'Nida Father', phone: '03041234567', address: 'Address 5', subjects: ['Biology', 'Pre-Med. Biology'] },
+    { id: 'T01', name: 'Dr. Arshad', fatherName: 'Arshad Father', phone: '03001234567', address: 'Address 1', subjects: ['Physics'], email: 'arshad@example.com', password: 'password' },
+    { id: 'T02', name: 'Mrs. Samina', fatherName: 'Samina Father', phone: '03011234567', address: 'Address 2', subjects: ['Chemistry'], email: 'samina@example.com', password: 'password' },
+    { id: 'T03', name: 'Mr. Qasim', fatherName: 'Qasim Father', phone: '03021234567', address: 'Address 3', subjects: ['Mathematics', 'Computer Science', 'Pre-Eng. Mathematics'], email: 'qasim@example.com', password: 'password' },
+    { id: 'T04', name: 'Ms. Farhat', fatherName: 'Farhat Father', phone: '03031234567', address: 'Address 4', subjects: ['English'], email: 'farhat@example.com', password: 'password' },
+    { id: 'T05', name: 'Dr. Nida', fatherName: 'Nida Father', phone: '03041234567', address: 'Address 5', subjects: ['Biology', 'Pre-Med. Biology'], email: 'nida@example.com', password: 'password' },
 ];
 
 export const classes: Class[] = [

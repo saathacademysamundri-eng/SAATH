@@ -1,15 +1,25 @@
 
-
 import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp } from 'firebase/firestore';
-import { app } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary } from '@/lib/data';
+import { app, auth, firebaseConfig } from './config';
+import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format as formatDate } from 'date-fns';
 import { sendWhatsappMessage } from '@/lib/whatsapp';
+import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, sendPasswordResetEmail } from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
 
 const db = getFirestore(app);
+
+// Helper to safely convert Firestore timestamp to Date
+const safeToDate = (timestamp: any): Date => {
+    if (!timestamp) return new Date();
+    if (timestamp instanceof Date) return timestamp;
+    if (timestamp.toDate && typeof timestamp.toDate === 'function') return timestamp.toDate();
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') return new Date(timestamp);
+    return new Date();
+};
 
 // Activity Log Functions
 export async function logActivity(type: Activity['type'], message: string, link?: string) {
@@ -22,7 +32,20 @@ export async function logActivity(type: Activity['type'], message: string, link?
         });
     } catch (e) {
         console.error("Failed to log activity:", e);
-        // We don't throw an error here as this is a non-critical background task
+    }
+}
+
+export async function createNotification(userId: string, message: string, link?: string) {
+    try {
+        await addDoc(collection(db, 'notifications'), {
+            userId,
+            message,
+            link: link || null,
+            read: false,
+            timestamp: serverTimestamp(),
+        });
+    } catch (e) {
+        console.error("Failed to create notification:", e);
     }
 }
 
@@ -30,16 +53,17 @@ export async function getRecentActivities(count = 50): Promise<Activity[]> {
     try {
         const q = query(collection(db, 'activities'), orderBy('date', 'desc'), limit(count));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => {
+        const activities = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
                 type: data.type,
                 message: data.message,
                 link: data.link,
-                date: data.date.toDate(),
+                date: safeToDate(data.date),
             } as Activity;
         });
+        return activities.sort((a, b) => b.date.getTime() - a.date.getTime());
     } catch (error) {
         console.error("Error fetching recent activities:", error);
         return [];
@@ -102,7 +126,7 @@ export async function getStudents(): Promise<Student[]> {
         return { 
             ...data,
             id: doc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     });
     return allStudents.filter(s => s.status === 'active').sort((a, b) => a.id.localeCompare(b.id));
@@ -116,7 +140,7 @@ export async function getAlumni(): Promise<Student[]> {
         return { 
             ...data,
             id: doc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     });
     return allStudents.filter(s => s.status === 'graduated').sort((a, b) => a.id.localeCompare(b.id));
@@ -130,7 +154,7 @@ export async function getArchivedStudents(): Promise<Student[]> {
         return { 
             ...data,
             id: doc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     });
     return allStudents.filter(s => s.status === 'archived').sort((a, b) => {
@@ -148,14 +172,7 @@ export async function getStudentsByClass(className: string): Promise<Student[]> 
 }
 
 export async function getStudent(id: string): Promise<Student | null> {
-    let searchId = id.toUpperCase();
-    
-    // If the search term is purely numeric, format it as a student ID
-    if (/^\d+$/.test(id)) {
-        searchId = `S${id.padStart(3, '0')}`;
-    }
-
-    const studentDocRef = doc(db, 'students', searchId);
+    const studentDocRef = doc(db, 'students', id);
     const studentDoc = await getDoc(studentDocRef);
 
     if (studentDoc.exists()) {
@@ -163,7 +180,19 @@ export async function getStudent(id: string): Promise<Student | null> {
         return { 
             ...data,
             id: studentDoc.id,
-            archivedAt: data.archivedAt?.toDate() 
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
+        } as Student;
+    }
+    
+    // Fallback: Search by "id" field if doc ID doesn't match
+    const q = query(collection(db, 'students'), where('id', '==', id), limit(1));
+    const qs = await getDocs(q);
+    if (!qs.empty) {
+        const data = qs.docs[0].data();
+        return { 
+            ...data,
+            id: qs.docs[0].id,
+            archivedAt: data.archivedAt ? safeToDate(data.archivedAt) : undefined 
         } as Student;
     }
     
@@ -177,7 +206,6 @@ export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id:
         await setDoc(docRef, studentWithStatus);
         await logActivity('new_admission', `New admission: ${student.name} (ID: ${student.id}) in class ${student.class}.`, `/students/${student.id}`);
         
-        // Send WhatsApp message if enabled
         const settings = await getSettings('details');
         if (settings && settings.newAdmissionMsg && student.phone) {
             let messageBody = settings.newAdmissionTemplate || 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.';
@@ -220,11 +248,9 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
 
             if (studentData.monthlyFee !== undefined && studentData.monthlyFee !== oldStudentData.monthlyFee) {
                 const feeDifference = studentData.monthlyFee - oldStudentData.monthlyFee;
-                // Adjust totalFee (outstanding balance) by the same difference
                 const newTotalFee = oldStudentData.totalFee + feeDifference;
                 updateData.totalFee = newTotalFee;
 
-                // Optionally, update feeStatus based on new totalFee
                 if (newTotalFee <= 0) {
                     updateData.feeStatus = 'Paid';
                 } else if (newTotalFee < oldStudentData.totalFee) {
@@ -305,14 +331,12 @@ export async function deleteStudentPermanently(studentId: string) {
                 throw new Error("Only archived students can be permanently deleted.");
             }
 
-            // Find and delete all income records for this student
             const incomeQuery = query(collection(db, 'income'), where('studentId', '==', studentId));
             const incomeSnapshot = await getDocs(incomeQuery);
             incomeSnapshot.forEach(incomeDoc => {
                 transaction.delete(incomeDoc.ref);
             });
 
-            // Delete the student document
             transaction.delete(studentRef);
             
             await logActivity('student_deleted', `Permanently deleted student record and all associated payments for ${student.name} (ID: ${studentId}).`);
@@ -359,11 +383,9 @@ export async function checkAndGenerateMonthlyFees() {
         const currentMonth = formatDate(new Date(), 'yyyy-MM');
 
         if (stateDoc.exists() && stateDoc.data().lastGeneratedMonth === currentMonth) {
-            // Fees already generated for this month
             return { success: true, message: "Fees for the current month have already been generated." };
         }
         
-        // If we've reached here, we need to generate fees.
         const studentsCollection = collection(db, 'students');
         const q = query(studentsCollection, where("status", "==", "active"));
         const studentsSnap = await getDocs(q);
@@ -374,15 +396,14 @@ export async function checkAndGenerateMonthlyFees() {
             const studentRef = studentDoc.ref;
             
             const newTotalFee = student.totalFee + student.monthlyFee;
-            const newStatus: Student['feeStatus'] = newTotalFee > student.monthlyFee ? 'Overdue' : 'Pending';
+            const newFeeStatus: Student['feeStatus'] = newTotalFee > 0 ? 'Pending' : 'Paid';
 
             batch.update(studentRef, {
                 totalFee: newTotalFee,
-                feeStatus: newStatus,
+                feeStatus: newFeeStatus,
             });
         });
         
-        // Update the state document after preparing the student updates
         batch.set(stateRef, { lastGeneratedMonth: currentMonth });
 
         await batch.commit();
@@ -402,15 +423,25 @@ export async function checkAndGenerateMonthlyFees() {
 
 export async function getTeachers(): Promise<Teacher[]> {
     const teachersCollection = collection(db, 'teachers');
-    const q = query(teachersCollection, orderBy("id"));
-    const teachersSnap = await getDocs(q);
-    return teachersSnap.docs.map(doc => doc.data() as Teacher);
+    const teachersSnap = await getDocs(teachersCollection);
+    const teachersData = teachersSnap.docs.map(doc => doc.data() as Teacher);
+    return teachersData.sort((a,b) => a.id.localeCompare(b.id));
 }
 
 export async function getTeacher(id: string): Promise<Teacher | null> {
     const teacherDoc = await getDoc(doc(db, 'teachers', id));
     return teacherDoc.exists() ? teacherDoc.data() as Teacher : null;
 }
+
+export async function getTeacherByEmail(email: string): Promise<Teacher | null> {
+  const q = query(collection(db, "teachers"), where("email", "==", email), limit(1));
+  const querySnapshot = await getDocs(q);
+  if (querySnapshot.empty) {
+    return null;
+  }
+  return querySnapshot.docs[0].data() as Teacher;
+}
+
 
 export async function getNextTeacherId(): Promise<string> {
     const q = query(collection(db, "teachers"), orderBy("id", "desc"), limit(1));
@@ -425,43 +456,49 @@ export async function getNextTeacherId(): Promise<string> {
 }
 
 export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
-    try {
-        const newTeacherId = await getNextTeacherId();
-        const newTeacher: Teacher = {
-            id: newTeacherId,
-            ...teacherData
-        };
-        const docRef = doc(db, 'teachers', newTeacherId);
-        await setDoc(docRef, newTeacher);
-        await logActivity('teacher_added', `Added new teacher: ${teacherData.name}.`, `/teachers/${newTeacherId}`);
-        
-        // Send WhatsApp message if enabled
-        const settings = await getSettings('details');
-        if (settings && settings.newTeacherMsg && newTeacher.phone) {
-            let messageBody = settings.newTeacherTemplate || 'Dear {teacher_name}, welcome to {academy_name}! We are excited to have you on our team.';
-            messageBody = messageBody.replace(/{teacher_name}/g, newTeacher.name);
-            messageBody = messageBody.replace(/{academy_name}/g, settings.name || '');
+    const tempAppName = 'temp-auth-app-' + Date.now();
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
 
-            const apiUrl = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgApiUrl : settings.officialApiUrl;
-            const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
-            
-            if (apiUrl && token) {
-                await sendWhatsappMessage({
-                    to: newTeacher.phone,
-                    body: messageBody,
-                    apiUrl: apiUrl,
-                    token: token
-                });
-            }
+    try {
+        if (!teacherData.email || !teacherData.password) {
+            throw new Error("Email and password are required.");
         }
         
-        return { success: true, message: "Teacher added successfully." };
-    } catch (serverError) {
-        const permissionError = new FirestorePermissionError({ path: `teachers/[auto-id]`, operation: 'create', requestResourceData: teacherData });
-        errorEmitter.emit('permission-error', permissionError);
-        return { success: false, message: (serverError as Error).message };
+        const mainAuth = getAuth(app);
+        const signInMethods = await fetchSignInMethodsForEmail(mainAuth, teacherData.email);
+        if (signInMethods.length > 0) {
+            throw new Error("A user with this email already exists.");
+        }
+        
+        await createUserWithEmailAndPassword(tempAuth, teacherData.email, teacherData.password);
+        
+        const newTeacherId = await getNextTeacherId();
+        const newTeacher: Teacher = { id: newTeacherId, ...teacherData };
+        const docRef = doc(db, 'teachers', newTeacherId);
+        await setDoc(docRef, newTeacher);
+        
+        await logActivity('teacher_added', `Added new teacher: ${teacherData.name}.`, `/teachers/${newTeacherId}`);
+        
+        await sendPasswordResetEmail(tempAuth, newTeacher.email);
+        
+        await deleteApp(tempApp);
+        return { success: true, message: "Teacher added. A password setup email has been sent." };
+
+    } catch (serverError: any) {
+        let errorMessage = (serverError as Error).message;
+        if (serverError.code === 'auth/weak-password') {
+            errorMessage = 'The password is too weak. It must be at least 6 characters long.';
+        } else if (serverError.code === 'auth/email-already-in-use') {
+            errorMessage = 'A user with this email already exists.';
+        }
+        
+        console.error("Error adding teacher:", serverError);
+        await deleteApp(tempApp);
+        return { success: false, message: errorMessage };
     }
 }
+
 
 export async function updateTeacher(teacherId: string, teacherData: Partial<Omit<Teacher, 'id'>>) {
     const docRef = doc(db, 'teachers', teacherId);
@@ -494,6 +531,50 @@ export async function deleteTeacher(teacherId: string) {
     }
 }
 
+export async function syncTeacherAuthAccounts() {
+    const tempAppName = 'temp-auth-app-' + Date.now();
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+    
+    let createdCount = 0;
+    const updatedCount = 0;
+    let skippedCount = 0;
+
+    try {
+        const teachers = await getTeachers();
+
+        for (const teacher of teachers) {
+            if (!teacher.email || !teacher.password) {
+                skippedCount++;
+                continue;
+            }
+            
+            try {
+                await createUserWithEmailAndPassword(tempAuth, teacher.email, teacher.password);
+                createdCount++;
+            } catch (authError: any) {
+                if (authError.code === 'auth/email-already-in-use') {
+                    skippedCount++;
+                } else {
+                    console.error(`Failed to create auth account for ${teacher.email}:`, authError.message);
+                }
+            }
+        }
+        
+        await deleteApp(tempApp);
+        
+        if (createdCount > 0) {
+            await logActivity('settings_updated', `Synced teacher login accounts: ${createdCount} new accounts created.`);
+        }
+        return { success: true, createdCount, updatedCount, skippedCount };
+    } catch (error) {
+        console.error("Error during teacher sync process:", error);
+        await deleteApp(tempApp);
+        return { success: false, message: (error as Error).message, createdCount, updatedCount, skippedCount };
+    }
+}
+
+
 async function getNextClassId(): Promise<string> {
     const q = query(collection(db, "classes"), orderBy("id", "desc"), limit(1));
     const querySnapshot = await getDocs(q);
@@ -509,7 +590,6 @@ async function getNextClassId(): Promise<string> {
 export async function addClass(name: string) {
     try {
         const newClassId = await getNextClassId();
-        const newClass = { id: newClassId, name: name, subjects: [], sections: [] };
         const docRef = doc(db, 'classes', newClassId);
         await setDoc(docRef, { id: newClassId, name: name, sections: [] });
         await logActivity('class_added', `Created new class: ${name}.`);
@@ -620,13 +700,12 @@ export async function seedDatabase() {
 }
 
 // Income Functions
-export async function addIncome(incomeData: Omit<Income, 'id' | 'date'>) {
+export async function addIncome(incomeData: Omit<Income, 'id' | 'date'> & { receiptId: string }) {
     try {
-        const receiptId = `RCPT-${Date.now()}`;
-        const dataToSave = { ...incomeData, receiptId, date: serverTimestamp() };
+        const dataToSave = { ...incomeData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'income'), dataToSave);
         await logActivity('fee_payment', `Payment of ${incomeData.amount} PKR received from ${incomeData.studentName}.`, `/student-ledger?search=${incomeData.studentId}`);
-        return { success: true, message: 'Income record added.', id: docRef.id, receiptId };
+        return { success: true, message: 'Income record added.', id: docRef.id };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'income/[auto-id]', operation: 'create', requestResourceData: incomeData });
         errorEmitter.emit('permission-error', permissionError);
@@ -642,7 +721,20 @@ export async function getIncome(): Promise<Income[]> {
         return {
             id: doc.id,
             ...data,
-            date: data.date.toDate(),
+            date: safeToDate(data.date),
+        } as Income;
+    });
+}
+
+export async function getIncomeByStudent(studentId: string): Promise<Income[]> {
+    const q = query(collection(db, "income"), where("studentId", "==", studentId));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            date: safeToDate(data.date),
         } as Income;
     });
 }
@@ -658,7 +750,7 @@ export async function getIncomeByReceiptId(receiptId: string): Promise<Income | 
     return {
         id: doc.id,
         ...data,
-        date: data.date.toDate(),
+        date: safeToDate(data.date),
     } as Income;
 }
 
@@ -741,7 +833,7 @@ export async function addExpense(expenseData: Omit<Expense, 'id' | 'date'>, expe
 export async function getExpenses(): Promise<Expense[]> {
     const q = query(collection(db, "expenses"), orderBy("date", "desc"));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Expense));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: safeToDate(doc.data().date) } as Expense));
 }
 
 export async function updateExpense(expenseId: string, data: { description: string; amount: number, category: string }) {
@@ -804,9 +896,10 @@ export async function addReport(reportData: Omit<Report, 'id' | 'reportDate'>) {
 }
 
 export async function getReports(): Promise<Report[]> {
-    const q = query(collection(db, "reports"), orderBy("reportDate", "desc"));
+    const q = query(collection(db, "reports"));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), reportDate: doc.data().reportDate.toDate() } as Report));
+    const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), reportDate: safeToDate(doc.data().reportDate) } as Report));
+    return reports.sort((a,b) => b.reportDate.getTime() - a.reportDate.getTime());
 }
 
 // Teacher Payout Functions
@@ -815,29 +908,25 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
         const batch = writeBatch(db);
         const payoutTimestamp = serverTimestamp();
         
-        // Payout Record
         const payoutRef = doc(collection(db, 'teacher_payouts'));
         batch.set(payoutRef, { teacherId, teacherName, amount, payoutDate: payoutTimestamp, incomeIds });
 
-        // Academy Share Record
         if (reportData && reportData.academyShare > 0) {
             const academyShareRef = doc(collection(db, 'academy_share'));
             batch.set(academyShareRef, {
                 teacherId,
                 teacherName,
                 amount: reportData.academyShare,
-                payoutDate: Timestamp.fromDate(earningsMonth), // Use earnings month
+                payoutDate: Timestamp.fromDate(earningsMonth),
                 payoutId: payoutRef.id,
             });
         }
 
-        // Update Income Records
         incomeIds.forEach(id => {
             const incomeRef = doc(db, 'income', id);
             batch.update(incomeRef, { [`paidOutTo.${teacherId}`]: payoutRef.id });
         });
 
-        // Expense Record - set to the last day of the earnings month
         const expenseDate = endOfMonth(earningsMonth);
         batch.set(doc(collection(db, 'expenses')), { 
             description: `Payout to ${teacherName} for ${formatDate(earningsMonth, 'MMMM yyyy')}`, 
@@ -848,7 +937,6 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
             category: 'Salaries' 
         });
 
-        // Report Record
         if (reportData) {
             const reportRef = doc(collection(db, 'reports'));
             batch.set(reportRef, { ...reportData, teacherId, teacherName, payoutId: payoutRef.id, reportDate: payoutTimestamp });
@@ -874,34 +962,29 @@ export async function deletePayout(payoutId: string) {
 
             const payoutData = payoutDoc.data() as TeacherPayout;
 
-            // Mark associated income records as not paid out
             for (const incomeId of payoutData.incomeIds) {
                 const incomeRef = doc(db, 'income', incomeId);
                 transaction.update(incomeRef, { [`paidOutTo.${payoutData.teacherId}`]: deleteField() });
             }
 
-            // Find and delete the associated expense record
             const expenseQuery = query(collection(db, 'expenses'), where("payoutId", "==", payoutId), limit(1));
             const expenseSnap = await getDocs(expenseQuery);
             if (!expenseSnap.empty) {
                 transaction.delete(expenseSnap.docs[0].ref);
             }
             
-             // Find and delete the associated academy share record
             const shareQuery = query(collection(db, 'academy_share'), where("payoutId", "==", payoutId), limit(1));
             const shareSnap = await getDocs(shareQuery);
             if (!shareSnap.empty) {
                 transaction.delete(shareSnap.docs[0].ref);
             }
 
-            // Find and delete the associated report
             const reportQuery = query(collection(db, 'reports'), where("payoutId", "==", payoutId), limit(1));
             const reportSnap = await getDocs(reportQuery);
             if (!reportSnap.empty) {
                 transaction.delete(reportSnap.docs[0].ref);
             }
 
-            // Finally, delete the payout record itself
             transaction.delete(payoutRef);
 
             await logActivity('teacher_payout', `Reversed payout of ${payoutData.amount} for ${payoutData.teacherName}.`);
@@ -919,9 +1002,8 @@ export async function deletePayout(payoutId: string) {
 export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
     const q = query(collection(db, "teacher_payouts"), where("teacherId", "==", teacherId));
     const querySnapshot = await getDocs(q);
-    let payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: doc.data().payoutDate.toDate() } as TeacherPayout));
+    let payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: safeToDate(doc.data().payoutDate) } as TeacherPayout));
 
-    // Sort client-side
     payouts = payouts.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
 
     const payoutsWithReports: (TeacherPayout & { report?: Report, academyShare?: number })[] = [];
@@ -941,7 +1023,7 @@ export async function getTeacherPayouts(teacherId: string): Promise<(TeacherPayo
 export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Report, academyShare?: number })[]> {
     const q = query(collection(db, "teacher_payouts"), orderBy("payoutDate", "desc"));
     const querySnapshot = await getDocs(q);
-    const payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: doc.data().payoutDate.toDate() } as TeacherPayout));
+    const payouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), payoutDate: safeToDate(doc.data().payoutDate) } as TeacherPayout));
     
     const payoutsWithReports: (TeacherPayout & { report?: Report, academyShare?: number })[] = [];
     for (const payout of payouts) {
@@ -958,16 +1040,17 @@ export async function getAllPayouts(): Promise<(TeacherPayout & { report?: Repor
 }
 
 export async function getAcademyShare(): Promise<Payout[]> {
-    const q = query(collection(db, "academy_share"), orderBy("payoutDate", "desc"));
+    const q = query(collection(db, "academy_share"));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
+    const shares = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
             ...data,
-            payoutDate: data.payoutDate.toDate(),
+            payoutDate: safeToDate(data.payoutDate),
         } as Payout;
     });
+    return shares.sort((a, b) => b.payoutDate.getTime() - a.payoutDate.getTime());
 }
 
 
@@ -979,14 +1062,13 @@ export async function saveAttendance(attendanceData: { classId: string; classNam
         await setDoc(docRef, attendanceData, { merge: true });
         await logActivity('attendance_marked', `Marked attendance for class ${attendanceData.className}.`);
         
-        // Send WhatsApp messages for absent students
         const settings = await getSettings('details');
         if (settings && settings.absentMsg && settings.whatsappProvider !== 'none') {
             const absentStudents: { id: string, name: string, phone: string }[] = [];
-            
+            const allStudents = await getStudents();
             for (const studentId in attendanceData.records) {
                 if (attendanceData.records[studentId] === 'Absent') {
-                    const student = await getStudent(studentId);
+                    const student = allStudents.find(s => s.id === studentId);
                     if (student && student.phone) {
                         absentStudents.push({ id: student.id, name: student.name, phone: student.phone });
                     }
@@ -1192,7 +1274,6 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
             collection(db, 'teacher_attendance'),
             where('teacherId', '==', teacherId),
         );
-
         const querySnapshot = await getDocs(q);
 
         const teacherAttendance: { date: Date, status: AttendanceStatus }[] = [];
@@ -1206,16 +1287,47 @@ export async function getTeacherAttendanceForMonth(teacherId: string, month: num
                 });
             }
         });
-
+        
         return teacherAttendance;
-    } catch (error) {
-        console.error(`Error fetching teacher attendance for ${teacherId}:`, error);
-        if (error instanceof Error && error.message.includes("The query requires an index")) {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `teacher_attendance`,
-                operation: 'list',
-            }));
-        }
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: `teacher_attendance`,
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        return [];
+    }
+}
+
+export async function getAllTeacherAttendanceForMonth(month: number, year: number): Promise<{ teacherId: string, date: Date, status: AttendanceStatus }[]> {
+    try {
+        const monthStartStr = formatDate(startOfMonth(new Date(year, month)), 'yyyy-MM-dd');
+        const monthEndStr = formatDate(endOfMonth(new Date(year, month)), 'yyyy-MM-dd');
+
+        const q = query(
+            collection(db, 'teacher_attendance'),
+            where('date', '>=', monthStartStr),
+            where('date', '<=', monthEndStr)
+        );
+        const querySnapshot = await getDocs(q);
+
+        const attendance: { teacherId: string, date: Date, status: AttendanceStatus }[] = [];
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            attendance.push({
+                teacherId: data.teacherId,
+                date: new Date(data.date + 'T00:00:00'),
+                status: data.status,
+            });
+        });
+        
+        return attendance;
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: `teacher_attendance`,
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
         return [];
     }
 }
@@ -1226,10 +1338,43 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
     try {
         const dataToSave = { ...examData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'exams'), dataToSave);
-        await logActivity('exam_created', `New exam created: ${examData.name} for class ${examData.className}.`, `/exams/${docRef.id}`);
+        
+        if (examData.status === 'pending') {
+            await createNotification(ADMIN_UID, `New exam request from ${examData.teacherName}: "${examData.name}".`, `/exams?tab=pending`);
+        } else if (examData.status === 'approved') {
+            await createNotification(examData.teacherId, `A new exam has been assigned to you: "${examData.name}".`, `/teacher/exams/${docRef.id}`);
+        }
+
+        const logMessage = examData.status === 'pending'
+            ? `New exam request submitted: ${examData.name} for class ${examData.className}.`
+            : `New exam created: ${examData.name} for class ${examData.className}.`;
+        
+        await logActivity('exam_created', logMessage, `/exams`);
         return { success: true, message: 'Exam created successfully.', id: docRef.id };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'exams/[auto-id]', operation: 'create', requestResourceData: examData });
+        errorEmitter.emit('permission-error', permissionError);
+        return { success: false, message: (serverError as Error).message };
+    }
+}
+
+export async function updateExamStatus(examId: string, status: 'approved' | 'rejected') {
+    const docRef = doc(db, 'exams', examId);
+    try {
+        await updateDoc(docRef, { status });
+        const examDoc = await getDoc(docRef);
+        if (examDoc.exists()) {
+             const exam = examDoc.data() as Exam;
+             if (status === 'approved') {
+                await createNotification(exam.teacherId, `Your exam request "${exam.name}" has been approved.`, `/teacher/exams/${examId}`);
+             } else if (status === 'rejected') {
+                await createNotification(exam.teacherId, `Your exam request "${exam.name}" was rejected.`, `/teacher/exams`);
+             }
+             await logActivity('exam_updated', `Exam "${exam.name}" was ${status}.`);
+        }
+        return { success: true, message: 'Exam status updated.' };
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { status } });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
     }
@@ -1270,15 +1415,76 @@ export async function deleteExam(examId: string) {
 export async function getExams(): Promise<Exam[]> {
     const q = query(collection(db, "exams"), orderBy("date", "desc"));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() } as Exam));
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            date: safeToDate(data.date),
+            submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
+        } as Exam;
+    });
 }
+
+export async function getExamsByTeacher(teacherId: string): Promise<Exam[]> {
+    try {
+        const q = query(
+            collection(db, 'exams'), 
+            where("teacherId", "==", teacherId)
+        );
+        const querySnapshot = await getDocs(q);
+        const exams = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                date: safeToDate(data.date),
+                submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
+            } as Exam;
+        });
+        return exams.sort((a, b) => b.date.getTime() - a.date.getTime());
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: 'exams',
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        return [];
+    }
+}
+
+export async function getExamsForStudent(studentId: string): Promise<Exam[]> {
+    try {
+        const q = query(collection(db, 'exams'), where('status', '==', 'approved'));
+        const querySnapshot = await getDocs(q);
+        const exams = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                date: safeToDate(data.date),
+                submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
+            } as Exam;
+        });
+        return exams.filter(exam => exam.results?.some(r => r.studentId === studentId));
+    } catch (error) {
+        console.error("Error fetching exams for student:", error);
+        return [];
+    }
+}
+
 
 export async function getExam(examId: string): Promise<Exam | null> {
     const docRef = doc(db, 'exams', examId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         const data = docSnap.data();
-        return { id: docSnap.id, ...data, date: data.date.toDate() } as Exam;
+        return {
+            id: docSnap.id,
+            ...data,
+            date: safeToDate(data.date),
+            submissionDeadline: data.submissionDeadline ? safeToDate(data.submissionDeadline) : undefined,
+        } as Exam;
     }
     return null;
 }
@@ -1286,8 +1492,55 @@ export async function getExam(examId: string): Promise<Exam | null> {
 export async function saveExamResults(examId: string, results: StudentResult[]) {
     const docRef = doc(db, 'exams', examId);
     try {
-        await updateDoc(docRef, { results });
-        await logActivity('exam_results_saved', `Saved results for an exam.`);
+        const examDoc = await getDoc(docRef);
+        if (!examDoc.exists()) {
+            throw new Error("Exam not found");
+        }
+
+        const examData = examDoc.data() as any;
+        const exam = { 
+            id: examDoc.id, 
+            ...examData, 
+            date: safeToDate(examData.date), 
+            submissionDeadline: examData.submissionDeadline ? safeToDate(examData.submissionDeadline) : undefined 
+        } as Exam;
+        
+        let shouldNotify = false;
+
+        if (!exam.completionNotified) {
+            const allStudents = await getStudents();
+            const studentsForExam = allStudents.filter(student => 
+                student.class === exam.className && 
+                (exam.scope === 'class' || student.subjects.some(sub => sub.teacher_id === exam.teacherId))
+            );
+
+            if (studentsForExam.length > 0) {
+                const resultsMap = new Map(results.map(r => [r.studentId, r.marks]));
+                const isExamComplete = studentsForExam.every(student => {
+                    const studentResult = resultsMap.get(student.id);
+                    if (!studentResult) return false; 
+                    return exam.subjects.every(subjectName => studentResult[subjectName] != null);
+                });
+
+                if (isExamComplete) {
+                    shouldNotify = true;
+                }
+            }
+        }
+
+        const updateData: { results: StudentResult[], completionNotified?: boolean } = { results };
+        if (shouldNotify) {
+            updateData.completionNotified = true;
+        }
+
+        await updateDoc(docRef, updateData);
+
+        await logActivity('exam_results_saved', `Saved results for exam "${exam.name}".`);
+
+        if (shouldNotify) {
+            await createNotification(ADMIN_UID, `${exam.teacherName} has submitted all marks for "${exam.name}" (${exam.className}).`, `/exams/${exam.id}`);
+        }
+
         return { success: true, message: 'Exam results saved successfully.' };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: { results } });
@@ -1318,7 +1571,6 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
     try {
         const todayStr = formatDate(new Date(), 'yyyy-MM-dd');
         
-        // Fetch all data in parallel
         const [allClasses, allStudents, allTeachers] = await Promise.all([
             getClasses(),
             getStudents(),
@@ -1331,7 +1583,6 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
         const qTeachers = query(collection(db, 'teacher_attendance'), where('date', '==', todayStr));
         const teacherAttendanceSnap = await getDocs(qTeachers);
 
-        // Process student attendance
         const studentSummary: DailyAttendanceSummary['students'] = {
             totalStudents: allStudents.length,
             totalPresent: 0,
@@ -1373,7 +1624,6 @@ export async function getDetailedDailyAttendance(): Promise<DailyAttendanceSumma
             };
         });
 
-        // Process teacher attendance
         const teacherSummary: DailyAttendanceSummary['teachers'] = {
             totalTeachers: allTeachers.length,
             presentCount: 0,

@@ -11,11 +11,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
 import { type Exam, type Student, type StudentResult } from '@/lib/data';
 import { getExam, getStudentsByClass, saveExamResults } from '@/lib/firebase/firestore';
-import { Loader2, Printer } from 'lucide-react';
+import { Loader2, Printer, FileImage } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import html2canvas from 'html2canvas';
 
 type EnhancedResult = {
     studentId: string;
@@ -37,6 +38,8 @@ export default function ExamResultsPage() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showPosition, setShowPosition] = useState(true);
+  const printRef = useRef<HTMLDivElement>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!examId) return;
@@ -51,7 +54,17 @@ export default function ExamResultsPage() {
         } else {
             setShowPosition(true);
         }
-        const studentData = await getStudentsByClass(examData.className);
+        const studentsInClass = await getStudentsByClass(examData.className);
+        let studentData: Student[];
+
+        if (examData.scope === 'teacher_students' && examData.teacherId) {
+            studentData = studentsInClass.filter(student => 
+                student.subjects.some(sub => sub.teacher_id === examData.teacherId)
+            );
+        } else {
+            studentData = studentsInClass;
+        }
+
         // Sort students by ID to ensure a consistent order
         const sortedStudents = studentData.sort((a, b) => a.id.localeCompare(b.id));
         setStudents(sortedStudents);
@@ -101,20 +114,48 @@ export default function ExamResultsPage() {
     }));
   };
   
-  const handleSaveResults = async () => {
+  const handleSaveResults = useCallback(async (isAutoSave = false) => {
     if (!examId || !exam) return;
     
-    setIsSaving(true);
+    if (!isAutoSave) {
+        setIsSaving(true);
+    }
     const resultsArray = Object.values(results);
     const result = await saveExamResults(examId, resultsArray);
 
     if (result.success) {
-      toast({ title: 'Results Saved', description: 'Student marks have been updated.' });
+      if (!isAutoSave) {
+        toast({ title: 'Results Saved', description: 'Student marks have been updated.' });
+      }
     } else {
-      toast({ variant: 'destructive', title: 'Save Failed', description: result.message });
+      if (!isAutoSave) {
+        toast({ variant: 'destructive', title: 'Save Failed', description: result.message });
+      }
     }
-    setIsSaving(false);
-  }
+    if (!isAutoSave) {
+        setIsSaving(false);
+    }
+  }, [exam, examId, results, toast]);
+
+  useEffect(() => {
+    if (loading) return; 
+
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    debounceTimeoutRef.current = setTimeout(() => {
+        if (Object.keys(results).length > 0) {
+            handleSaveResults(true);
+        }
+    }, 2000);
+
+    return () => {
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+    };
+  }, [results, loading, handleSaveResults]);
 
   const enhancedResults = useMemo((): EnhancedResult[] => {
     if (!exam) return [];
@@ -141,7 +182,6 @@ export default function ExamResultsPage() {
 
     const sortedForRanking = [...studentTotals].sort((a, b) => b.totalMarks - a.totalMarks);
     
-    const finalResultsWithPosition: EnhancedResult[] = [];
     let rank = 0;
     let lastMark = -1;
 
@@ -170,71 +210,164 @@ export default function ExamResultsPage() {
   const getStudentEnhancedResult = (studentId: string) => {
     return enhancedResults.find(r => r.studentId === studentId);
   }
-
-  const handlePrint = () => {
-    if (isSettingsLoading || !exam || !students.length) {
-      toast({ variant: 'destructive', title: 'Cannot Print', description: 'Data is not fully loaded.' });
-      return;
+  
+  const generatePrintContent = () => {
+    if (isSettingsLoading || !exam || !students.length || !printRef.current) {
+        toast({ variant: 'destructive', title: 'Cannot Proceed', description: 'Data is not fully loaded.' });
+        return;
     }
+    
+    const elementToPrint = printRef.current;
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
         toast({ variant: 'destructive', title: 'Cannot Print', description: 'Please allow popups for this site.' });
         return;
     }
+    printWindow.document.write('<html><head><title>Print</title>');
+    const styles = Array.from(document.styleSheets)
+        .map(s => `<link rel="stylesheet" href="${s.href}">`)
+        .join('');
+    printWindow.document.write(styles);
+    printWindow.document.write(`<style>
+        @media print { @page { size: A4; margin: 0.75in; } }
+        body { -webkit-print-color-adjust: exact; }
+    </style>`);
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(elementToPrint.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 500);
+  };
+  
+  const generateImage = () => {
+    if (isSettingsLoading || !exam || !students.length || !printRef.current) {
+        toast({ variant: 'destructive', title: 'Cannot Proceed', description: 'Data is not fully loaded.' });
+        return;
+    }
+    const element = printRef.current;
+     html2canvas(element, { 
+            scale: 2, // for higher quality
+            useCORS: true,
+            backgroundColor: 'white',
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `${exam.name.replace(/ /g, '_')}_results.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+        });
+  }
 
-    const maxMarksPerSubject = exam.totalMarks;
-    const totalMaxMarks = exam.subjects.length * maxMarksPerSubject;
-    const tableHeader = exam.subjects.map(s => `<th style="text-align: center;">${s}<br>(${maxMarksPerSubject})</th>`).join('');
-    
-    const tableRows = students
-      .map(student => {
-        const studentResult = results[student.id];
-        const enhanced = getStudentEnhancedResult(student.id);
+ const printableTableHeaders = useMemo(() => {
+    if (!exam) return '';
+    let headers = `
+        <th>Roll #</th>
+        <th>Student Name</th>
+        <th>Father's Name</th>
+    `;
+    headers += exam.subjects.map(s => `<th>${s}<br>(${exam.totalMarks})</th>`).join('');
+    if (exam.subjects.length > 1) {
+        headers += `<th>Total</th>`;
+    }
+    headers += `<th>%age</th>`;
+    if (showPosition) {
+        headers += `<th>Pos.</th>`;
+    }
+    return `<tr>${headers}</tr>`;
+  }, [exam, showPosition]);
 
-        const marksCells = exam.subjects.map(subject => {
-            const marks = studentResult?.marks[subject];
-            const isAbsent = marks === 'A';
-            const cellStyle = isAbsent
-              ? 'background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;'
-              : 'text-align: center;';
-            return `<td style="${cellStyle}">${marks ?? '-'}</td>`;
-        }).join('');
+  const printableTableBody = useMemo(() => {
+    if (!exam || !students.length) return '';
+    return students.map(student => {
+      const enhanced = getStudentEnhancedResult(student.id);
+      const marksCells = exam.subjects.map(subject => {
+        const marks = results[student.id]?.marks[subject];
+        const isAbsent = marks === 'A';
+        const cellStyle = isAbsent ? 'background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;' : 'text-align: center;';
+        return `<td style="${cellStyle}">${marks ?? '-'}</td>`;
+      }).join('');
+      
+      const totalCell = exam.subjects.length > 1 ? `<td style="text-align: center; font-weight: bold;">${enhanced?.totalMarks ?? 0}</td>` : '';
+      const percentageCell = `<td style="text-align: center;">${enhanced?.percentage.toFixed(2) ?? '0.00'}%</td>`;
+      const positionCell = showPosition ? `<td style="text-align: center; font-weight: bold;">${enhanced?.position ?? '-'}</td>` : '';
 
-        return `
-            <tr>
-                <td>${student.id}</td>
-                <td>${student.name}</td>
-                <td>${student.fatherName}</td>
-                ${marksCells}
-                ${exam.subjects.length > 1 ? `<td style="text-align: center; font-weight: bold;">${enhanced?.totalMarks ?? 0}</td>` : ''}
-                <td style="text-align: center;">${enhanced?.percentage.toFixed(2) ?? '0.00'}%</td>
-                ${showPosition ? `<td style="text-align: center; font-weight: bold;">${enhanced?.position ?? '-'}</td>` : ''}
-            </tr>
-        `;
+      return `
+        <tr>
+          <td>${student.id}</td>
+          <td>${student.name}</td>
+          <td>${student.fatherName}</td>
+          ${marksCells}
+          ${totalCell}
+          ${percentageCell}
+          ${positionCell}
+        </tr>
+      `;
     }).join('');
+  }, [exam, students, results, enhancedResults, showPosition]);
 
-    const printHtml = `
-      <html>
-        <head>
-          <title>Exam Results - ${exam.name}</title>
-          <style>
-            @media print {
-              @page { size: A4; margin: 0.75in; }
-              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            }
+  const printableHeaderHtml = useMemo(() => {
+    if (!exam) return '';
+    const logoHtml = settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" style="display: block; margin: 0 auto 0.5rem auto; height: 60px; object-fit: contain;" />` : '';
+    return `
+      <div class="academy-details">
+        ${logoHtml}
+        <h1>${settings.name}</h1>
+        <p>${settings.address}</p>
+        <p>${settings.phone}</p>
+      </div>
+      <div class="report-title">
+        <h2>Exam Results</h2>
+        <p>${exam.name} - ${exam.className}</p>
+        <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
+      </div>
+    `;
+  }, [settings, exam, totalMaxMarks]);
+  
+  const footerHtml = useMemo(() => {
+    return `
+        <div class="footer">
+            Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
+        </div>
+    `;
+  }, [settings.name]);
+
+
+  if (loading) {
+    return (
+        <div className="space-y-6">
+            <div className="space-y-2">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-5 w-80" />
+            </div>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-10 w-full" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-96 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
+
+  if (!exam) {
+    return <div>Exam not found.</div>;
+  }
+
+  return (
+    <>
+      {/* Hidden div for printing/saving */}
+       <div className="absolute -left-[9999px] top-auto w-[1000px] bg-white text-black p-4" ref={printRef}>
+          <style>{`
             body { 
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-              margin: 0; 
-              padding: 0; 
-              background-color: #fff;
-              color: #000;
-              font-size: 10pt;
+              margin: 0; padding: 0; background-color: #fff; color: #000; font-size: 10pt;
             }
             .report-container { max-width: 1000px; margin: auto; padding: 20px; display: flex; flex-direction: column; min-height: 95vh; }
             .content-wrap { flex: 1; }
             .academy-details { text-align: center; margin-bottom: 2rem; }
-            .academy-details img { height: 60px; margin-bottom: 0.5rem; object-fit: contain; }
             .academy-details h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
             .academy-details p { font-size: 0.9rem; margin: 0.2rem 0; color: #555; }
             .report-title { text-align: center; margin: 2rem 0; }
@@ -245,150 +378,115 @@ export default function ExamResultsPage() {
             th { font-weight: bold; background-color: #f2f2f2; text-align: center; }
             tr:nth-child(even) { background-color: #f9f9f9; }
             .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
-          </style>
-        </head>
-        <body>
-          <div class="report-container">
-            <div class="content-wrap">
-              <div class="academy-details">
-                ${settings.logo ? `<img src="${settings.logo}" alt="Academy Logo" />` : ''}
-                <h1>${settings.name}</h1>
-                <p>${settings.address}</p>
-                <p>Phone: ${settings.phone}</p>
-              </div>
-              <div class="report-title">
-                <h2>Exam Results</h2>
-                <p>${exam.name} - ${exam.className}</p>
-                <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
-              </div>
+          `}</style>
+          <div className="report-container">
+            <div className="content-wrap">
+              <div dangerouslySetInnerHTML={{ __html: printableHeaderHtml }} />
               <table>
-                <thead>
-                  <tr>
-                    <th>Roll #</th>
-                    <th>Student Name</th>
-                    <th>Father's Name</th>
-                    ${tableHeader}
-                    ${exam.subjects.length > 1 ? `<th>Total</th>` : ''}
-                    <th>%age</th>
-                    ${showPosition ? '<th>Pos.</th>' : ''}
-                  </tr>
-                </thead>
-                <tbody>
-                  ${tableRows}
-                </tbody>
+                 <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
+                 <tbody dangerouslySetInnerHTML={{ __html: printableTableBody }} />
               </table>
             </div>
-             <div class="footer">
-                Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
-            </div>
+            <div dangerouslySetInnerHTML={{ __html: footerHtml }} />
           </div>
-        </body>
-      </html>
-    `;
-    printWindow.document.write(printHtml);
-    printWindow.document.close();
-  };
+        </div>
 
-  if (loading) {
-    return null;
-  }
-
-  if (!exam) {
-    return <div>Exam not found.</div>;
-  }
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{exam.name}</h1>
-        <p className="text-muted-foreground">Enter marks for students of {exam.className}.</p>
-      </div>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <CardTitle>Enter Marks</CardTitle>
-              <CardDescription>Enter the marks obtained or 'A' for absent students.</CardDescription>
-            </div>
-            <div className="flex items-center gap-4">
-               <div className="flex items-center space-x-2">
-                <Switch id="show-position" checked={showPosition} onCheckedChange={setShowPosition} />
-                <Label htmlFor="show-position">Show Position</Label>
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{exam.name}</h1>
+          <p className="text-muted-foreground">Enter marks for students of {exam.className}.</p>
+        </div>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <CardTitle>Enter Marks</CardTitle>
+                <CardDescription>Enter the marks obtained or 'A' for absent students.</CardDescription>
               </div>
-              <Button onClick={handleSaveResults} disabled={isSaving}>
-                {isSaving && <Loader2 className="mr-2 animate-spin" />}
-                Save Results
-              </Button>
-               <Button variant="outline" onClick={handlePrint} disabled={isSettingsLoading}>
-                <Printer className="mr-2 h-4 w-4" />
-                Print Results
-              </Button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center space-x-2">
+                  <Switch id="show-position" checked={showPosition} onCheckedChange={setShowPosition} />
+                  <Label htmlFor="show-position">Show Position</Label>
+                </div>
+                <Button onClick={() => handleSaveResults(false)} disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 animate-spin" />}
+                  Save Results
+                </Button>
+                <Button variant="outline" onClick={generatePrintContent}>
+                    <Printer className="mr-2" />
+                    Print Results
+                </Button>
+                <Button variant="outline" onClick={generateImage}>
+                    <FileImage className="mr-2" />
+                    Save as JPG
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[150px]">Student</TableHead>
-                  <TableHead className="min-w-[150px]">Father's Name</TableHead>
-                  {exam.subjects.map(subject => (
-                    <TableHead key={subject} className="text-center">{subject}</TableHead>
-                  ))}
-                  {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Obtained</TableHead>}
-                  {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Total</TableHead>}
-                  <TableHead className="text-center font-bold">%</TableHead>
-                  {showPosition && <TableHead className="text-center font-bold">Pos.</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableCell colSpan={2} className="font-semibold">Total Marks</TableCell>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[150px]">Student</TableHead>
+                    <TableHead className="min-w-[150px]">Father's Name</TableHead>
                     {exam.subjects.map(subject => (
-                        <TableCell key={subject} className="text-center font-semibold">
-                           <div className="flex justify-center">
-                                <div className="w-20 rounded-md bg-background py-1 px-2">{exam.totalMarks}</div>
-                           </div>
-                        </TableCell>
+                      <TableHead key={subject} className="text-center">{subject}</TableHead>
                     ))}
-                    {exam.subjects.length > 1 && <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>}
-                    {exam.subjects.length > 1 && <TableCell></TableCell>}
-                    <TableCell></TableCell>
-                    {showPosition && <TableCell></TableCell>}
-                </TableRow>
-                {students.map(student => {
-                   const enhanced = getStudentEnhancedResult(student.id);
-                   return(
-                    <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.name}<br/><span className="text-xs text-muted-foreground">{student.id}</span></TableCell>
-                        <TableCell className="font-medium">{student.fatherName}</TableCell>
-                        {exam.subjects.map(subject => {
-                          const marks = results[student.id]?.marks[subject] ?? '';
-                          return (
-                            <TableCell key={subject}>
-                              <Input
-                                type="text"
-                                placeholder="-"
-                                className="max-w-[80px] mx-auto text-center"
-                                value={marks}
-                                onChange={e => handleMarksChange(student.id, subject, e.target.value)}
-                              />
-                            </TableCell>
-                          )
-                        })}
-                        {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>}
-                        {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>}
-                        <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
-                        {showPosition && <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>}
-                    </TableRow>
-                   )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+                    {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Obtained</TableHead>}
+                    {exam.subjects.length > 1 && <TableHead className="text-center font-bold">Total</TableHead>}
+                    <TableHead className="text-center font-bold">%</TableHead>
+                    {showPosition && <TableHead className="text-center font-bold">Pos.</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableCell colSpan={2} className="font-semibold">Total Marks</TableCell>
+                      {exam.subjects.map(subject => (
+                          <TableCell key={subject} className="text-center font-semibold">
+                            <div className="flex justify-center">
+                                  <div className="w-20 rounded-md bg-background py-1 px-2">{exam.totalMarks}</div>
+                            </div>
+                          </TableCell>
+                      ))}
+                      {exam.subjects.length > 1 && <TableCell className="text-center font-bold">{totalMaxMarks}</TableCell>}
+                      {exam.subjects.length > 1 && <TableCell></TableCell>}
+                      <TableCell></TableCell>
+                      {showPosition && <TableCell></TableCell>}
+                  </TableRow>
+                  {students.map(student => {
+                    const enhanced = getStudentEnhancedResult(student.id);
+                    return(
+                      <TableRow key={student.id}>
+                          <TableCell className="font-medium">{student.name}<br/><span className="text-xs text-muted-foreground">{student.id}</span></TableCell>
+                          <TableCell className="font-medium">{student.fatherName}</TableCell>
+                          {exam.subjects.map(subject => {
+                            const marks = results[student.id]?.marks[subject] ?? '';
+                            return (
+                              <TableCell key={subject}>
+                                <Input
+                                  type="text"
+                                  placeholder="-"
+                                  className="max-w-[80px] mx-auto text-center"
+                                  value={marks}
+                                  onChange={(e) => handleMarksChange(student.id, subject, e.target.value)}
+                                />
+                              </TableCell>
+                            )
+                          })}
+                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{enhanced?.totalMarks}</TableCell>}
+                          {exam.subjects.length > 1 && <TableCell className="text-center font-medium">{totalMaxMarks}</TableCell>}
+                          <TableCell className="text-center font-medium">{enhanced?.percentage.toFixed(2)}%</TableCell>
+                          {showPosition && <TableCell className="text-center font-bold text-lg">{enhanced?.position}</TableCell>}
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }

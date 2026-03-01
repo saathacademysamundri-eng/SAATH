@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -149,7 +147,7 @@ export function TeacherAttendanceReport() {
                     </div>
                 </div>
                 <div class="footer">
-                    Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP
+                    Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
                 </div>
               </div>
             </body>
@@ -170,7 +168,7 @@ export function TeacherAttendanceReport() {
                             <SelectValue placeholder="Select a teacher" />
                         </SelectTrigger>
                         <SelectContent>
-                            {teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                            {teachers.map((t, index) => <SelectItem key={`${t.id}-${index}`} value={t.id}>{t.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>

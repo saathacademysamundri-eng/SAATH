@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Default deny all for security
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Rules for specific collections
+    match /students/{studentId} {
+      // Allow public get and list for the search portal
+      allow get, list: if true;
+      allow write: if isAuthenticated();
+    }
+    match /teachers/{teacherId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /classes/{classId}/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+    match /income/{incomeId} {
+       // Allow public list for the ledger search
+       allow get, list: if true;
+       allow write: if isAuthenticated();
+    }
+    match /expenses/{expenseId} {
+       allow read, write: if isAuthenticated();
+    }
+    match /reports/{reportId} {
+        allow read, write: if isAuthenticated();
+    }
+    match /teacher_payouts/{payoutId} {
+        allow read, write: if isAuthenticated();
+    }
+    match /academy_share/{payoutId} {
+        allow read, write: if isAuthenticated();
+    }
+    match /exams/{examId} {
+      // Allow public list for the results search
+      allow get, list: if true;
+      allow write: if isAuthenticated();
+    }
+    match /attendance/{attendanceId} {
+       allow read, write: if isAuthenticated();
+    }
+    match /teacher_attendance/{attendanceId} {
+      allow list, read, write: if isAuthenticated();
+    }
+    match /settings/{settingId} {
+       allow get: if true;
+       allow write: if isAuthenticated();
+    }
+    match /message_logs/{logId} {
+        allow create: if isAuthenticated();
+        allow read, update, delete: if false;
+    }
+    match /system_state/{stateId} {
+       allow read, write: if isAuthenticated();
+    }
+    match /activities/{activityId} {
+       allow read, write: if isAuthenticated();
+    }
+    match /notifications/{notificationId} {
+      allow read, update: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated();
+    }
+  }
+}
