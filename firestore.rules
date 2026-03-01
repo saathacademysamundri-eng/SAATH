@@ -75,7 +75,7 @@ service cloud.firestore {
     
     match /message_logs/{logId} {
         allow create: if isAuthenticated();
-        allow read: if isAdmin();
+        allow read: if isAuthenticated();
     }
     
     match /system_state/{stateId} {
@@ -83,6 +83,10 @@ service cloud.firestore {
     }
     
     match /activities/{activityId} {
+       allow read, write: if isAuthenticated();
+    }
+    
+    match /discounts/{discountId} {
        allow read, write: if isAuthenticated();
     }
     

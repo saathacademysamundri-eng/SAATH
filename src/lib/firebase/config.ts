@@ -1,7 +1,11 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager 
+} from 'firebase/firestore';
 
 export const firebaseConfig = {
   projectId: "studio-5400175364-fe933",
@@ -13,23 +17,14 @@ export const firebaseConfig = {
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-const db = getFirestore(app);
 
-// Enable offline persistence
-if (typeof window !== 'undefined') {
-  try {
-    enableIndexedDbPersistence(db)
-      .then(() => console.log("Firestore persistence enabled."))
-      .catch((err) => {
-        if (err.code == 'failed-precondition') {
-          console.warn("Firestore persistence failed: Multiple tabs open. Persistence can only be enabled in one tab at a time.");
-        } else if (err.code == 'unimplemented') {
-          console.warn("Firestore persistence failed: The current browser does not support all of the features required to enable persistence.");
-        }
-      });
-  } catch (error) {
-    console.error("Error enabling Firestore persistence:", error);
-  }
-}
+// Initialize Firestore with modern cache settings and Long Polling
+// experimentalForceLongPolling: true helps bypass ad-blockers and strict firewalls
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+  experimentalForceLongPolling: true,
+});
 
 export { app, auth, db };
