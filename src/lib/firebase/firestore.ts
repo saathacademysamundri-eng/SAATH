@@ -1783,7 +1783,7 @@ export async function saveExamResults(examId: string, results: StudentResult[]) 
 export async function getTodaysMessagesCount(): Promise<number> {
     try {
         const todayStart = startOfDay(new Date());
-        todayEnd = endOfDay(new Date());
+        const todayEnd = endOfDay(new Date());
 
         const q = query(
             collection(db, 'message_logs'),
