@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState, useEffect } from 'react';
-import { getTodaysAttendanceSummary, getTodaysMessagesCount, getExams, createNotification, getDashboardStats, getRecentActivities } from '@/lib/firebase/firestore';
+import { getTodaysAttendanceSummary, getTodaysMessagesCount, getExams, createNotification, getDashboardStats, getRecentActivities, checkAndGenerateMonthlyFees } from '@/lib/firebase/firestore';
 import { TodaysAttendance } from './todays-attendance';
 import { RecentActivities } from './recent-activities';
 import { TodaysTeacherAttendance } from './todays-teacher-attendance';
@@ -58,6 +58,17 @@ export default function DashboardPage() {
     };
 
     useEffect(() => {
+        const runMonthlyMaintenance = async () => {
+            // 1. Trigger Automatic Monthly Fee Generation
+            // Note: The function itself handles the "run only once per month" logic via Firestore.
+            try {
+                await checkAndGenerateMonthlyFees();
+            } catch (e) {
+                console.error("Monthly fee generation failed:", e);
+            }
+        };
+
+        runMonthlyMaintenance();
         loadDashboard();
 
         const checkMissedDeadlines = async () => {

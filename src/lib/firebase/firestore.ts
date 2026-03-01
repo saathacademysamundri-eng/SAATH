@@ -609,6 +609,10 @@ export async function updateStudentFeeStatus(studentId: string, newBalance: numb
     }
 }
 
+/**
+ * Checks if monthly fees have been generated for the current month.
+ * If not, increments each active student's totalFee by their monthlyFee.
+ */
 export async function checkAndGenerateMonthlyFees() {
     try {
         const stateRef = doc(db, 'system_state', 'fee_management');
@@ -616,6 +620,7 @@ export async function checkAndGenerateMonthlyFees() {
         const now = new Date();
         const currentMonth = formatDate(now, 'yyyy-MM');
 
+        // Safety check: Only generate if not already done this month
         if (stateDoc.exists() && stateDoc.data().lastGeneratedMonth === currentMonth) {
             return { success: true, message: "Fees for the current month have already been generated." };
         }
@@ -629,42 +634,50 @@ export async function checkAndGenerateMonthlyFees() {
             return { success: true, message: "No active students found." };
         }
 
-        const batch = writeBatch(db);
-        let count = 0;
-
-        for (const studentDoc of studentsSnap.docs) {
-            const student = studentDoc.data() as Student;
-            const studentRef = studentDoc.ref;
-            
-            const updatedTotalFee = (student.totalFee || 0) + (student.monthlyFee || 0);
-            
-            let newStatus: Student['feeStatus'] = 'Pending';
-            if (updatedTotalFee <= 0) {
-                newStatus = 'Paid';
-            } else if (updatedTotalFee > student.monthlyFee) {
-                newStatus = 'Overdue';
-            } else if (updatedTotalFee < student.monthlyFee) {
-                newStatus = 'Partial';
-            }
-
-            batch.update(studentRef, {
-                totalFee: updatedTotalFee,
-                feeStatus: newStatus,
-            });
-            
-            count++;
-            if (count >= 400) break;
-        }
+        const studentDocs = studentsSnap.docs;
         
-        batch.set(stateRef, { lastGeneratedMonth: currentMonth });
-        await batch.commit();
+        // Chunk processing to stay within Firestore batch limits (500 ops)
+        const CHUNK_SIZE = 450;
+        for (let i = 0; i < studentDocs.length; i += CHUNK_SIZE) {
+            const chunk = studentDocs.slice(i, i + CHUNK_SIZE);
+            const batch = writeBatch(db);
+            
+            chunk.forEach(docSnap => {
+                const student = docSnap.data() as Student;
+                const updatedTotalFee = (student.totalFee || 0) + (student.monthlyFee || 0);
+                
+                let newStatus: Student['feeStatus'] = 'Pending';
+                if (updatedTotalFee <= 0) {
+                    newStatus = 'Paid';
+                } else if (updatedTotalFee > student.monthlyFee) {
+                    newStatus = 'Overdue';
+                } else if (updatedTotalFee < student.monthlyFee) {
+                    newStatus = 'Partial';
+                }
 
-        await logActivity('fee_generated', `Automatically generated monthly fees for active students for ${formatDate(now, 'MMMM yyyy')}.`);
+                batch.update(docSnap.ref, {
+                    totalFee: updatedTotalFee,
+                    feeStatus: newStatus,
+                });
+            });
+
+            // On the final chunk, update the system state document
+            if (i + CHUNK_SIZE >= studentDocs.length) {
+                batch.set(stateRef, { 
+                    lastGeneratedMonth: currentMonth,
+                    lastUpdated: serverTimestamp() 
+                }, { merge: true });
+            }
+            
+            await batch.commit();
+        }
+
+        await logActivity('fee_generated', `Successfully generated monthly fees for ${studentDocs.length} active students for ${formatDate(now, 'MMMM yyyy')}.`);
 
         return { success: true, message: "Monthly fees generated successfully." };
 
     } catch (error) {
-        console.error("Error in automatic fee generation: ", error);
+        console.error("Critical error in automatic fee generation: ", error);
         return { success: false, message: (error as Error).message };
     }
 }
