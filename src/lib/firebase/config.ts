@@ -24,20 +24,18 @@ const auth = getAuth(app);
  * experimentalForceLongPolling: true is critical for bypassing ad-blockers/VPNs.
  * It forces the database to use standard HTTPS requests instead of WebSockets.
  */
-let db;
-if (getApps().length > 0) {
-    try {
-        db = initializeFirestore(app, {
-            localCache: persistentLocalCache({
-                tabManager: persistentMultipleTabManager(),
-            }),
-            experimentalForceLongPolling: true,
-        });
-    } catch (e) {
-        // If already initialized (e.g. during Hot Module Replacement), get the existing instance
-        db = getFirestore(app);
-    }
-} else {
+let db: any;
+
+try {
+    // Attempt to initialize with custom resilient settings
+    db = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager(),
+        }),
+        experimentalForceLongPolling: true,
+    });
+} catch (e) {
+    // If already initialized, get the existing instance
     db = getFirestore(app);
 }
 

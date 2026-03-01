@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, EyeOff, Facebook, Instagram, MessageSquare, WifiOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Facebook, Instagram, MessageSquare } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { ForgotPasswordDialog } from '@/components/login/forgot-password-dialog';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
-import Image from 'next/image';
+import Image from 'image';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
@@ -30,7 +30,6 @@ export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [networkError, setNetworkError] = useState<string | null>(null);
 
     // Loading states
     const [isAdminLoading, setIsAdminLoading] = useState(false);
@@ -48,7 +47,6 @@ export default function LoginPage() {
 
     const handleAdminLogin = async () => {
         setIsAdminLoading(true);
-        setNetworkError(null);
         try {
             await setPersistence(auth, browserSessionPersistence);
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -67,14 +65,11 @@ export default function LoginPage() {
             router.push('/dashboard');
         } catch (error: any) {
             let errorMessage = 'An unexpected error occurred.';
-            
-            if (error.code === 'auth/network-request-failed' || error.message?.includes('network-error') || error.message?.includes('BLOCKED_BY_CLIENT')) {
-                setNetworkError("Connection blocked. Please disable Ad-Blockers or VPNs and try again.");
-                errorMessage = "Connection to server was blocked by your browser.";
-            } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                 errorMessage = 'Invalid email or password.';
+            } else if (error.code === 'auth/network-request-failed') {
+                errorMessage = 'Network error. Please check your internet connection.';
             }
-            
             toast({ variant: 'destructive', title: 'Login Failed', description: errorMessage });
         } finally {
             setIsAdminLoading(false);
@@ -82,12 +77,8 @@ export default function LoginPage() {
     };
 
     const handleTeacherLogin = async () => {
-        setNetworkError(null);
         const result = await teacherLogin(email, password);
         if (!result.success) {
-            if (result.message.includes('network-request-failed') || result.message.includes('blocked')) {
-                setNetworkError("Connection blocked. Please disable Ad-Blockers and try again.");
-            }
             toast({ variant: 'destructive', title: 'Login Failed', description: result.message });
         }
     };
@@ -106,7 +97,6 @@ export default function LoginPage() {
         setEmail('');
         setPassword('');
         setShowPassword(false);
-        setNetworkError(null);
     };
     
     if (!isClient) {
@@ -123,11 +113,10 @@ export default function LoginPage() {
         <main className="min-h-screen bg-gray-100 dark:bg-gradient-to-r dark:from-gray-900 dark:via-purple-900 dark:to-gray-800 dark:bg-[length:200%_200%] dark:animate-animated-gradient flex flex-col items-center justify-center p-4">
             <div className="w-full max-w-4xl rounded-2xl bg-card shadow-2xl overflow-hidden grid md:grid-cols-2">
                 <div className="relative hidden md:block">
-                    <Image
+                    <img
                         src="https://images.unsplash.com/photo-1571260899304-425eee4c7efc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwbGVhcm5pbmd8ZW58MHx8fHwxNzYxNDU1NTU2fDA&ixlib=rb-4.1.0&q=80&w=1080"
-                        alt="Students learning in a classroom"
-                        fill
-                        className="object-cover"
+                        alt="Students learning"
+                        className="absolute inset-0 h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 </div>
@@ -148,18 +137,11 @@ export default function LoginPage() {
                             <Button onClick={() => handleToggle('teacher')} variant={loginType === 'teacher' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'teacher' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Teacher</Button>
                         </div>
                     </div>
-                    <h2 className="text-2xl font-bold text-center mb-2">LOG IN</h2>
+                    <h2 className="text-2xl font-bold text-center mb-2 uppercase">Log In</h2>
                     <p className="text-center text-muted-foreground mb-8">
                         Welcome back! Please sign in to continue.
                     </p>
                     
-                    {networkError && (
-                        <div className="mb-6 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-xs flex items-center gap-2 animate-in fade-in zoom-in duration-300">
-                            <WifiOff className="h-4 w-4 shrink-0" />
-                            <p>{networkError}</p>
-                        </div>
-                    )}
-
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email Address</Label>
@@ -177,21 +159,21 @@ export default function LoginPage() {
                         <div className="text-right">
                             <ForgotPasswordDialog />
                         </div>
-                        <Button type="submit" className="w-full" disabled={isLoading}>
+                        <Button type="submit" className="w-full font-bold uppercase tracking-widest py-6" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Log In
+                            Access Portal
                         </Button>
                     </form>
                 </div>
             </div>
 
             <div className="mt-8 text-center text-sm text-muted-foreground">
-                <p>DEVELOPED BY "MIAN MUDASSAR"</p>
+                <p className="font-bold tracking-widest uppercase">Developed by "Mian Mudassar"</p>
                 <div className="mt-2 flex justify-center gap-4">
                     <Link href="https://www.facebook.com/mianmudassar.in" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
                         <Facebook className="h-4 w-4" />
                     </Link>
-                    <Link href="https://api.whatsapp.com/send?phone=923099969535&text=Hye%20%0AI%20want%20to%20know%20about%20the%20software%20you%20created%2C%20which%20is%20a%20management%20system%20in%20the%20school.%20" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                    <Link href="https://api.whatsapp.com/send?phone=923099969535" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
                         <MessageSquare className="h-4 w-4" />
                     </Link>
                     <Link href="https://www.instagram.com/mianmudassar_" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
