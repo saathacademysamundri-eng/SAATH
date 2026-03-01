@@ -34,9 +34,14 @@ export function DiscountReportDialog() {
 
     const fetchReportData = async () => {
         setIsLoading(true);
-        const data = await getDiscounts();
-        setDiscounts(data);
-        setIsLoading(false);
+        try {
+            const data = await getDiscounts();
+            setDiscounts(data);
+        } catch (e) {
+            console.error("Failed to fetch discount data:", e);
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     useEffect(() => {
@@ -151,112 +156,114 @@ export function DiscountReportDialog() {
 
 
     return (
-        <DialogContent className="sm:max-w-5xl w-[95vw] max-w-[95vw] sm:w-full">
-            <DialogHeader>
+        <DialogContent className="w-[95vw] sm:w-full sm:max-w-5xl max-h-[90vh] flex flex-col p-4 sm:p-6 overflow-hidden">
+            <DialogHeader className="flex-shrink-0">
                 <DialogTitle>Fee Discount Audit Report</DialogTitle>
                 <DialogDescription>
-                    A list of all manual fee discounts granted by the administration.
+                    A full audit trail of manual discounts granted to students.
                 </DialogDescription>
             </DialogHeader>
             
-            <div className="flex flex-col gap-4 pt-4">
-                <div className="relative">
+            <div className="flex flex-col gap-4 py-4 flex-1 overflow-hidden">
+                <div className="relative flex-shrink-0">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
-                        placeholder="Search student name, roll number, or month..." 
+                        placeholder="Search student, ID, or month..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-8"
                     />
                 </div>
 
-                <div className="border rounded-md max-h-[50vh] overflow-x-auto overflow-y-auto">
-                    <Table className="min-w-full">
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="whitespace-nowrap px-2">Date</TableHead>
-                                <TableHead className="whitespace-nowrap px-2">Student</TableHead>
-                                <TableHead className="whitespace-nowrap px-2">Roll #</TableHead>
-                                <TableHead className="whitespace-nowrap px-2">Phone</TableHead>
-                                <TableHead className="whitespace-nowrap px-2">Cycle</TableHead>
-                                <TableHead className="text-right whitespace-nowrap px-2">Amount (PKR)</TableHead>
-                                <TableHead className="text-right px-2"><span className="sr-only">Actions</span></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                Array.from({ length: 5 }).map((_, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                                        <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-                                    </TableRow>
-                                ))
-                            ) : filteredDiscounts.length > 0 ? (
-                                filteredDiscounts.map(d => (
-                                    <TableRow key={d.id}>
-                                        <TableCell className="text-[10px] sm:text-xs whitespace-nowrap px-2">{format(d.date, 'PP')}</TableCell>
-                                        <TableCell className="font-medium text-xs sm:text-sm whitespace-nowrap px-2">{d.studentName}</TableCell>
-                                        <TableCell className="text-xs sm:text-sm whitespace-nowrap px-2">{d.studentId}</TableCell>
-                                        <TableCell className="text-[10px] sm:text-xs whitespace-nowrap px-2">{d.phone}</TableCell>
-                                        <TableCell className="text-xs sm:text-sm whitespace-nowrap px-2">{d.month}</TableCell>
-                                        <TableCell className="text-right font-mono font-bold text-amber-600 text-xs sm:text-sm whitespace-nowrap px-2">
-                                            {d.amount.toLocaleString()}
-                                        </TableCell>
-                                        <TableCell className="text-right px-2">
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent className="w-[90vw] max-w-md">
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Reverse this discount?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            This will permanently delete the record and <strong>add {d.amount.toLocaleString()} PKR back</strong> to {d.studentName}'s outstanding dues.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                                                        <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDelete(d.id)} className="bg-destructive hover:bg-destructive/90">
-                                                            Confirm Reversal
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
+                <div className="border rounded-md overflow-hidden flex-1 flex flex-col bg-background">
+                    <div className="overflow-x-auto overflow-y-auto flex-1">
+                        <Table className="min-w-[600px] sm:min-w-full">
+                            <TableHeader className="sticky top-0 bg-secondary z-10">
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                                        No discount records found.
-                                    </TableCell>
+                                    <TableHead className="whitespace-nowrap">Date</TableHead>
+                                    <TableHead className="whitespace-nowrap">Student</TableHead>
+                                    <TableHead className="whitespace-nowrap">Roll #</TableHead>
+                                    <TableHead className="whitespace-nowrap">Phone</TableHead>
+                                    <TableHead className="whitespace-nowrap">Month</TableHead>
+                                    <TableHead className="text-right whitespace-nowrap">Amount</TableHead>
+                                    <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                            <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                                            <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : filteredDiscounts.length > 0 ? (
+                                    filteredDiscounts.map(d => (
+                                        <TableRow key={d.id} className="hover:bg-muted/50">
+                                            <TableCell className="text-[10px] sm:text-xs whitespace-nowrap">{format(d.date, 'PP')}</TableCell>
+                                            <TableCell className="font-medium text-xs sm:text-sm whitespace-nowrap">{d.studentName}</TableCell>
+                                            <TableCell className="text-xs sm:text-sm whitespace-nowrap">{d.studentId}</TableCell>
+                                            <TableCell className="text-[10px] sm:text-xs whitespace-nowrap">{d.phone}</TableCell>
+                                            <TableCell className="text-xs sm:text-sm whitespace-nowrap">{d.month}</TableCell>
+                                            <TableCell className="text-right font-mono font-bold text-amber-600 text-xs sm:text-sm whitespace-nowrap">
+                                                {d.amount.toLocaleString()}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="w-[90vw] max-w-md rounded-xl">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Reverse this discount?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This will permanently delete the record and <strong>add {d.amount.toLocaleString()} PKR back</strong> to {d.studentName}'s outstanding dues.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-4">
+                                                            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDelete(d.id)} className="bg-destructive hover:bg-destructive/90">
+                                                                Confirm Reversal
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                                            No discount records found.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </div>
                 
                 {!isLoading && filteredDiscounts.length > 0 && (
-                    <div className="flex justify-end p-3 bg-muted/50 rounded-lg">
+                    <div className="flex justify-end p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-100 dark:border-amber-900/30 flex-shrink-0">
                         <p className="text-sm sm:text-lg font-bold">Total Discounted: <span className="text-amber-600">{totalDiscounted.toLocaleString()} PKR</span></p>
                     </div>
                 )}
             </div>
 
-            <DialogFooter className="flex-col sm:flex-row gap-2">
+            <DialogFooter className="flex-col sm:flex-row gap-2 pt-2 border-t flex-shrink-0">
                 <DialogClose asChild>
                     <Button variant="ghost" className="w-full sm:w-auto">Close</Button>
                 </DialogClose>
                  <Button onClick={handlePrint} variant="default" className="w-full sm:w-auto" disabled={isLoading || filteredDiscounts.length === 0 || isSettingsLoading}>
                     <Printer className="mr-2 h-4 w-4" />
-                    Print Report
+                    Print Full Report
                 </Button>
             </DialogFooter>
         </DialogContent>
