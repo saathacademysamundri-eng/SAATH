@@ -74,7 +74,8 @@ service cloud.firestore {
     }
     
     match /message_logs/{logId} {
-        allow create: if isAuthenticated();
+        // Allow creation from anyone (including server actions)
+        allow create: if true;
         allow read: if isAuthenticated();
     }
     

@@ -1,6 +1,6 @@
 
-import { getFirestore, collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp, getCountFromServer, getAggregateFromServer, sum, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
-import { app, auth, firebaseConfig } from './config';
+import { collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp, getCountFromServer, getAggregateFromServer, sum, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
+import { app, auth, db, firebaseConfig } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID, Discount } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -9,8 +9,6 @@ import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format as form
 import { sendWhatsappMessage } from '@/lib/whatsapp';
 import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, sendPasswordResetEmail } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
-
-const db = getFirestore(app);
 
 // Activity Log Functions
 export async function logActivity(type: Activity['type'], message: string, link?: string) {

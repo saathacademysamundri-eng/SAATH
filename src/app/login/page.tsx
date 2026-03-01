@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, EyeOff, Facebook, Instagram, MessageSquare } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Facebook, Instagram, MessageSquare, WifiOff } from 'lucide-react';
 import { useSettings } from '@/hooks/use-settings';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
@@ -29,6 +30,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [networkError, setNetworkError] = useState<string | null>(null);
 
     // Loading states
     const [isAdminLoading, setIsAdminLoading] = useState(false);
@@ -46,6 +48,7 @@ export default function LoginPage() {
 
     const handleAdminLogin = async () => {
         setIsAdminLoading(true);
+        setNetworkError(null);
         try {
             await setPersistence(auth, browserSessionPersistence);
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -64,9 +67,14 @@ export default function LoginPage() {
             router.push('/dashboard');
         } catch (error: any) {
             let errorMessage = 'An unexpected error occurred.';
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            
+            if (error.code === 'auth/network-request-failed' || error.message?.includes('network-error') || error.message?.includes('BLOCKED_BY_CLIENT')) {
+                setNetworkError("Connection blocked. Please disable Ad-Blockers or VPNs and try again.");
+                errorMessage = "Connection to server was blocked by your browser.";
+            } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                 errorMessage = 'Invalid email or password.';
             }
+            
             toast({ variant: 'destructive', title: 'Login Failed', description: errorMessage });
         } finally {
             setIsAdminLoading(false);
@@ -74,8 +82,12 @@ export default function LoginPage() {
     };
 
     const handleTeacherLogin = async () => {
+        setNetworkError(null);
         const result = await teacherLogin(email, password);
         if (!result.success) {
+            if (result.message.includes('network-request-failed') || result.message.includes('blocked')) {
+                setNetworkError("Connection blocked. Please disable Ad-Blockers and try again.");
+            }
             toast({ variant: 'destructive', title: 'Login Failed', description: result.message });
         }
     };
@@ -94,6 +106,7 @@ export default function LoginPage() {
         setEmail('');
         setPassword('');
         setShowPassword(false);
+        setNetworkError(null);
     };
     
     if (!isClient) {
@@ -140,6 +153,13 @@ export default function LoginPage() {
                         Welcome back! Please sign in to continue.
                     </p>
                     
+                    {networkError && (
+                        <div className="mb-6 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-xs flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                            <WifiOff className="h-4 w-4 shrink-0" />
+                            <p>{networkError}</p>
+                        </div>
+                    )}
+
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email Address</Label>
