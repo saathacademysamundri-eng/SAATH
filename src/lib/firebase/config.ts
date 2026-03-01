@@ -19,7 +19,8 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 
 // Initialize Firestore with resilient settings
-// experimentalForceLongPolling: true is critical for bypassing ad-blockers/extensions
+// experimentalForceLongPolling: true is critical for bypassing ad-blockers/extensions/VPNs
+// It forces the database to use standard HTTPS requests instead of WebSockets.
 const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),

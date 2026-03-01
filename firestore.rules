@@ -74,7 +74,7 @@ service cloud.firestore {
     }
     
     match /message_logs/{logId} {
-        // Allow creation from anyone (including server actions)
+        // Allow creation from anyone (including server actions and teacher actions)
         allow create: if true;
         allow read: if isAuthenticated();
     }
@@ -84,6 +84,7 @@ service cloud.firestore {
     }
     
     match /activities/{activityId} {
+       // Allow teachers and admin to record activity logs
        allow read, write: if isAuthenticated();
     }
     
