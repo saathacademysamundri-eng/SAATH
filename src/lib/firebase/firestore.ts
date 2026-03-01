@@ -84,8 +84,12 @@ export async function getSettings(docId: 'details' | 'landing-page'): Promise<an
     try {
         const docSnap = await getDoc(docRef);
         return docSnap.exists() ? docSnap.data() : null;
-    } catch (err) {
-        console.error(`Error fetching settings document ${docId}:`, err);
+    } catch (err: any) {
+        if (err.code === 'permission-denied') {
+            console.warn(`Permission denied while fetching settings ${docId}. This usually happens before auth stabilizes.`);
+        } else {
+            console.error(`Error fetching settings document ${docId}:`, err);
+        }
         return null;
     }
 }
@@ -106,6 +110,11 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
     }
 }
 
+/**
+ * Robust aggregation helper that falls back to client-side logic 
+ * if server-side aggregation fails due to missing indexes (FAILED_PRECONDITION) 
+ * or temporary permission issues.
+ */
 async function getCountSafe(collName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
     let q = query(collection(db, collName));
     filters.forEach(f => {
@@ -116,7 +125,8 @@ async function getCountSafe(collName: string, filters: { field: string, op: any,
         const snapshot = await getCountFromServer(q);
         return snapshot.data().count;
     } catch (error: any) {
-        if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        // Fallback if index is missing or permission is temporarily denied
+        if (error.code === 'failed-precondition' || error.code === 'permission-denied' || error.message?.includes('index')) {
             const eqFilters = filters.filter(f => f.op === '==');
             let qFallback = query(collection(db, collName));
             eqFilters.forEach(f => {
@@ -149,6 +159,9 @@ async function getCountSafe(collName: string, filters: { field: string, op: any,
     }
 }
 
+/**
+ * Robust aggregation helper for Sums.
+ */
 async function getSumSafe(collName: string, fieldName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
     let q = query(collection(db, collName));
     filters.forEach(f => {
@@ -159,7 +172,8 @@ async function getSumSafe(collName: string, fieldName: string, filters: { field:
         const agg = await getAggregateFromServer(q, { total: sum(fieldName) });
         return agg.data().total || 0;
     } catch (error: any) {
-        if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        // Fallback to client-side logic
+        if (error.code === 'failed-precondition' || error.code === 'permission-denied' || error.message?.includes('index')) {
             const eqFilters = filters.filter(f => f.op === '==');
             let qFallback = query(collection(db, collName));
             eqFilters.forEach(f => {

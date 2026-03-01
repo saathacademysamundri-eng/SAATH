@@ -14,7 +14,7 @@ import {
   Scale
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { getTodaysAttendanceSummary, getTodaysMessagesCount, getExams, createNotification, getDashboardStats, getRecentActivities, checkAndGenerateMonthlyFees } from '@/lib/firebase/firestore';
 import { TodaysAttendance } from './todays-attendance';
 import { RecentActivities } from './recent-activities';
@@ -23,6 +23,8 @@ import { ClassDistribution } from './class-distribution';
 import { ADMIN_UID, Activity } from '@/lib/data';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase/config';
 
 const iconMap: { [key: string]: React.ElementType } = {
   Users,
@@ -36,73 +38,89 @@ const iconMap: { [key: string]: React.ElementType } = {
 };
 
 export default function DashboardPage() {
+    const [user] = useAuthState(auth);
     const [stats, setStats] = useState<any>(null);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [attendance, setAttendance] = useState({ present: 0, absent: 0 });
     const [messagesSent, setMessagesSent] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    const loadDashboard = async () => {
+    const loadDashboard = useCallback(async () => {
+        if (!user) return;
+        
         setLoading(true);
-        const [statsData, activitiesData, attendanceData, messagesData] = await Promise.all([
-            getDashboardStats(),
-            getRecentActivities(10),
-            getTodaysAttendanceSummary(),
-            getTodaysMessagesCount()
-        ]);
-        setStats(statsData);
-        setActivities(activitiesData);
-        setAttendance(attendanceData);
-        setMessagesSent(messagesData);
-        setLoading(false);
-    };
+        try {
+            const [statsData, activitiesData, attendanceData, messagesData] = await Promise.all([
+                getDashboardStats(),
+                getRecentActivities(10),
+                getTodaysAttendanceSummary(),
+                getTodaysMessagesCount()
+            ]);
+            setStats(statsData);
+            setActivities(activitiesData);
+            setAttendance(attendanceData);
+            setMessagesSent(messagesData);
+        } catch (error) {
+            console.error("Dashboard data load failed:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
 
     useEffect(() => {
-        const runMonthlyMaintenance = async () => {
-            // 1. Trigger Automatic Monthly Fee Generation
-            // Note: The function itself handles the "run only once per month" logic via Firestore.
+        if (!user) return;
+
+        const runMaintenance = async () => {
+            const lastSessionRun = sessionStorage.getItem('lastMaintenanceRun');
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (lastSessionRun === today) return;
+
             try {
                 await checkAndGenerateMonthlyFees();
+                sessionStorage.setItem('lastMaintenanceRun', today);
             } catch (e) {
                 console.error("Monthly fee generation failed:", e);
             }
         };
 
-        runMonthlyMaintenance();
+        runMaintenance();
         loadDashboard();
 
         const checkMissedDeadlines = async () => {
             const lastCheck = localStorage.getItem('lastDeadlineCheck');
             const today = new Date().toISOString().split('T')[0];
 
-            if (lastCheck === today) {
-                return;
-            }
+            if (lastCheck === today) return;
 
-            const allExams = await getExams();
-            const now = new Date();
-            const notifiedExams = JSON.parse(localStorage.getItem('notifiedMissedDeadlines') || '[]');
-            const newNotifiedExams = [...notifiedExams];
+            try {
+                const allExams = await getExams();
+                const now = new Date();
+                const notifiedExams = JSON.parse(localStorage.getItem('notifiedMissedDeadlines') || '[]');
+                const newNotifiedExams = [...notifiedExams];
 
-            for (const exam of allExams) {
-                if (exam.submissionDeadline && new Date(exam.submissionDeadline) < now && exam.status === 'approved') {
-                    const isIncomplete = !exam.results || exam.results.length === 0;
-                    if (isIncomplete && !notifiedExams.includes(exam.id)) {
-                        await createNotification(
-                            ADMIN_UID,
-                            `Marks for "${exam.name}" (${exam.className}) by ${exam.teacherName} are overdue. The deadline was ${format(new Date(exam.submissionDeadline), 'PPP')}.`,
-                            `/exams/${exam.id}`
-                        );
-                        newNotifiedExams.push(exam.id);
+                for (const exam of allExams) {
+                    if (exam.submissionDeadline && new Date(exam.submissionDeadline) < now && exam.status === 'approved') {
+                        const isIncomplete = !exam.results || exam.results.length === 0;
+                        if (isIncomplete && !notifiedExams.includes(exam.id)) {
+                            await createNotification(
+                                ADMIN_UID,
+                                `Marks for "${exam.name}" (${exam.className}) by ${exam.teacherName} are overdue. The deadline was ${format(new Date(exam.submissionDeadline), 'PPP')}.`,
+                                `/exams/${exam.id}`
+                            );
+                            newNotifiedExams.push(exam.id);
+                        }
                     }
                 }
+                localStorage.setItem('lastDeadlineCheck', today);
+                localStorage.setItem('notifiedMissedDeadlines', JSON.stringify(newNotifiedExams));
+            } catch (e) {
+                console.error("Deadline check failed:", e);
             }
-            localStorage.setItem('lastDeadlineCheck', today);
-            localStorage.setItem('notifiedMissedDeadlines', JSON.stringify(newNotifiedExams));
         };
 
         checkMissedDeadlines();
-    }, []);
+    }, [user, loadDashboard]);
 
     const topRowStats = useMemo(() => [
         { title: 'Total Students', value: stats?.totalStudents || 0, icon: 'Users', color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800' },

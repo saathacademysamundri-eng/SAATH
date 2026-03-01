@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -131,33 +132,33 @@ export default function LoginPage() {
                     
                     <div className="flex justify-center mb-6">
                         <div className="bg-gray-200 dark:bg-slate-700 p-1 rounded-full flex gap-1">
-                            <Button onClick={() => handleToggle('admin')} variant={loginType === 'admin' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'admin' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Admin</Button>
-                            <Button onClick={() => handleToggle('teacher')} variant={loginType === 'teacher' ? 'default' : 'ghost'} className={cn("rounded-full transition-all", loginType === 'teacher' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Teacher</Button>
+                            <button onClick={() => handleToggle('admin')} className={cn("px-6 py-2 rounded-full text-sm font-bold transition-all", loginType === 'admin' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Admin</button>
+                            <button onClick={() => handleToggle('teacher')} className={cn("px-6 py-2 rounded-full text-sm font-bold transition-all", loginType === 'teacher' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}>Teacher</button>
                         </div>
                     </div>
-                    <h2 className="text-2xl font-bold text-center mb-2 uppercase">Log In</h2>
-                    <p className="text-center text-muted-foreground mb-8">
+                    <h2 className="text-2xl font-bold text-center mb-2 uppercase tracking-tight">Log In</h2>
+                    <p className="text-center text-muted-foreground mb-8 text-sm">
                         Welcome back! Please sign in to continue.
                     </p>
                     
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email Address</Label>
-                            <Input id="email" type="email" placeholder={`${loginType}@example.com`} value={email} onChange={(e) => setEmail(e.target.value)} required />
+                            <Input id="email" type="email" autoComplete="email" placeholder={`${loginType}@example.com`} value={email} onChange={(e) => setEmail(e.target.value)} required />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
                             <div className="relative">
-                                <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                                <Input id="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">
-                                    {showPassword ? <EyeOff /> : <Eye />}
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
                         </div>
                         <div className="text-right">
                             <ForgotPasswordDialog />
                         </div>
-                        <Button type="submit" className="w-full font-bold uppercase tracking-widest py-6" disabled={isLoading}>
+                        <Button type="submit" className="w-full font-bold uppercase tracking-widest py-6 shadow-lg hover:shadow-xl transition-all" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Log In
                         </Button>
