@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -17,7 +16,6 @@ import { cn } from '@/lib/utils';
 import { ForgotPasswordDialog } from '@/components/login/forgot-password-dialog';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
-import Image from 'image';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
@@ -161,7 +159,7 @@ export default function LoginPage() {
                         </div>
                         <Button type="submit" className="w-full font-bold uppercase tracking-widest py-6" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Access Portal
+                            Log In
                         </Button>
                     </form>
                 </div>
