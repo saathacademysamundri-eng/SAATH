@@ -121,9 +121,10 @@ export function BlankSheetDialog() {
     if (sheetType === 'single') {
         reportTitle = examName;
         subTitle = `<p>Class: ${className}</p><p style="font-size: 1rem;">Total Marks: ${totalMarks}</p>`;
-        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Obtained Marks"];
-        tableRows = sortedStudents.map(student => `
+        tableHeaders = ["#", "Roll #", "Student Name", "Father's Name", "Obtained Marks"];
+        tableRows = sortedStudents.map((student, index) => `
             <tr>
+              <td>${index + 1}</td>
               <td>${student.id}</td>
               <td>${student.name}</td>
               <td>${student.fatherName}</td>
@@ -133,11 +134,12 @@ export function BlankSheetDialog() {
     } else { // Full class sheet
         reportTitle = `Class Marks Sheet`;
         subTitle = `<p>Class: ${className}</p>`;
-        tableHeaders = ["Roll #", "Student Name", "Father's Name", ...selectedClass.subjects.map(s => s.name)];
-        tableRows = sortedStudents.map(student => {
+        tableHeaders = ["#", "Roll #", "Student Name", "Father's Name", ...selectedClass.subjects.map(s => s.name)];
+        tableRows = sortedStudents.map((student, index) => {
             const subjectCells = selectedClass.subjects.map(() => '<td style="height: 25px;"></td>').join('');
             return `
                 <tr>
+                    <td>${index + 1}</td>
                     <td>${student.id}</td>
                     <td>${student.name}</td>
                     <td>${student.fatherName}</td>

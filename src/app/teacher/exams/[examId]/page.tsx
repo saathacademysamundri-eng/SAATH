@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -245,6 +243,7 @@ export default function TeacherExamResultsPage() {
  const printableTableHeaders = useMemo(() => {
     if (!exam) return '';
     let headers = `
+        <th>#</th>
         <th>Roll #</th>
         <th>Student Name</th>
         <th>Father's Name</th>
@@ -262,7 +261,7 @@ export default function TeacherExamResultsPage() {
 
   const printableTableBody = useMemo(() => {
     if (!exam || !students.length) return '';
-    return students.map(student => {
+    return students.map((student, index) => {
       const enhanced = getStudentEnhancedResult(student.id);
       const marksCells = exam.subjects.map(subject => {
         const marks = results[student.id]?.marks[subject];
@@ -277,6 +276,7 @@ export default function TeacherExamResultsPage() {
 
       return `
         <tr>
+          <td>${index + 1}</td>
           <td>${student.id}</td>
           <td>${student.name}</td>
           <td>${student.fatherName}</td>

@@ -56,19 +56,19 @@ service cloud.firestore {
         allow read, write: if isAuthenticated();
     }
     
-    // Exams - Explicitly allow update/create for teachers
+    // Exams - Broad write access for teachers
     match /exams/{examId} {
       allow read: if true;
-      allow create, update, delete: if isAuthenticated();
+      allow write, create, update, delete: if isAuthenticated();
     }
     
     // Attendance
     match /attendance/{attendanceId} {
        allow read: if true;
-       allow write: if isAuthenticated();
+       allow write, create, update: if isAuthenticated();
     }
     match /teacher_attendance/{attendanceId} {
-      allow list, read, write: if isAuthenticated();
+      allow list, read, write, create, update: if isAuthenticated();
     }
     
     // Configuration & State

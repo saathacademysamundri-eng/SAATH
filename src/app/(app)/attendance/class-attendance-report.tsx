@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -199,10 +198,11 @@ export function ClassAttendanceReport() {
         const className = classes.find(c => c.id === selectedClassId)?.name || '';
 
         const thDays = dayHeaders.map(day => `<th>${day}</th>`).join('');
-        const tbodyRows = classStudents.map(student => {
+        const tbodyRows = classStudents.map((student, index) => {
             const daysCells = dayHeaders.map(() => `<td style="height: 25px;"></td>`).join('');
             return `
                 <tr>
+                    <td>${index + 1}</td>
                     <td style="text-align: left;">${student.id}</td>
                     <td style="text-align: left;">${student.name}</td>
                     ${daysCells}
@@ -250,6 +250,7 @@ export function ClassAttendanceReport() {
                             <table>
                                 <thead>
                                     <tr>
+                                        <th style="width: 40px;">#</th>
                                         <th style="min-width: 60px; text-align: left;">Roll #</th>
                                         <th style="min-width: 120px; text-align: left;">Student Name</th>
                                         ${thDays}
