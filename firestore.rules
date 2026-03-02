@@ -56,7 +56,7 @@ service cloud.firestore {
     
     match /exams/{examId} {
       allow read: if true;
-      allow write, create, update, delete: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
     
     match /attendance/{attendanceId} {

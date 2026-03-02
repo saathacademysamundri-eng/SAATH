@@ -453,7 +453,7 @@ export default function ReportsPage() {
                               </SelectTrigger>
                               <SelectContent>
                                   <SelectItem value="all">All Classes</SelectItem>
-                                  {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                  {classes.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
                               </SelectContent>
                           </Select>
                       </div>
