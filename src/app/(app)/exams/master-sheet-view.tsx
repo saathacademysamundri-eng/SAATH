@@ -25,7 +25,7 @@ type AggregatedResult = {
 export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTitle: string }) {
   const { toast } = useToast();
   const { settings, isSettingsLoading } = useSettings();
-  const { students: allStudents } = useAppContext();
+  const { students: allStudents = [] } = useAppContext();
 
   const [showPosition, setShowPosition] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
@@ -120,6 +120,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
   const printableTableHeaders = useMemo(() => {
     if (!allSubjects.length) return '';
     let headers = `
+        <th>#</th>
         <th>Roll #</th>
         <th>Student Name</th>
         <th>Father's Name</th>
@@ -136,7 +137,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
 
    const printableTableBody = useMemo(() => {
     if (!aggregatedResults.length) return '';
-    return aggregatedResults.map(student => {
+    return aggregatedResults.map((student, index) => {
       const marksCells = allSubjects.map(subject => {
         const marks = student.marks[subject];
         const isAbsent = marks === 'A';
@@ -151,6 +152,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
 
       return `
         <tr>
+          <td>${index + 1}</td>
           <td>${student.studentId}</td>
           <td>${student.studentName}</td>
           <td>${student.fatherName}</td>
@@ -209,6 +211,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
     }
 
     const headers = [
+        '#',
         'Roll #',
         'Student Name',
         "Father's Name",
@@ -221,8 +224,9 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
         headers.push('Position');
     }
 
-    const rows = aggregatedResults.map(student => {
+    const rows = aggregatedResults.map((student, index) => {
         const rowData = [
+            index + 1,
             student.studentId,
             `"${student.studentName.replace(/"/g, '""')}"`,
             `"${student.fatherName.replace(/"/g, '""')}"`,
@@ -295,6 +299,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
         <Table>
             <TableHeader>
                 <TableRow>
+                    <TableHead className="w-12">#</TableHead>
                     <TableHead>Student</TableHead>
                     {allSubjects.map(sub => <TableHead key={sub} className="text-center">{sub}</TableHead>)}
                     <TableHead className="text-center font-bold">Obtained</TableHead>
@@ -304,8 +309,9 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {aggregatedResults.map(res => (
+                {aggregatedResults.map((res, index) => (
                     <TableRow key={res.studentId}>
+                        <TableCell className="text-muted-foreground">{index + 1}</TableCell>
                         <TableCell>
                             <div className="font-medium">{res.studentName}</div>
                             <div className="text-xs text-muted-foreground">{res.studentId}</div>
@@ -322,7 +328,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
                 ))}
                 {aggregatedResults.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={allSubjects.length + 5} className="text-center h-24 text-muted-foreground">
+                        <TableCell colSpan={allSubjects.length + 6} className="text-center h-24 text-muted-foreground">
                             No results to display for this group.
                         </TableCell>
                     </TableRow>

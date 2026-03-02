@@ -1,13 +1,14 @@
 'use client';
 
-import { getClasses, getTeachers, getAllSubjects } from '@/lib/firebase/firestore';
-import type { Class, Subject, Teacher } from '@/lib/data';
+import { getClasses, getTeachers, getAllSubjects, getStudents } from '@/lib/firebase/firestore';
+import type { Class, Subject, Teacher, Student } from '@/lib/data';
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 interface AppContextType {
   teachers: Teacher[];
   classes: Class[];
+  students: Student[];
   allSubjects: Subject[];
   loading: boolean;
   refreshData: () => Promise<void>;
@@ -18,6 +19,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,26 +32,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Fetch only the lightweight configuration data globally
+      // Fetch configuration and active students
       const [
         teachersData,
         classesData,
         allSubjectsData,
+        studentsData,
       ] = await Promise.all([
         getTeachers(),
         getClasses(),
         getAllSubjects(),
+        getStudents(),
       ]);
       
       const fullState = {
         teachers: teachersData,
         classes: classesData,
         allSubjects: allSubjectsData,
+        students: studentsData,
       };
 
       setTeachers(teachersData);
       setClasses(classesData);
       setAllSubjects(allSubjectsData);
+      setStudents(studentsData);
 
       sessionStorage.setItem('appContextCache', JSON.stringify(fullState));
 
@@ -69,6 +75,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setTeachers(parsed.teachers || []);
         setClasses(parsed.classes || []);
         setAllSubjects(parsed.allSubjects || []);
+        setStudents(parsed.students || []);
       } catch (e) {
         console.error("Failed to parse app context cache", e);
       }
@@ -79,6 +86,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     teachers,
     classes,
+    students,
     allSubjects,
     loading,
     refreshData: () => fetchData(false),

@@ -107,7 +107,7 @@ export function ClassAttendanceReport() {
         const className = classes.find(c => c.id === selectedClassId)?.name || '';
 
         const thDays = dayHeaders.map(day => `<th>${day}</th>`).join('');
-        const tbodyRows = classStudents.map(student => {
+        const tbodyRows = classStudents.map((student, index) => {
             const studentData = monthlyData[student.id] || {};
             const summary = studentSummaries.find(s => s.studentId === student.id)?.summary || { P: 0, A: 0, L: 0 };
             const daysCells = dayHeaders.map(day => {
@@ -117,7 +117,8 @@ export function ClassAttendanceReport() {
             }).join('');
             return `
                 <tr>
-                    <td>${student.name}</td>
+                    <td>${index + 1}</td>
+                    <td style="text-align: left;">${student.name}</td>
                     ${daysCells}
                     <td class="p">${summary.P}</td>
                     <td class="a">${summary.A}</td>
@@ -165,6 +166,7 @@ export function ClassAttendanceReport() {
                             <table>
                                 <thead>
                                     <tr>
+                                        <th style="width: 40px;">#</th>
                                         <th style="min-width: 120px;">Student Name</th>
                                         ${thDays}
                                         <th style="background-color: #d1fae5;">P</th>
@@ -328,6 +330,7 @@ export function ClassAttendanceReport() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-12">#</TableHead>
                                 <TableHead className="sticky left-0 bg-background z-10 min-w-[150px]">Student Name</TableHead>
                                 {dayHeaders.map(day => <TableHead key={day} className="text-center">{day}</TableHead>)}
                                 <TableHead className="text-center text-green-700 font-bold sticky right-[96px] bg-background z-10">P</TableHead>
@@ -336,10 +339,11 @@ export function ClassAttendanceReport() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {classStudents.map(student => {
+                           {classStudents.map((student, index) => {
                                 const summary = studentSummaries.find(s => s.studentId === student.id)?.summary || { P: 0, A: 0, L: 0 };
                                 return (
                                     <TableRow key={student.id}>
+                                        <TableCell className="text-muted-foreground">{index + 1}</TableCell>
                                         <TableCell className="font-medium sticky left-0 bg-background z-10">{student.name}</TableCell>
                                         {dayHeaders.map(day => (
                                             <TableCell key={day} className={`text-center font-bold text-xs p-2 ${getStatusStyle(monthlyData[student.id]?.[day])}`}>

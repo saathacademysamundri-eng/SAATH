@@ -31,7 +31,7 @@ import { getStudentsByClass } from '@/lib/firebase/firestore';
 type SheetType = 'single' | 'full';
 
 export function BlankSheetDialog() {
-  const { classes, teachers, loading: appLoading } = useAppContext();
+  const { classes, teachers, students: allStudents = [], loading: appLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
 
