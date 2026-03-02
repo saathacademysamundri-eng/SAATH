@@ -222,9 +222,10 @@ export default function ReportsPage() {
 
     if (reportId === 'all-students') {
         reportTitle = 'All Students Report';
-        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Class", "Phone", "Outstanding Fee", "Fee Status"];
-        tableRows = students.map(student => `
+        tableHeaders = ["#", "Roll #", "Student Name", "Father's Name", "Class", "Phone", "Outstanding Fee", "Fee Status"];
+        tableRows = students.map((student, index) => `
             <tr>
+              <td>${index + 1}</td>
               <td>${student.id}</td>
               <td>${student.name}</td>
               <td>${student.fatherName}</td>
@@ -259,22 +260,23 @@ export default function ReportsPage() {
         footerExtra = `<strong>Total Outstanding Amount: ${totalUnpaid.toLocaleString()} PKR</strong>`;
     } else if (reportId === 'paid-students') {
         reportTitle = 'Paid Students Report';
-        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Class", "Paid Amount", "Fee Status", "Payment Date"];
+        tableHeaders = ["#", "Roll #", "Student Name", "Father's Name", "Class", "Paid Amount", "Fee Status", "Payment Date"];
         
         const paymentsInMonth = income.filter(i => i.date >= monthStart && i.date <= monthEnd);
         let totalPaidInMonth = 0;
 
-        tableRows = paymentsInMonth.map(item => {
+        tableRows = paymentsInMonth.map((item, index) => {
             totalPaidInMonth += item.amount;
             const student = students.find(s => s.id === item.studentId);
             return `
             <tr>
+              <td>${index + 1}</td>
               <td>${item.studentId}</td>
               <td>${item.studentName}</td>
               <td>${student?.fatherName || 'N/A'}</td>
               <td>${student?.class || 'N/A'}</td>
               <td>${item.amount.toLocaleString()} PKR</td>
-              <td>${student?.feeStatus || 'N/A'}</td>
+              <td>Paid</td>
               <td>${format(item.date, 'PP')}</td>
             </tr>
           `})
@@ -300,29 +302,29 @@ export default function ReportsPage() {
     const monthEnd = endOfMonth(new Date(selectedYear, selectedMonth));
 
     if (reportId === 'all-students') {
-      headers = ["ID", "Name", "Father's Name", "Class", "Phone", "Total Fee", "Fee Status", "Subjects"];
-      data = students.map((s: Student) => [
-          s.id, s.name, s.fatherName, s.class, s.phone, s.totalFee, s.feeStatus,
+      headers = ["#", "ID", "Name", "Father's Name", "Class", "Phone", "Total Fee", "Fee Status", "Subjects"];
+      data = students.map((s: Student, index) => [
+          index + 1, s.id, s.name, s.fatherName, s.class, s.phone, s.totalFee, s.feeStatus,
           `"${s.subjects.map(sub => sub.subject_name).join(', ')}"`
         ]);
       filename = 'all-students-report.csv';
     } else if (reportId === 'unpaid-dues') {
-      headers = ["ID", "Name", "Father's Name", "Phone", "Class", "Outstanding Dues", "Fee Status"];
+      headers = ["#", "ID", "Name", "Father's Name", "Phone", "Class", "Outstanding Dues", "Fee Status"];
       data = students
         .filter(s => s.totalFee > 0 && (unpaidDuesClassFilter === 'all' || s.class === unpaidDuesClassFilter))
-        .map((s: Student) => [
-          s.id, s.name, s.fatherName, s.phone, s.class, s.totalFee, s.feeStatus,
+        .map((s: Student, index) => [
+          index + 1, s.id, s.name, s.fatherName, s.phone, s.class, s.totalFee, s.feeStatus,
         ]);
       filename = 'unpaid-dues-report.csv';
     } else if (reportId === 'paid-students') {
-        headers = ["ID", "Name", "Father's Name", "Class", "Fee Amount", "Fee Status", "Payment Date"];
+        headers = ["#", "ID", "Name", "Father's Name", "Class", "Fee Amount", "Fee Status", "Payment Date"];
         const paymentsInMonth = income.filter(i => i.date >= monthStart && i.date <= monthEnd);
 
-        data = paymentsInMonth.map(item => {
+        data = paymentsInMonth.map((item, index) => {
             const student = students.find(s => s.id === item.studentId);
             return [
-              item.studentId, item.studentName, student?.fatherName || '', student?.class || '', item.amount,
-              student?.feeStatus || '', format(item.date, 'yyyy-MM-dd')
+              index + 1, item.studentId, item.studentName, student?.fatherName || '', student?.class || '', item.amount,
+              'Paid', format(item.date, 'yyyy-MM-dd')
             ]
           });
       filename = 'paid-students-report.csv';
