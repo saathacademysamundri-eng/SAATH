@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -133,9 +131,10 @@ export default function ExamsPage() {
   };
   
   const handleReject = async (exam: Exam) => {
-    const result = await updateExamStatus(exam.id, 'rejected');
+    // When rejected, the exam is deleted entirely from the teacher's portal as requested
+    const result = await deleteExam(exam.id);
     if (result.success) {
-        toast({ title: 'Exam Rejected', description: `The exam request from ${exam.teacherName} has been rejected.`});
+        toast({ title: 'Exam Request Rejected', description: `The request from ${exam.teacherName} has been deleted.`});
         fetchExams();
     } else {
         toast({ variant: 'destructive', title: 'Rejection Failed', description: result.message });
@@ -579,7 +578,7 @@ export default function ExamsPage() {
                                                     <AlertDialogHeader>
                                                     <AlertDialogTitle>Reject Exam Request?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        This will mark the exam request "{exam.name}" as rejected. The teacher will be notified.
+                                                        This will reject and permanently delete the exam request "{exam.name}". The teacher will no longer see it in their portal.
                                                     </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
@@ -621,4 +620,3 @@ export default function ExamsPage() {
     </div>
   );
 }
-

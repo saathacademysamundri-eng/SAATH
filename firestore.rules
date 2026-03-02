@@ -11,11 +11,6 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == 'oiNKNvX9sQbdgjhxMP71eSiGkkH2';
     }
 
-    // Default deny all for security
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     // Students
     match /students/{studentId} {
       allow read: if true;
@@ -34,18 +29,14 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
     
-    // Income
+    // Financials
     match /income/{incomeId} {
        allow read: if true;
        allow write: if isAuthenticated();
     }
-    
-    // Expenses
     match /expenses/{expenseId} {
        allow read, write: if isAuthenticated();
     }
-    
-    // Reports & Payouts
     match /reports/{reportId} {
         allow read, write: if isAuthenticated();
     }
@@ -56,19 +47,19 @@ service cloud.firestore {
         allow read, write: if isAuthenticated();
     }
     
-    // Exams - Explicit permissions for teachers to save results
+    // Exams - Explicit broad permissions for teachers to create and update results
     match /exams/{examId} {
       allow read: if true;
-      allow create, update, delete, write: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
     
     // Attendance
     match /attendance/{attendanceId} {
        allow read: if true;
-       allow write, create, update: if isAuthenticated();
+       allow write: if isAuthenticated();
     }
     match /teacher_attendance/{attendanceId} {
-      allow list, read, write, create, update: if isAuthenticated();
+      allow read, write: if isAuthenticated();
     }
     
     // Configuration & State
@@ -82,11 +73,10 @@ service cloud.firestore {
     
     // Logs, Activities & Notifications
     match /message_logs/{logId} {
-        allow create, write: if true;
-        allow read: if isAuthenticated();
+        allow read, write: if true;
     }
     match /activities/{activityId} {
-       allow read, write, create: if isAuthenticated();
+       allow read, write: if isAuthenticated();
     }
     match /notifications/{notificationId} {
       allow read, update: if isAuthenticated() && request.auth.uid == resource.data.userId;
@@ -98,7 +88,7 @@ service cloud.firestore {
        allow read, write: if isAuthenticated();
     }
     
-    // Super Admin bypass for all collections (recursive)
+    // Super Admin bypass for all collections
     match /{document=**} {
       allow read, write: if isAdmin();
     }
