@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -17,88 +16,90 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Students: Publicly readable by ID for the portal, write protected
+    // Students
     match /students/{studentId} {
       allow read: if true;
       allow write: if isAuthenticated();
     }
     
+    // Teachers
     match /teachers/{teacherId} {
       allow read: if true;
       allow write: if isAuthenticated();
     }
     
+    // Classes
     match /classes/{classId}/{document=**} {
       allow read: if true;
       allow write: if isAuthenticated();
     }
     
+    // Income
     match /income/{incomeId} {
        allow read: if true;
        allow write: if isAuthenticated();
     }
     
+    // Expenses
     match /expenses/{expenseId} {
        allow read, write: if isAuthenticated();
     }
     
+    // Reports & Payouts
     match /reports/{reportId} {
         allow read, write: if isAuthenticated();
     }
-    
     match /teacher_payouts/{payoutId} {
         allow read, write: if isAuthenticated();
     }
-    
     match /academy_share/{payoutId} {
         allow read, write: if isAuthenticated();
     }
     
+    // Exams - Explicitly allow update/create for teachers
     match /exams/{examId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated();
     }
     
+    // Attendance
     match /attendance/{attendanceId} {
        allow read: if true;
        allow write: if isAuthenticated();
     }
-    
     match /teacher_attendance/{attendanceId} {
       allow list, read, write: if isAuthenticated();
     }
     
+    // Configuration & State
     match /settings/{settingId} {
        allow read: if true;
        allow write: if isAuthenticated();
     }
-    
-    match /message_logs/{logId} {
-        // Allow creation from anyone (including server actions and teacher actions)
-        allow create, write: if true;
-        allow read: if isAuthenticated();
-    }
-    
     match /system_state/{stateId} {
        allow read, write: if isAuthenticated();
     }
     
+    // Logs, Activities & Notifications
+    match /message_logs/{logId} {
+        allow create, write: if true;
+        allow read: if isAuthenticated();
+    }
     match /activities/{activityId} {
-       // Allow teachers and admin to record activity logs
        allow read, write, create: if isAuthenticated();
     }
-    
-    match /discounts/{discountId} {
-       allow read, write: if isAuthenticated();
-    }
-    
     match /notifications/{notificationId} {
       allow read, update: if isAuthenticated() && request.auth.uid == resource.data.userId;
       allow create: if isAuthenticated();
     }
     
-    // Super Admin bypass for all collections
-    match /{collection}/{docId} {
+    // Discounts
+    match /discounts/{discountId} {
+       allow read, write: if isAuthenticated();
+    }
+    
+    // Super Admin bypass for all collections (recursive)
+    match /{document=**} {
       allow read, write: if isAdmin();
     }
   }

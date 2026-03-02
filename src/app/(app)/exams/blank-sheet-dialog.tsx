@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -27,29 +25,25 @@ import { Printer, Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Teacher } from '@/lib/data';
+import { Student } from '@/lib/data';
+import { getStudentsByClass } from '@/lib/firebase/firestore';
 
 type SheetType = 'single' | 'full';
 
 export function BlankSheetDialog() {
-  const { classes, students, teachers, loading: appLoading } = useAppContext();
+  const { classes, teachers, loading: appLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
 
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [studentsInClass, setStudentsInClass] = useState<Student[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const [examName, setExamName] = useState('Weekly Test');
   const [totalMarks, setTotalMarks] = useState(100);
   const [sheetType, setSheetType] = useState<SheetType>('single');
   const [isPrinting, setIsPrinting] = useState(false);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
   const [printScope, setPrintScope] = useState<'entire_class' | 'teacher_students'>('entire_class');
-
-  const studentsInClass = useMemo(() => {
-    if (!selectedClassId) return [];
-    const className = classes.find((c) => c.id === selectedClassId)?.name;
-    if (!className) return [];
-    return students.filter((student) => student.class === className);
-  }, [selectedClassId, students, classes]);
 
   const availableTeachers = useMemo(() => {
     if (!selectedClassId) return [];
@@ -63,10 +57,24 @@ export function BlankSheetDialog() {
     );
   }, [selectedClassId, classes, teachers]);
 
-  const handleClassChange = (classId: string) => {
+  const handleClassChange = async (classId: string) => {
     setSelectedClassId(classId);
     setSelectedTeacherId(null);
     setPrintScope('entire_class');
+    
+    const className = classes.find(c => c.id === classId)?.name;
+    if (className) {
+        setIsLoadingStudents(true);
+        try {
+            const data = await getStudentsByClass(className);
+            setStudentsInClass(data);
+        } catch (error) {
+            console.error("Failed to fetch students for class:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to load students for this class.' });
+        } finally {
+            setIsLoadingStudents(false);
+        }
+    }
   };
 
   const handlePrint = () => {
@@ -288,8 +296,8 @@ export function BlankSheetDialog() {
         <DialogClose asChild>
           <Button variant="ghost">Cancel</Button>
         </DialogClose>
-        <Button onClick={handlePrint} disabled={isPrinting || isSettingsLoading || !selectedClassId}>
-          {isPrinting ? <Loader2 className="mr-2 animate-spin" /> : <Printer className="mr-2" />}
+        <Button onClick={handlePrint} disabled={isPrinting || isSettingsLoading || !selectedClassId || isLoadingStudents}>
+          {isPrinting || isLoadingStudents ? <Loader2 className="mr-2 animate-spin" /> : <Printer className="mr-2" />}
           Print Sheet
         </Button>
       </DialogFooter>
