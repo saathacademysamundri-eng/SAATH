@@ -128,7 +128,7 @@ export default function ReportsPage() {
     },
   ];
   
-  const generatePrintHtml = (title: string, headers: string[], rows: string) => {
+  const generatePrintHtml = (title: string, headers: string[], rows: string, footerExtra?: string) => {
     const monthName = months.find(m => m.value === selectedMonth)?.label;
     const dateTitle = `${monthName}, ${selectedYear}`;
     
@@ -162,6 +162,7 @@ export default function ReportsPage() {
             th, td { padding: 8px 10px; border: 1px solid #ddd; }
             th { font-weight: bold; background-color: #f2f2f2; }
             tr:nth-child(even) { background-color: #f9f9f9; }
+            .footer-summary { margin-top: 2rem; padding-top: 1rem; border-top: 2px solid #333; text-align: right; font-size: 1.2rem; }
             .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
           </style>
         </head>
@@ -188,6 +189,7 @@ export default function ReportsPage() {
                   ${rows}
                 </tbody>
               </table>
+              ${footerExtra ? `<div class="footer-summary">${footerExtra}</div>` : ''}
             </div>
             <div class="footer">
                 Copyright &copy; ${new Date().getFullYear()} ${settings.name}. Developed by SchoolUP.
@@ -213,6 +215,7 @@ export default function ReportsPage() {
     let reportTitle = '';
     let tableHeaders: string[] = [];
     let tableRows = '';
+    let footerExtra = '';
 
     const monthStart = startOfMonth(new Date(selectedYear, selectedMonth));
     const monthEnd = endOfMonth(new Date(selectedYear, selectedMonth));
@@ -233,11 +236,16 @@ export default function ReportsPage() {
           `).join('');
     } else if (reportId === 'unpaid-dues') {
         reportTitle = 'Unpaid Dues Report';
-        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Phone", "Class", "Outstanding Dues", "Fee Status"];
-        tableRows = students
-          .filter(s => s.totalFee > 0 && (unpaidDuesClassFilter === 'all' || s.class === unpaidDuesClassFilter))
-          .map(student => `
+        tableHeaders = ["#", "Roll #", "Student Name", "Father's Name", "Phone", "Class", "Outstanding Dues", "Fee Status"];
+        
+        let totalUnpaid = 0;
+        const filteredUnpaid = students.filter(s => s.totalFee > 0 && (unpaidDuesClassFilter === 'all' || s.class === unpaidDuesClassFilter));
+        
+        tableRows = filteredUnpaid.map((student, index) => {
+            totalUnpaid += student.totalFee;
+            return `
             <tr>
+              <td>${index + 1}</td>
               <td>${student.id}</td>
               <td>${student.name}</td>
               <td>${student.fatherName}</td>
@@ -246,38 +254,39 @@ export default function ReportsPage() {
               <td>${student.totalFee.toLocaleString()} PKR</td>
               <td>${student.feeStatus}</td>
             </tr>
-          `).join('');
+          `}).join('');
+          
+        footerExtra = `<strong>Total Outstanding Amount: ${totalUnpaid.toLocaleString()} PKR</strong>`;
     } else if (reportId === 'paid-students') {
         reportTitle = 'Paid Students Report';
-        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Class", "Fee Amount", "Fee Status", "Last Paid Date"];
+        tableHeaders = ["Roll #", "Student Name", "Father's Name", "Class", "Paid Amount", "Fee Status", "Payment Date"];
         
         const paymentsInMonth = income.filter(i => i.date >= monthStart && i.date <= monthEnd);
-        const studentIdsPaidInMonth = new Set(paymentsInMonth.map(i => i.studentId));
+        let totalPaidInMonth = 0;
 
-        tableRows = students
-          .filter(s => studentIdsPaidInMonth.has(s.id))
-          .map(student => {
-             const lastPaymentInMonth = paymentsInMonth
-                .filter(i => i.studentId === student.id)
-                .sort((a,b) => b.date.getTime() - a.date.getTime())[0];
+        tableRows = paymentsInMonth.map(item => {
+            totalPaidInMonth += item.amount;
+            const student = students.find(s => s.id === item.studentId);
             return `
             <tr>
-              <td>${student.id}</td>
-              <td>${student.name}</td>
-              <td>${student.fatherName}</td>
-              <td>${student.class}</td>
-              <td>${student.monthlyFee.toLocaleString()} PKR</td>
-              <td>${student.feeStatus}</td>
-              <td>${lastPaymentInMonth ? new Date(lastPaymentInMonth.date).toLocaleDateString() : 'N/A'}</td>
+              <td>${item.studentId}</td>
+              <td>${item.studentName}</td>
+              <td>${student?.fatherName || 'N/A'}</td>
+              <td>${student?.class || 'N/A'}</td>
+              <td>${item.amount.toLocaleString()} PKR</td>
+              <td>${student?.feeStatus || 'N/A'}</td>
+              <td>${format(item.date, 'PP')}</td>
             </tr>
           `})
           .join('');
+          
+        footerExtra = `<strong>Total Collection for Period: ${totalPaidInMonth.toLocaleString()} PKR</strong>`;
     } else {
         toast({ variant: 'destructive', title: 'Not Implemented', description: 'This report type is not yet available for printing.' });
         return;
     }
     
-    const printHtml = generatePrintHtml(reportTitle, tableHeaders, tableRows);
+    const printHtml = generatePrintHtml(reportTitle, tableHeaders, tableRows, footerExtra);
     printWindow.document.write(printHtml);
     printWindow.document.close();
   };
@@ -306,19 +315,14 @@ export default function ReportsPage() {
         ]);
       filename = 'unpaid-dues-report.csv';
     } else if (reportId === 'paid-students') {
-        headers = ["ID", "Name", "Father's Name", "Class", "Fee Amount", "Fee Status", "Last Paid Date"];
+        headers = ["ID", "Name", "Father's Name", "Class", "Fee Amount", "Fee Status", "Payment Date"];
         const paymentsInMonth = income.filter(i => i.date >= monthStart && i.date <= monthEnd);
-        const studentIdsPaidInMonth = new Set(paymentsInMonth.map(i => i.studentId));
 
-        data = students
-          .filter(s => studentIdsPaidInMonth.has(s.id))
-          .map(student => {
-             const lastPaymentInMonth = paymentsInMonth
-                .filter(i => i.studentId === student.id)
-                .sort((a,b) => b.date.getTime() - a.date.getTime())[0];
+        data = paymentsInMonth.map(item => {
+            const student = students.find(s => s.id === item.studentId);
             return [
-              student.id, student.name, student.fatherName, student.class, student.monthlyFee,
-              student.feeStatus, lastPaymentInMonth ? new Date(lastPaymentInMonth.date).toLocaleDateString() : 'N/A'
+              item.studentId, item.studentName, student?.fatherName || '', student?.class || '', item.amount,
+              student?.feeStatus || '', format(item.date, 'yyyy-MM-dd')
             ]
           });
       filename = 'paid-students-report.csv';
@@ -447,7 +451,7 @@ export default function ReportsPage() {
                               </SelectTrigger>
                               <SelectContent>
                                   <SelectItem value="all">All Classes</SelectItem>
-                                  {classes.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                                  {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                               </SelectContent>
                           </Select>
                       </div>
