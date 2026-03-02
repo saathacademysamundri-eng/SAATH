@@ -293,7 +293,7 @@ export default function ExamResultsPage() {
 
       return `
         <tr>
-          <td>${index + 1}</td>
+          <td style="text-align: center;">${index + 1}</td>
           <td>${student.id}</td>
           <td>${student.name}</td>
           <td>${student.fatherName}</td>
@@ -428,6 +428,7 @@ export default function ExamResultsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">#</TableHead>
                     <TableHead className="min-w-[150px]">Student</TableHead>
                     <TableHead className="min-w-[150px]">Father's Name</TableHead>
                     {exam.subjects.map(subject => (
@@ -441,6 +442,7 @@ export default function ExamResultsPage() {
                 </TableHeader>
                 <TableBody>
                   <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableCell></TableCell>
                       <TableCell colSpan={2} className="font-semibold">Total Marks</TableCell>
                       {exam.subjects.map(subject => (
                           <TableCell key={subject} className="text-center font-semibold">
@@ -454,10 +456,11 @@ export default function ExamResultsPage() {
                       <TableCell></TableCell>
                       {showPosition && <TableCell></TableCell>}
                   </TableRow>
-                  {students.map(student => {
+                  {students.map((student, idx) => {
                     const enhanced = getStudentEnhancedResult(student.id);
                     return(
                       <TableRow key={student.id}>
+                          <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
                           <TableCell className="font-medium">{student.name}<br/><span className="text-xs text-muted-foreground">{student.id}</span></TableCell>
                           <TableCell className="font-medium">{student.fatherName}</TableCell>
                           {exam.subjects.map(subject => {

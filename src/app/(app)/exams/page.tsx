@@ -6,7 +6,9 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Exam } from '@/lib/data';
-import { deleteExam, getExams, updateExamStatus } from '@/lib/firebase/firestore';
+import { deleteExam, updateExamStatus } from '@/lib/firebase/firestore';
+import { db } from '@/lib/firebase/config';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer, Check, Ban, AlertCircle, Clock } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
@@ -78,25 +80,38 @@ export default function ExamsPage() {
     }
   }, [settings.academicSession]);
 
-  const fetchExams = async () => {
-    setLoading(true);
-    const examsData = await getExams();
-    setExams(examsData);
-    setLoading(false);
-  };
-
+  // Real-time sync for exams
   useEffect(() => {
-    fetchExams();
-  }, []);
+    setLoading(true);
+    const q = query(collection(db, 'exams'), orderBy('date', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const examsData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          date: data.date?.toDate() || new Date(),
+          submissionDeadline: data.submissionDeadline?.toDate(),
+        } as Exam;
+      });
+      setExams(examsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Real-time exams fetch failed:", error);
+      toast({ variant: 'destructive', title: 'Sync Error', description: 'Could not connect to live exam data.' });
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
 
   const handleExamCreated = (examId: string) => {
-    fetchExams();
     setIsCreateDialogOpen(false);
     router.push(`/exams/${examId}`);
   };
   
   const handleExamUpdated = () => {
-    fetchExams();
     setIsEditDialogOpen(false);
   };
 
@@ -109,7 +124,6 @@ export default function ExamsPage() {
     const result = await deleteExam(examId);
     if (result.success) {
         toast({ title: 'Exam Deleted', description: 'The exam has been successfully removed.' });
-        fetchExams();
     } else {
         toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
     }
@@ -124,18 +138,15 @@ export default function ExamsPage() {
     const result = await updateExamStatus(examId, 'approved');
     if (result.success) {
         toast({ title: 'Exam Approved', description: 'The exam is now active.' });
-        fetchExams();
     } else {
         toast({ variant: 'destructive', title: 'Approval Failed', description: result.message });
     }
   };
   
   const handleReject = async (exam: Exam) => {
-    // When rejected, the exam is deleted entirely from the teacher's portal as requested
     const result = await deleteExam(exam.id);
     if (result.success) {
         toast({ title: 'Exam Request Rejected', description: `The request from ${exam.teacherName} has been deleted.`});
-        fetchExams();
     } else {
         toast({ variant: 'destructive', title: 'Rejection Failed', description: result.message });
     }
@@ -224,7 +235,7 @@ export default function ExamsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Exams</h1>
-          <p className="text-muted-foreground">Create and manage academic exams and requests.</p>
+          <p className="text-muted-foreground">Create and manage academic exams and requests in real-time.</p>
         </div>
       </div>
 
@@ -339,7 +350,7 @@ export default function ExamsPage() {
         <TabsContent value="approved">
             <Card>
                 <CardHeader>
-                <CardTitle>Approved Exams</CardTitle>
+                <CardTitle>Exam History</CardTitle>
                 <CardDescription>A list of all active exams. Use the filters below to narrow down the results.</CardDescription>
                 <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-4 pt-4">
                     <Select onValueChange={(v) => setApprovedClassFilter(v === 'all' ? null : v)} value={approvedClassFilter || 'all'}>
@@ -384,6 +395,7 @@ export default function ExamsPage() {
                     <Table>
                         <TableHeader>
                         <TableRow>
+                            <TableHead className="w-12">#</TableHead>
                             <TableHead className="hidden sm:table-cell">Date</TableHead>
                             <TableHead>Exam Name</TableHead>
                             <TableHead>Class</TableHead>
@@ -396,6 +408,7 @@ export default function ExamsPage() {
                         {loading ? (
                             Array.from({ length: 5 }).map((_, i) => (
                             <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-8" /></TableCell>
                                 <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-20" /></TableCell>
@@ -405,9 +418,10 @@ export default function ExamsPage() {
                             </TableRow>
                             ))
                         ) : approvedExams.length > 0 ? (
-                            approvedExams.map(exam => (
+                            approvedExams.map((exam, idx) => (
                             <TableRow key={exam.id}>
-                                <TableCell className="hidden sm:table-cell">{format(exam.date, 'PPP')}</TableCell>
+                                <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
+                                <TableCell className="hidden sm:table-cell">{format(exam.date, 'PP')}</TableCell>
                                 <TableCell className="font-medium">
                                     <div>{exam.name}</div>
                                     <div className="text-xs text-muted-foreground flex flex-wrap gap-1 mt-1">
@@ -532,13 +546,14 @@ export default function ExamsPage() {
              <Card>
                 <CardHeader>
                     <CardTitle>Pending Exam Approvals</CardTitle>
-                    <CardDescription>Review and approve or reject exam requests from teachers.</CardDescription>
+                    <CardDescription>Review and approve or reject exam requests from teachers in real-time.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-12">#</TableHead>
                                 <TableHead className="hidden sm:table-cell">Date</TableHead>
                                 <TableHead>Exam Name</TableHead>
                                 <TableHead className="hidden md:table-cell">Requested By</TableHead>
@@ -549,6 +564,7 @@ export default function ExamsPage() {
                              {loading ? (
                                 Array.from({ length: 3 }).map((_, i) => (
                                 <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-8" /></TableCell>
                                     <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                                     <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                                     <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
@@ -556,9 +572,10 @@ export default function ExamsPage() {
                                 </TableRow>
                                 ))
                             ) : pendingExams.length > 0 ? (
-                                pendingExams.map(exam => (
+                                pendingExams.map((exam, idx) => (
                                     <TableRow key={exam.id}>
-                                        <TableCell className="hidden sm:table-cell">{format(exam.date, 'PPP')}</TableCell>
+                                        <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{format(exam.date, 'PP')}</TableCell>
                                         <TableCell className="font-medium">
                                             <div>{exam.name} ({exam.className})</div>
                                             <div className="text-xs text-muted-foreground flex flex-wrap gap-1 mt-1">

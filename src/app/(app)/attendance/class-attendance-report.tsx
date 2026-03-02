@@ -204,7 +204,7 @@ export function ClassAttendanceReport() {
             const daysCells = dayHeaders.map(() => `<td style="height: 25px;"></td>`).join('');
             return `
                 <tr>
-                    <td>${index + 1}</td>
+                    <td style="text-align: center;">${index + 1}</td>
                     <td style="text-align: left;">${student.id}</td>
                     <td style="text-align: left;">${student.name}</td>
                     ${daysCells}

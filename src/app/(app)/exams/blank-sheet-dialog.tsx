@@ -31,7 +31,7 @@ import { getStudentsByClass } from '@/lib/firebase/firestore';
 type SheetType = 'single' | 'full';
 
 export function BlankSheetDialog() {
-  const { classes, teachers, students: allStudents = [], loading: appLoading } = useAppContext();
+  const { classes, teachers, loading: appLoading } = useAppContext();
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
 
@@ -124,7 +124,7 @@ export function BlankSheetDialog() {
         tableHeaders = ["#", "Roll #", "Student Name", "Father's Name", "Obtained Marks"];
         tableRows = sortedStudents.map((student, index) => `
             <tr>
-              <td>${index + 1}</td>
+              <td style="text-align: center;">${index + 1}</td>
               <td>${student.id}</td>
               <td>${student.name}</td>
               <td>${student.fatherName}</td>
@@ -139,7 +139,7 @@ export function BlankSheetDialog() {
             const subjectCells = selectedClass.subjects.map(() => '<td style="height: 25px;"></td>').join('');
             return `
                 <tr>
-                    <td>${index + 1}</td>
+                    <td style="text-align: center;">${index + 1}</td>
                     <td>${student.id}</td>
                     <td>${student.name}</td>
                     <td>${student.fatherName}</td>
