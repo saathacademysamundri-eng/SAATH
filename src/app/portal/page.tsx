@@ -4,15 +4,15 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import { useSettings } from '@/hooks/use-settings';
 import { getStudent } from '@/lib/firebase/firestore';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, X, MessageCircle, HelpCircle } from 'lucide-react';
 
 export default function StudentPortalLoginPage() {
   const [rollNumber, setRollNumber] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const { settings, isSettingsLoading } = useSettings();
   const router = useRouter();
@@ -33,7 +33,6 @@ export default function StudentPortalLoginPage() {
     if (!queryTerm || !phoneTerm) return;
 
     setLoading(true);
-    setError(null);
 
     // Smart ID Formatting logic
     let formattedId = queryTerm;
@@ -48,7 +47,7 @@ export default function StudentPortalLoginPage() {
       const student = await getStudent(formattedId);
 
       if (!student || student.status !== 'active') {
-        throw new Error('Incorrect roll number or student is no longer active.');
+        throw new Error('NotFound');
       }
 
       // 2. Verify Phone Number (Normalized comparison)
@@ -56,7 +55,7 @@ export default function StudentPortalLoginPage() {
       const normalizedRecord = (student.phone || '').replace(/\D/g, '');
 
       if (!normalizedRecord || normalizedProvided !== normalizedRecord) {
-        throw new Error('The phone number provided does not match our records.');
+        throw new Error('PhoneMismatch');
       }
 
       // 3. Success state and redirect
@@ -66,8 +65,8 @@ export default function StudentPortalLoginPage() {
       }, 800);
 
     } catch (err: any) {
-      setError(err.message || 'Verification failed. Please check your details.');
       setLoading(false);
+      setShowErrorModal(true);
     }
   };
 
@@ -85,6 +84,8 @@ export default function StudentPortalLoginPage() {
     button.appendChild(circle);
     setTimeout(() => circle.remove(), 600);
   };
+
+  const supportWhatsapp = `https://wa.me/923099969535?text=I am unable to access the student portal. Roll No: ${rollNumber}`;
 
   return (
     <div className="bg-slate-900 text-white h-screen w-full flex items-center justify-center relative overflow-hidden">
@@ -129,7 +130,6 @@ export default function StudentPortalLoginPage() {
               value={rollNumber}
               onChange={(e) => {
                 setRollNumber(e.target.value.toUpperCase());
-                setError(null);
               }}
               className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg focus:outline-none focus:border-sky-400 text-white transition-colors"
               suppressHydrationWarning
@@ -146,27 +146,20 @@ export default function StudentPortalLoginPage() {
               value={phoneNumber}
               onChange={(e) => {
                 setPhoneNumber(e.target.value);
-                setError(null);
               }}
               className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg focus:outline-none focus:border-sky-400 text-white transition-colors"
               suppressHydrationWarning
             />
           </div>
 
-          {error && (
-            <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs animate-in fade-in zoom-in-95 duration-200">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <p>{error}</p>
-            </div>
-          )}
-
           {/* Forgot */}
           <div className="flex justify-end">
             <button
               type="button"
-              onClick={() => setShowModal(true)}
-              className="text-xs text-sky-400 hover:underline"
+              onClick={() => setShowHelpModal(true)}
+              className="text-xs text-sky-400 hover:underline flex items-center gap-1"
             >
+              <HelpCircle className="h-3 w-3" />
               Need help?
             </button>
           </div>
@@ -210,20 +203,69 @@ export default function StudentPortalLoginPage() {
         </div>
       </div>
 
-      {/* Modal */}
-      {showModal && (
+      {/* Help Modal */}
+      {showHelpModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-slate-800 border border-slate-600 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+          <div className="bg-slate-800 border border-slate-600 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+            <button 
+              onClick={() => setShowHelpModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
             <h3 className="text-xl font-bold text-center mb-4">Portal Help</h3>
             <p className="text-slate-300 text-center text-sm mb-6">
               For security, you must use the phone number registered during your admission. If you've forgotten your details, please contact the academy administration.
             </p>
             <button
-              onClick={() => setShowModal(false)}
+              onClick={() => setShowHelpModal(false)}
               className="w-full bg-slate-700 hover:bg-slate-600 py-2.5 rounded-lg font-semibold transition-colors"
             >
               Understood
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-slate-800 border border-red-500/30 rounded-2xl max-w-md w-full p-8 shadow-2xl relative">
+            <button 
+              onClick={() => showErrorModal && setShowErrorModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                <AlertCircle className="h-10 w-10 text-red-500" />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-white mb-4">Verification Failed</h3>
+              
+              <p className="text-slate-300 leading-relaxed mb-8">
+                Dear User, the information on your app is incorrect, so people are not able to use it. Please ensure your Roll Number and Phone Number match our records.
+              </p>
+              
+              <div className="flex flex-col w-full gap-3">
+                <a 
+                  href={supportWhatsapp}
+                  target="_blank"
+                  className="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  Get Help via WhatsApp
+                </a>
+                <button
+                  onClick={() => setShowErrorModal(false)}
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-3 rounded-xl transition-all"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
