@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import { useSettings } from '@/hooks/use-settings';
+import { getStudent } from '@/lib/firebase/firestore';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 export default function StudentPortalLoginPage() {
   const [rollNumber, setRollNumber] = useState('');
@@ -10,7 +12,7 @@ export default function StudentPortalLoginPage() {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { settings, isSettingsLoading } = useSettings();
   const router = useRouter();
@@ -23,7 +25,7 @@ export default function StudentPortalLoginPage() {
     }, 100);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const queryTerm = rollNumber.trim();
     const phoneTerm = phoneNumber.trim();
@@ -31,6 +33,7 @@ export default function StudentPortalLoginPage() {
     if (!queryTerm || !phoneTerm) return;
 
     setLoading(true);
+    setError(null);
 
     // Smart ID Formatting logic
     let formattedId = queryTerm;
@@ -40,17 +43,32 @@ export default function StudentPortalLoginPage() {
       formattedId = `S${queryTerm.substring(1).padStart(3, '0')}`;
     }
 
-    // Simulate verification animation from design
-    setTimeout(() => {
-      setLoading(false);
-      setSuccess(true);
-      setShowToast(true);
+    try {
+      // 1. Fetch Student from DB
+      const student = await getStudent(formattedId);
 
-      // Final redirect
+      if (!student || student.status !== 'active') {
+        throw new Error('Incorrect roll number or student is no longer active.');
+      }
+
+      // 2. Verify Phone Number (Normalized comparison)
+      const normalizedProvided = phoneTerm.replace(/\D/g, '');
+      const normalizedRecord = (student.phone || '').replace(/\D/g, '');
+
+      if (!normalizedRecord || normalizedProvided !== normalizedRecord) {
+        throw new Error('The phone number provided does not match our records.');
+      }
+
+      // 3. Success state and redirect
+      setSuccess(true);
       setTimeout(() => {
         router.push(`/portal/${formattedId}?p=${encodeURIComponent(phoneTerm)}`);
-      }, 1000);
-    }, 1500);
+      }, 800);
+
+    } catch (err: any) {
+      setError(err.message || 'Verification failed. Please check your details.');
+      setLoading(false);
+    }
   };
 
   const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -109,7 +127,10 @@ export default function StudentPortalLoginPage() {
               required
               placeholder="e.g., S001"
               value={rollNumber}
-              onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
+              onChange={(e) => {
+                setRollNumber(e.target.value.toUpperCase());
+                setError(null);
+              }}
               className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg focus:outline-none focus:border-sky-400 text-white transition-colors"
               suppressHydrationWarning
             />
@@ -123,11 +144,21 @@ export default function StudentPortalLoginPage() {
               required
               placeholder="e.g., 03001234567"
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              onChange={(e) => {
+                setPhoneNumber(e.target.value);
+                setError(null);
+              }}
               className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg focus:outline-none focus:border-sky-400 text-white transition-colors"
               suppressHydrationWarning
             />
           </div>
+
+          {error && (
+            <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs animate-in fade-in zoom-in-95 duration-200">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <p>{error}</p>
+            </div>
+          )}
 
           {/* Forgot */}
           <div className="flex justify-end">
@@ -149,15 +180,18 @@ export default function StudentPortalLoginPage() {
             className={`w-full relative overflow-hidden text-white font-semibold py-3.5 rounded-lg shadow-lg transition
             ${
               success
-                ? "bg-gradient-to-r from-green-500 to-emerald-600"
+                ? "bg-gradient-to-r from-green-500 to-emerald-600 scale-[0.98]"
                 : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500"
             }
             ${(loading || success) && "opacity-80 cursor-not-allowed"}`}
           >
             {loading ? (
-              <span>Verifying...</span>
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Verifying...</span>
+              </div>
             ) : success ? (
-              <span>Authenticated</span>
+              <span>Verified Successfully</span>
             ) : (
               <span>Access Portal</span>
             )}
@@ -191,16 +225,6 @@ export default function StudentPortalLoginPage() {
               Understood
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Toast */}
-      {showToast && (
-        <div className="fixed bottom-5 right-5 bg-white text-slate-900 px-6 py-4 rounded-lg shadow-2xl border-l-4 border-green-500 z-50 animate-in slide-in-from-right duration-300">
-          <h4 className="font-bold text-sm">Success</h4>
-          <p className="text-xs text-slate-500">
-            Identity verified. Opening dashboard...
-          </p>
         </div>
       )}
     </div>
