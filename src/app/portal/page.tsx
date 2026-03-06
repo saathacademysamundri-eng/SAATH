@@ -85,7 +85,8 @@ export default function StudentPortalLoginPage() {
     setTimeout(() => circle.remove(), 600);
   };
 
-  const supportWhatsapp = `https://wa.me/923099969535?text=I am unable to access the student portal. Roll No: ${rollNumber}`;
+  // UPDATED: Primary academy support number
+  const supportWhatsapp = `https://wa.me/923438775425?text=Dear Admin, I am unable to access the student portal. My Roll No is: ${rollNumber}`;
 
   return (
     <div className="bg-slate-900 text-white h-screen w-full flex items-center justify-center relative overflow-hidden">
@@ -230,7 +231,7 @@ export default function StudentPortalLoginPage() {
       {/* Error Modal */}
       {showErrorModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-in fade-in zoom-in-95 duration-200">
-          <div className="bg-slate-800 border border-red-500/30 rounded-2xl max-w-md w-full p-8 shadow-2xl relative">
+          <div className="bg-slate-800 border border-red-500/30 rounded-2xl max-md w-full p-8 shadow-2xl relative">
             <button 
               onClick={() => showErrorModal && setShowErrorModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
@@ -246,7 +247,7 @@ export default function StudentPortalLoginPage() {
               <h3 className="text-2xl font-bold text-white mb-4">Verification Failed</h3>
               
               <p className="text-slate-300 leading-relaxed mb-8">
-                Dear User, the information on your app is incorrect, so people are not able to use it. Please ensure your Roll Number and Phone Number match our records.
+                Dear User, the information on your app is incorrect, so people are not able to use it.
               </p>
               
               <div className="flex flex-col w-full gap-3">
