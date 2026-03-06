@@ -228,25 +228,25 @@ export default function StudentPortalLoginPage() {
         </div>
       )}
 
-      {/* Error Modal */}
+      {/* Error Modal - COMPACT & MOBILE FRIENDLY */}
       {showErrorModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-in fade-in zoom-in-95 duration-200">
-          <div className="bg-slate-800 border border-red-500/30 rounded-2xl max-md w-full p-8 shadow-2xl relative">
+          <div className="bg-slate-800 border border-red-500/30 rounded-2xl max-w-sm w-full p-6 sm:p-8 shadow-2xl relative">
             <button 
-              onClick={() => showErrorModal && setShowErrorModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+              onClick={() => setShowErrorModal(false)}
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 hover:text-white transition-colors"
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
             
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
-                <AlertCircle className="h-10 w-10 text-red-500" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 sm:mb-6">
+                <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 text-red-500" />
               </div>
               
-              <h3 className="text-2xl font-bold text-white mb-4">Verification Failed</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-4 tracking-tight">Verification Failed</h3>
               
-              <p className="text-slate-300 leading-relaxed mb-8">
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6 sm:mb-8">
                 Dear User, the information on your app is incorrect, so people are not able to use it.
               </p>
               
@@ -254,14 +254,14 @@ export default function StudentPortalLoginPage() {
                 <a 
                   href={supportWhatsapp}
                   target="_blank"
-                  className="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg"
+                  className="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 sm:py-3.5 rounded-xl transition-all shadow-lg text-sm sm:text-base"
                 >
-                  <MessageCircle className="h-5 w-5" />
+                  <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                   Get Help via WhatsApp
                 </a>
                 <button
                   onClick={() => setShowErrorModal(false)}
-                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-3 rounded-xl transition-all"
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-3 rounded-xl transition-all text-sm sm:text-base"
                 >
                   Try Again
                 </button>
