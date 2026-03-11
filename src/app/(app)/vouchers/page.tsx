@@ -260,6 +260,7 @@ export default function VouchersPage() {
   const handlePrint = async (target: 'class' | 'individual') => {
     let vouchersToPrint: Student[] = [];
     let issueDateToUse: Date, dueDateToUse: Date;
+    let pageTitle = 'Fee Vouchers';
 
     if (target === 'class') {
       if (!selectedClassId) {
@@ -273,6 +274,8 @@ export default function VouchersPage() {
       vouchersToPrint = classStudents;
       issueDateToUse = bulkIssueDate;
       dueDateToUse = bulkDueDate;
+      const className = classes.find(c => c.id === selectedClassId)?.name || '';
+      pageTitle = `Fee Vouchers - ${className}`;
     } else if (target === 'individual') {
       if (!searchedStudent) {
         toast({ variant: 'destructive', title: 'No Student Found', description: 'Please search for a student first.' });
@@ -281,6 +284,7 @@ export default function VouchersPage() {
       vouchersToPrint = [searchedStudent];
       issueDateToUse = individualIssueDate;
       dueDateToUse = individualDueDate;
+      pageTitle = `Fee Voucher - ${searchedStudent.name}`;
     } else {
         return;
     }
@@ -298,7 +302,7 @@ export default function VouchersPage() {
     
      const finalHtml = `
         <html>
-            <head><title>Fee Vouchers</title>
+            <head><title>${pageTitle}</title>
              <style>
                 body { font-family: Calibri, sans-serif; }
                 .voucher-container { 
