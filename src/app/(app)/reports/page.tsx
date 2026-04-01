@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import {
   CalendarCheck2,
   Loader2,
   Tag,
+  AlertTriangle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type Student, type Income } from '@/lib/data';
@@ -24,6 +26,7 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { ClassAttendanceDialog } from './class-attendance-dialog';
 import { DailyAttendanceSummaryDialog } from './daily-attendance-summary-dialog';
 import { DiscountReportDialog } from './discount-report-dialog';
+import { MonthlyDefaultersDialog } from './monthly-defaulters-dialog';
 import { useState, useMemo, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -74,6 +77,15 @@ export default function ReportsPage() {
       isEnabled: true,
       type: 'dialog',
       dialogComponent: <DailyAttendanceSummaryDialog />,
+    },
+    {
+      id: 'monthly-defaulters',
+      title: 'Monthly Defaulters Report',
+      description: 'Find students who have not paid their fees for a specific month and class cycle.',
+      icon: AlertTriangle,
+      isEnabled: true,
+      type: 'dialog',
+      dialogComponent: <MonthlyDefaultersDialog />,
     },
      {
       id: 'student-ledger',

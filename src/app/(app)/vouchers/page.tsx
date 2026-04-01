@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -78,12 +79,10 @@ export default function VouchersPage() {
   const { settings, isSettingsLoading } = useSettings();
   const { toast } = useToast();
 
-  // State for class vouchers
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [bulkIssueDate, setBulkIssueDate] = useState<Date>(new Date());
   const [bulkDueDate, setBulkDueDate] = useState<Date>(addDays(new Date(), 10));
 
-  // State for individual vouchers
   const [search, setSearch] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchedStudent, setSearchedStudent] = useState<Student | null>(null);
@@ -92,7 +91,6 @@ export default function VouchersPage() {
   const [individualIssueDate, setIndividualIssueDate] = useState<Date>(new Date());
   const [individualDueDate, setIndividualDueDate] = useState<Date>(addDays(new Date(), 10));
 
-  // Students list for class bulk printing - fetched on demand when class selected
   const [classStudents, setClassStudents] = useState<Student[]>([]);
   const [isLoadingClassStudents, setIsLoadingClassStudents] = useState(false);
 
@@ -120,7 +118,6 @@ export default function VouchersPage() {
     setSearchedStudent(null);
     setSearchResults([]);
 
-    // 1. Smart ID Formatting
     let formattedId = queryTerm;
     if (/^\d+$/.test(queryTerm)) {
       formattedId = `S${queryTerm.padStart(3, '0')}`;
@@ -128,7 +125,6 @@ export default function VouchersPage() {
       formattedId = `S${queryTerm.substring(1).padStart(3, '0')}`;
     }
 
-    // 2. Try exact ID match
     let student = await getStudent(formattedId);
     if (!student && formattedId !== queryTerm) {
       student = await getStudent(queryTerm);
@@ -140,33 +136,16 @@ export default function VouchersPage() {
       return;
     }
 
-    // 3. Name or ID Prefix Search
     const resultsMap = new Map<string, Student>();
-
     const runSearchQuery = async (term: string) => {
       const capitalized = term.charAt(0).toUpperCase() + term.slice(1);
-      
-      const qName = query(
-        collection(db, 'students'),
-        where('name', '>=', capitalized),
-        where('name', '<=', capitalized + '\uf8ff'),
-        limit(20)
-      );
-      
-      const qId = query(
-        collection(db, 'students'),
-        where('id', '>=', term.toUpperCase()),
-        where('id', '<=', term.toUpperCase() + '\uf8ff'),
-        limit(20)
-      );
-
+      const qName = query(collection(db, 'students'), where('name', '>=', capitalized), where('name', '<=', capitalized + '\uf8ff'), limit(20));
+      const qId = query(collection(db, 'students'), where('id', '>=', term.toUpperCase()), where('id', '<=', term.toUpperCase() + '\uf8ff'), limit(20));
       const [nameSnap, idSnap] = await Promise.all([getDocs(qName), getDocs(qId)]);
-      
       nameSnap.forEach(doc => {
         const data = doc.data() as Student;
         if (data.status === 'active') resultsMap.set(doc.id, { ...data, id: doc.id });
       });
-      
       idSnap.forEach(doc => {
         const data = doc.data() as Student;
         if (data.status === 'active') resultsMap.set(doc.id, { ...data, id: doc.id });
@@ -174,7 +153,6 @@ export default function VouchersPage() {
     };
 
     await runSearchQuery(queryTerm);
-
     const results = Array.from(resultsMap.values());
 
     if (results.length === 1) {
@@ -183,11 +161,7 @@ export default function VouchersPage() {
       setSearchResults(results);
       setIsSearchResultsOpen(true);
     } else {
-      toast({
-        variant: 'destructive',
-        title: 'Not Found',
-        description: 'No student found matching your search.',
-      });
+      toast({ variant: 'destructive', title: 'Not Found', description: 'No student found matching your search.' });
     }
     setIsSearching(false);
   };
@@ -209,7 +183,6 @@ export default function VouchersPage() {
     return `
       <div class="voucher-container">
           <div class="content-wrap">
-              <!-- Student Copy -->
               <div class="main-content">
                 <div class="header">
                     ${settings.logo ? `<img src="${settings.logo}" alt="logo">` : ''}
@@ -235,12 +208,9 @@ export default function VouchersPage() {
                     ` : ''}
                 </div>
               </div>
-
               <div class="cut-line">
                   <div class="cut-line-icon">&#x2702;</div>
               </div>
-
-              <!-- Academy Copy -->
               <div class="slip">
                   <h3 style="font-size: 1.5rem; margin-bottom: 15px; font-weight: bold;">Academy Copy</h3>
                   <p><strong>Student:</strong> ${student.name} (${student.id})</p>
@@ -275,7 +245,7 @@ export default function VouchersPage() {
       issueDateToUse = bulkIssueDate;
       dueDateToUse = bulkDueDate;
       const className = classes.find(c => c.id === selectedClassId)?.name || '';
-      pageTitle = `Fee Vouchers - ${className}`;
+      pageTitle = `${className} - Fee Vouchers`;
     } else if (target === 'individual') {
       if (!searchedStudent) {
         toast({ variant: 'destructive', title: 'No Student Found', description: 'Please search for a student first.' });
@@ -284,11 +254,9 @@ export default function VouchersPage() {
       vouchersToPrint = [searchedStudent];
       issueDateToUse = individualIssueDate;
       dueDateToUse = individualDueDate;
-      pageTitle = `Fee Voucher - ${searchedStudent.name}`;
-    } else {
-        return;
+      pageTitle = `${searchedStudent.name} - Fee Voucher`;
     }
-    
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Please allow popups for this site.' });
@@ -300,22 +268,12 @@ export default function VouchersPage() {
       allVouchersHtml += await generateVoucherHtml(student, issueDateToUse, dueDateToUse);
     }
     
-     const finalHtml = `
+    const finalHtml = `
         <html>
             <head><title>${pageTitle}</title>
              <style>
                 body { font-family: Calibri, sans-serif; }
-                .voucher-container { 
-                  width: 100%;
-                  max-width: 800px;
-                  margin: auto; 
-                  padding: 20px; 
-                  border: 1px solid #ccc; 
-                  page-break-after: always;
-                  display: flex;
-                  flex-direction: column;
-                  box-sizing: border-box;
-                }
+                .voucher-container { width: 100%; max-width: 800px; margin: auto; padding: 20px; border: 1px solid #ccc; page-break-after: always; display: flex; flex-direction: column; box-sizing: border-box; }
                 .voucher-container:last-child { page-break-after: auto; }
                 .content-wrap { flex: 1; }
                 .main-content { flex-grow: 1; }
@@ -330,33 +288,10 @@ export default function VouchersPage() {
                 .slip { text-align: center; border: 1px solid #000; padding: 10px; width: 100%;}
                 .qr-section { text-align: center; margin-top: 20px; }
                 .qr-section img { margin: auto; }
-                .cut-line { 
-                    display: flex;
-                    align-items: center;
-                    text-align: center;
-                    margin: 20px 0;
-                    border-top: 2px dashed #888;
-                    position: relative;
-                }
-                .cut-line-icon {
-                    font-size: 20px;
-                    position: absolute;
-                    left: 10px;
-                    transform: translateY(-50%);
-                    background: #fff;
-                    padding: 0 5px;
-                }
+                .cut-line { display: flex; align-items: center; text-align: center; margin: 20px 0; border-top: 2px dashed #888; position: relative; }
+                .cut-line-icon { font-size: 20px; position: absolute; left: 10px; transform: translateY(-50%); background: #fff; padding: 0 5px; }
                 .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
-                @media print {
-                  @page {
-                    size: A4 portrait;
-                    margin: 0.5in;
-                  }
-                  body { -webkit-print-color-adjust: exact; }
-                  .voucher-container {
-                     min-height: 270mm; /* A bit less than A4 height */
-                  }
-                }
+                @media print { @page { size: A4 portrait; margin: 0.5in; } body { -webkit-print-color-adjust: exact; } .voucher-container { min-height: 270mm; } }
             </style>
             </head>
             <body>${allVouchersHtml}</body>
