@@ -27,7 +27,7 @@ export function BlankAdmissionFormDialog() {
           <title>Admission Form - ${settings.name}</title>
           <style>
             @media print {
-              @page { size: A4; margin: 0.25in; }
+              @page { size: A4; margin: 0.2in; }
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
             body { 
@@ -35,18 +35,18 @@ export function BlankAdmissionFormDialog() {
                 background-color: #fff; 
                 color: #000; 
                 font-size: 9.5pt; 
-                line-height: 1.3; 
+                line-height: 1.4; 
                 margin: 0; 
                 padding: 0; 
             }
             .container { 
                 max-width: 100%; 
                 margin: auto; 
-                padding: 20px; 
+                padding: 25px; 
                 border: 2px solid #000; 
                 position: relative; 
                 box-sizing: border-box; 
-                min-height: 96vh;
+                min-height: 97vh;
                 display: flex;
                 flex-direction: column;
             }
@@ -59,59 +59,59 @@ export function BlankAdmissionFormDialog() {
                 transform: translate(-50%, -50%);
                 width: 500px;
                 height: 500px;
-                opacity: 0.05;
+                opacity: 0.04;
                 z-index: -1;
                 pointer-events: none;
             }
             .watermark img { width: 100%; height: 100%; object-fit: contain; }
 
             /* Header */
-            .header { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-            .logo-img { height: 75px; width: 75px; object-fit: contain; }
+            .header { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .logo-img { height: 80px; width: 80px; object-fit: contain; }
             .header-text { text-align: left; }
-            .header h1 { margin: 0; font-size: 20pt; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1; letter-spacing: -0.5px; }
-            .contact-info { font-size: 8.5pt; margin-top: 4px; color: #000; font-weight: bold; }
+            .header h1 { margin: 0; font-size: 22pt; font-weight: 900; text-transform: uppercase; color: #000; line-height: 1; letter-spacing: -0.5px; }
+            .contact-info { font-size: 9pt; margin-top: 5px; color: #000; font-weight: bold; }
             
             /* Top Fields */
-            .top-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
-            .top-field { display: flex; align-items: flex-end; gap: 5px; font-weight: bold; font-size: 8.5pt; }
-            .underline { border-bottom: 1px solid #000; width: 130px; height: 16px; }
+            .top-row { display: flex; justify-content: space-between; margin-bottom: 12px; }
+            .top-field { display: flex; align-items: flex-end; gap: 5px; font-weight: bold; font-size: 9pt; }
+            .underline { border-bottom: 1px solid #000; width: 140px; height: 18px; }
 
-            /* Applying For Table - REPLICATED FROM IMAGE */
-            .section-label { font-weight: 900; text-decoration: underline; font-size: 11pt; margin-bottom: 8px; text-transform: uppercase; }
-            .applying-table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 20px; }
-            .applying-table td { border: 1px solid #000; padding: 6px 12px; }
+            /* Applying For Table */
+            .section-label { font-weight: 900; text-decoration: underline; font-size: 11pt; margin-bottom: 6px; text-transform: uppercase; }
+            .applying-table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 15px; }
+            .applying-table td { border: 1px solid #000; padding: 5px 12px; }
             .check-box-item { display: flex; align-items: center; gap: 8px; font-weight: bold; }
-            .square-box { width: 14px; height: 14px; border: 1.5px solid #000; flex-shrink: 0; }
+            .square-box { width: 15px; height: 15px; border: 1.5px solid #000; flex-shrink: 0; }
             
             /* Personal Info Boxes */
-            .section-header-pill { text-align: center; margin: 15px 0 10px 0; }
+            .section-header-pill { text-align: center; margin: 12px 0 8px 0; }
             .pill { 
                 display: inline-block; border: 2px solid #000; border-radius: 20px; 
-                padding: 4px 35px; font-weight: 900; text-transform: uppercase; 
-                letter-spacing: 1px; font-size: 9.5pt; background-color: #f0f0f0; 
+                padding: 4px 40px; font-weight: 900; text-transform: uppercase; 
+                letter-spacing: 1px; font-size: 10pt; background-color: #f5f5f5; 
             }
 
-            .form-row { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
-            .label { font-weight: 800; font-size: 8.5pt; min-width: 170px; text-transform: uppercase; }
-            .long-underline { flex: 1; border-bottom: 1px solid #000; height: 18px; }
+            .form-row { margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+            .label { font-weight: 800; font-size: 9pt; min-width: 180px; text-transform: uppercase; }
+            .long-underline { flex: 1; border-bottom: 1px solid #000; height: 20px; }
             
             /* Name Block Letter Boxes */
             .block-container { display: flex; gap: 0; }
-            .box { width: 18px; height: 18px; border: 1px solid #000; border-right: none; }
+            .box { width: 20px; height: 20px; border: 1px solid #000; border-right: none; }
             .box:last-child { border-right: 1px solid #000; }
             
             /* Inline Row */
-            .flex-row { display: flex; gap: 20px; margin-bottom: 12px; }
+            .flex-row { display: flex; gap: 20px; margin-bottom: 14px; }
             .field-inline { display: flex; align-items: center; gap: 8px; flex: 1; }
 
             /* Signature Section */
-            .signature-section { margin-top: auto; padding-top: 30px; display: flex; justify-content: space-between; gap: 40px; }
+            .signature-section { margin-top: auto; padding-top: 25px; display: flex; justify-content: space-between; gap: 40px; }
             .sig-box { flex: 1; text-align: center; }
             .sig-line { border-top: 1.5px solid #000; margin-bottom: 5px; width: 100%; }
             .sig-label { font-weight: 800; font-size: 9pt; text-transform: uppercase; }
 
-            .footer { text-align: center; font-size: 8pt; color: #555; margin-top: 20px; border-top: 1px solid #ddd; padding-top: 8px; font-weight: bold; }
+            .footer { text-align: center; font-size: 8.5pt; color: #333; margin-top: 15px; border-top: 1px solid #ccc; padding-top: 8px; font-weight: bold; }
           </style>
         </head>
         <body>
@@ -188,15 +188,15 @@ export function BlankAdmissionFormDialog() {
                     <div class="label" style="min-width: 90px;">Date of Birth</div>
                     <div class="block-container">
                         <div class="box"></div><div class="box"></div>
-                        <div style="padding: 0 4px; font-weight: bold;">/</div>
+                        <div style="padding: 0 5px; font-weight: bold;">/</div>
                         <div class="box"></div><div class="box"></div>
-                        <div style="padding: 0 4px; font-weight: bold;">/</div>
+                        <div style="padding: 0 5px; font-weight: bold;">/</div>
                         <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
                     </div>
                 </div>
                 <div class="field-inline">
-                    <div class="label" style="min-width: 60px;">Gender</div>
-                    <div style="display: flex; gap: 15px;">
+                    <div class="label" style="min-width: 70px;">Gender</div>
+                    <div style="display: flex; gap: 20px;">
                       <div class="check-box-item"><div class="square-box"></div> MALE</div>
                       <div class="check-box-item"><div class="square-box"></div> FEMALE</div>
                     </div>
@@ -208,23 +208,28 @@ export function BlankAdmissionFormDialog() {
                 <div class="long-underline"></div>
             </div>
 
+            <div class="form-row">
+                <div class="label">Email Address</div>
+                <div class="long-underline"></div>
+            </div>
+
             <div class="flex-row">
-                <div class="field-inline"><div class="label" style="min-width: 100px;">Student CNIC</div><div class="underline" style="flex:1;"></div></div>
-                <div class="field-inline"><div class="label" style="min-width: 80px;">Religion</div><div class="underline" style="flex:1;"></div></div>
+                <div class="field-inline"><div class="label" style="min-width: 110px;">Student CNIC</div><div class="underline" style="flex:1;"></div></div>
+                <div class="field-inline"><div class="label" style="min-width: 90px;">Religion</div><div class="underline" style="flex:1;"></div></div>
             </div>
 
             <div class="section-header-pill"><div class="pill">Parent / Guardian Details</div></div>
 
             <div class="form-row">
                 <div class="label">Father CNIC</div>
-                <div class="underline" style="width: 250px;"></div>
-                <div class="label" style="min-width: 90px; margin-left: 20px;">Occupation</div>
+                <div class="underline" style="width: 260px;"></div>
+                <div class="label" style="min-width: 100px; margin-left: 20px;">Occupation</div>
                 <div class="underline" style="flex:1;"></div>
             </div>
 
             <div class="flex-row">
-                <div class="field-inline"><div class="label" style="min-width: 100px;">WhatsApp (1)</div><div class="underline" style="flex:1;"></div></div>
-                <div class="field-inline"><div class="label" style="min-width: 100px;">WhatsApp (2)</div><div class="underline" style="flex:1;"></div></div>
+                <div class="field-inline"><div class="label" style="min-width: 110px;">WhatsApp (1)</div><div class="underline" style="flex:1;"></div></div>
+                <div class="field-inline"><div class="label" style="min-width: 110px;">WhatsApp (2)</div><div class="underline" style="flex:1;"></div></div>
             </div>
 
             <div class="form-row">
@@ -258,9 +263,11 @@ export function BlankAdmissionFormDialog() {
           <FileText className="h-5 w-5" />
           Admission Form
         </DialogTitle>
-        <DialogDescription>
-          Generate a detailed blank admission form for manual record keeping.
-        </DialogDescription>
+        <DialogHeader>
+          <DialogDescription>
+            Generate a detailed blank admission form for manual record keeping.
+          </DialogDescription>
+        </DialogHeader>
       </DialogHeader>
       <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl bg-muted/30">
           <FileText className="h-16 w-16 text-primary opacity-40 mb-4" />
