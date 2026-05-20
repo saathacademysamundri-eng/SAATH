@@ -7,7 +7,7 @@ import { Student } from '@/lib/data';
 
 /**
  * @fileOverview Official Email Service for SAATH ACADEMY SAMUNDRI.
- * Handles Student Onboarding, Monthly Vouchers, and Payment Confirmations.
+ * Handles Student Onboarding, Monthly Vouchers, and Payment Confirmations using a Creative Template.
  */
 
 const ACADEMY_CONFIG = {
@@ -34,75 +34,95 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const getEmailTemplate = (content: string, title: string) => `
+function getBaseTemplate(dept: string, greeting: string, message: string, cardContent: string, ctaText: string, ctaUrl: string) {
+    return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7ff; margin: 0; padding: 0; }
-    .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-    .header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 40px 20px; text-align: center; color: white; }
-    .header img { height: 80px; margin-bottom: 15px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
-    .header h1 { margin: 0; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-    .content { padding: 40px; color: #1f2937; line-height: 1.6; }
-    .content h2 { color: #4f46e5; margin-top: 0; }
-    .footer { background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #f3f4f6; }
-    .social-links { margin-bottom: 20px; }
-    .social-links a { display: inline-block; margin: 0 10px; color: #4f46e5; text-decoration: none; font-size: 20px; }
-    .academy-info { font-size: 12px; color: #6b7280; }
-    .btn { display: inline-block; padding: 14px 28px; background-color: #4f46e5; color: #ffffff !important; text-decoration: none; border-radius: 12px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
-  </style>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px; }
+        .wrapper { max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #eee; }
+        .header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 40px 20px; text-align: center; }
+        .logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); background: white; padding: 5px; margin-bottom: 10px; }
+        .academy-name { color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: 1px; margin: 0; }
+        .dept-name { color: rgba(255,255,255,0.8); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 3px; }
+        .body { padding: 40px; }
+        .greeting { font-size: 22px; font-weight: 700; color: #1f2937; margin-bottom: 12px; }
+        .greeting span { color: #7c3aed; }
+        .msg { color: #6b7280; font-size: 15px; line-height: 1.8; margin-bottom: 30px; }
+        .card { background: #f8fafc; border-radius: 20px; padding: 25px; border: 1px solid #edf2f7; position: relative; border-left: 5px solid #4f46e5; }
+        .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .row:last-child { border-bottom: none; }
+        .label { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; }
+        .val { font-size: 14px; font-weight: 600; color: #1f2937; }
+        .highlight { color: #4f46e5; }
+        .cta { text-align: center; margin-top: 30px; }
+        .btn { display: inline-block; background: #4f46e5; color: white !important; text-decoration: none; padding: 16px 45px; border-radius: 14px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3); }
+        .footer { background: #1e1b4b; padding: 35px 30px; text-align: center; color: white; }
+        .f-logo { width: 55px; margin-bottom: 12px; }
+        .socials { margin: 20px 0; display: flex; justify-content: center; gap: 15px; }
+        .socials a { color: white; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 8px; }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <img src="${ACADEMY_CONFIG.logo}" alt="Logo">
-      <h1>${ACADEMY_CONFIG.name}</h1>
+    <div class="wrapper">
+        <div class="header">
+            <img src="${ACADEMY_CONFIG.logo}" class="logo">
+            <h1 class="academy-name">${ACADEMY_CONFIG.name}</h1>
+            <p class="dept-name">${dept}</p>
+        </div>
+        <div class="body">
+            <p class="greeting">${greeting}</p>
+            <p class="msg">${message}</p>
+            <div class="card">
+                ${cardContent}
+            </div>
+            <div class="cta">
+                <a href="${ctaUrl}" class="btn">${ctaText}</a>
+            </div>
+        </div>
+        <div class="footer">
+            <img src="${ACADEMY_CONFIG.logo}" class="f-logo">
+            <p style="margin: 0; font-weight: 700; font-size: 18px;">${ACADEMY_CONFIG.name}</p>
+            <p style="font-size: 11px; opacity: 0.6; letter-spacing: 1px; margin-top: 5px;">EXCELLENCE IN EDUCATION</p>
+            <div class="socials">
+                <a href="${ACADEMY_CONFIG.socials.facebook}">FB</a>
+                <a href="${ACADEMY_CONFIG.socials.instagram}">IG</a>
+                <a href="${ACADEMY_CONFIG.socials.youtube}">YT</a>
+                <a href="${ACADEMY_CONFIG.socials.tiktok}">TK</a>
+            </div>
+            <p style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 15px;">Address: ${ACADEMY_CONFIG.address}</p>
+            <p style="font-size: 10px; opacity: 0.4; margin-top: 20px;">&copy; ${new Date().getFullYear()} ${ACADEMY_CONFIG.name}. All Rights Reserved.</p>
+        </div>
     </div>
-    <div class="content">
-      ${content}
-    </div>
-    <div class="footer">
-      <div class="social-links">
-        <a href="${ACADEMY_CONFIG.socials.facebook}">FB</a>
-        <a href="${ACADEMY_CONFIG.socials.instagram}">IG</a>
-        <a href="${ACADEMY_CONFIG.socials.youtube}">YT</a>
-        <a href="${ACADEMY_CONFIG.socials.tiktok}">TK</a>
-      </div>
-      <div class="academy-info">
-        <p>${ACADEMY_CONFIG.address}</p>
-        <p>Phone: ${ACADEMY_CONFIG.phone} | ${ACADEMY_CONFIG.socials.email}</p>
-        <p style="margin-top: 20px; opacity: 0.6;">&copy; ${new Date().getFullYear()} SAATH ACADEMY. All rights reserved.</p>
-      </div>
-    </div>
-  </div>
 </body>
-</html>
-`;
+</html>`;
+}
 
 export async function sendStudentWelcomeEmail(student: Student) {
   if (!student.email) return;
 
-  const html = getEmailTemplate(`
-    <h2>Welcome to SAATH Academy, ${student.name}!</h2>
-    <p>We are thrilled to have you join our academic community. At SAATH, we are dedicated to providing Excellence in Education through personalized learning and state-of-the-art resources.</p>
-    <p><strong>Your Admission Details:</strong></p>
-    <ul>
-      <li><strong>Roll Number:</strong> ${student.id}</li>
-      <li><strong>Class:</strong> ${student.class}</li>
-      <li><strong>Father's Name:</strong> ${student.fatherName}</li>
-    </ul>
-    <p>You can now access the Student Portal using your Roll Number to track your academic performance and fee history.</p>
-    <div style="text-align: center;">
-      <a href="https://app.saathsamundri.com/portal" class="btn">Access Student Portal</a>
-    </div>
-  `, "Welcome to SAATH Academy");
+  const cardContent = `
+    <div class="row"><span class="label">Roll Number</span><span class="val">${student.id}</span></div>
+    <div class="row"><span class="label">Class</span><span class="val">${student.class}</span></div>
+    <div class="row"><span class="label">Father's Name</span><span class="val">${student.fatherName}</span></div>
+  `;
+
+  const html = getBaseTemplate(
+    "Admissions Department",
+    `Welcome to the family, <span>${student.name}</span>!`,
+    "We are thrilled to have you join our academic community. At SAATH, we are dedicated to providing Excellence in Education through personalized learning and state-of-the-art resources.",
+    cardContent,
+    "Access Student Portal",
+    "https://app.saathsamundri.com/portal"
+  );
 
   try {
     await transporter.sendMail({
       from: `"${ACADEMY_CONFIG.name}" <no-reply@saathsamundri.com>`,
       to: student.email,
-      subject: `Welcome to SAATH Academy - Admission Confirmation`,
+      subject: `Welcome to SAATH Academy - Admission Confirmed!`,
       html,
     });
   } catch (error) {
@@ -113,24 +133,26 @@ export async function sendStudentWelcomeEmail(student: Student) {
 export async function sendFeePaymentConfirmationEmail(student: Student, amount: number, balance: number) {
   if (!student.email) return;
 
-  const html = getEmailTemplate(`
-    <h2>Payment Received Successfully!</h2>
-    <p>Dear Parent/Student, we have successfully received your fee payment for <strong>${student.name}</strong>.</p>
-    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 12px; margin: 20px 0;">
-      <table style="width: 100%;">
-        <tr><td><strong>Amount Received:</strong></td><td style="text-align: right;">${amount.toLocaleString()} PKR</td></tr>
-        <tr><td><strong>Date:</strong></td><td style="text-align: right;">${format(new Date(), 'PPP')}</td></tr>
-        <tr style="border-top: 1px solid #ddd; font-weight: bold;"><td><strong>Remaining Balance:</strong></td><td style="text-align: right; color: #4f46e5;">${balance.toLocaleString()} PKR</td></tr>
-      </table>
-    </div>
-    <p>Thank you for your timely payment. This digital receipt is for your records.</p>
-  `, "Fee Payment Confirmation");
+  const cardContent = `
+    <div class="row"><span class="label">Amount Paid</span><span class="val highlight">${amount.toLocaleString()} PKR</span></div>
+    <div class="row"><span class="label">Date Received</span><span class="val">${format(new Date(), 'PPP')}</span></div>
+    <div class="row"><span class="label">Remaining Balance</span><span class="val">${balance.toLocaleString()} PKR</span></div>
+  `;
+
+  const html = getBaseTemplate(
+    "Accounts Department",
+    `Payment Received Successfully!`,
+    `Dear Parent/Student, we have successfully received and verified the fee payment for <b>${student.name}</b>. Your digital receipt is attached below.`,
+    cardContent,
+    "View Full Ledger",
+    "https://app.saathsamundri.com/portal"
+  );
 
   try {
     await transporter.sendMail({
       from: `"${ACADEMY_CONFIG.name}" <no-reply@saathsamundri.com>`,
       to: student.email,
-      subject: `Receipt: Fee Payment Received - ${student.name}`,
+      subject: `Official Receipt: Fee Payment Verified - ${student.name}`,
       html,
     });
   } catch (error) {
@@ -141,52 +163,33 @@ export async function sendFeePaymentConfirmationEmail(student: Student, amount: 
 export async function sendMonthlyVoucherEmail(student: Student) {
   if (!student.email || student.totalFee <= 0) return;
 
-  // Generate PDF
-  const doc = new jsPDF();
+  // Generate PDF for attachment (internal logic stays the same)
+  const pdfDoc = new jsPDF();
   const dateStr = format(new Date(), 'MMMM yyyy');
-  const dueDate = format(new Date(new Date().getFullYear(), new Date().getMonth(), 10), 'PPP');
+  pdfDoc.setFontSize(22);
+  pdfDoc.text(ACADEMY_CONFIG.name, 105, 20, { align: 'center' });
+  pdfDoc.setFontSize(14);
+  pdfDoc.text(`Monthly Fee Voucher - ${dateStr}`, 105, 40, { align: 'center' });
+  pdfDoc.setFontSize(12);
+  pdfDoc.text(`Student: ${student.name} (${student.id})`, 20, 60);
+  pdfDoc.text(`Class: ${student.class}`, 20, 70);
+  pdfDoc.text(`Total Amount Due: ${student.totalFee.toLocaleString()} PKR`, 20, 80);
+  const pdfBase64 = pdfDoc.output('datauristring').split(',')[1];
 
-  doc.setFontSize(22);
-  doc.setTextColor(79, 70, 229);
-  doc.text(ACADEMY_CONFIG.name, 105, 20, { align: 'center' });
-  
-  doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
-  doc.text(ACADEMY_CONFIG.address, 105, 28, { align: 'center' });
-  doc.text(`Phone: ${ACADEMY_CONFIG.phone}`, 105, 33, { align: 'center' });
+  const cardContent = `
+    <div class="row"><span class="label">Billing Month</span><span class="val">${dateStr}</span></div>
+    <div class="row"><span class="label">Total Dues</span><span class="val highlight">${student.totalFee.toLocaleString()} PKR</span></div>
+    <div class="row"><span class="label">Status</span><span class="val">UNPAID</span></div>
+  `;
 
-  doc.setDrawColor(200, 200, 200);
-  doc.line(20, 40, 190, 40);
-
-  doc.setFontSize(16);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`FEE VOUCHER - ${dateStr}`, 105, 55, { align: 'center' });
-
-  doc.setFontSize(12);
-  doc.text(`Student Name: ${student.name}`, 20, 70);
-  doc.text(`Roll Number: ${student.id}`, 20, 80);
-  doc.text(`Class: ${student.class}`, 20, 90);
-  doc.text(`Due Date: ${dueDate}`, 20, 100);
-
-  doc.setFillColor(240, 240, 240);
-  doc.rect(20, 110, 170, 40, 'F');
-  doc.setFontSize(14);
-  doc.text(`Total Amount Due:`, 30, 133);
-  doc.setFontSize(18);
-  doc.text(`${student.totalFee.toLocaleString()} PKR /-`, 180, 133, { align: 'right' });
-
-  doc.setFontSize(10);
-  doc.text(`Please pay the fee by the 10th of this month to avoid late charges.`, 105, 170, { align: 'center' });
-  doc.text(`Generated by SchoolUP Management System`, 105, 280, { align: 'center' });
-
-  const pdfBase64 = doc.output('datauristring').split(',')[1];
-
-  const html = getEmailTemplate(`
-    <h2>New Monthly Fee Voucher</h2>
-    <p>Dear parent/student, the fee voucher for <strong>${dateStr}</strong> has been generated for <strong>${student.name}</strong>.</p>
-    <p>The total outstanding amount is <strong>${student.totalFee.toLocaleString()} PKR</strong>. A detailed PDF voucher is attached to this email.</p>
-    <p>Please ensure payment is cleared by the due date to avoid any inconvenience.</p>
-  `, "Monthly Fee Voucher");
+  const html = getBaseTemplate(
+    "Accounts Department",
+    `Monthly Fee Voucher Generated`,
+    `Dear Parent/Student, the fee voucher for <b>${dateStr}</b> is now available for <b>${student.name}</b>. A detailed PDF copy is attached to this email.`,
+    cardContent,
+    "Pay Online / Support",
+    "https://wa.me/923438775425"
+  );
 
   try {
     await transporter.sendMail({
