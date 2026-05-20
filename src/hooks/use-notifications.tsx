@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, onSnapshot, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, writeBatch, limit, orderBy } from 'firebase/firestore';
 import { Notification } from '@/lib/data';
 
 export function useNotifications(userId: string | null) {
@@ -10,7 +10,7 @@ export function useNotifications(userId: string | null) {
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+    const fetchNotifications = useCallback(async () => {
         if (!userId) {
             setLoading(false);
             setNotifications([]);
@@ -18,17 +18,22 @@ export function useNotifications(userId: string | null) {
             return;
         }
 
-        const q = query(
-            collection(db, 'notifications'),
-            where('userId', '==', userId)
-        );
+        setLoading(true);
+        try {
+            const q = query(
+                collection(db, 'notifications'),
+                where('userId', '==', userId),
+                orderBy('timestamp', 'desc'),
+                limit(50)
+            );
 
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const querySnapshot = await getDocs(q);
             const fetchedNotifications: Notification[] = [];
             let unread = 0;
+            
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                if (data.timestamp) { // Ensure timestamp exists
+                if (data.timestamp) {
                     const notification: Notification = {
                         id: doc.id,
                         userId: data.userId,
@@ -44,24 +49,25 @@ export function useNotifications(userId: string | null) {
                 }
             });
 
-            // Sort notifications on the client-side to avoid needing a composite index
-            fetchedNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
             setNotifications(fetchedNotifications);
             setUnreadCount(unread);
-            setLoading(false);
-        }, (error) => {
+        } catch (error) {
             console.error("Error fetching notifications:", error);
+        } finally {
             setLoading(false);
-        });
-
-        return () => unsubscribe();
+        }
     }, [userId]);
+
+    useEffect(() => {
+        fetchNotifications();
+    }, [fetchNotifications]);
 
     const markAsRead = useCallback(async (notificationId: string) => {
         const docRef = doc(db, 'notifications', notificationId);
         try {
             await updateDoc(docRef, { read: true });
+            setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (error) {
             console.error("Failed to mark notification as read", error);
         }
@@ -80,11 +86,13 @@ export function useNotifications(userId: string | null) {
 
         try {
             await batch.commit();
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            setUnreadCount(0);
         } catch (error) {
             console.error("Failed to mark all as read", error);
         }
     }, [userId, notifications]);
 
 
-    return { notifications, unreadCount, loading, markAsRead, markAllAsRead };
+    return { notifications, unreadCount, loading, markAsRead, markAllAsRead, refresh: fetchNotifications };
 }

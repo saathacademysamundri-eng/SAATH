@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +9,7 @@ import { format } from 'date-fns';
 import { CheckCircle2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 function VerificationSkeleton() {
     return (
@@ -124,7 +123,16 @@ export default function ReceiptVerificationPage() {
                 <header className="mb-6">
                     <Card>
                         <CardContent className="p-6 text-center">
-                            {settings.logo && <img src={settings.logo} alt="Academy Logo" className="h-16 mx-auto mb-4 object-contain" />}
+                            {settings.logo && (
+                                <Image 
+                                    src={settings.logo} 
+                                    alt="Academy Logo" 
+                                    width={64} 
+                                    height={64} 
+                                    className="mx-auto mb-4 object-contain" 
+                                    priority
+                                />
+                            )}
                             <h1 className="text-2xl font-bold text-primary">{settings.name}</h1>
                             <p className="text-muted-foreground">{settings.address}</p>
                         </CardContent>

@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -11,7 +9,7 @@ import { type Exam } from '@/lib/data';
 import { deleteExam } from '@/lib/firebase/firestore';
 import { ClipboardPenLine, MoreHorizontal, PlusCircle, Edit, Trash, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { CreateExamDialog } from '@/app/(app)/exams/create-exam-dialog';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { EditExamDialog } from '@/app/(app)/exams/edit-exam-dialog';
 import { useTeacherAuth } from '@/hooks/use-teacher-auth';
-import { onSnapshot, query, collection, where } from 'firebase/firestore';
+import { getDocs, query, collection, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { cn } from '@/lib/utils';
 
@@ -51,49 +49,57 @@ export default function TeacherExamsPage() {
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchExams = useCallback(async () => {
     if (!teacher) {
         setLoading(false);
         return;
     };
 
     setLoading(true);
-    const q = query(collection(db, 'exams'), where("teacherId", "==", teacher.id));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const examsData: Exam[] = [];
-        querySnapshot.forEach((doc) => {
+    try {
+        const q = query(
+            collection(db, 'exams'), 
+            where("teacherId", "==", teacher.id),
+            orderBy('date', 'desc'),
+            limit(50)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        const examsData: Exam[] = querySnapshot.docs.map((doc) => {
             const data = doc.data();
-            examsData.push({ 
+            return { 
                 id: doc.id, 
                 ...data, 
                 date: data.date.toDate(),
                 submissionDeadline: data.submissionDeadline?.toDate() 
-            } as Exam);
+            } as Exam;
         });
 
-        const sortedExams = examsData.sort((a, b) => b.date.getTime() - a.date.getTime());
-        setExams(sortedExams);
-        setLoading(false);
-    }, (error) => {
-        console.error("Error fetching exams in real-time: ", error);
+        setExams(examsData);
+    } catch (error) {
+        console.error("Error fetching exams:", error);
         toast({
             variant: "destructive",
             title: "Could not fetch exams",
-            description: "There was an error loading your exams. Please try again later.",
+            description: "There was an error loading your exams.",
         });
+    } finally {
         setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, [teacher, toast]);
+
+  useEffect(() => {
+    fetchExams();
+  }, [fetchExams]);
 
   const handleExamCreated = () => {
     setIsCreateDialogOpen(false);
+    fetchExams();
   };
   
   const handleExamUpdated = () => {
     setIsEditDialogOpen(false);
+    fetchExams();
   };
 
   const handleOpenEditDialog = (exam: Exam) => {
@@ -105,6 +111,7 @@ export default function TeacherExamsPage() {
     const result = await deleteExam(examId);
     if (result.success) {
         toast({ title: 'Exam Deleted', description: 'The exam has been successfully removed.' });
+        fetchExams();
     } else {
         toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
     }

@@ -1,9 +1,9 @@
-
 'use client';
 
 import { useSettings } from "@/hooks/use-settings";
 import { Skeleton } from "./ui/skeleton";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export function Logo({ noText = false, onLogin = false }: { noText?: boolean, onLogin?: boolean }) {
   const { settings, isSettingsLoading } = useSettings();
@@ -28,8 +28,14 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
   if (onLogin) {
     return (
          <div className="flex flex-col items-center justify-center gap-4 font-headline text-2xl font-bold text-primary w-full h-full">
-            <div className='h-24 w-24 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0'>
-                <img src={logoSrc} alt="logo" className="object-cover w-full h-full" />
+            <div className='h-24 w-24 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0 relative'>
+                <Image 
+                    src={logoSrc} 
+                    alt="logo" 
+                    fill 
+                    className="object-cover" 
+                    priority
+                />
             </div>
         </div>
     )
@@ -37,7 +43,15 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
 
   return (
     <div className="flex items-center justify-center gap-2 font-headline text-2xl font-bold text-primary w-full h-full">
-      <img src={logoSrc} alt="logo" className="h-full w-auto object-contain" />
+      <div className="h-10 w-10 relative shrink-0">
+        <Image 
+            src={logoSrc} 
+            alt="logo" 
+            fill 
+            className="object-contain" 
+            priority
+        />
+      </div>
       {!noText && <span className="font-bold tracking-tighter">{academyName}</span>}
     </div>
   );

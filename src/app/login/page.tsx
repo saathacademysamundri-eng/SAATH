@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -17,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { ForgotPasswordDialog } from '@/components/login/forgot-password-dialog';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const ADMIN_UID = "oiNKNvX9sQbdgjhxMP71eSiGkkH2";
 
@@ -112,10 +112,12 @@ export default function LoginPage() {
         <main className="min-h-screen bg-gray-100 dark:bg-gradient-to-r dark:from-gray-900 dark:via-purple-900 dark:to-gray-800 dark:bg-[length:200%_200%] dark:animate-animated-gradient flex flex-col items-center justify-center p-4">
             <div className="w-full max-w-4xl rounded-2xl bg-card shadow-2xl overflow-hidden grid md:grid-cols-2">
                 <div className="relative hidden md:block">
-                    <img
+                    <Image
                         src="https://images.unsplash.com/photo-1571260899304-425eee4c7efc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwbGVhcm5pbmd8ZW58MHx8fHwxNzYxNDU1NTU2fDA&ixlib=rb-4.1.0&q=80&w=1080"
                         alt="Students learning"
-                        className="absolute inset-0 h-full w-full object-cover"
+                        fill
+                        className="object-cover"
+                        priority
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 </div>
@@ -156,7 +158,7 @@ export default function LoginPage() {
                             </div>
                         </div>
                         <div className="text-right">
-                            <ForgotPasswordDialog />
+                            <ForgotPassDialog />
                         </div>
                         <Button type="submit" className="w-full font-bold uppercase tracking-widest py-6 shadow-lg hover:shadow-xl transition-all" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -182,4 +184,8 @@ export default function LoginPage() {
             </div>
         </main>
     );
+}
+
+function ForgotPassDialog() {
+    return <ForgotPasswordDialog />;
 }

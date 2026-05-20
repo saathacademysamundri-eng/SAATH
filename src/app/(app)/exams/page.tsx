@@ -8,10 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { type Exam } from '@/lib/data';
 import { deleteExam, updateExamStatus } from '@/lib/firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
 import { ClipboardPenLine, MoreHorizontal, PlusCircle, Trash, Edit, Calendar as CalendarIcon, X, File, Printer, Check, Ban, AlertCircle, Clock } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { CreateExamDialog } from './create-exam-dialog';
 import { format, addDays, isWithinInterval, startOfToday } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -80,12 +80,11 @@ export default function ExamsPage() {
     }
   }, [settings.academicSession]);
 
-  // Real-time sync for exams
-  useEffect(() => {
+  const fetchExams = useCallback(async () => {
     setLoading(true);
-    const q = query(collection(db, 'exams'), orderBy('date', 'desc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    try {
+      const q = query(collection(db, 'exams'), orderBy('date', 'desc'), limit(100));
+      const snapshot = await getDocs(q);
       const examsData = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -96,23 +95,27 @@ export default function ExamsPage() {
         } as Exam;
       });
       setExams(examsData);
+    } catch (error) {
+      console.error("Exams fetch failed:", error);
+      toast({ variant: 'destructive', title: 'Fetch Error', description: 'Could not load live exam data.' });
+    } finally {
       setLoading(false);
-    }, (error) => {
-      console.error("Real-time exams fetch failed:", error);
-      toast({ variant: 'destructive', title: 'Sync Error', description: 'Could not connect to live exam data.' });
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, [toast]);
+
+  useEffect(() => {
+    fetchExams();
+  }, [fetchExams]);
 
   const handleExamCreated = (examId: string) => {
     setIsCreateDialogOpen(false);
+    fetchExams();
     router.push(`/exams/${examId}`);
   };
   
   const handleExamUpdated = () => {
     setIsEditDialogOpen(false);
+    fetchExams();
   };
 
   const handleOpenEditDialog = (exam: Exam) => {
@@ -124,6 +127,7 @@ export default function ExamsPage() {
     const result = await deleteExam(examId);
     if (result.success) {
         toast({ title: 'Exam Deleted', description: 'The exam has been successfully removed.' });
+        fetchExams();
     } else {
         toast({ variant: 'destructive', title: 'Deletion Failed', description: result.message });
     }
@@ -138,6 +142,7 @@ export default function ExamsPage() {
     const result = await updateExamStatus(examId, 'approved');
     if (result.success) {
         toast({ title: 'Exam Approved', description: 'The exam is now active.' });
+        fetchExams();
     } else {
         toast({ variant: 'destructive', title: 'Approval Failed', description: result.message });
     }
@@ -147,6 +152,7 @@ export default function ExamsPage() {
     const result = await deleteExam(exam.id);
     if (result.success) {
         toast({ title: 'Exam Request Rejected', description: `The request from ${exam.teacherName} has been deleted.`});
+        fetchExams();
     } else {
         toast({ variant: 'destructive', title: 'Rejection Failed', description: result.message });
     }
@@ -235,7 +241,7 @@ export default function ExamsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Exams</h1>
-          <p className="text-muted-foreground">Create and manage academic exams and requests in real-time.</p>
+          <p className="text-muted-foreground">Create and manage academic exams and requests.</p>
         </div>
       </div>
 
@@ -546,7 +552,7 @@ export default function ExamsPage() {
              <Card>
                 <CardHeader>
                     <CardTitle>Pending Exam Approvals</CardTitle>
-                    <CardDescription>Review and approve or reject exam requests from teachers in real-time.</CardDescription>
+                    <CardDescription>Review and approve or reject exam requests from teachers.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -595,7 +601,7 @@ export default function ExamsPage() {
                                                     <AlertDialogHeader>
                                                     <AlertDialogTitle>Reject Exam Request?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        This will reject and permanently delete the exam request "{exam.name}". The teacher will no longer see it in their portal.
+                                                        This will reject and permanently delete the exam request "{exam.name}".
                                                     </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
