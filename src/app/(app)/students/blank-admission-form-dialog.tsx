@@ -98,7 +98,8 @@ export function BlankAdmissionFormDialog() {
             
             /* Name Block Letter Boxes */
             .block-container { display: flex; gap: 0; }
-            .box { width: 20px; height: 20px; border: 1px solid #000; border-right: none; }
+            .box-group { display: flex; gap: 0; }
+            .box { width: 21px; height: 21px; border: 1px solid #000; border-right: none; }
             .box:last-child { border-right: 1px solid #000; }
             
             /* Inline Row */
@@ -185,13 +186,19 @@ export function BlankAdmissionFormDialog() {
 
             <div class="flex-row">
                 <div class="field-inline">
-                    <div class="label" style="min-width: 90px;">Date of Birth</div>
-                    <div class="block-container">
-                        <div class="box"></div><div class="box"></div>
-                        <div style="padding: 0 5px; font-weight: bold;">/</div>
-                        <div class="box"></div><div class="box"></div>
-                        <div style="padding: 0 5px; font-weight: bold;">/</div>
-                        <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+                    <div class="label" style="min-width: 100px;">Date of Birth</div>
+                    <div class="block-container" style="align-items: center; gap: 4px;">
+                        <div class="box-group">
+                            <div class="box"></div><div class="box"></div>
+                        </div>
+                        <div style="font-weight: 900; font-size: 11pt;">/</div>
+                        <div class="box-group">
+                            <div class="box"></div><div class="box"></div>
+                        </div>
+                        <div style="font-weight: 900; font-size: 11pt;">/</div>
+                        <div class="box-group">
+                            <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="field-inline">
