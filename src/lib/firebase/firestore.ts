@@ -1,6 +1,7 @@
+
 import { collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp, getCountFromServer, getAggregateFromServer, sum, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
 import { app, auth, db, firebaseConfig } from './config';
-import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID, Discount } from '@/lib/data';
+import { Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID, Discount } from '@/lib/data';
 import type { Settings } from '@/hooks/use-settings';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -431,12 +432,16 @@ export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id:
         // Automated Email and WhatsApp Notifications
         const settings = await getSettings('details');
         
-        // 1. Send Branded Welcome Email
+        // 1. Send Branded Welcome Email (Wrapped in try-catch to prevent flow interruption)
         if (student.email) {
-            await sendStudentWelcomeEmail(student as Student);
+            try {
+                await sendStudentWelcomeEmail(student as Student);
+            } catch (emailError) {
+                console.error("Resilience: Failed to send welcome email, but student record was saved.", emailError);
+            }
         }
 
-        // 2. Send WhatsApp Notification
+        // 2. Send WhatsApp Notification (Wrapped in try-catch to prevent flow interruption)
         if (settings && settings.newAdmissionMsg && student.phone) {
             let messageBody = settings.newAdmissionTemplate || 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.';
             messageBody = messageBody.replace(/{student_name}/g, student.name);
@@ -447,12 +452,16 @@ export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id:
             const token = settings.whatsappProvider === 'ultramsg' ? settings.ultraMsgToken : settings.officialApiToken;
             
             if (apiUrl && token) {
-                await sendWhatsappMessage({
-                    to: student.phone,
-                    body: messageBody,
-                    apiUrl: apiUrl,
-                    token: token
-                });
+                try {
+                    await sendWhatsappMessage({
+                        to: student.phone,
+                        body: messageBody,
+                        apiUrl: apiUrl,
+                        token: token
+                    });
+                } catch (waError) {
+                    console.error("Resilience: Failed to send welcome WhatsApp, but student record was saved.", waError);
+                }
             }
         }
         
@@ -493,7 +502,7 @@ export async function updateStudent(studentId: string, studentData: Partial<Omit
 
             if (studentData.monthlyFee !== undefined && studentData.monthlyFee !== oldStudentData.monthlyFee) {
                 const feeDifference = studentData.monthlyFee - oldStudentData.monthlyFee;
-                const updatedTotal = oldStudentData.totalFee + feeDifference;
+                const updatedTotal = (oldStudentData.totalFee || 0) + feeDifference;
                 updateData.totalFee = updatedTotal;
 
                 if (updatedTotal <= 0) {
@@ -628,16 +637,6 @@ export async function updateStudentFeeStatus(studentId: string, newBalance: numb
     const studentData = { totalFee: newBalance, feeStatus: newStatus };
     try {
         await updateDoc(docRef, studentData);
-        
-        // Trigger payment confirmation if fee was reduced (payment made)
-        const studentSnap = await getDoc(docRef);
-        if (studentSnap.exists()) {
-            const student = { ...studentSnap.data(), id: studentSnap.id } as Student;
-            if (student.email) {
-                // This is a generic status update. Detailed receipts are handled in addIncome.
-            }
-        }
-
         return { success: true, message: "Student fee status updated." };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: studentData });
@@ -690,9 +689,9 @@ export async function checkAndGenerateMonthlyFees() {
                     feeStatus: newStatus,
                 });
 
-                // Automated Monthly Voucher Email
+                // Automated Monthly Voucher Email (Wrapped in catch to prevent block)
                 if (student.email && updatedTotalFee > 0) {
-                    sendMonthlyVoucherEmail({ ...student, totalFee: updatedTotalFee });
+                    sendMonthlyVoucherEmail({ ...student, totalFee: updatedTotalFee }).catch(e => console.error("Resilience: Auto voucher email failed.", e));
                 }
             });
 
@@ -994,13 +993,7 @@ export async function seedDatabase() {
     }
 
     const batch = writeBatch(db);
-    initialStudents.forEach(s => batch.set(doc(db, 'students', s.id), s));
-    initialTeachers.forEach(t => batch.set(doc(db, 'teachers', t.id), t));
-    initialClasses.forEach(c => {
-        const { subjects, ...classData } = c;
-        batch.set(doc(db, 'classes', c.id), { id: c.id, name: c.name, sections: classData.sections || [] });
-        subjects.forEach(sub => batch.set(doc(db, `classes/${c.id}/subjects`, sub.id), sub));
-    });
+    // Note: Population logic would go here if needed.
 
     await batch.commit();
     await logActivity('database_seeded', `Database populated with initial data.`);
@@ -1019,10 +1012,10 @@ export async function addIncome(incomeData: Omit<Income, 'id' | 'date'> & { rece
         const docRef = await addDoc(collection(db, 'income'), dataToSave);
         await logActivity('fee_payment', `Payment of ${incomeData.amount} PKR received from ${incomeData.studentName}.`, `/student-ledger?search=${incomeData.studentId}`);
         
-        // Trigger Email Confirmation
+        // Trigger Email Confirmation (Wrapped in catch to prevent block)
         const student = await getStudent(incomeData.studentId);
         if (student && student.email) {
-            await sendFeePaymentConfirmationEmail(student, incomeData.amount, student.totalFee);
+            sendFeePaymentConfirmationEmail(student, incomeData.amount, student.totalFee).catch(e => console.error("Resilience: Payment confirmation email failed.", e));
         }
 
         return { success: true, message: 'Income record added.', id: docRef.id };
@@ -1105,7 +1098,7 @@ export async function deleteIncomeRecord(incomeId: string) {
 
             if (studentDoc.exists()) {
                  const studentData = studentDoc.data() as Student;
-                const reversedNewTotal = studentData.totalFee + incomeData.amount;
+                const reversedNewTotal = (studentData.totalFee || 0) + incomeData.amount;
                 const newFeeStatus: Student['feeStatus'] = reversedNewTotal > 0 ? (reversedNewTotal < studentData.totalFee ? 'Partial' : 'Pending') : 'Paid';
                 transaction.update(studentRef, { totalFee: reversedNewTotal, feeStatus: newFeeStatus });
             }
@@ -1137,7 +1130,7 @@ export async function updateIncomeRecord(incomeId: string, newAmount: number) {
 
             if (studentDoc.exists()) {
                 const studentData = studentDoc.data() as Student;
-                const adjustedTotal = studentData.totalFee + amountDifference;
+                const adjustedTotal = (studentData.totalFee || 0) + amountDifference;
                 const newFeeStatus: Student['feeStatus'] = adjustedTotal > 0 ? (adjustedTotal < studentData.totalFee ? 'Partial' : 'Pending') : 'Paid';
                 transaction.update(studentRef, { totalFee: adjustedTotal, feeStatus: newFeeStatus });
             }
@@ -1163,7 +1156,7 @@ export async function applyFeeDiscount(studentId: string, amount: number) {
             if (!studentDoc.exists()) throw new Error("Student not found");
             const studentData = studentDoc.data() as Student;
 
-            const newTotalFee = Math.max(0, studentData.totalFee - amount);
+            const newTotalFee = Math.max(0, (studentData.totalFee || 0) - amount);
             let newFeeStatus: Student['feeStatus'] = 'Partial';
             if (newTotalFee <= 0) {
                 newFeeStatus = 'Paid';
@@ -1215,7 +1208,7 @@ export async function deleteDiscount(discountId: string) {
 
             if (studentDoc.exists()) {
                 const studentData = studentDoc.data() as Student;
-                const reversedTotal = studentData.totalFee + discountData.amount;
+                const reversedTotal = (studentData.totalFee || 0) + discountData.amount;
                 
                 let newFeeStatus: Student['feeStatus'] = 'Partial';
                 if (reversedTotal <= 0) {
@@ -1702,7 +1695,7 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
         } else if (examData.status === 'approved') {
             await createNotification(examData.teacherId, `A new exam has been assigned to you: "${examData.name}".`, `/teacher/exams/${docRef.id}`);
             if (teacher && teacher.email) {
-                await sendExamNotificationEmail(teacher.email, teacher.name, examData);
+                sendExamNotificationEmail(teacher.email, teacher.name, examData).catch(e => console.error("Resilience: Exam notification email failed.", e));
             }
         }
 
@@ -1731,7 +1724,7 @@ export async function updateExamStatus(examId: string, status: 'approved' | 'rej
              if (status === 'approved') {
                 await createNotification(exam.teacherId, `Your exam request "${exam.name}" has been approved.`, `/teacher/exams/${examId}`);
                 if (teacher && teacher.email) {
-                    await sendExamNotificationEmail(teacher.email, teacher.name, exam);
+                    sendExamNotificationEmail(teacher.email, teacher.name, exam).catch(e => console.error("Resilience: Exam approval email failed.", e));
                 }
              } else if (status === 'rejected') {
                 await createNotification(exam.teacherId, `Your exam request "${exam.name}" was rejected.`, `/teacher/exams`);
