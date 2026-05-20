@@ -7,7 +7,7 @@ import { Student } from '@/lib/data';
 
 /**
  * @fileOverview Official Email Service for SAATH ACADEMY SAMUNDRI.
- * Handles Student Onboarding, Monthly Vouchers, and Payment Confirmations using a Creative Template.
+ * Handles Student Onboarding, Monthly Vouchers, and Payment Confirmations.
  */
 
 const ACADEMY_CONFIG = {
@@ -15,12 +15,19 @@ const ACADEMY_CONFIG = {
   logo: "https://i.postimg.cc/v8L8kPMV/saath.png",
   address: "Housing Colony 2, Samundri Faisalabad",
   phone: "03438775425",
+  portalUrl: "https://portal.saathsamundri.com/portal",
   socials: {
     facebook: "https://www.facebook.com/saathsamundri",
     instagram: "https://www.instagram.com/saath_samundri",
     youtube: "https://www.youtube.com/@SAATHSamundri",
     tiktok: "https://www.tiktok.com/@saathsamundri",
     email: "info@saathsamundri.com"
+  },
+  icons: {
+    fb: "https://img.icons8.com/fluent/48/000000/facebook-new.png",
+    ig: "https://img.icons8.com/fluent/48/000000/instagram-new.png",
+    yt: "https://img.icons8.com/fluent/48/000000/youtube-play.png",
+    tk: "https://img.icons8.com/color/48/000000/tiktok--v1.png"
   }
 };
 
@@ -34,12 +41,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-function getBaseTemplate(dept: string, greeting: string, message: string, cardContent: string, ctaText: string, ctaUrl: string) {
+function getCreativeTemplate(dept: string, greeting: string, message: string, cardContent: string, ctaText: string, ctaUrl: string) {
     return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px; }
         .wrapper { max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #eee; }
@@ -51,18 +59,20 @@ function getBaseTemplate(dept: string, greeting: string, message: string, cardCo
         .greeting { font-size: 22px; font-weight: 700; color: #1f2937; margin-bottom: 12px; }
         .greeting span { color: #7c3aed; }
         .msg { color: #6b7280; font-size: 15px; line-height: 1.8; margin-bottom: 30px; }
-        .card { background: #f8fafc; border-radius: 20px; padding: 25px; border: 1px solid #edf2f7; position: relative; border-left: 5px solid #4f46e5; }
+        .card { background: #f8fafc; border-radius: 20px; padding: 25px; border: 1px solid #edf2f7; position: relative; border-left: 5px solid #4f46e5; margin-bottom: 20px; }
         .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
         .row:last-child { border-bottom: none; }
         .label { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; }
-        .val { font-size: 14px; font-weight: 600; color: #1f2937; }
+        .val { font-size: 14px; font-weight: 600; color: #1f2937; text-align: right; }
         .highlight { color: #4f46e5; }
         .cta { text-align: center; margin-top: 30px; }
         .btn { display: inline-block; background: #4f46e5; color: white !important; text-decoration: none; padding: 16px 45px; border-radius: 14px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3); }
-        .footer { background: #1e1b4b; padding: 35px 30px; text-align: center; color: white; }
+        .footer { background: #1e1b4b; padding: 40px 30px; text-align: center; color: white; }
         .f-logo { width: 55px; margin-bottom: 12px; }
-        .socials { margin: 20px 0; display: flex; justify-content: center; gap: 15px; }
-        .socials a { color: white; text-decoration: none; font-weight: bold; font-size: 12px; border: 1px solid rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 8px; }
+        .socials { margin: 25px 0; }
+        .social-link { display: inline-block; margin: 0 8px; text-decoration: none; }
+        .social-icon { width: 32px; height: 32px; vertical-align: middle; }
+        .footer-info { color: rgba(255,255,255,0.7); font-size: 12px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -75,25 +85,28 @@ function getBaseTemplate(dept: string, greeting: string, message: string, cardCo
         <div class="body">
             <p class="greeting">${greeting}</p>
             <p class="msg">${message}</p>
-            <div class="card">
-                ${cardContent}
-            </div>
+            ${cardContent}
             <div class="cta">
                 <a href="${ctaUrl}" class="btn">${ctaText}</a>
             </div>
         </div>
         <div class="footer">
             <img src="${ACADEMY_CONFIG.logo}" class="f-logo">
-            <p style="margin: 0; font-weight: 700; font-size: 18px;">${ACADEMY_CONFIG.name}</p>
-            <p style="font-size: 11px; opacity: 0.6; letter-spacing: 1px; margin-top: 5px;">EXCELLENCE IN EDUCATION</p>
+            <p style="margin: 0; font-weight: 700; font-size: 20px; letter-spacing: 1px;">${ACADEMY_CONFIG.name}</p>
+            <p style="font-size: 11px; opacity: 0.6; letter-spacing: 2px; margin-top: 5px; text-transform: uppercase;">Excellence in Education</p>
+            
             <div class="socials">
-                <a href="${ACADEMY_CONFIG.socials.facebook}">FB</a>
-                <a href="${ACADEMY_CONFIG.socials.instagram}">IG</a>
-                <a href="${ACADEMY_CONFIG.socials.youtube}">YT</a>
-                <a href="${ACADEMY_CONFIG.socials.tiktok}">TK</a>
+                <a href="${ACADEMY_CONFIG.socials.facebook}" class="social-link"><img src="${ACADEMY_CONFIG.icons.fb}" class="social-icon" alt="FB"></a>
+                <a href="${ACADEMY_CONFIG.socials.instagram}" class="social-link"><img src="${ACADEMY_CONFIG.icons.ig}" class="social-icon" alt="IG"></a>
+                <a href="${ACADEMY_CONFIG.socials.youtube}" class="social-link"><img src="${ACADEMY_CONFIG.icons.yt}" class="social-icon" alt="YT"></a>
+                <a href="${ACADEMY_CONFIG.socials.tiktok}" class="social-link"><img src="${ACADEMY_CONFIG.icons.tk}" class="social-icon" alt="TK"></a>
             </div>
-            <p style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 15px;">Address: ${ACADEMY_CONFIG.address}</p>
-            <p style="font-size: 10px; opacity: 0.4; margin-top: 20px;">&copy; ${new Date().getFullYear()} ${ACADEMY_CONFIG.name}. All Rights Reserved.</p>
+
+            <div class="footer-info">
+                <p style="margin-bottom: 5px;">${ACADEMY_CONFIG.address}</p>
+                <p>Phone: ${ACADEMY_CONFIG.phone} | Email: ${ACADEMY_CONFIG.socials.email}</p>
+                <p style="font-size: 10px; opacity: 0.4; margin-top: 25px;">&copy; ${new Date().getFullYear()} ${ACADEMY_CONFIG.name}. All Rights Reserved.</p>
+            </div>
         </div>
     </div>
 </body>
@@ -104,18 +117,27 @@ export async function sendStudentWelcomeEmail(student: Student) {
   if (!student.email) return;
 
   const cardContent = `
-    <div class="row"><span class="label">Roll Number</span><span class="val">${student.id}</span></div>
-    <div class="row"><span class="label">Class</span><span class="val">${student.class}</span></div>
-    <div class="row"><span class="label">Father's Name</span><span class="val">${student.fatherName}</span></div>
+    <div class="card">
+        <h4 style="margin: 0 0 15px 0; color: #4f46e5; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Admission Details</h4>
+        <div class="row"><span class="label">Roll Number</span><span class="val">${student.id}</span></div>
+        <div class="row"><span class="label">Class</span><span class="val">${student.class}</span></div>
+        <div class="row"><span class="label">Father's Name</span><span class="val">${student.fatherName}</span></div>
+    </div>
+    <div class="card" style="border-left-color: #10b981; background-color: #f0fdf4;">
+        <h4 style="margin: 0 0 15px 0; color: #059669; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Portal Login Credentials</h4>
+        <div class="row"><span class="label">Roll Number</span><span class="val" style="color: #059669; font-weight: 800;">${student.id}</span></div>
+        <div class="row"><span class="label">Registered Phone</span><span class="val" style="color: #059669; font-weight: 800;">${student.phone}</span></div>
+        <p style="font-size: 11px; color: #059669; margin-top: 10px; opacity: 0.8;">Note: Use these details to access your results and fee history online.</p>
+    </div>
   `;
 
-  const html = getBaseTemplate(
+  const html = getCreativeTemplate(
     "Admissions Department",
     `Welcome to the family, <span>${student.name}</span>!`,
     "We are thrilled to have you join our academic community. At SAATH, we are dedicated to providing Excellence in Education through personalized learning and state-of-the-art resources.",
     cardContent,
     "Access Student Portal",
-    "https://app.saathsamundri.com/portal"
+    ACADEMY_CONFIG.portalUrl
   );
 
   try {
@@ -134,18 +156,21 @@ export async function sendFeePaymentConfirmationEmail(student: Student, amount: 
   if (!student.email) return;
 
   const cardContent = `
-    <div class="row"><span class="label">Amount Paid</span><span class="val highlight">${amount.toLocaleString()} PKR</span></div>
-    <div class="row"><span class="label">Date Received</span><span class="val">${format(new Date(), 'PPP')}</span></div>
-    <div class="row"><span class="label">Remaining Balance</span><span class="val">${balance.toLocaleString()} PKR</span></div>
+    <div class="card">
+        <h4 style="margin: 0 0 15px 0; color: #10b981; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Verified Transaction</h4>
+        <div class="row"><span class="label">Amount Paid</span><span class="val" style="color: #10b981; font-weight: 800;">${amount.toLocaleString()} PKR</span></div>
+        <div class="row"><span class="label">Date Received</span><span class="val">${format(new Date(), 'PPP')}</span></div>
+        <div class="row"><span class="label">Remaining Balance</span><span class="val">${balance.toLocaleString()} PKR</span></div>
+    </div>
   `;
 
-  const html = getBaseTemplate(
+  const html = getCreativeTemplate(
     "Accounts Department",
     `Payment Received Successfully!`,
-    `Dear Parent/Student, we have successfully received and verified the fee payment for <b>${student.name}</b>. Your digital receipt is attached below.`,
+    `Dear Parent/Student, we have successfully received and verified the fee payment for <b>${student.name}</b>. Your digital statement has been updated.`,
     cardContent,
-    "View Full Ledger",
-    "https://app.saathsamundri.com/portal"
+    "View Fee History",
+    ACADEMY_CONFIG.portalUrl
   );
 
   try {
@@ -163,7 +188,7 @@ export async function sendFeePaymentConfirmationEmail(student: Student, amount: 
 export async function sendMonthlyVoucherEmail(student: Student) {
   if (!student.email || student.totalFee <= 0) return;
 
-  // Generate PDF for attachment (internal logic stays the same)
+  // Generate PDF for attachment
   const pdfDoc = new jsPDF();
   const dateStr = format(new Date(), 'MMMM yyyy');
   pdfDoc.setFontSize(22);
@@ -177,18 +202,21 @@ export async function sendMonthlyVoucherEmail(student: Student) {
   const pdfBase64 = pdfDoc.output('datauristring').split(',')[1];
 
   const cardContent = `
-    <div class="row"><span class="label">Billing Month</span><span class="val">${dateStr}</span></div>
-    <div class="row"><span class="label">Total Dues</span><span class="val highlight">${student.totalFee.toLocaleString()} PKR</span></div>
-    <div class="row"><span class="label">Status</span><span class="val">UNPAID</span></div>
+    <div class="card">
+        <h4 style="margin: 0 0 15px 0; color: #4f46e5; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Fee Voucher Details</h4>
+        <div class="row"><span class="label">Billing Month</span><span class="val">${dateStr}</span></div>
+        <div class="row"><span class="label">Total Dues</span><span class="val highlight" style="font-weight: 800;">${student.totalFee.toLocaleString()} PKR</span></div>
+        <div class="row"><span class="label">Status</span><span class="val" style="color: #dc2626;">UNPAID</span></div>
+    </div>
   `;
 
-  const html = getBaseTemplate(
+  const html = getCreativeTemplate(
     "Accounts Department",
     `Monthly Fee Voucher Generated`,
-    `Dear Parent/Student, the fee voucher for <b>${dateStr}</b> is now available for <b>${student.name}</b>. A detailed PDF copy is attached to this email.`,
+    `Dear Parent/Student, the fee voucher for <b>${dateStr}</b> is now available for <b>${student.name}</b>. A detailed PDF copy is attached to this email for your records.`,
     cardContent,
-    "Pay Online / Support",
-    "https://wa.me/923438775425"
+    "Student Portal Login",
+    ACADEMY_CONFIG.portalUrl
   );
 
   try {
