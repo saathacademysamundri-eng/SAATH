@@ -20,14 +20,31 @@ export function useNotifications(userId: string | null) {
 
         setLoading(true);
         try {
-            const q = query(
+            // Standard query with orderBy
+            let q = query(
                 collection(db, 'notifications'),
                 where('userId', '==', userId),
                 orderBy('timestamp', 'desc'),
                 limit(50)
             );
 
-            const querySnapshot = await getDocs(q);
+            let querySnapshot;
+            try {
+                querySnapshot = await getDocs(q);
+            } catch (e: any) {
+                // FALLBACK: If index is missing, fetch without orderBy and sort in memory
+                if (e.code === 'failed-precondition' || e.message?.includes('index')) {
+                    const fallbackQ = query(
+                        collection(db, 'notifications'),
+                        where('userId', '==', userId),
+                        limit(50)
+                    );
+                    querySnapshot = await getDocs(fallbackQ);
+                } else {
+                    throw e;
+                }
+            }
+
             const fetchedNotifications: Notification[] = [];
             let unread = 0;
             
@@ -48,6 +65,9 @@ export function useNotifications(userId: string | null) {
                     }
                 }
             });
+
+            // Ensure sorting if we hit the fallback
+            fetchedNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
             setNotifications(fetchedNotifications);
             setUnreadCount(unread);
