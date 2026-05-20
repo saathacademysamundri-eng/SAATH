@@ -1,4 +1,3 @@
-
 import { collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp, getCountFromServer, getAggregateFromServer, sum, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
 import { app, auth, db, firebaseConfig } from './config';
 import { Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID, Discount } from '@/lib/data';
@@ -798,7 +797,7 @@ export async function getNextTeacherId(): Promise<string> {
     const lastId = querySnapshot.docs[0].id;
     const lastNumber = parseInt(lastId.substring(1));
     const newNumber = lastNumber + 1;
-    return `T${newNumber.toString().padStart(2, '0')}`;
+    return `T${newNumber.toString().padStart(3, '0')}`;
 }
 
 export async function addTeacher(teacherData: Omit<Teacher, 'id'>) {
@@ -1398,7 +1397,7 @@ export async function payoutTeacher(teacherId: string, teacherName: string, amou
         batch.set(doc(collection(db, 'expenses')), { 
             description: `Payout to ${teacherName} for ${formatDate(earningsMonth, 'MMMM yyyy')}`, 
             amount, 
-            date: Timestamp.fromDate(expenseDate),
+            date: Timestamp.fromDate(earningsMonth),
             source: 'payout', 
             payoutId: payoutRef.id, 
             category: 'Salaries' 

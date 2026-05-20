@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -6,24 +5,49 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { students } from '@/lib/data';
-import { notFound, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { getStudent } from '@/lib/firebase/firestore';
+import { type Student } from '@/lib/data';
+import { notFound, useRouter, useParams } from 'next/navigation';
+import { useEffect, useState, useMemo } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function StudentFeeDetailsPage({ params }: { params: { studentId: string } }) {
-  const { studentId } = params;
+export default function StudentFeeDetailsPage() {
+  const params = useParams();
+  const studentId = params.studentId as string;
   const router = useRouter();
-  const student = useMemo(() => students.find(s => s.id === studentId), [studentId]);
   
+  const [student, setStudent] = useState<Student | null>(null);
+  const [loading, setLoading] = useState(true);
   const [paidAmount, setPaidAmount] = useState(0);
   
+  useEffect(() => {
+    async function loadData() {
+        if (!studentId) return;
+        setLoading(true);
+        const data = await getStudent(studentId);
+        setStudent(data);
+        setLoading(false);
+    }
+    loadData();
+  }, [studentId]);
+
+  if (loading) {
+      return (
+          <div className="flex flex-col gap-6">
+              <Skeleton className="h-10 w-48" />
+              <Card className="max-w-2xl mx-auto w-full">
+                  <CardHeader><Skeleton className="h-24 w-full" /></CardHeader>
+                  <CardContent><Skeleton className="h-48 w-full" /></CardContent>
+              </Card>
+          </div>
+      )
+  }
+
   if (!student) {
     notFound();
   }
 
   const handleCollectFee = () => {
-    // This is a simplified navigation. A real implementation would involve
-    // a database transaction and then potentially navigation.
     router.push('/fee-collection');
   }
 

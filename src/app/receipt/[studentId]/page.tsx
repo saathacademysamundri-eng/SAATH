@@ -1,20 +1,21 @@
-
-
 'use client';
 
 import { useSettings } from '@/hooks/use-settings';
-import { students } from '@/lib/data';
-import { notFound, useSearchParams, useRouter } from 'next/navigation';
-import { useMemo, useEffect } from 'react';
+import { getStudent } from '@/lib/firebase/firestore';
+import { type Student } from '@/lib/data';
+import { notFound, useSearchParams, useRouter, useParams } from 'next/navigation';
+import { useMemo, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 
-export default function FeeReceiptPage({ params }: { params: { studentId: string } }) {
-  const { studentId } = params;
+export default function FeeReceiptPage() {
+  const params = useParams();
+  const studentId = params.studentId as string;
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const { settings, isSettingsLoading } = useSettings();
-  const student = useMemo(() => students.find(s => s.id === studentId), [studentId]);
+  const [student, setStudent] = useState<Student | null>(null);
+  const [loading, setLoading] = useState(true);
   
   const paidAmount = Number(searchParams.get('amount') || '0');
   const balance = Number(searchParams.get('balance') || '0');
@@ -24,7 +25,17 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
   const receiptId = useMemo(() => `RCPT-${Date.now()}`.substring(0, 15), []);
 
   useEffect(() => {
-    if (!isSettingsLoading && student) {
+    async function loadStudent() {
+        if (!studentId) return;
+        const data = await getStudent(studentId);
+        setStudent(data);
+        setLoading(false);
+    }
+    loadStudent();
+  }, [studentId]);
+
+  useEffect(() => {
+    if (!isSettingsLoading && !loading && student) {
         const receiptHtml = `
             <html>
                 <head>
@@ -146,17 +157,15 @@ export default function FeeReceiptPage({ params }: { params: { studentId: string
             setTimeout(() => {
                 printWindow.print();
                 printWindow.close();
-                // Optionally navigate back or to a different page
                 router.push('/fee-collection');
             }, 250);
         }
     }
-  }, [isSettingsLoading, student, settings, paidAmount, balance, totalFee, receiptDate, receiptId, router]);
+  }, [isSettingsLoading, loading, student, settings, paidAmount, balance, totalFee, receiptDate, receiptId, router]);
   
-  if (isSettingsLoading || !student) {
-      return <div className="flex items-center justify-center h-screen">Loading receipt...</div>;
+  if (isSettingsLoading || loading || !student) {
+      return <div className="flex items-center justify-center h-screen font-sans">Generating receipt...</div>;
   }
 
-  // This will be replaced by the print content, but acts as a fallback.
-  return <main className="font-sans bg-white text-black p-2">Generating receipt...</main>;
+  return <main className="font-sans bg-white text-black p-2">Redirecting to collection...</main>;
 }
