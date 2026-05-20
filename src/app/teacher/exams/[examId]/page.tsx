@@ -14,7 +14,6 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import html2canvas from 'html2canvas';
 
 type EnhancedResult = {
     studentId: string;
@@ -52,19 +51,21 @@ export default function TeacherExamResultsPage() {
         } else {
             setShowPosition(true);
         }
+        
         const studentsInClass = await getStudentsByClass(examData.className);
-        let studentData: Student[];
+        let filteredStudents: Student[];
 
+        // CRITICAL: Strict filtering for Teacher's View if scope is set
         if (examData.scope === 'teacher_students' && examData.teacherId) {
-            studentData = studentsInClass.filter(student => 
+            filteredStudents = studentsInClass.filter(student => 
                 student.subjects.some(sub => sub.teacher_id === examData.teacherId)
             );
         } else {
-            studentData = studentsInClass;
+            filteredStudents = studentsInClass;
         }
         
         // Sort students by ID to ensure a consistent order
-        const sortedStudents = studentData.sort((a, b) => a.id.localeCompare(b.id));
+        const sortedStudents = filteredStudents.sort((a, b) => a.id.localeCompare(b.id));
         setStudents(sortedStudents);
 
         // Initialize results state
@@ -371,7 +372,11 @@ export default function TeacherExamResultsPage() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <CardTitle>Enter Marks</CardTitle>
-                <CardDescription>Enter the marks obtained or 'A' for absent students.</CardDescription>
+                <CardDescription>
+                    {exam.scope === 'teacher_students' 
+                        ? `Only students assigned to you for this academic cycle are displayed.` 
+                        : `Showing all students in the class.`}
+                </CardDescription>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center space-x-2">

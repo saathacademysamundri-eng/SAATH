@@ -52,19 +52,21 @@ export default function ExamResultsPage() {
         } else {
             setShowPosition(true);
         }
+        
         const studentsInClass = await getStudentsByClass(examData.className);
-        let studentData: Student[];
+        let filteredStudents: Student[];
 
+        // CRITICAL: Filter students by teacher if scope is 'teacher_students'
         if (examData.scope === 'teacher_students' && examData.teacherId) {
-            studentData = studentsInClass.filter(student => 
+            filteredStudents = studentsInClass.filter(student => 
                 student.subjects.some(sub => sub.teacher_id === examData.teacherId)
             );
         } else {
-            studentData = studentsInClass;
+            filteredStudents = studentsInClass;
         }
 
         // Sort students by ID to ensure a consistent order
-        const sortedStudents = studentData.sort((a, b) => a.id.localeCompare(b.id));
+        const sortedStudents = filteredStudents.sort((a, b) => a.id.localeCompare(b.id));
         setStudents(sortedStudents);
 
         // Initialize results state
@@ -380,7 +382,7 @@ export default function ExamResultsPage() {
             .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; }
           `}</style>
           <div className="report-container">
-            <div className="content-wrap">
+            <div class="content-wrap">
               <div dangerouslySetInnerHTML={{ __html: printableHeaderHtml }} />
               <table>
                  <thead dangerouslySetInnerHTML={{ __html: printableTableHeaders }} />
@@ -401,7 +403,11 @@ export default function ExamResultsPage() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <CardTitle>Enter Marks</CardTitle>
-                <CardDescription>Enter the marks obtained or 'A' for absent students.</CardDescription>
+                <CardDescription>
+                    {exam.scope === 'teacher_students' 
+                        ? `Showing only students assigned to ${exam.teacherName}.` 
+                        : `Showing all students in ${exam.className}.`}
+                </CardDescription>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center space-x-2">

@@ -36,6 +36,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
     }
     const className = exams[0].className;
     
+    // CRITICAL: Always pull the ENTIRE class for the Master Sheet view
     const studentsInClass = allStudents.filter(s => s.class === className);
 
     const subjectSet = new Set<string>();
@@ -44,6 +45,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
     });
     const allSubjects = Array.from(subjectSet);
 
+    // Calculate total possible marks for this exam group (e.g., Computer + Bio + English)
     const totalMaxMarks = exams.reduce((acc, exam) => acc + (exam.totalMarks * exam.subjects.length), 0);
 
     return { studentsInClass, allSubjects, totalMaxMarks };
@@ -55,18 +57,28 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
     const studentTotals = studentsInClass.map(student => {
       const allMarks: { [subjectName: string]: number | string | null } = {};
       let totalObtainedMarks = 0;
+      let totalAttendedMaxMarks = 0;
 
       exams.forEach(exam => {
         const studentResult = exam.results?.find(r => r.studentId === student.id);
+        
         exam.subjects.forEach(subject => {
             const mark = studentResult?.marks[subject];
             allMarks[subject] = mark ?? null;
+            
             if (typeof mark === 'number') {
                 totalObtainedMarks += mark;
+            }
+            
+            // Track if student was actually eligible/enrolled for this subject in the exam
+            // This handles the Bio vs Computer positions better
+            if (mark !== undefined && mark !== null) {
+                totalAttendedMaxMarks += exam.totalMarks;
             }
         });
       });
       
+      // Percentage is calculated against the total potential marks for this group
       const percentage = totalMaxMarks > 0 ? (totalObtainedMarks / totalMaxMarks) * 100 : 0;
 
       return {
@@ -79,6 +91,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
       };
     });
     
+    // Sort and rank
     const sortedForRanking = [...studentTotals].sort((a, b) => b.totalMarks - a.totalMarks);
     const rankedStudents = new Map<number, number>();
     let rank = 0;
@@ -112,7 +125,7 @@ export function MasterSheetView({ exams, groupTitle }: { exams: Exam[], groupTit
       <div class="report-title">
         <h2>${groupTitle}</h2>
         <p>Class: ${exam.className} | Session: ${exam.academicSession}</p>
-        <p style="font-size: 0.9rem; color: #555;">Total Marks: ${totalMaxMarks}</p>
+        <p style="font-size: 0.9rem; color: #555;">Total Group Marks: ${totalMaxMarks}</p>
       </div>
     `;
   }, [settings, exams, totalMaxMarks, groupTitle]);
