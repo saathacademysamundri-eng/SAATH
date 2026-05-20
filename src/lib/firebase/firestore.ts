@@ -110,11 +110,6 @@ export async function updateSettings(docId: 'details' | 'landing-page', settings
     }
 }
 
-/**
- * Robust aggregation helper that falls back to client-side logic 
- * if server-side aggregation fails due to missing indexes (FAILED_PRECONDITION) 
- * or temporary permission issues.
- */
 async function getCountSafe(collName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
     let q = query(collection(db, collName));
     filters.forEach(f => {
@@ -125,7 +120,6 @@ async function getCountSafe(collName: string, filters: { field: string, op: any,
         const snapshot = await getCountFromServer(q);
         return snapshot.data().count;
     } catch (error: any) {
-        // Fallback if index is missing or permission is temporarily denied
         if (error.code === 'failed-precondition' || error.code === 'permission-denied' || error.message?.includes('index')) {
             const eqFilters = filters.filter(f => f.op === '==');
             let qFallback = query(collection(db, collName));
@@ -159,9 +153,6 @@ async function getCountSafe(collName: string, filters: { field: string, op: any,
     }
 }
 
-/**
- * Robust aggregation helper for Sums.
- */
 async function getSumSafe(collName: string, fieldName: string, filters: { field: string, op: any, value: any }[] = []): Promise<number> {
     let q = query(collection(db, collName));
     filters.forEach(f => {
@@ -172,7 +163,6 @@ async function getSumSafe(collName: string, fieldName: string, filters: { field:
         const agg = await getAggregateFromServer(q, { total: sum(fieldName) });
         return agg.data().total || 0;
     } catch (error: any) {
-        // Fallback to client-side logic
         if (error.code === 'failed-precondition' || error.code === 'permission-denied' || error.message?.includes('index')) {
             const eqFilters = filters.filter(f => f.op === '==');
             let qFallback = query(collection(db, collName));
@@ -561,6 +551,22 @@ export async function updateStudentStatus(studentId: string, status: 'active' | 
     }
 }
 
+export async function graduateStudentsBulk(studentIds: string[]) {
+    try {
+        const batch = writeBatch(db);
+        for (const id of studentIds) {
+            const ref = doc(db, 'students', id);
+            batch.update(ref, { status: 'graduated' });
+        }
+        await batch.commit();
+        await logActivity('student_graduated', `Graduated ${studentIds.length} students to Alumni records.`);
+        return { success: true, message: `${studentIds.length} students graduated successfully.` };
+    } catch (e) {
+        console.error("Bulk graduation failed:", e);
+        return { success: false, message: (e as Error).message };
+    }
+}
+
 
 export async function deleteStudentPermanently(studentId: string) {
     const studentRef = doc(db, 'students', studentId);
@@ -621,10 +627,6 @@ export async function updateStudentFeeStatus(studentId: string, newBalance: numb
     }
 }
 
-/**
- * Checks if monthly fees have been generated for the current month.
- * If not, increments each active student's totalFee by their monthlyFee.
- */
 export async function checkAndGenerateMonthlyFees() {
     try {
         const stateRef = doc(db, 'system_state', 'fee_management');
@@ -632,7 +634,6 @@ export async function checkAndGenerateMonthlyFees() {
         const now = new Date();
         const currentMonth = formatDate(now, 'yyyy-MM');
 
-        // Safety check: Only generate if not already done this month
         if (stateDoc.exists() && stateDoc.data().lastGeneratedMonth === currentMonth) {
             return { success: true, message: "Fees for the current month have already been generated." };
         }
@@ -647,8 +648,6 @@ export async function checkAndGenerateMonthlyFees() {
         }
 
         const studentDocs = studentsSnap.docs;
-        
-        // Chunk processing to stay within Firestore batch limits (500 ops)
         const CHUNK_SIZE = 450;
         for (let i = 0; i < studentDocs.length; i += CHUNK_SIZE) {
             const chunk = studentDocs.slice(i, i + CHUNK_SIZE);
@@ -673,7 +672,6 @@ export async function checkAndGenerateMonthlyFees() {
                 });
             });
 
-            // On the final chunk, update the system state document
             if (i + CHUNK_SIZE >= studentDocs.length) {
                 batch.set(stateRef, { 
                     lastGeneratedMonth: currentMonth,
@@ -931,10 +929,28 @@ export async function updateClassSubjects(classId: string, subjects: Subject[]) 
 export async function updateClass(classId: string, classData: Partial<Pick<Class, 'name' | 'sections'>>) {
     const docRef = doc(db, 'classes', classId);
     try {
-        await updateDoc(docRef, classData);
-        await logActivity('class_updated', `Updated details for class ${classData.name || ''}.`);
+        await runTransaction(db, async (transaction) => {
+            const classSnap = await transaction.get(docRef);
+            if (!classSnap.exists()) throw new Error("Class not found");
+            const oldClassData = classSnap.data() as Class;
+            const oldName = oldClassData.name;
+            const newName = classData.name;
+
+            transaction.update(docRef, classData);
+
+            if (newName && newName !== oldName) {
+                const studentsQ = query(collection(db, 'students'), where('class', '==', oldName));
+                const studentsSnap = await getDocs(studentsQ);
+                studentsSnap.forEach(sDoc => {
+                    transaction.update(sDoc.ref, { class: newName });
+                });
+            }
+        });
+        
+        await logActivity('class_updated', `Updated class details: ${classData.name || ''}. Enrolled students updated successfully.`);
         return { success: true, message: "Class updated successfully." };
     } catch (serverError) {
+        console.error("updateClass error:", serverError);
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: classData });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
@@ -1967,3 +1983,4 @@ export async function getStudentIncomeHistory(studentId: string): Promise<Income
         return [];
     }
 }
+

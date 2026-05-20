@@ -55,6 +55,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BulkPromoteDialog } from './bulk-promote-dialog';
+import { BulkGraduateDialog } from './bulk-graduate-dialog';
 import { useSettings } from '@/hooks/use-settings';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
@@ -76,6 +77,7 @@ export default function StudentsPage() {
 
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
   const [isBulkPromoteOpen, setIsBulkPromoteOpen] = useState(false);
+  const [isBulkGraduateOpen, setIsBulkGraduateOpen] = useState(false);
 
   const [dialogState, setDialogState] = useState<{
     isAddOpen: boolean;
@@ -100,7 +102,6 @@ export default function StudentsPage() {
       const result = await getStudentsPaged(20, lastDoc, classFilter, search);
       
       setStudents(result.students);
-      // Pagination only applies when NO class filter is active
       setHasMore(classFilter === 'all' && result.students.length === 20 && !search); 
       
       if (isInitial) {
@@ -119,7 +120,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     fetchPage(0, true);
-    setSelectedStudents([]); // Reset selection when filter changes
+    setSelectedStudents([]); 
   }, [classFilter, search]);
 
   const handleNextPage = () => {
@@ -243,6 +244,7 @@ export default function StudentsPage() {
     setDialogState({ ...dialogState, isEditOpen: false, selectedStudent: null });
     setSelectedStudents([]);
     setIsBulkPromoteOpen(false);
+    setIsBulkGraduateOpen(false);
   };
 
   return (
@@ -273,11 +275,15 @@ export default function StudentsPage() {
             <div className="ml-auto flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handlePrintSelected}>
                     <Printer className="h-4 w-4 mr-2" />
-                    Print Information
+                    Print Info
                 </Button>
-                <Button size="sm" onClick={() => setIsBulkPromoteOpen(true)}>
+                <Button variant="outline" size="sm" onClick={() => setIsBulkPromoteOpen(true)}>
                     <ChevronsRight className="h-4 w-4 mr-2" />
-                    Bulk Promote
+                    Promote
+                </Button>
+                <Button size="sm" onClick={() => setIsBulkGraduateOpen(true)}>
+                    <GraduationCap className="h-4 w-4 mr-2" />
+                    Graduate
                 </Button>
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 <Button variant="ghost" size="sm" onClick={() => setSelectedStudents([])}>
@@ -292,7 +298,7 @@ export default function StudentsPage() {
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            {classFilter !== 'all' ? `Viewing all students in the selected class. Select them to perform bulk actions.` : `Viewing page ${currentPage + 1}. Search to find any student in the database.`}
+            {classFilter !== 'all' ? `Viewing students in ${classes.find(c => c.id === classFilter)?.name}. Use selection for bulk graduation.` : `Search and filter to manage academy students.`}
           </CardDescription>
           <div className="flex flex-col md:flex-row gap-4 pt-2">
             <div className="relative flex-grow">
@@ -395,6 +401,10 @@ export default function StudentsPage() {
                               <DropdownMenuItem onClick={() => router.push(`/students/${student.id}`)}>View Details</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditClick(student)}>Edit</DropdownMenuItem>
                               <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleConfirmAction(student, 'graduated')}>
+                                <GraduationCap className="mr-2 h-4 w-4" />
+                                Graduate to Alumni
+                              </DropdownMenuItem>
                               <AlertDialogTrigger asChild>
                                 <DropdownMenuItem className="text-destructive">Archive</DropdownMenuItem>
                               </AlertDialogTrigger>
@@ -445,6 +455,13 @@ export default function StudentsPage() {
           <BulkPromoteDialog 
               students={selectedStudents} 
               onStudentsPromoted={onStudentUpdated} 
+          />
+      </Dialog>
+
+      <Dialog open={isBulkGraduateOpen} onOpenChange={setIsBulkGraduateOpen}>
+          <BulkGraduateDialog 
+              students={selectedStudents} 
+              onStudentsGraduated={onStudentUpdated} 
           />
       </Dialog>
     </div>

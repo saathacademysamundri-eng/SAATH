@@ -17,12 +17,13 @@ import {
 } from '@/components/ui/card';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { type Class } from '@/lib/data';
-import { Book, Edit, PlusCircle, Users } from 'lucide-react';
+import { Book, Edit, PlusCircle, Users, Type } from 'lucide-react';
 import { EditSubjectsDialog } from './edit-subjects-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppContext } from '@/hooks/use-app-context';
 import { AddClassDialog } from './add-class-dialog';
 import { EditSectionsDialog } from './edit-sections-dialog';
+import { RenameClassDialog } from './rename-class-dialog';
 
 export default function ClassesPage() {
   const { classes, loading, refreshData } = useAppContext();
@@ -62,7 +63,7 @@ export default function ClassesPage() {
                     {c.name}
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-2">
                         {/* Subjects Section */}
                         <div className="flex flex-col gap-4">
                             <div className="flex items-center justify-between">
@@ -72,7 +73,7 @@ export default function ClassesPage() {
                                 <Dialog>
                                 <DialogTrigger asChild>
                                     <Button variant="outline" size="sm">
-                                    <Edit className="mr-2 h-4 w-4" /> Edit Subjects
+                                    <Edit className="mr-2 h-4 w-4" /> Edit
                                     </Button>
                                 </DialogTrigger>
                                 <EditSubjectsDialog
@@ -108,7 +109,7 @@ export default function ClassesPage() {
                                 <Dialog>
                                 <DialogTrigger asChild>
                                     <Button variant="outline" size="sm">
-                                    <Edit className="mr-2 h-4 w-4" /> Manage Sections
+                                    <Edit className="mr-2 h-4 w-4" /> Edit
                                     </Button>
                                 </DialogTrigger>
                                 <EditSectionsDialog
@@ -129,9 +130,27 @@ export default function ClassesPage() {
                                 ))
                                 ) : (
                                 <p className="text-sm text-muted-foreground p-3">
-                                    No sections defined for this class.
+                                    No sections defined.
                                 </p>
                                 )}
+                            </div>
+                        </div>
+
+                        {/* Actions Section */}
+                        <div className="flex flex-col gap-4">
+                            <h3 className="text-md font-semibold flex items-center gap-2">
+                                <PlusCircle className="h-5 w-5" /> Management
+                            </h3>
+                            <div className="flex flex-col gap-2">
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button variant="secondary" className="w-full justify-start">
+                                            <Type className="mr-2 h-4 w-4" />
+                                            Rename Class
+                                        </Button>
+                                    </DialogTrigger>
+                                    <RenameClassDialog classData={c} onClassRenamed={refreshData} />
+                                </Dialog>
                             </div>
                         </div>
                     </div>
