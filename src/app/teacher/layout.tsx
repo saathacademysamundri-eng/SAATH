@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -14,7 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect, Suspense, useState } from 'react';
+import React, { useEffect, Suspense, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Sidebar,
@@ -233,76 +234,76 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     setIsReminderOpen(false);
   };
 
-  useEffect(() => {
-    if (teacher && !loading) {
-        const checkDeadlines = async () => {
-            const [exams, allStudents] = await Promise.all([
-                getExamsByTeacher(teacher.id),
-                getStudents()
-            ]);
+  const checkDeadlines = useCallback(async () => {
+    if (!teacher || loading) return;
 
-            const now = new Date();
+    const [exams, allStudents] = await Promise.all([
+        getExamsByTeacher(teacher.id),
+        getStudents()
+    ]);
 
-            const upcomingOrOverdueIncomplete = exams.filter(exam => {
-                if (!exam.submissionDeadline || exam.status !== 'approved') {
-                    return false;
-                }
+    const now = new Date();
 
-                const deadline = new Date(exam.submissionDeadline);
-                const isPastDue = deadline < now;
-                
-                if (!isPastDue) return false;
+    const upcomingOrOverdueIncomplete = exams.filter(exam => {
+        if (exam.status !== 'approved') return false;
 
-                const studentsForExam = allStudents.filter(student => 
-                    student.class === exam.className && 
-                    (exam.scope === 'class' || student.subjects.some(sub => sub.teacher_id === teacher.id))
-                );
-                
-                if (studentsForExam.length === 0) return false;
+        // Determine if there is an active/past deadline
+        const deadline = exam.submissionDeadline ? new Date(exam.submissionDeadline) : null;
+        
+        // Filter students for this exam's scope
+        const studentsForExam = allStudents.filter(student => 
+            student.class === exam.className && 
+            (exam.scope === 'class' || student.subjects.some(sub => sub.teacher_id === teacher.id))
+        );
+        
+        if (studentsForExam.length === 0) return false;
 
-                const resultsMap = new Map(exam.results?.map(r => [r.studentId, r.marks]) || []);
+        // Results map for quick lookup
+        const resultsMap = new Map(exam.results?.map(r => [r.studentId, r.marks]) || []);
 
-                const isExamIncomplete = studentsForExam.some(student => {
-                    const studentResult = resultsMap.get(student.id);
-                    if (!studentResult) return true; 
-                    return exam.subjects.some(subjectName => studentResult[subjectName] == null);
-                });
-                
-                return isExamIncomplete;
-            });
-            
-            const snoozedDataString = sessionStorage.getItem(SNOOZE_STORAGE_KEY);
-            let snoozedExamIds: string[] = [];
+        // Check if ANY student is missing marks for ANY subject in this exam
+        const isExamIncomplete = studentsForExam.some(student => {
+            const studentResult = resultsMap.get(student.id);
+            if (!studentResult) return true; // Missing entirely
+            return exam.subjects.some(subjectName => studentResult[subjectName] == null || studentResult[subjectName] === '');
+        });
+        
+        // Return true if incomplete AND there's a deadline or it's just generally pending action
+        return isExamIncomplete;
+    });
+    
+    const snoozedDataString = sessionStorage.getItem(SNOOZE_STORAGE_KEY);
+    let snoozedExamIds: string[] = [];
 
-            if (snoozedDataString) {
-                try {
-                    const snoozedData = JSON.parse(snoozedDataString);
-                    if (new Date().getTime() < snoozedData.expiresAt) {
-                        snoozedExamIds = snoozedData.examIds || [];
-                    } else {
-                        sessionStorage.removeItem(SNOOZE_STORAGE_KEY);
-                    }
-                } catch (e) {
-                    sessionStorage.removeItem(SNOOZE_STORAGE_KEY);
-                }
-            }
-            
-            const finalExamsToShow = upcomingOrOverdueIncomplete.filter(
-                exam => !snoozedExamIds.includes(exam.id)
-            );
-
-            if (finalExamsToShow.length > 0) {
-                setOverdueExams(finalExamsToShow);
-                setIsReminderOpen(true);
+    if (snoozedDataString) {
+        try {
+            const snoozedData = JSON.parse(snoozedDataString);
+            if (new Date().getTime() < snoozedData.expiresAt) {
+                snoozedExamIds = snoozedData.examIds || [];
             } else {
-                setOverdueExams([]);
-                setIsReminderOpen(false);
+                sessionStorage.removeItem(SNOOZE_STORAGE_KEY);
             }
-        };
-
-        checkDeadlines();
+        } catch (e) {
+            sessionStorage.removeItem(SNOOZE_STORAGE_KEY);
+        }
     }
-  }, [teacher, loading, pathname]);
+    
+    const finalExamsToShow = upcomingOrOverdueIncomplete.filter(
+        exam => !snoozedExamIds.includes(exam.id)
+    );
+
+    if (finalExamsToShow.length > 0) {
+        setOverdueExams(finalExamsToShow);
+        setIsReminderOpen(true);
+    } else {
+        setOverdueExams([]);
+        setIsReminderOpen(false);
+    }
+  }, [teacher, loading]);
+
+  useEffect(() => {
+    checkDeadlines();
+  }, [checkDeadlines, pathname]);
   
   if (pathname === '/teacher/login') {
     return <>{children}</>;

@@ -9,6 +9,7 @@ import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format as form
 import { sendWhatsappMessage } from '@/lib/whatsapp';
 import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, sendPasswordResetEmail } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
+import { sendExamNotificationEmail } from '@/lib/email';
 
 // Activity Log Functions
 export async function logActivity(type: Activity['type'], message: string, link?: string) {
@@ -855,7 +856,7 @@ async function getNextClassId(): Promise<string> {
     const lastId = querySnapshot.docs[0].id;
     const lastNumber = parseInt(lastId.substring(1));
     const newNumber = lastNumber + 1;
-    return `C${newNumber.toString().padStart(2, '0')}`;
+    return `C${newNumber.toString().padStart(3, '0')}`;
 }
 
 export async function addClass(name: string) {
@@ -1664,10 +1665,15 @@ export async function createExam(examData: Omit<Exam, 'id' | 'date'>) {
         const dataToSave = { ...examData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'exams'), dataToSave);
         
+        const teacher = await getTeacher(examData.teacherId);
+
         if (examData.status === 'pending') {
             await createNotification(ADMIN_UID, `New exam request from ${examData.teacherName}: "${examData.name}".`, `/exams?tab=pending`);
         } else if (examData.status === 'approved') {
             await createNotification(examData.teacherId, `A new exam has been assigned to you: "${examData.name}".`, `/teacher/exams/${docRef.id}`);
+            if (teacher && teacher.email) {
+                await sendExamNotificationEmail(teacher.email, teacher.name, examData);
+            }
         }
 
         const logMessage = examData.status === 'pending'
@@ -1690,8 +1696,13 @@ export async function updateExamStatus(examId: string, status: 'approved' | 'rej
         const examDoc = await getDoc(docRef);
         if (examDoc.exists()) {
              const exam = examDoc.data() as Exam;
+             const teacher = await getTeacher(exam.teacherId);
+
              if (status === 'approved') {
                 await createNotification(exam.teacherId, `Your exam request "${exam.name}" has been approved.`, `/teacher/exams/${examId}`);
+                if (teacher && teacher.email) {
+                    await sendExamNotificationEmail(teacher.email, teacher.name, exam);
+                }
              } else if (status === 'rejected') {
                 await createNotification(exam.teacherId, `Your exam request "${exam.name}" was rejected.`, `/teacher/exams`);
              }
@@ -1983,4 +1994,3 @@ export async function getStudentIncomeHistory(studentId: string): Promise<Income
         return [];
     }
 }
-
