@@ -211,7 +211,7 @@ export function BlankAdmissionFormDialog() {
             </div>
 
             <div class="form-row">
-                <div class="label">Permanent Address</div>
+                <div class="label">Current Institute</div>
                 <div class="long-underline"></div>
             </div>
 
@@ -240,7 +240,7 @@ export function BlankAdmissionFormDialog() {
             </div>
 
             <div class="form-row">
-                <div class="label">Last School Attended</div>
+                <div class="label">Permanent Address</div>
                 <div class="long-underline"></div>
             </div>
 
