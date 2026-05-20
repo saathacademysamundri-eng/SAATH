@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, PlusCircle, Search, Trash, Edit, Archive, GraduationCap, ChevronRight, Printer, ChevronsRight, ChevronLeft, X } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Search, Trash, Edit, Archive, GraduationCap, ChevronRight, Printer, ChevronsRight, ChevronLeft, X, FileText } from 'lucide-react';
 import { AddStudentForm } from './add-student-form';
 import { Dialog, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { useState, useEffect, useCallback } from 'react';
@@ -60,6 +59,7 @@ import { useSettings } from '@/hooks/use-settings';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
+import { BlankAdmissionFormDialog } from './blank-admission-form-dialog';
 
 export default function StudentsPage() {
   const { classes, loading: contextLoading } = useAppContext();
@@ -272,15 +272,26 @@ export default function StudentsPage() {
             Manage student profiles, fees, and results.
           </p>
         </div>
-        <Dialog open={dialogState.isAddOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isAddOpen: isOpen })}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2" />
-              Add Student
-            </Button>
-          </DialogTrigger>
-          <AddStudentForm onStudentAdded={() => { fetchPage(0, true); setDialogState({ ...dialogState, isAddOpen: false }); }} />
-        </Dialog>
+        <div className="flex items-center gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Admission Form
+                </Button>
+              </DialogTrigger>
+              <BlankAdmissionFormDialog />
+            </Dialog>
+            <Dialog open={dialogState.isAddOpen} onOpenChange={(isOpen) => setDialogState({ ...dialogState, isAddOpen: isOpen })}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2" />
+                  Add Student
+                </Button>
+              </DialogTrigger>
+              <AddStudentForm onStudentAdded={() => { fetchPage(0, true); setDialogState({ ...dialogState, isAddOpen: false }); }} />
+            </Dialog>
+        </div>
       </div>
 
       {selectedStudents.length > 0 && (

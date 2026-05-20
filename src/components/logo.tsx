@@ -19,7 +19,7 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
   if (!isClient || (isSettingsLoading && !sessionStorage.getItem('cachedSettings'))) {
     return (
         <div className="flex items-center gap-2 font-headline text-2xl font-bold text-primary">
-            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-12 w-12 rounded-full" />
             {!noText && <Skeleton className="h-6 w-32" />}
         </div>
     )
@@ -28,12 +28,12 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
   if (onLogin) {
     return (
          <div className="flex flex-col items-center justify-center gap-4 font-headline text-2xl font-bold text-primary w-full h-full">
-            <div className='h-24 w-24 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0 relative'>
+            <div className='h-32 w-32 bg-muted rounded-full flex items-center justify-center overflow-hidden shrink-0 relative'>
                 <Image 
                     src={logoSrc} 
                     alt="logo" 
                     fill 
-                    className="object-cover" 
+                    className="object-contain p-1" 
                     priority
                 />
             </div>
@@ -43,7 +43,7 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
 
   return (
     <div className="flex items-center justify-center gap-2 font-headline text-2xl font-bold text-primary w-full h-full">
-      <div className="h-10 w-10 relative shrink-0">
+      <div className="h-14 w-14 relative shrink-0">
         <Image 
             src={logoSrc} 
             alt="logo" 
@@ -52,7 +52,7 @@ export function Logo({ noText = false, onLogin = false }: { noText?: boolean, on
             priority
         />
       </div>
-      {!noText && <span className="font-bold tracking-tighter">{academyName}</span>}
+      {!noText && <span className="font-bold tracking-tighter text-xl">{academyName}</span>}
     </div>
   );
 }
