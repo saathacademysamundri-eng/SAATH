@@ -1,5 +1,3 @@
-
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -40,6 +38,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
     const [name, setName] = useState('');
     const [fatherName, setFatherName] = useState('');
     const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState('');
     const [college, setCollege] = useState('');
     const [address, setAddress] = useState('');
     const [gender, setGender] = useState('male');
@@ -75,7 +74,6 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         if (isSelected) {
             setSelectedSubjects(prev => prev.filter(s => s.subject.id !== subject.id));
         } else {
-            // Find a teacher who teaches this subject
             const defaultTeacher = teachers.find(t => (t.subjects || []).includes(subject.name));
             setSelectedSubjects(prev => [...prev, { subject, teacherId: defaultTeacher?.id || null }]);
         }
@@ -98,6 +96,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
         setName('');
         setFatherName('');
         setPhone('');
+        setEmail('');
         setCollege('');
         setAddress('');
         setGender('male');
@@ -136,6 +135,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             name,
             fatherName,
             phone,
+            email: email.trim() || undefined,
             college,
             address,
             gender,
@@ -143,7 +143,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             section: selectedSection,
             subjects: studentSubjects,
             feeStatus: 'Pending' as const,
-            totalFee: monthlyFee, // Initial outstanding balance is the monthly fee
+            totalFee: monthlyFee,
             monthlyFee: monthlyFee,
             imageUrl: imageUrl.trim(),
         };
@@ -155,7 +155,7 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             onStudentAdded();
             toast({
                 title: 'Student Added',
-                description: `${name} has been successfully added.`,
+                description: `${name} has been successfully added. A welcome email will be sent if an email address was provided.`,
             });
         } else {
              toast({
@@ -233,6 +233,11 @@ export function AddStudentForm({ onStudentAdded }: { onStudentAdded: () => void 
             <div className="grid gap-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input id="phone" type="tel" placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="email">Email Address (Optional)</Label>
+                <Input id="email" type="email" placeholder="student@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <p className="text-[10px] text-muted-foreground">Used for sending monthly vouchers and receipts.</p>
             </div>
             <div className="grid gap-2">
                 <Label htmlFor="college">School / College Name</Label>

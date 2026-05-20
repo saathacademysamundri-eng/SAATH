@@ -1,5 +1,3 @@
-
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -40,6 +38,7 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
     const [name, setName] = useState(student.name);
     const [fatherName, setFatherName] = useState(student.fatherName);
     const [phone, setPhone] = useState(student.phone);
+    const [email, setEmail] = useState(student.email || '');
     const [college, setCollege] = useState(student.college);
     const [address, setAddress] = useState(student.address);
     const [gender, setGender] = useState(student.gender);
@@ -66,7 +65,6 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
     const female_avatar = "https://i.postimg.cc/7hgPwR8W/1487318.png";
 
     useEffect(() => {
-        // only set default if the current imageUrl is one of the defaults
         if(imageUrl === male_avatar || imageUrl === female_avatar || !imageUrl){
              if(gender === 'male'){
                 setImageUrl(male_avatar)
@@ -131,14 +129,15 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
             name,
             fatherName,
             phone,
+            email: email.trim() || null,
             college,
             address,
             gender,
             class: currentClassDetails?.name || '',
-            section: selectedSection,
+            section: selectedSection || null,
             subjects: studentSubjects,
             monthlyFee: monthlyFee,
-            imageUrl: imageUrl.trim(),
+            imageUrl: imageUrl.trim() || null,
         };
 
         const result = await updateStudent(student.id, updatedStudentData);
@@ -224,6 +223,10 @@ export function EditStudentForm({ student, onStudentUpdated }: { student: Studen
                 <div className="grid gap-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input id="phone" type="tel" placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="edit-email">Email Address</Label>
+                    <Input id="edit-email" type="email" placeholder="student@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                     <Label htmlFor="college">School / College Name</Label>

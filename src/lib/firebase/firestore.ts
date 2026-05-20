@@ -1,4 +1,3 @@
-
 import { collection, writeBatch, getDocs, doc, getDoc, updateDoc, setDoc, query, where, limit, orderBy, addDoc, serverTimestamp, deleteDoc, runTransaction, increment, deleteField, startAt, endAt, Timestamp, getCountFromServer, getAggregateFromServer, sum, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
 import { app, auth, db, firebaseConfig } from './config';
 import { students as initialStudents, teachers as initialTeachers, classes as initialClasses, Student, Teacher, Class, Subject, Income, Expense, Report, Exam, StudentResult, TeacherPayout, Activity, Payout, DailyAttendanceSummary, ADMIN_UID, Discount } from '@/lib/data';
@@ -10,6 +9,7 @@ import { sendWhatsappMessage } from '@/lib/whatsapp';
 import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail, sendPasswordResetEmail } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { sendExamNotificationEmail } from '@/lib/email';
+import { sendStudentWelcomeEmail, sendFeePaymentConfirmationEmail, sendMonthlyVoucherEmail } from '@/lib/email-service';
 
 // Activity Log Functions
 export async function logActivity(type: Activity['type'], message: string, link?: string) {
@@ -428,7 +428,15 @@ export async function addStudent(student: Omit<Student, 'id' | 'status'> & { id:
         await setDoc(docRef, studentWithStatus);
         await logActivity('new_admission', `New admission: ${student.name} (ID: ${student.id}) in class ${student.class}.`, `/students/${student.id}`);
         
+        // Automated Email and WhatsApp Notifications
         const settings = await getSettings('details');
+        
+        // 1. Send Branded Welcome Email
+        if (student.email) {
+            await sendStudentWelcomeEmail(student as Student);
+        }
+
+        // 2. Send WhatsApp Notification
         if (settings && settings.newAdmissionMsg && student.phone) {
             let messageBody = settings.newAdmissionTemplate || 'Welcome {student_name} to {academy_name}! Your Roll No is {student_id}.';
             messageBody = messageBody.replace(/{student_name}/g, student.name);
@@ -620,6 +628,16 @@ export async function updateStudentFeeStatus(studentId: string, newBalance: numb
     const studentData = { totalFee: newBalance, feeStatus: newStatus };
     try {
         await updateDoc(docRef, studentData);
+        
+        // Trigger payment confirmation if fee was reduced (payment made)
+        const studentSnap = await getDoc(docRef);
+        if (studentSnap.exists()) {
+            const student = { ...studentSnap.data(), id: studentSnap.id } as Student;
+            if (student.email) {
+                // This is a generic status update. Detailed receipts are handled in addIncome.
+            }
+        }
+
         return { success: true, message: "Student fee status updated." };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: studentData });
@@ -671,6 +689,11 @@ export async function checkAndGenerateMonthlyFees() {
                     totalFee: updatedTotalFee,
                     feeStatus: newStatus,
                 });
+
+                // Automated Monthly Voucher Email
+                if (student.email && updatedTotalFee > 0) {
+                    sendMonthlyVoucherEmail({ ...student, totalFee: updatedTotalFee });
+                }
             });
 
             if (i + CHUNK_SIZE >= studentDocs.length) {
@@ -995,6 +1018,13 @@ export async function addIncome(incomeData: Omit<Income, 'id' | 'date'> & { rece
         const dataToSave = { ...incomeData, date: serverTimestamp() };
         const docRef = await addDoc(collection(db, 'income'), dataToSave);
         await logActivity('fee_payment', `Payment of ${incomeData.amount} PKR received from ${incomeData.studentName}.`, `/student-ledger?search=${incomeData.studentId}`);
+        
+        // Trigger Email Confirmation
+        const student = await getStudent(incomeData.studentId);
+        if (student && student.email) {
+            await sendFeePaymentConfirmationEmail(student, incomeData.amount, student.totalFee);
+        }
+
         return { success: true, message: 'Income record added.', id: docRef.id };
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ path: 'income/[auto-id]', operation: 'create', requestResourceData: incomeData });
