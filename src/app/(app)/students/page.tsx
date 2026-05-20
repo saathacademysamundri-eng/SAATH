@@ -49,7 +49,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { updateStudentStatus, getStudentsPaged } from '@/lib/firebase/firestore';
+import { updateStudentStatus, getStudentsPaged, archiveStudentsBulk } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -78,6 +78,7 @@ export default function StudentsPage() {
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
   const [isBulkPromoteOpen, setIsBulkPromoteOpen] = useState(false);
   const [isBulkGraduateOpen, setIsBulkGraduateOpen] = useState(false);
+  const [isBulkArchiveOpen, setIsBulkArchiveOpen] = useState(false);
 
   const [dialogState, setDialogState] = useState<{
     isAddOpen: boolean;
@@ -154,6 +155,20 @@ export default function StudentsPage() {
     }
     setDialogState({ ...dialogState, isArchiveOpen: false, isGraduateOpen: false, selectedStudent: null });
     setSelectedStudents([]);
+  }
+
+  const handleBulkArchiveConfirm = async () => {
+      if (selectedStudents.length === 0) return;
+      const ids = selectedStudents.map(s => s.id);
+      const result = await archiveStudentsBulk(ids);
+      if (result.success) {
+          toast({ title: 'Bulk Archive Complete', description: result.message });
+          fetchPage(currentPage);
+          setSelectedStudents([]);
+      } else {
+          toast({ variant: 'destructive', title: 'Action Failed', description: result.message });
+      }
+      setIsBulkArchiveOpen(false);
   }
 
   const handleSelectAll = (checked: boolean) => {
@@ -245,6 +260,7 @@ export default function StudentsPage() {
     setSelectedStudents([]);
     setIsBulkPromoteOpen(false);
     setIsBulkGraduateOpen(false);
+    setIsBulkArchiveOpen(false);
   };
 
   return (
@@ -267,7 +283,7 @@ export default function StudentsPage() {
         </Dialog>
       </div>
 
-      {selectedStudents.length > 0 && classFilter !== 'all' && (
+      {selectedStudents.length > 0 && (
         <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 p-2 rounded-lg mb-2 animate-in fade-in slide-in-from-top-2">
             <Badge variant="secondary" className="px-3 py-1 text-sm font-bold ml-2">
                 {selectedStudents.length} Students Selected
@@ -277,14 +293,40 @@ export default function StudentsPage() {
                     <Printer className="h-4 w-4 mr-2" />
                     Print Info
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setIsBulkPromoteOpen(true)}>
-                    <ChevronsRight className="h-4 w-4 mr-2" />
-                    Promote
-                </Button>
-                <Button size="sm" onClick={() => setIsBulkGraduateOpen(true)}>
-                    <GraduationCap className="h-4 w-4 mr-2" />
-                    Graduate
-                </Button>
+                {classFilter !== 'all' && (
+                    <>
+                        <Button variant="outline" size="sm" onClick={() => setIsBulkPromoteOpen(true)}>
+                            <ChevronsRight className="h-4 w-4 mr-2" />
+                            Promote
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setIsBulkGraduateOpen(true)}>
+                            <GraduationCap className="h-4 w-4 mr-2" />
+                            Graduate
+                        </Button>
+                    </>
+                )}
+                <AlertDialog open={isBulkArchiveOpen} onOpenChange={setIsBulkArchiveOpen}>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                            <Archive className="h-4 w-4 mr-2" />
+                            Archive Selected
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Archive {selectedStudents.length} students?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to move these students to the archive? They will be removed from active classes.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleBulkArchiveConfirm} className="bg-destructive hover:bg-destructive/90">
+                                Archive Students
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
                 <Separator orientation="vertical" className="h-6 mx-1" />
                 <Button variant="ghost" size="sm" onClick={() => setSelectedStudents([])}>
                     <X className="h-4 w-4 mr-2" />
@@ -298,7 +340,7 @@ export default function StudentsPage() {
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            {classFilter !== 'all' ? `Viewing students in ${classes.find(c => c.id === classFilter)?.name}. Use selection for bulk graduation.` : `Search and filter to manage academy students.`}
+            {classFilter !== 'all' ? `Viewing students in ${classes.find(c => c.id === classFilter)?.name}.` : `Search and filter to manage academy students.`}
           </CardDescription>
           <div className="flex flex-col md:flex-row gap-4 pt-2">
             <div className="relative flex-grow">
@@ -325,14 +367,12 @@ export default function StudentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                {classFilter !== 'all' && (
-                  <TableHead className="w-12">
-                      <Checkbox
-                          checked={students.length > 0 && selectedStudents.length === students.length}
-                          onCheckedChange={handleSelectAll}
-                      />
-                  </TableHead>
-                )}
+                <TableHead className="w-12">
+                    <Checkbox
+                        checked={students.length > 0 && selectedStudents.length === students.length}
+                        onCheckedChange={handleSelectAll}
+                    />
+                </TableHead>
                 <TableHead>Student</TableHead>
                 <TableHead>Father's Name</TableHead>
                 <TableHead>Fee Status</TableHead>
@@ -345,7 +385,7 @@ export default function StudentsPage() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {classFilter !== 'all' && <TableCell><Checkbox disabled /></TableCell>}
+                    <TableCell><Checkbox disabled /></TableCell>
                     <TableCell><Skeleton className="h-10 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-16" /></TableCell>
@@ -357,14 +397,12 @@ export default function StudentsPage() {
               ) : students.length > 0 ? (
                 students.map((student) => (
                   <TableRow key={student.id}>
-                    {classFilter !== 'all' && (
-                      <TableCell>
-                          <Checkbox
-                              checked={selectedStudents.some(s => s.id === student.id)}
-                              onCheckedChange={(checked) => handleSelectStudent(student, !!checked)}
-                          />
-                      </TableCell>
-                    )}
+                    <TableCell>
+                        <Checkbox
+                            checked={selectedStudents.some(s => s.id === student.id)}
+                            onCheckedChange={(checked) => handleSelectStudent(student, !!checked)}
+                        />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">

@@ -569,6 +569,44 @@ export async function updateStudentStatus(studentId: string, status: 'active' | 
     }
 }
 
+export async function archiveStudentsBulk(studentIds: string[]) {
+    try {
+        const batch = writeBatch(db);
+        for (const id of studentIds) {
+            const ref = doc(db, 'students', id);
+            batch.update(ref, { 
+                status: 'archived',
+                archivedAt: serverTimestamp()
+            });
+        }
+        await batch.commit();
+        await logActivity('student_archived', `Archived ${studentIds.length} students bulk.`);
+        return { success: true, message: `${studentIds.length} students moved to archive.` };
+    } catch (e) {
+        console.error("Bulk archive failed:", e);
+        return { success: false, message: (e as Error).message };
+    }
+}
+
+export async function reactivateStudentsBulk(studentIds: string[]) {
+    try {
+        const batch = writeBatch(db);
+        for (const id of studentIds) {
+            const ref = doc(db, 'students', id);
+            batch.update(ref, { 
+                status: 'active',
+                archivedAt: deleteField()
+            });
+        }
+        await batch.commit();
+        await logActivity('student_reactivated', `Reactivated ${studentIds.length} students bulk.`);
+        return { success: true, message: `${studentIds.length} students reactivated.` };
+    } catch (e) {
+        console.error("Bulk reactivation failed:", e);
+        return { success: false, message: (e as Error).message };
+    }
+}
+
 export async function graduateStudentsBulk(studentIds: string[]) {
     try {
         const batch = writeBatch(db);
@@ -617,6 +655,19 @@ export async function deleteStudentPermanently(studentId: string) {
         const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
         return { success: false, message: (serverError as Error).message };
+    }
+}
+
+export async function deleteStudentsPermanentlyBulk(studentIds: string[]) {
+    try {
+        // Run in series to avoid complex transaction nesting or batch limit issues with linked collections
+        for (const id of studentIds) {
+            await deleteStudentPermanently(id);
+        }
+        return { success: true, message: `${studentIds.length} students deleted permanently.` };
+    } catch (e) {
+        console.error("Bulk delete failed:", e);
+        return { success: false, message: (e as Error).message };
     }
 }
 
