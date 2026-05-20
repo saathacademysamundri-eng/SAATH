@@ -1,5 +1,3 @@
-
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -16,7 +14,7 @@ export const metadata: Metadata = {
   description: 'An Academy Management System',
   manifest: '/manifest.json',
   icons: {
-    icon: '/logo.png',
+    icon: 'https://i.postimg.cc/v8L8kPMV/saath.png',
   },
   applicationName: 'SAATH Academy Samundri',
   appleWebApp: {

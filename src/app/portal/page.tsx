@@ -107,7 +107,7 @@ export default function StudentPortalLoginPage() {
         <div className="flex flex-col items-center mb-8 mt-2">
           <div className="relative w-24 h-24 mb-4 logo-glow">
             <img
-              src={settings.logo || "https://i.postimg.cc/Dfq75Lxb/Saath-Academy-logo.png"}
+              src={settings.logo || "https://i.postimg.cc/v8L8kPMV/saath.png"}
               alt="Academy Logo"
               className="w-full h-full object-contain"
             />

@@ -72,7 +72,7 @@ const defaultSettings: Settings = {
   name: 'SAATH Academy Samundri',
   address: 'Housing Colony 2, Samundri Faisalabad',
   phone: '03438775425',
-  logo: 'https://i.postimg.cc/Dfq75Lxb/Saath-Academy-logo.png',
+  logo: 'https://i.postimg.cc/v8L8kPMV/saath.png',
   academicSession: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
   preloaderStyle: 'style-1',
   autoLockEnabled: false,
